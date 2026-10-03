@@ -9,3 +9,6 @@ supabase/.branches/
 *.tsbuildinfo
 next-env.d.ts
 .claude/
+
+.vercel
+.env*
