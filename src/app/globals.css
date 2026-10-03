@@ -1,60 +1,94 @@
-/* The hub shell: dark, quiet, and plain. It deliberately shares nothing with any
-   campaign's theme. Campaign styles are scoped under .campaign. */
+/* The hub shell: dark stone and teal, taken from the landing page's doorway artwork.
+   It shares nothing with any campaign's theme. Campaign styles are scoped under .campaign. */
 :root{
-  --h-bg:#121416; --h-panel:#1a1d20; --h-line:#2c3136; --h-text:#e4e5e2; --h-dim:#9aa0a6; --h-accent:#b8c4cf; --h-bad:#e08a7a; --h-ok:#8fc2a4;
+  /* stone colours sampled from the artwork (scripts/build-images.mjs prints them) */
+  --h-bg:#010508;            /* the image's outer frame: the darkest stone */
+  --h-stone:#152525;         /* mid stone */
+  --h-panel:#0a1417; --h-panel-2:#0f1c20; --h-line:#1c2f34; --h-field:#050c0f;
+  --h-text:#dfe6ea; --h-dim:#8a98a6; --h-accent:#4fd1c5; --h-blue:#2b6cb0; --h-amber:#e3a557;
+  --h-bad:#ef9a8f; --h-ok:#7fd9b4;
+  --h-title:var(--font-title),"Cinzel","Cormorant SC",Georgia,serif;
+  --h-body:var(--font-body),system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box}
-html{height:100%; -webkit-text-size-adjust:100%}
-body{margin:0; min-height:100%; background:var(--h-bg); color:var(--h-text);
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55}
+html{height:100%; -webkit-text-size-adjust:100%; background:var(--h-bg)}
+body{margin:0; min-height:100%; background:var(--h-bg); color:var(--h-text); font-family:var(--h-body); font-size:16px; line-height:1.6}
 [hidden]{display:none !important}
 
-.hub{min-height:100vh; display:flex; flex-direction:column}
-.hub a{color:var(--h-accent)}
-.hub-bar{border-bottom:1px solid var(--h-line)}
+/* ---------- the stone button, used everywhere in the hub and on the landing page ---------- */
+.stone-btn,.hub button,.hub .button{
+  font-family:var(--h-title); font-size:.92rem; font-weight:600; letter-spacing:.07em; line-height:1.2;
+  color:var(--h-text); text-decoration:none; display:inline-block; cursor:pointer;
+  padding:.72em 1.5em; border-radius:12px;
+  background:linear-gradient(180deg, rgba(24,42,44,.94), rgba(8,17,20,.94));
+  border:1px solid rgba(79,209,197,.38);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05), inset 0 -1px 0 rgba(0,0,0,.5), 0 6px 18px rgba(0,0,0,.45);
+  transition:border-color .2s, box-shadow .2s, color .2s;
+}
+.stone-btn:hover,.hub button:hover,.hub .button:hover,
+.stone-btn:focus-visible,.hub button:focus-visible,.hub .button:focus-visible{
+  border-color:var(--h-accent); color:#f2fbfb;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px rgba(79,209,197,.45), 0 0 22px rgba(79,209,197,.28);
+}
+.stone-btn:focus-visible,.hub button:focus-visible,.hub .button:focus-visible,.hub a:focus-visible{outline:2px solid var(--h-accent); outline-offset:3px}
+.hub button.quiet,.hub .button.quiet{background:transparent; border-color:var(--h-line); box-shadow:none; color:var(--h-dim)}
+.hub button.quiet:hover,.hub .button.quiet:hover,.hub button.quiet:focus-visible,.hub .button.quiet:focus-visible{border-color:var(--h-accent); color:var(--h-text); box-shadow:0 0 16px rgba(79,209,197,.18)}
+.hub button[disabled]{opacity:.6; cursor:default}
+
+/* ---------- hub pages ---------- */
+.hub{min-height:100vh; display:flex; flex-direction:column;
+  background:
+    radial-gradient(900px 420px at 50% -120px, rgba(43,108,176,.10), transparent 70%),
+    radial-gradient(700px 380px at 50% -80px, rgba(79,209,197,.07), transparent 70%),
+    var(--h-bg)}
+.hub a{color:var(--h-accent); text-underline-offset:3px}
+.hub-bar{border-bottom:1px solid var(--h-line); background:rgba(1,5,8,.7)}
 .hub-bar .in{max-width:960px; margin:0 auto; padding:14px 20px; display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center}
-.hub .hub-name{font-weight:600; letter-spacing:.02em; color:var(--h-text); text-decoration:none; margin-right:auto}
+.hub .hub-name{font-family:var(--h-title); font-weight:600; font-size:1.08rem; letter-spacing:.08em; color:var(--h-text); text-decoration:none; margin-right:auto;
+  text-shadow:0 0 18px rgba(79,209,197,.35)}
 .hub-bar nav{display:flex; flex-wrap:wrap; gap:6px 18px}
-.hub-bar nav a{color:var(--h-dim); text-decoration:none; font-size:.95rem}
-.hub-bar nav a:hover{color:var(--h-text)}
-.hub-main{max-width:960px; width:100%; margin:0 auto; padding:34px 20px 80px; flex:1}
-.hub h1{font-size:1.7rem; font-weight:600; margin:0 0 6px; letter-spacing:-.01em}
-.hub h2{font-size:1.15rem; font-weight:600; margin:34px 0 10px}
+.hub-bar nav a{color:var(--h-dim); text-decoration:none; font-size:.95rem; border-radius:4px}
+.hub-bar nav a:hover,.hub-bar nav a:focus-visible{color:var(--h-accent)}
+.hub-bar button{font-size:.8rem; padding:.55em 1.1em}
+.hub-main{max-width:960px; width:100%; margin:0 auto; padding:38px 20px 80px; flex:1}
+.hub h1{font-family:var(--h-title); font-size:1.75rem; font-weight:600; letter-spacing:.05em; margin:0 0 10px; text-shadow:0 0 22px rgba(79,209,197,.25)}
+.hub h2{font-family:var(--h-title); font-size:1.08rem; font-weight:600; letter-spacing:.06em; margin:36px 0 10px; color:var(--h-text)}
 .hub p{margin:0 0 12px; max-width:64ch}
 .hub .dim{color:var(--h-dim)}
-.hub .panel{background:var(--h-panel); border:1px solid var(--h-line); border-radius:6px; padding:18px 20px; margin:14px 0}
-.hub .narrow{max-width:440px}
-.hub label{display:flex; flex-direction:column; gap:4px; font-size:.9rem; color:var(--h-dim); margin-bottom:12px}
-.hub input,.hub select,.hub textarea{font:inherit; color:var(--h-text); background:var(--h-bg); border:1px solid var(--h-line); border-radius:4px; padding:9px 11px; width:100%; min-width:0}
-.hub input:focus,.hub select:focus,.hub textarea:focus{outline:2px solid var(--h-accent); outline-offset:1px}
-.hub input[type=color]{padding:2px; height:38px}
-.hub button,.hub .button{font:inherit; color:var(--h-bg); background:var(--h-accent); border:1px solid var(--h-accent); border-radius:4px; padding:8px 16px; cursor:pointer; text-decoration:none; display:inline-block}
-.hub button.quiet,.hub .button.quiet{color:var(--h-text); background:transparent; border-color:var(--h-line)}
-.hub button:hover,.hub .button:hover{filter:brightness(1.08)}
-.hub button[disabled]{opacity:.6; cursor:default}
+.hub .panel{background:linear-gradient(180deg, var(--h-panel-2), var(--h-panel)); border:1px solid var(--h-line); border-radius:14px; padding:20px 22px; margin:14px 0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+.hub .narrow{max-width:460px}
+.hub label{display:flex; flex-direction:column; gap:5px; font-size:.9rem; color:var(--h-dim); margin-bottom:14px}
+.hub input,.hub select,.hub textarea{font:inherit; font-family:var(--h-body); color:var(--h-text); background:var(--h-field); border:1px solid var(--h-line); border-radius:9px; padding:10px 12px; width:100%; min-width:0;
+  transition:border-color .2s, box-shadow .2s}
+.hub input:focus,.hub select:focus,.hub textarea:focus{outline:none; border-color:var(--h-accent); box-shadow:0 0 0 3px rgba(79,209,197,.18)}
+.hub input[type=color]{padding:3px; height:40px}
+.hub input[type=checkbox]{accent-color:var(--h-accent)}
 .hub .bad{color:var(--h-bad)}
 .hub .good{color:var(--h-ok)}
-.hub .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin:16px 0}
+.hub .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin:18px 0}
 .hub .fieldrow{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:0 14px}
 .hub .inline{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end}
 .hub .inline label{margin-bottom:0; flex:1 1 200px}
 .hub .list{list-style:none; margin:0; padding:0}
 .hub .list li{display:flex; flex-wrap:wrap; gap:4px 14px; justify-content:space-between; align-items:baseline; padding:12px 0; border-bottom:1px solid var(--h-line)}
 .hub .list li:last-child{border-bottom:0}
-.hub-foot{border-top:1px solid var(--h-line); color:var(--h-dim); font-size:.85rem; padding:16px 20px; text-align:center}
+.hub-foot{border-top:1px solid var(--h-line); color:var(--h-dim); font-family:var(--h-title); letter-spacing:.1em; font-size:.8rem; padding:18px 20px; text-align:center}
 
 /* A campaign card previews that campaign's own theme (tokens set inline). */
-.ccard{display:block; text-decoration:none; border:1px solid var(--line,#34343f); padding:20px 20px 16px; min-height:150px; position:relative;
+.ccard{display:block; text-decoration:none; border:1px solid var(--line,#34343f); border-radius:14px; padding:20px 20px 16px; min-height:150px; position:relative;
   background-color:var(--void,#101014); color:var(--vellum,#e8e6e1); font-family:var(--body,Georgia,serif);
   background-image:radial-gradient(420px 220px at 0% 0%, color-mix(in srgb, var(--gold,#b9b2a0) 16%, transparent), transparent 70%),
-                   radial-gradient(380px 240px at 100% 100%, color-mix(in srgb, var(--ember,#c9785a) 16%, transparent), transparent 70%)}
-.ccard:hover{border-color:var(--gold,#b9b2a0)}
+                   radial-gradient(380px 240px at 100% 100%, color-mix(in srgb, var(--ember,#c9785a) 16%, transparent), transparent 70%);
+  transition:border-color .2s, box-shadow .2s}
+.ccard:hover,.ccard:focus-visible{border-color:var(--gold,#b9b2a0); box-shadow:0 0 22px rgba(0,0,0,.5)}
 .ccard b{display:block; font-family:var(--display,Georgia,serif); font-weight:400; font-size:1.7rem; line-height:1.15; color:var(--gold,#b9b2a0); margin-bottom:8px}
 .ccard span{display:block; color:var(--dim,#a3a1a8); font-size:.95rem; line-height:1.45}
 .ccard i{display:block; font-style:normal; margin-top:12px; font-size:.8rem; color:var(--star,#8fa7d6)}
 
-.landing{min-height:100vh; display:grid; place-items:center; padding:24px}
-.landing .box{max-width:460px; text-align:center}
-.landing h1{font-size:2.1rem; margin-bottom:10px}
-.landing .actions{display:flex; gap:12px; justify-content:center; margin-top:22px; flex-wrap:wrap}
+/* sign-in and sign-up: one centred panel on plain stone */
+.center{min-height:100vh; display:grid; place-items:center; padding:24px}
+.center .box{width:100%; max-width:410px}
+.center .hub-name{font-size:1.25rem}
+.center h1{font-size:1.45rem; margin-top:14px}

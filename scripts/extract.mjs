@@ -204,6 +204,12 @@ sections.filter((s) => s.kind === 'content').forEach((s) => {
   merge(s.slug, P, D, report).forEach((r) => content.push(r));
 });
 
+// Removed at Bryce's request (3 October 2026): the ticks now save to the database, so this line was untrue.
+const REMOVED = ['Ticks are saved in this browser only.'];
+for (let i = content.length - 1; i >= 0; i--) {
+  if (content[i].kind === 'html' && REMOVED.includes(squash(cheerio.load(content[i].body.html).text()))) content.splice(i, 1);
+}
+
 // the to-do list items come from the TODO constant
 content.filter((r) => r.kind === 'checklist').forEach((r) => { r.body = { items: TODO.map((text) => ({ text, done: false })) }; });
 

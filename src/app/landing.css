@@ -1,0 +1,95 @@
+/* The public landing page: a stone doorway. Everything is scoped under .door. */
+.door{--bg:#010508; --bg0:rgba(1,5,8,0); background:var(--bg); color:var(--h-text); min-height:100vh; overflow-x:clip}
+
+/* ---------- first screen ---------- */
+.door .hero{position:relative; isolation:isolate; min-height:100vh; min-height:100svh; overflow:hidden;
+  display:grid; grid-template-rows:auto 1fr auto; justify-items:center; background:var(--bg)}
+.door .hero picture,.door .hero picture img{position:absolute; inset:0; width:100%; height:100%}
+.door .hero picture img{object-fit:cover; object-position:center; display:block; user-select:none; -webkit-user-drag:none}
+
+/* the runes breathe: a teal glow sitting over the arch */
+.door .breath{position:absolute; left:50%; top:45%; z-index:1; pointer-events:none;
+  width:max(46vw,82vh); height:max(40vw,72vh); transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side, rgba(79,209,197,.20), rgba(43,108,176,.08) 55%, transparent 100%);
+  mix-blend-mode:screen; opacity:.6; animation:door-breathe 9s ease-in-out infinite alternate}
+@keyframes door-breathe{from{opacity:.28} to{opacity:.85}}
+
+/* the lantern: brightens the stone under the cursor */
+.door .lantern{position:absolute; left:0; top:0; z-index:2; pointer-events:none;
+  width:min(62vmax,720px); height:min(62vmax,720px); margin:calc(min(62vmax,720px) / -2) 0 0 calc(min(62vmax,720px) / -2);
+  background:radial-gradient(closest-side, rgba(120,225,232,.62), rgba(60,150,200,.26) 45%, transparent 100%);
+  mix-blend-mode:color-dodge; opacity:0; transition:opacity .9s; will-change:transform}
+.door .lantern.on{opacity:1}
+/* touch screens have no cursor: the glow wanders slowly by itself */
+.door .lantern.drift{opacity:.85; left:50%; top:46%; animation:door-drift 38s ease-in-out infinite}
+@keyframes door-drift{
+  0%{transform:translate(-22vw,-10vh)} 25%{transform:translate(18vw,-18vh)} 50%{transform:translate(24vw,14vh)}
+  75%{transform:translate(-16vw,20vh)} 100%{transform:translate(-22vw,-10vh)}
+}
+
+.door .dust{position:absolute; inset:0; width:100%; height:100%; z-index:3; pointer-events:none}
+
+/* all four edges melt into the page colour, so the image has no visible edge */
+.door .fade{position:absolute; inset:0; z-index:4; pointer-events:none;
+  background:
+    linear-gradient(to bottom, var(--bg) 0%, rgba(1,5,8,.72) 9%, var(--bg0) 26%),
+    linear-gradient(to top, var(--bg) 0%, rgba(1,5,8,.78) 10%, var(--bg0) 28%),
+    linear-gradient(to right, var(--bg) 0%, var(--bg0) 16%),
+    linear-gradient(to left, var(--bg) 0%, var(--bg0) 16%)}
+
+.door .hero-top,.door .hero-bottom{position:relative; z-index:5; width:100%; text-align:center}
+.door .hero-top{grid-row:1; padding:clamp(18px,4.2vh,54px) 20px 0}
+/* a soft dark pool behind the words, for the widths where they sit over stonework */
+.door .hero-top::before,.door .hero-bottom::before{content:""; position:absolute; left:50%; z-index:-1; pointer-events:none;
+  width:min(980px,120vw); transform:translateX(-50%);
+  background:radial-gradient(closest-side, rgba(1,5,8,.86), rgba(1,5,8,.55) 55%, var(--bg0) 100%)}
+.door .hero-top::before{top:-40%; height:190%}
+.door .hero-bottom::before{bottom:-40%; height:200%}
+
+.door h1{margin:0; font-family:var(--h-title); font-weight:600; letter-spacing:.07em; line-height:1.08; text-wrap:balance;
+  font-size:clamp(1.9rem, min(5vw, 7.4vh), 4.1rem);
+  /* cut into the stone: a pale face, a dark inner lip at the top, light catching the lower edge, and a teal glow */
+  color:transparent; background:linear-gradient(180deg, #a9d9db 0%, #e6eff1 42%, #8fbfc6 100%); -webkit-background-clip:text; background-clip:text;
+  text-shadow:0 2px 2px rgba(1,5,8,.42), 0 -1px 0 rgba(255,255,255,.10);
+  filter:drop-shadow(0 0 2px rgba(79,209,197,.45)) drop-shadow(0 0 20px rgba(79,209,197,.34))}
+.door .tag{margin:clamp(6px,1.2vh,14px) 0 0; color:var(--h-dim); font-size:clamp(.92rem, min(1.5vw, 2.3vh), 1.14rem); letter-spacing:.06em; text-shadow:0 1px 6px #010508}
+
+.door .hero-bottom{grid-row:3; display:flex; flex-wrap:wrap; gap:14px 18px; justify-content:center; padding:0 20px clamp(22px,5.4vh,60px)}
+.door .hero-bottom .stone-btn{font-size:clamp(.9rem, min(1.25vw, 2.2vh), 1.05rem); min-width:11.5em; text-align:center}
+.door .hero-bottom .stone-btn.primary{color:#eafcfa; border-color:rgba(79,209,197,.62)}
+
+/* phones and other portrait screens use the tall artwork */
+@media (orientation:portrait){
+  .door h1{font-size:clamp(1.8rem, min(8.6vw, 5.2vh), 3.4rem)}
+  .door .tag{font-size:clamp(.86rem, min(3.6vw, 2.1vh), 1.1rem)}
+  .door .hero-bottom .stone-btn{font-size:clamp(.9rem, 3.8vw, 1.05rem)}
+  .door .breath{width:max(70vw,40vh); height:max(92vw,52vh); top:43%}
+  .door .hero-top{padding-top:clamp(20px,5vh,70px)}
+  .door .hero-bottom{padding-bottom:clamp(26px,7vh,90px)}
+}
+
+/* tablets held upright: the arch starts higher on the screen, so the words are set smaller to stay above it */
+@media (orientation:portrait) and (min-aspect-ratio:5/8){
+  .door h1{font-size:clamp(1.8rem, min(6.4vw, 4vh), 3rem)}
+  .door .hero-top{padding-top:clamp(14px,2.1vh,30px)}
+  .door .tag{margin-top:4px}
+}
+
+/* ---------- below the first screen ---------- */
+.door .below{position:relative; max-width:1040px; margin:0 auto; padding:clamp(40px,8vh,90px) 20px 30px}
+.door .trio{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:18px}
+.door .card{border:1px solid var(--h-line); border-radius:16px; padding:24px 22px 20px;
+  background:linear-gradient(180deg, rgba(21,37,37,.42), rgba(10,20,23,.72)); box-shadow:inset 0 1px 0 rgba(255,255,255,.03), 0 10px 30px rgba(0,0,0,.35)}
+.door .card svg{width:44px; height:44px; display:block; margin-bottom:14px; fill:none; stroke:var(--h-accent); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round}
+.door .card svg .amber{stroke:var(--h-amber)}
+.door .card h2{margin:0 0 6px; font-family:var(--h-title); font-size:1.12rem; font-weight:600; letter-spacing:.07em; color:var(--h-text)}
+.door .card p{margin:0; color:var(--h-dim); font-size:.98rem; line-height:1.55}
+.door footer{margin-top:clamp(30px,6vh,70px); border-top:1px solid var(--h-line); padding:22px 20px 30px; text-align:center;
+  color:var(--h-dim); font-family:var(--h-title); letter-spacing:.14em; font-size:.82rem}
+
+/* ---------- no motion for people who ask for none ---------- */
+@media (prefers-reduced-motion:reduce){
+  .door .breath{animation:none; opacity:.55}
+  .door .lantern,.door .dust{display:none}
+  .stone-btn{transition:none}
+}

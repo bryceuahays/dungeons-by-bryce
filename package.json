@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "extract": "node scripts/extract.mjs",
     "css": "node scripts/build-css.mjs",
+    "images": "node scripts/build-images.mjs",
     "seed": "node scripts/seed.mjs",
     "verify-seed": "node scripts/verify-seed.mjs",
     "test": "node --test --test-concurrency=1 \"tests/*.test.mjs\""
@@ -27,6 +28,7 @@
     "@types/react-dom": "^19.3.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.0.0",
+    "sharp": "^0.35.5",
     "supabase": "^2.119.0",
     "typescript": "^5.9.0"
   }

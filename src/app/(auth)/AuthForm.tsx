@@ -6,7 +6,7 @@ import { signIn, signUp, type AuthState } from './actions';
 export function AuthForm({ mode, next }: { mode: 'in' | 'up'; next?: string }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(mode === 'in' ? signIn : signUp, null);
   return (
-    <main className="hub landing">
+    <main className="hub center">
       <div className="box" style={{ textAlign: 'left', width: '100%', maxWidth: 400 }}>
         <p><Link className="hub-name" href="/">Dungeons by Bryce</Link></p>
         <h1 style={{ fontSize: '1.5rem' }}>{mode === 'in' ? 'Sign in' : 'Create an account'}</h1>

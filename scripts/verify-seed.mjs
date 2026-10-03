@@ -62,6 +62,8 @@ for (const file of ['player-guide/index.html', 'dm-hub/index.html', 'session-neg
   (SKIP[file] || []).forEach((id) => $('#' + id).remove());
   // Navigation text of the old host ("They open in a new browser tab", "Open the run sheet") is not campaign content.
   $('#sessions > p.lede, #sessions .sess p.kv').remove();
+  // Removed at Bryce's request: the ticks now save to the database.
+  $('p').filter((_, e) => norm($(e).text()) === 'Ticks are saved in this browser only.').remove();
   const scope = file.startsWith('session') ? $('.wrap, .bar .name') : $('section[role=tabpanel]');
   const texts = (sel) => scope.find(sel).map((_, e) => norm($(e).text())).get().filter(Boolean);
   const short = file.split('/')[0];

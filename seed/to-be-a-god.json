@@ -1018,17 +1018,6 @@
   },
   {
    "section": "campaign",
-   "kind": "html",
-   "key": "html-ticks-are-saved-in-this-browser-only",
-   "title": "Ticks are saved in this browser only.",
-   "body": {
-    "html": "<p>Ticks are saved in this browser only.</p>"
-   },
-   "visibility": "dm",
-   "sort": 90
-  },
-  {
-   "section": "campaign",
    "kind": "checklist",
    "key": "checklist-still-to-decide",
    "title": "Still to decide",
@@ -11448,9 +11437,9 @@
  ],
  "counts": {
   "sections": 10,
-  "contentRows": 117,
+  "contentRows": 116,
   "contentPlayer": 68,
-  "contentDm": 49,
+  "contentDm": 48,
   "headings": 23,
   "plates": 14,
   "secrets": 9,
