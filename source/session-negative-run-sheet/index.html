@@ -1,0 +1,582 @@
+<title>To Kill God</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout: a run sheet. Sticky bar holds the Host count and the beat stepper; one beat on screen at a time. */
+/* Dark by design in every viewer theme, matching the campaign hub. */
+:root{
+  --void:#070914; --deep:#0c1020; --plate:#121831; --line:#2a3152;
+  --vellum:#e9e2d0; --dim:#a8a4b4; --gold:#c8a45a; --ember:#e0672f; --star:#8fa7d6; --verd:#6fb3a0;
+  --on-gold:#1a1405; --field:#0a0d1c;
+  --display:"IM Fell English","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --body:"Spectral",Georgia,"Times New Roman",serif;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:150px}
+body{margin:0; background:var(--void); color:var(--vellum); font-family:var(--body); font-size:17px; line-height:1.55;
+  background-image:radial-gradient(900px 520px at 10% -5%, rgba(200,164,90,.09), transparent 60%), radial-gradient(800px 600px at 95% 5%, rgba(224,103,47,.09), transparent 60%);
+  background-attachment:fixed}
+h1,h2,h3{font-family:var(--display); font-weight:400; line-height:1.15; margin:0; text-wrap:balance}
+h2{font-size:clamp(1.8rem,4vw,2.4rem)}
+h3{font-size:1.25rem; color:var(--gold); margin:26px 0 8px}
+p{margin:0 0 10px; max-width:70ch}
+ul,ol{margin:0 0 10px; padding-left:22px; max-width:70ch}
+li{margin:4px 0}
+b{font-weight:600}
+em.say{font-family:var(--display); font-size:1.12rem; color:var(--gold)}
+.wrap{max-width:980px; margin:0 auto; padding-inline:18px; padding-block:22px 80px}
+
+/* sticky bar */
+.bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:rgba(7,9,20,.93); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid var(--line)}
+.barin{max-width:980px; margin:0 auto; padding:10px 18px 0; display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; justify-content:space-between}
+.name{font-family:var(--display); font-size:1.35rem}
+.name small{color:var(--dim); font-family:var(--body); font-size:.85rem; margin-left:8px}
+.host{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+.host .lab{color:var(--dim); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em}
+.host input{width:76px; text-align:center; font-family:var(--display); font-size:1.6rem; color:var(--gold); padding:0 4px}
+.steps{max-width:980px; margin:0 auto; padding:10px 18px; display:flex; gap:6px; overflow-x:auto}
+.step{font:inherit; font-family:var(--display); font-size:1rem; color:var(--dim); background:var(--deep); border:1px solid var(--line); padding:5px 13px 6px; cursor:pointer; white-space:nowrap; border-radius:2px}
+.step b{color:var(--gold); font-weight:400; margin-right:5px}
+.step:hover{color:var(--vellum)}
+.step[aria-selected="true"]{color:var(--on-gold); background:var(--gold); border-color:var(--gold)}
+.step[aria-selected="true"] b{color:var(--on-gold)}
+.step.fight{border-color:rgba(224,103,47,.7)}
+.step.ref{margin-left:auto}
+.step.ref + .step.ref{margin-left:0}
+
+/* controls */
+button.k,input,select{font:inherit}
+input,select{color:var(--vellum); background:var(--field); border:1px solid var(--line); border-radius:2px; padding:5px 8px; font-variant-numeric:tabular-nums}
+button.k{color:var(--gold); background:rgba(200,164,90,.08); border:1px solid rgba(200,164,90,.55); padding:4px 11px; border-radius:2px; cursor:pointer; font-size:.95rem; white-space:nowrap}
+button.k:hover{background:rgba(200,164,90,.2)}
+button.k.hot{color:var(--ember); border-color:rgba(224,103,47,.6); background:rgba(224,103,47,.08)}
+:focus-visible{outline:2px solid var(--star); outline-offset:2px}
+
+/* beat */
+.head{display:flex; flex-wrap:wrap; gap:6px 16px; align-items:baseline; margin-bottom:4px}
+.meta{color:var(--dim); font-size:.92rem}
+.goal{font-family:var(--display); font-style:italic; font-size:1.18rem; color:var(--dim); margin:6px 0 4px}
+ol.run{list-style:none; padding:0; counter-reset:r; max-width:none}
+ol.run > li{counter-increment:r; position:relative; padding:10px 0 10px 44px; border-bottom:1px solid var(--line); margin:0}
+ol.run > li:last-child{border-bottom:0}
+ol.run > li::before{content:counter(r); position:absolute; left:0; top:10px; width:28px; height:28px; border:1px solid var(--gold); color:var(--gold); border-radius:50%; text-align:center; line-height:26px; font-family:var(--display)}
+ol.run > li > p:last-child, ol.run > li > ul:last-child{margin-bottom:0}
+.panel{background:var(--plate); border:1px solid var(--line); padding:14px 16px; margin:10px 0}
+.panel > :last-child{margin-bottom:0}
+.panel h3{margin-top:0}
+.cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px}
+.cols > *{min-width:0; margin:0}
+.scroll{overflow-x:auto; margin:8px 0 12px; border:1px solid var(--line)}
+svg.map{display:block; width:100%; max-width:640px; height:auto; margin:4px 0 8px}
+.map .mt{fill:var(--deep); stroke:var(--line)}
+.map .way{stroke:var(--gold); stroke-width:2; stroke-dasharray:5 6}
+.map .rm{fill:var(--plate); stroke:var(--gold)}
+.map .rm.hot{stroke:var(--ember); fill:rgba(224,103,47,.14)}
+.map text{fill:var(--vellum); font-family:var(--display); font-size:17px}
+.map text.sm{fill:var(--dim); font-family:var(--body); font-size:13px}
+table{border-collapse:collapse; width:100%; min-width:520px; background:var(--deep)}
+th,td{text-align:left; vertical-align:top; padding:8px 11px; border-bottom:1px solid var(--line)}
+th{font-family:var(--display); font-weight:400; color:var(--gold)}
+tr:last-child td{border-bottom:0}
+.ok{color:var(--verd)} .bad{color:var(--ember)}
+.secret{border-left:3px solid var(--ember); background:rgba(224,103,47,.07); padding:9px 14px; margin:10px 0}
+.secret > :last-child{margin-bottom:0}
+.tag{font-size:.78rem; color:var(--verd); border:1px solid rgba(111,179,160,.5); padding:0 6px; border-radius:2px; white-space:nowrap}
+details{border:1px solid var(--line); padding:8px 14px; margin:10px 0}
+summary{cursor:pointer; font-family:var(--display); font-size:1.1rem; color:var(--gold)}
+details > :last-child{margin-bottom:4px}
+
+/* trackers */
+.track{display:grid; gap:8px}
+.trow{display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:8px; align-items:center}
+.trow input[type=number]{width:74px; text-align:center}
+.trow small{color:var(--dim); display:block; font-size:.85rem}
+.trow.down{opacity:.45}
+.big{font-family:var(--display); font-size:2rem; color:var(--gold); line-height:1.1}
+.phase{display:flex; gap:6px; margin:8px 0}
+.phase span{flex:1; text-align:center; border:1px solid var(--line); padding:4px 6px; color:var(--dim); font-size:.9rem}
+.phase span.on{border-color:var(--ember); color:var(--vellum); background:rgba(224,103,47,.12)}
+.line{display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; margin:8px 0}
+.navrow{display:flex; justify-content:space-between; gap:10px; margin-top:34px; border-top:1px solid var(--line); padding-top:16px}
+.navrow button{font-size:1.05rem; padding:8px 16px}
+@media (max-width:600px){ body{font-size:16px} ol.run > li{padding-left:38px} }
+</style>
+
+<div class="bar">
+  <div class="barin">
+    <div class="name">To Kill God<small>Session negative. DM only.</small></div>
+    <div class="host">
+      <span class="lab">The Host</span>
+      <button class="k" data-host="-10" aria-label="Host minus 10">−10</button>
+      <button class="k" data-host="-1" aria-label="Host minus 1">−1</button>
+      <input id="host" type="number" min="0" max="999" value="200" aria-label="Rebels alive">
+      <button class="k" data-host="1" aria-label="Host plus 1">+1</button>
+    </div>
+  </div>
+  <div class="steps" role="tablist" aria-label="Session beats">
+    <button class="step" role="tab" data-p="muster"><b>1</b>Muster</button>
+    <button class="step" role="tab" data-p="crossing"><b>2</b>Crossing</button>
+    <button class="step" role="tab" data-p="quiet"><b>3</b>Quiet</button>
+    <button class="step fight" role="tab" data-p="children"><b>4</b>Four Children</button>
+    <button class="step" role="tab" data-p="breath"><b>5</b>Breath</button>
+    <button class="step fight" role="tab" data-p="voth"><b>6</b>Voth</button>
+    <button class="step" role="tab" data-p="dispersal"><b>7</b>Dispersal</button>
+    <button class="step ref" role="tab" data-p="prep">Prep</button>
+    <button class="step ref" role="tab" data-p="secrets">Secrets</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ 1 MUSTER ============ -->
+<section id="muster" role="tabpanel">
+  <div class="head"><h2>1. The Muster</h2><span class="meta">0:00, 20 min. Roleplay.</span></div>
+  <p class="goal">The players commit to the kill and put faces on the Host.</p>
+  <ol class="run">
+    <li><p>Set the scene: the night before, 200 rebels camped at the edge of the crossing. Put the Host counter where everyone can see it.</p></li>
+    <li><p>Go round the table. Each player answers three things:</p>
+      <ul><li>Why does your character want Voth dead?</li><li>Who did you come with? Name them. This rebel is your <b>bond</b>.</li><li>What is one prayer you once made to Voth, and was it answered?</li></ul>
+      <p>Write down every bond and every prayer. You use both later.</p></li>
+    <li><p>Let the named rebels argue about what happens after. Players take sides; nobody has to agree.</p>
+      <div class="scroll"><table>
+        <tr><th>Rebel</th><th>Who</th><th>Says</th></tr>
+        <tr><td><b>Maren Oule</b></td><td>Human, the Host's voice</td><td>No god should ever run mortal lives again. The power should die with her.</td></tr>
+        <tr><td><b>Hesk</b></td><td>Great ape war-leader</td><td>The power is the prize. Says so openly.</td></tr>
+        <tr><td><b>Arveth</b></td><td>Dragonborn, lapsed priest</td><td>Someone should ask her why before anyone strikes.</td></tr>
+        <tr><td><b>Tiv-of-the-Long-Field</b></td><td>Sough</td><td>She burned the Elder fields. That is enough.</td></tr>
+        <tr><td><b>Quill</b></td><td>Kenku artificer</td><td>Wants to see how a god is built.</td></tr>
+        <tr><td><b>Guia</b></td><td>Lorn, the guide</td><td>Wants to learn what a god's death looks like.</td></tr>
+      </table></div></li>
+    <li><p>End when the talk slows. Guia says the road is open.</p></li>
+  </ol>
+</section>
+
+<!-- ============ 2 CROSSING ============ -->
+<section id="crossing" role="tabpanel" hidden>
+  <div class="head"><h2>2. The Crossing</h2><span class="meta">0:20, 10 min. Roleplay, one check.</span></div>
+  <p class="goal">The Host walks a road nobody knew existed, behind the only one who can see it.</p>
+  <ol class="run">
+    <li><p>Guia leads the Host onto the <b>prayer road</b>, the path prayers take to Voth. Only Lorn can see it. The rebels see nothing underfoot.</p></li>
+    <li><p>The road carries them among the stars and between planets. Each step takes the Host thousands of miles.</p></li>
+    <li><p>Prayers pass them, going the same way. Ask one or two players what they hear: a stranger's prayer, or their own voice from years ago. <span class="tag">Suggested</span></p></li>
+    <li><p><b>Check: keeping the Host together.</b> Survival or Arcana, DC 16.</p>
+      <p><span class="ok">Success:</span> the Host arrives together and loses nobody in round 1 of the dragon fight.<br><span class="bad">Failure:</span> the Host arrives strung out. Its round 1 losses are doubled.</p></li>
+    <li><p><b>The island.</b> At the end of the road an island comes into view, seemingly out of nothing. The last stretch carries them over ocean. At the edges the water drops like a curtain into space.</p></li>
+    <li><p>They step onto a beach. Jungle ahead. A clear path leads from the beach to a large mountain at the island's center. The air is warm.</p></li>
+    <li><p><b>How does the Host arrive?</b> Ask the players. Hesk wants a war cry.</p>
+      <p><b>Loud:</b> the children hear it and come to fight on the beach. Go to <b>4</b> now, then come back to <b>3</b>.<br><b>Quiet:</b> nothing comes. Go on to <b>3</b>.</p>
+      <p><button class="k" data-goto="children">War cry: go to the fight</button></p></li>
+  </ol>
+</section>
+
+<!-- ============ 3 QUIET ============ -->
+<section id="quiet" role="tabpanel" hidden>
+  <div class="head"><h2>3. The Quiet</h2><span class="meta">0:30, 30 min. Exploration, three checks.</span></div>
+  <p class="goal">No gates, no guards, no traps. The whole island is plain and simple. This is a home, not a fortress.</p>
+
+  <div class="panel">
+    <h3>Voth's island</h3>
+    <svg class="map" viewBox="0 0 640 330" role="img" aria-label="Map: beach, jungle path, then the mountain. The entrance is the Hall of Asking. Left is the children's roost, right is the roost of Voth and Zandrioch, straight on is the Weight where Voth waits.">
+      <path class="mt" d="M70 250 L320 14 L570 250 Z"/>
+      <line class="way" x1="320" y1="318" x2="320" y2="232"/>
+      <line class="way" x1="320" y1="196" x2="320" y2="112"/>
+      <line class="way" x1="252" y1="214" x2="196" y2="214"/>
+      <line class="way" x1="388" y1="214" x2="444" y2="214"/>
+      <rect class="rm" x="252" y="196" width="136" height="36"/><text x="320" y="219" text-anchor="middle">Hall of Asking</text>
+      <rect class="rm" x="92" y="196" width="104" height="36"/><text x="144" y="219" text-anchor="middle">Children</text>
+      <rect class="rm" x="444" y="196" width="104" height="36"/><text x="496" y="219" text-anchor="middle">Voth's roost</text>
+      <rect class="rm hot" x="252" y="76" width="136" height="36"/><text x="320" y="99" text-anchor="middle">Voth, the Weight</text>
+      <text class="sm" x="330" y="150">deeper, hotter</text>
+      <text class="sm" x="330" y="168">children block here if the Host was quiet</text>
+      <text class="sm" x="330" y="262">jungle path</text>
+      <text class="sm" x="330" y="312">beach, then ocean</text>
+      <text class="sm" x="144" y="188" text-anchor="middle">left</text><text class="sm" x="496" y="188" text-anchor="middle">right</text>
+    </svg>
+    <p class="meta">Warm on the beach, hotter in the mountain, hottest toward the Weight. The halls are bare stone with almost no ornament.</p>
+  </div>
+
+  <ol class="run">
+    <li><p>Play the silence. Beach, jungle, the path, the mountain. Nothing stops them. Inside, let the players choose where to go.</p></li>
+    <li><p><b>Entrance: the Hall of Asking.</b> Every prayer ever made to Voth, kept and tended. The only place on the island with anything on its walls. The Host can hear the prayers as whispers. Players can find their own.</p>
+      <p>Investigation or Religion, DC 15.<br><span class="ok">Success:</span> beside each prayer is a mark showing what she did about it, including answers the petitioner never noticed.<br><span class="bad">Failure:</span> they find only the unanswered ones. The Host's anger hardens: Rally is DC 19 for the rest of the session.</p></li>
+    <li><p><b>Right: the roost of Voth and Zandrioch.</b> Two vast hollows side by side. One is warm. The other has been cold for an age, and is kept clean.</p>
+      <p>Investigation or Nature, DC 15.<br><span class="ok">Success:</span> her mate has been gone a very long time, and she still keeps his place.<br><span class="bad">Failure:</span> they take the cold hollow for a second great dragon still at large. The Host watches its back and deals no damage in round 1 of the dragon fight.</p></li>
+    <li><p><b>Left: the children's roost.</b> Four small hollows, warm, just left. No roll: four young live here, and they are not home.</p></li>
+    <li><p><b>Straight on: the deep way.</b> The passage runs deeper into the mountain and the heat climbs. Everything leans inward, as if something heavy is held at the end of it.</p>
+      <p>Arcana, DC 18, from the threshold. The children cannot be seen from here.<br><span class="ok">Success:</span> something is bound down there, and it is not Voth.<br><span class="bad">Failure:</span> they sense vast power and conclude it is strength she hoarded from mortals. That is what the Host already believes.</p></li>
+    <li><p><b>If the players do nothing:</b> a dozen rebels want to go home. Persuasion or Intimidation, DC 17.</p>
+      <p><span class="ok">Success:</span> they stay.<br><span class="bad">Failure, or the players let them go:</span> 10 desert. They inherit nothing and live. They are the first of the Unbowed.</p>
+      <p><button class="k hot" data-host="-10">10 desert: Host −10</button></p></li>
+    <li><p><b>If they came in quietly:</b> end when the Host goes down the deep way. Further along, out of sight of the Hall, the four children block the path. Go to <b>4</b>.<br><b>If they already fought on the beach:</b> the deep way is open. Go to <b>5</b>.</p></li>
+  </ol>
+</section>
+
+<!-- ============ 4 CHILDREN ============ -->
+<section id="children" role="tabpanel" hidden>
+  <div class="head"><h2>4. The Four Children</h2><span class="meta">1:00, 50 min. Tactical fight, about 4 rounds. Hard.</span></div>
+  <p class="goal">Four young gold dragons between the Host and their mother. Two fight the party. Two tear into the Host.</p>
+
+  <div class="cols">
+    <div class="panel"><h3>If the Host was loud: the beach</h3>
+      <p>The war cry brings them down from the mountain at once. The fight is on the sand, with the ocean's edge behind the Host.</p>
+      <p>Open sky: the dragons can fly. <span class="tag">Suggested</span></p>
+      <p>Afterwards, go back to <b>3</b> and let them explore.</p></div>
+    <div class="panel"><h3>If the Host was quiet: the deep way</h3>
+      <p>They block the passage to Voth, further down than anyone can see from the Hall of Asking. Bare stone, and hot.</p>
+      <p>The halls are tall and wide. The children can fly inside, though they cannot maneuver as well as in open air.</p>
+      <p>Afterwards, go on to <b>5</b>.</p></div>
+  </div>
+  <div class="panel"><h3>The Host may break (deep way)</h3>
+    <p>Some of the terrified Host run back toward the beach, and two children chase them out of the mountain. The other two push the main body back into the Hall of Asking.</p>
+    <p><b>In the Hall, the prayers change.</b> The whispers become shouts. Their tone warps into a discordant mess, like a record glitching. Describe it every round: the fight here should feel like a nightmare.</p>
+    <p>Now the fight is in two places. The players choose where to stand, and may split. Tick "on party" for the dragons where the PCs are. The rest are on the Host. <span class="tag">Suggested</span></p>
+    <p>Good moments for it: the first breath, or a failed Rally. <span class="tag">Suggested</span></p></div>
+
+  <div class="cols">
+    <div class="panel">
+      <h3>Dragons</h3>
+      <div class="track" id="dragons"></div>
+      <p class="meta" style="margin-top:10px">Type the new hit points after each hit. Tick "on party" for the ones fighting the PCs.</p>
+    </div>
+    <div class="panel">
+      <h3>Round <span id="dRound">1</span></h3>
+      <div class="line"><button class="k" id="dNext">Next round</button><button class="k" id="dReset">Reset fight</button></div>
+      <p>On the Host now: <b id="dOnHost">2</b> dragons.<br>Host loses <b id="dLoss">2d4 + 2d4</b> at the end of this round.</p>
+      <div class="line"><button class="k hot" data-host="-5">Host −5</button><button class="k hot" data-host="-1">Host −1</button></div>
+    </div>
+  </div>
+
+  <h3>Each round, in this order</h3>
+  <ol class="run">
+    <li><p><b>Dragons on the party act.</b> Start with two. Roll initiative for them as normal.</p></li>
+    <li><p><b>Players act.</b> Each may also use one Host move (below).</p></li>
+    <li><p><b>Initiative 10: the Host strikes.</b> It deals <b>30 damage</b> to a dragon that is on the Host. Subtract it in the tracker.</p></li>
+    <li><p><b>End of round: the Host bleeds.</b> Roll 2d4 for each dragon on the Host. That many rebels die. Lower the counter and describe one death.</p></li>
+    <li><p><b>When a party dragon drops,</b> one of the others turns to the party. Tick it.</p></li>
+  </ol>
+
+  <div class="cols">
+    <div class="panel">
+      <h3>Young gold dragon <span class="tag">5e</span></h3>
+      <p><b>AC</b> 18. <b>HP</b> 178. <b>Speed</b> 40 ft, fly 80 ft.<br><b>Saves</b> Dex +6, Con +9, Wis +5, Cha +9. <b>Immune</b> fire.</p>
+      <p><b>Multiattack:</b> bite +10, 2d10+6 (17). Two claws +10, 2d6+6 (13 each).</p>
+      <p><b>Fire breath</b> (recharge 5-6): 30 ft cone, Dex DC 17, 10d10 (55), half on a save.</p>
+      <p><b>Weakening breath</b> (same recharge): 30 ft cone, Str DC 17 or disadvantage on Strength rolls for 1 minute. Repeat the save each turn.</p>
+    </div>
+    <div class="panel">
+      <h3>Who they are</h3>
+      <p><b>Vessa</b>, eldest. Protector. Gives disadvantage on one attack per round against a sibling.</p>
+      <p><b>Korth.</b> Furious. Always targets whoever last hurt a sibling.</p>
+      <p><b>Ilun.</b> Talks while fighting: <em class="say">"She told us not to. She said to let you come."</em></p>
+      <p><b>Thay</b>, youngest. Terrified. Never breathes on someone who is not attacking him.</p>
+    </div>
+  </div>
+
+  <div id="hostMoves"></div>
+  <div id="dropRule"></div>
+
+  <h3>How it ends</h3>
+  <ul>
+    <li><b>Their goal:</b> hold the way. They are not trying to win.</li>
+    <li><b>Two dead:</b> Thay stops fighting and tries to reach his mother.</li>
+    <li><b>Ilun at half HP:</b> offers to stop if the survivors may go to her.</li>
+    <li><b>Talk one down:</b> Persuasion DC 18 on Ilun or Thay, DC 14 if the players found the Roost and speak of it. <span class="bad">Failure:</span> Korth breathes on the speaker.</li>
+    <li><b>Split the Host:</b> a strike team slips past while the Host holds. Fewer PCs fighting, more rebels dying.</li>
+  </ul>
+  <div class="secret"><p><b>No child survives the session.</b> The players need not do it. A spared child is either finished by Hesk and the hardliners over the players' objections, or reaches Voth and dies shielding her at the start of her Wrath phase. The players choose only whose hands it is on.</p></div>
+
+  <details><summary>Math and dials</summary>
+    <p>Party deals about 175 per round, Host 30. Total dragon HP 712, so about 4 rounds. Two dragons deal about 52 per round in melee, or about 125 per breath (three PCs caught, half saving). Expect about 40 rebels lost.</p>
+    <ul>
+      <li><b>Easier:</b> a third dragon never turns to the party. The Host finishes it off-screen for 10 more rebels.</li>
+      <li><b>Harder:</b> three dragons on the party from round 1, breaths recharge on 4-6.</li>
+      <li><b>4 players:</b> Host deals 50 per round. <b>6 players:</b> three dragons on the party from round 2.</li>
+      <li><b>Lockdown spells</b> (Forcecage, Banishment): Vessa may break one such effect on a sibling once per fight.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ============ 5 BREATH ============ -->
+<section id="breath" role="tabpanel" hidden>
+  <div class="head"><h2>5. The Breath</h2><span class="meta">1:50, 15 min. Roleplay.</span></div>
+  <p class="goal">Ten quiet minutes before the deep chamber, with the children dead behind them. The last chance to turn back.</p>
+  <ol class="run">
+    <li><p>Count the Host aloud: <b class="hostNow">200</b> left. Name the bonds who died.</p></li>
+    <li><p>Arveth asks to go in alone and speak to her first. Hesk refuses. Let the players settle it.</p></li>
+    <li><p>Anyone who wants to leave can. Lower the counter for each who goes.</p></li>
+    <li><p>Ask each player: does your character still want this?</p></li>
+    <li><p>Short rest if the players ask for one. Then they walk in.</p></li>
+  </ol>
+</section>
+
+<!-- ============ 6 VOTH ============ -->
+<section id="voth" role="tabpanel" hidden>
+  <div class="head"><h2>6. To Kill God</h2><span class="meta">2:05, 55 min. Cinematic fight, about 5 rounds.</span></div>
+  <p class="goal">The deep chamber is bare, hot stone. She lies over the Weight and will not leave it. She is angry, but mostly sad and resigned.</p>
+
+  <h3>The opening</h3>
+  <ol class="run">
+    <li><p>To every mind, calm and kind: <em class="say">"Are you certain this is what you want, little ones?"</em></p>
+      <p>The Host holds its posture and says nothing. A player may answer. She listens and answers that one person truthfully, in one sentence. It changes nothing.</p></li>
+    <li><p>She sighs and closes her eyes. <em class="say">"So be it."</em></p></li>
+    <li><p><b>The gaze.</b> Her eyes snap open. Everyone is stunned for a moment. Fifty rebels go up in flames. No save, no PC damage. She acts first.</p>
+      <p><button class="k hot" id="gaze">The gaze: Host −50</button></p>
+      <p>Ask each player what their character saw in her eyes.</p></li>
+  </ol>
+
+  <div class="cols">
+    <div class="panel">
+      <h3>Voth</h3>
+      <div class="line"><label for="party">Players</label>
+        <select id="party"><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option></select>
+        <span class="meta"><span id="perPhase">350</span> HP per phase</span></div>
+      <div class="line"><span class="big" id="vHp">1050</span><span class="meta">of <span id="vMax">1050</span></span></div>
+      <div class="phase" id="phase"><span>1. Sorrow</span><span>2. Wrath</span><span>3. The Weight</span></div>
+      <div class="line"><label for="vDmg" class="meta">Damage</label><input id="vDmg" type="number" min="0" inputmode="numeric" style="width:90px">
+        <button class="k" id="vHit">Apply</button><button class="k" id="vReset">Reset</button></div>
+      <p><b>AC</b> 22. <b>Saves</b> +14 to all. Three times per fight she may choose to succeed. Used: <label><input type="checkbox" id="ls1"></label> <label><input type="checkbox" id="ls2"></label> <label><input type="checkbox" id="ls3"></label></p>
+    </div>
+    <div class="panel">
+      <h3>Round <span id="vRound">1</span></h3>
+      <div class="line"><button class="k" id="vNext">Next round</button></div>
+      <p>The Host deals <b id="hostDmg">100</b> this round (half its number).</p>
+      <div class="line"><button class="k" id="hostHit">Apply Host damage</button></div>
+      <p>She kills <b>3d10</b> rebels each round.</p>
+      <div class="line"><button class="k hot" data-host="-10">Host −10</button><button class="k hot" data-host="-5">Host −5</button><button class="k hot" data-host="-1">Host −1</button></div>
+    </div>
+  </div>
+
+  <h3>Each round, in this order</h3>
+  <ol class="run">
+    <li><p><b>Voth kills rebels.</b> Roll 3d10. Lower the counter. Describe it.</p></li>
+    <li><p><b>Voth acts against the PCs,</b> by phase:</p>
+      <div class="scroll"><table>
+        <tr><th>Phase</th><th>She is</th><th>Against the PCs</th></tr>
+        <tr><td><b>1. Sorrow</b></td><td>Holding back, driving them off</td><td>Three attacks on different targets. +16, 4d10+10 (32) each.</td></tr>
+        <tr><td><b>2. Wrath</b></td><td>Fighting to win</td><td>Fire breath (recharge 5-6): Dex DC 21, 16d6 (56), half on a save, every PC not behind cover. Otherwise the three attacks.</td></tr>
+        <tr><td><b>3. The Weight</b></td><td>Dying, still holding something down</td><td>Two attacks, +16, 32 each, only on those who struck her last round. Then every PC: Con DC 18 or 4d10 (22) fire leaking up from below.</td></tr>
+      </table></div></li>
+    <li><p><b>Players act.</b> Each may use one Host move, and one Defiant act per fight.</p></li>
+    <li><p><b>Initiative 10: the Host strikes</b> for half its number.</p></li>
+    <li><p><b>Phase change?</b> Stop and play the beat below before the next round.</p></li>
+  </ol>
+
+  <h3>Phase beats</h3>
+  <div class="panel"><p><b>Into Wrath.</b> She speaks to one PC by name and quotes the prayer they named at the Muster. If it went unanswered, she says why. If a child was spared, it dies shielding her now.</p></div>
+  <div class="panel"><p><b>Into the Weight.</b> She stops moving. One foreclaw stays planted on the Weight whatever is done to her. Firelight shows through cracks beneath her. <em class="say">"Not for my sake. Please."</em></p>
+    <p>Ask the table: <b>do you press, or hold?</b> If the PCs hold, Hesk and the Host press on. The fight ends in 2 more rounds and costs 30 more rebels.</p></div>
+  <div class="panel"><p><b>The last blow.</b> Whoever lands it, PC or rebel, is remembered for it. Give that player the description.</p></div>
+
+  <div class="cols">
+    <div class="panel">
+      <h3>Defiant act</h3>
+      <p>Once per fight, each player declares one impossible thing their hero does. It works. Pick the effect:</p>
+      <ul><li>Maximum damage on a full turn</li><li>20 rebels saved</li><li>One of Voth's actions cancelled</li></ul>
+      <p>Let the player narrate it.</p>
+    </div>
+    <div class="panel">
+      <h3>A PC sides with Voth</h3>
+      <p>Any PC may turn at any point. The party need not agree.</p>
+      <ul><li>A defender either cancels the Host's damage this round, or cuts down 2d6 rebels.</li><li>PC against PC uses normal attacks. A PC dropped by another PC is out for one round; no rebel dies for them.</li><li>Voth still dies. She thanks her defenders by name.</li><li>Defenders still receive her power.</li></ul>
+    </div>
+  </div>
+
+  <div id="hostMoves2"></div>
+  <div id="dropRule2"></div>
+
+  <details><summary>Math and dials</summary>
+    <p>With 5 players: party 175 per round plus Host about 40 is 215, so 1,050 HP lasts about 5 rounds. Damage to the party: Sorrow about 86 per round, a Wrath breath about 224, the Weight about 110. Expect two or three PCs to drop once and about 82 rebels to die.</p>
+    <ul>
+      <li><b>Easier:</b> skip the breath in Wrath. She kills 2d10 rebels per round.</li>
+      <li><b>Harder:</b> no save against the leak in the Weight. Her three chosen successes refresh each phase.</li>
+      <li><b>Running long:</b> drop Wrath. Go from Sorrow straight to the Weight.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ============ 7 DISPERSAL ============ -->
+<section id="dispersal" role="tabpanel" hidden>
+  <div class="head"><h2>7. The Dispersal</h2><span class="meta">3:00, 25 min. Secret choices.</span></div>
+  <p class="goal">Her power pours into everyone near her. Each player chooses in secret: god or demigod.</p>
+  <ol class="run">
+    <li><p>Describe the power arriving. It is not painful, but it is not gentle. It must be accepted or fought. Everyone in the vicinity receives it, whichever side they ended on.</p></li>
+    <li><p>Hand each player a folded card. They answer privately and hand it back.</p>
+      <div class="panel"><p><em class="say">Do you take the power in, or do you fight it?</em></p><p><em class="say">A second voice, warm and grateful, thanks you and asks your name. Do you give it?</em></p></div></li>
+    <li><p>Each player narrates aloud only what the others can see of their character in that moment. They may lie with their body.</p></li>
+    <li><p>Tell the last player to hand in a card that the pull is stronger for them. Refused power flows on to those still choosing.</p></li>
+    <li><p>The surviving rebels choose too. Hesk accepts. Maren refuses. Decide the rest by who the players saved and what they said to them.</p></li>
+    <li><p><b>Final image.</b> The Weight is no longer held. A column of heat rises from where she lay, and something bright leaves through it. The survivors are too full of what they have become to wonder at it.</p></li>
+  </ol>
+  <div class="secret"><p><b>The second voice is Ado.</b> Any PC who gives their name is Ado's servant in the campaign. If none do, a surviving named rebel does, Guia first.</p></div>
+
+  <h3>Write down before you pack up</h3>
+  <ul>
+    <li>Host left alive: <b class="hostNow">200</b>. This is the number of rival gods and demigods.</li>
+    <li>Each PC's choice, and who gave Ado a name. Keep the cards.</li>
+    <li>Which named rebels lived, and what they chose.</li>
+    <li>Who killed the children, and which PCs refused to.</li>
+    <li>Who stood with Voth at the end.</li>
+    <li>Whether anyone deserted.</li>
+  </ul>
+</section>
+
+<!-- ============ PREP ============ -->
+<section id="prep" role="tabpanel" hidden>
+  <div class="head"><h2>Prep</h2><span class="meta">Before the session.</span></div>
+  <p class="goal">Everything to have ready before anyone sits down.</p>
+  <div class="cols">
+    <div class="panel">
+      <h3>The table</h3>
+      <ul>
+        <li>4 to 6 players, level 15, player-built</li>
+        <li>3 to 4 hours, one sitting</li>
+        <li>PCs cannot die. The Host dies around them</li>
+        <li>Tragic and epic. The win should feel wrong by the end</li>
+        <li>Same characters start session 0 at level 1</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Bring</h3>
+      <ul>
+        <li>This page, with the Host counter visible to the table</li>
+        <li>One folded card per player with the two Dispersal questions</li>
+        <li>A sheet to note each bond and each prayer</li>
+        <li>Dice for losses: 2d4 per dragon, 3d10 for Voth</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Send to players</h3>
+  <div class="panel">
+    <ul>
+      <li>Level 15, any of the twelve campaign races. 5e is the base; other editions' options are welcome if you check with the DM first.</li>
+      <li>Standard array or point buy. Add half your Constitution score to hit points at level 1.</li>
+      <li>Magic items: one very rare, two rare, two uncommon. No legendary items or artifacts.</li>
+      <li>Bring three answers: why you want Voth dead, who you came with, and one prayer you once made to her.</li>
+      <li>Bring a three-line combat card: your default turn, your big turn, your reaction.</li>
+    </ul>
+  </div>
+  <h3>If time runs off</h3>
+  <ul>
+    <li><b>Long:</b> cut the Breath to two minutes and drop Voth's Wrath phase.</li>
+    <li><b>Short:</b> extend the Muster and the Dispersal. Never the fights.</li>
+  </ul>
+  <h3>Still open</h3>
+  <ul><li>Who started the rebellion. Maren stands in as the Host's voice until you decide.</li></ul>
+</section>
+
+<!-- ============ SECRETS ============ -->
+<section id="secrets" role="tabpanel" hidden>
+  <div class="head"><h2>Secrets</h2><span class="meta">Never explain these at the table.</span></div>
+  <p class="goal">The clues should unsettle the players, not confirm anything. Only the ancient Corrin know the truth, and they tell it late in the campaign.</p>
+  <div class="secret"><p><b>Voth was a good god.</b></p>
+    <ul><li>No defenses anywhere on the island, and a plain, simple home</li><li>The Hall of Asking: every prayer kept and acted on</li><li>Ilun: "She said to let you come"</li><li>Her voice, and that she never lies</li></ul></div>
+  <div class="secret"><p><b>She was a warden, holding Ado down.</b></p>
+    <ul><li>The deep way leans inward and grows hot</li><li>She never leaves that spot</li><li>The claw stays planted; firelight below</li><li>"Not for my sake. Please."</li></ul></div>
+  <div class="secret"><p><b>Zandrioch, her mate, was taken during the first imprisonment of Ado and vanished without a trace.</b></p>
+    <ul><li>The cold hollow beside hers in the right-hand roost, still kept clean</li><li>Thay cries out for his father as well as his mother</li><li>If asked, she says: "He was taken from me before your kind could speak"</li></ul></div>
+  <div class="secret"><p><b>Guia</b> is one of the Lorn woken by Ado's leaking power. Guia does not know this and is sincere. The rebellion found its way to Voth because something wanted it to. Guia could always find the way, and never knew how. <span class="tag">Suggested</span></p></div>
+</section>
+
+<div class="navrow"><button class="k" id="prev">Back</button><button class="k" id="next">Next</button></div>
+</div>
+
+<template id="tHost">
+  <h3>Host moves <span class="meta">(one per player turn)</span></h3>
+  <div class="scroll"><table>
+    <tr><th>Move</th><th>Cost</th><th>Effect</th></tr>
+    <tr><td><b>Rally</b></td><td>Bonus action. Persuasion or Intimidation DC 17</td><td>Host losses halved this round. On a failure, a named rebel breaks rank.</td></tr>
+    <tr><td><b>Shield</b></td><td>Action and a spell slot of 3rd level or higher, or stand in the way and take 4d10</td><td>Losses reduced by 5 per slot level, or by 10 for the body block.</td></tr>
+    <tr><td><b>Direct</b></td><td>Action, and a tactical idea the table likes</td><td>Host damage doubled this round.</td></tr>
+  </table></div>
+</template>
+<template id="tDrop">
+  <div class="panel"><h3>When a PC drops to 0</h3>
+    <p>They do not die. A rebel drags them clear or takes the blow.</p>
+    <ul><li>Host loses 1d6.</li><li>The PC is back on their next turn at a quarter of their hit points, with a lasting scar.</li><li>The second time it happens to the same PC, the rebel who dies is their bond.</li></ul></div>
+</template>
+
+<script>
+const $ = s => document.querySelector(s);
+const store = { get(k,d){ try{ const v = localStorage.getItem('tkg-'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+                set(k,v){ try{ localStorage.setItem('tkg-'+k, JSON.stringify(v)); }catch(e){} } };
+const num = v => { const n = parseInt(v,10); return isNaN(n) ? 0 : n; };
+
+/* shared blocks used in both fights */
+['#hostMoves','#hostMoves2'].forEach(s => $(s).append($('#tHost').content.cloneNode(true)));
+['#dropRule','#dropRule2'].forEach(s => $(s).append($('#tDrop').content.cloneNode(true)));
+
+/* beats */
+const ORDER = ['muster','crossing','quiet','children','breath','voth','dispersal'];
+function show(id, scroll){
+  if(!document.getElementById(id)) id = 'muster';
+  document.querySelectorAll('[role=tabpanel]').forEach(p => p.hidden = p.id !== id);
+  document.querySelectorAll('.step').forEach(b => b.setAttribute('aria-selected', b.dataset.p === id));
+  const i = ORDER.indexOf(id);
+  $('#prev').hidden = i <= 0; $('#next').hidden = i < 0 || i === ORDER.length-1;
+  if(i > 0) $('#prev').textContent = 'Back: ' + $('.step[data-p="'+ORDER[i-1]+'"]').textContent.replace(/^\d/,'');
+  if(i >= 0 && i < ORDER.length-1) $('#next').textContent = 'Next: ' + $('.step[data-p="'+ORDER[i+1]+'"]').textContent.replace(/^\d/,'');
+  store.set('beat', id);
+  const cur = $('.step[aria-selected="true"]'); if(cur && cur.scrollIntoView) cur.scrollIntoView({block:'nearest', inline:'nearest'});
+  if(scroll) window.scrollTo({top:0});
+}
+document.querySelectorAll('.step').forEach(b => b.addEventListener('click', () => show(b.dataset.p, true)));
+document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if(g) show(g.dataset.goto, true); });
+$('#prev').addEventListener('click', () => show(ORDER[ORDER.indexOf(store.get('beat','muster'))-1], true));
+$('#next').addEventListener('click', () => show(ORDER[ORDER.indexOf(store.get('beat','muster'))+1], true));
+
+/* the Host */
+const hostEl = $('#host');
+function setHost(n){ n = Math.max(0, n); hostEl.value = n; store.set('host', n);
+  document.querySelectorAll('.hostNow').forEach(e => e.textContent = n);
+  $('#hostDmg').textContent = Math.floor(n/2); }
+hostEl.addEventListener('input', () => setHost(num(hostEl.value)));
+document.addEventListener('click', e => { const b = e.target.closest('[data-host]'); if(b) setHost(num(hostEl.value) + num(b.dataset.host)); });
+$('#gaze').addEventListener('click', () => setHost(num(hostEl.value) - 50));
+
+/* dragons */
+const D0 = [{n:'Vessa',t:'eldest, protector',hp:178,p:true},{n:'Korth',t:'furious',hp:178,p:true},{n:'Ilun',t:'the one who talks',hp:178,p:false},{n:'Thay',t:'youngest, terrified',hp:178,p:false}];
+let D = store.get('dragons', null) || JSON.parse(JSON.stringify(D0));
+let dRound = store.get('dRound', 1);
+function drawDragons(){
+  $('#dragons').innerHTML = D.map((d,i) => `<div class="trow${d.hp<=0?' down':''}"><span><b>${d.n}</b><small>${d.t}</small></span>
+    <label class="meta"><input type="checkbox" id="dp${i}" data-i="${i}" ${d.p?'checked':''}> on party</label>
+    <input type="number" id="dh${i}" data-i="${i}" min="0" max="178" value="${d.hp}" aria-label="${d.n} hit points"></div>`).join('');
+  dragonSummary();
+}
+function dragonSummary(){
+  const on = D.filter(d => d.hp > 0 && !d.p).length;
+  $('#dOnHost').textContent = on;
+  $('#dLoss').textContent = on ? Array(on).fill('2d4').join(' + ') : 'nobody';
+  $('#dRound').textContent = dRound;
+  document.querySelectorAll('#dragons .trow').forEach((r,i) => r.classList.toggle('down', D[i].hp <= 0));
+  store.set('dragons', D); store.set('dRound', dRound);
+}
+$('#dragons').addEventListener('input', e => { const i = e.target.dataset.i; if(i == null) return;
+  if(e.target.type === 'checkbox') D[i].p = e.target.checked; else D[i].hp = Math.max(0, num(e.target.value));
+  dragonSummary(); });
+$('#dNext').addEventListener('click', () => { dRound++; dragonSummary(); });
+$('#dReset').addEventListener('click', () => { D = JSON.parse(JSON.stringify(D0)); dRound = 1; drawDragons(); });
+
+/* Voth */
+let V = store.get('voth', {party:5, dmg:0, round:1});
+function drawVoth(){
+  const per = {4:300, 5:350, 6:400}[V.party] || 350, max = per*3, hp = Math.max(0, max - V.dmg);
+  $('#party').value = V.party; $('#perPhase').textContent = per; $('#vMax').textContent = max;
+  $('#vHp').textContent = hp > 0 ? hp : 'Dead'; $('#vRound').textContent = V.round;
+  const ph = hp <= 0 ? -1 : hp > per*2 ? 0 : hp > per ? 1 : 2;
+  $('#phase').querySelectorAll('span').forEach((s,i) => s.classList.toggle('on', i === ph));
+  store.set('voth', V);
+}
+$('#party').addEventListener('change', e => { V.party = num(e.target.value); drawVoth(); });
+$('#vHit').addEventListener('click', () => { const a = Math.max(0, num($('#vDmg').value)); if(!a){ $('#vDmg').focus(); return; } V.dmg += a; $('#vDmg').value = ''; drawVoth(); });
+$('#vDmg').addEventListener('keydown', e => { if(e.key === 'Enter') $('#vHit').click(); });
+$('#hostHit').addEventListener('click', () => { V.dmg += Math.floor(num(hostEl.value)/2); drawVoth(); });
+$('#vNext').addEventListener('click', () => { V.round++; drawVoth(); });
+$('#vReset').addEventListener('click', () => { V.dmg = 0; V.round = 1; ['#ls1','#ls2','#ls3'].forEach(s => $(s).checked = false); drawVoth(); });
+
+/* start */
+drawDragons(); drawVoth(); setHost(store.get('host', 200));
+show((location.hash || '').slice(1) || store.get('beat', 'muster'), false);
+</script>

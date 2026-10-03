@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>To be a god: campaign hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#070914; --deep:#0c1020; --plate:#10152a; --plate2:#141a33; --line:#2a3152;
+  --vellum:#e9e2d0; --dim:#a8a4b4; --gold:#c8a45a; --ember:#e0672f; --star:#8fa7d6; --verd:#6fb3a0;
+  --display:"IM Fell English","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --body:"Spectral",Georgia,"Times New Roman",serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+/* The hub is dark by design in every viewer theme. */
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --void:#070914; } }
+:root[data-theme="dark"]{ --void:#070914; }
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px); height:100%}
+body{margin:0; min-height:100%; background:var(--void); color:var(--vellum); font-family:var(--body); font-size:17px; line-height:1.62;
+  background-image:
+    radial-gradient(900px 520px at 12% -5%, rgba(200,164,90,.10), transparent 60%),
+    radial-gradient(800px 600px at 95% 8%, rgba(224,103,47,.10), transparent 60%),
+    radial-gradient(1200px 900px at 50% 110%, rgba(84,96,170,.14), transparent 60%);
+  background-attachment:fixed;}
+#stars{position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none}
+.wrap{position:relative; z-index:1; max-width:1120px; margin:0 auto; padding:0 20px 80px}
+h1,h2,h3,h4{font-family:var(--display); font-weight:400; line-height:1.15; margin:0}
+h1{font-size:clamp(2.6rem,7vw,4.6rem); letter-spacing:.01em}
+h2{font-size:clamp(1.7rem,3.6vw,2.3rem); margin:56px 0 6px}
+h3{font-size:1.4rem; margin:0 0 6px}
+h4{font-size:1.12rem; color:var(--gold); margin:18px 0 4px}
+p{margin:0 0 12px; max-width:72ch}
+ul{margin:0 0 12px; padding-left:20px; max-width:72ch}
+li{margin:3px 0}
+a{color:var(--star)}
+.lede{color:var(--dim); font-style:italic; font-family:var(--display); font-size:1.15rem; margin-bottom:18px}
+.sug{font-size:.8rem; color:var(--verd); border:1px solid rgba(111,179,160,.45); padding:0 6px; border-radius:2px; white-space:nowrap; font-family:var(--body); font-style:normal; vertical-align:middle}
+
+/* tabs */
+nav.tabs{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:rgba(7,9,20,.86); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid var(--line)}
+.tabrow{max-width:1120px; margin:0 auto; padding:10px 20px; display:flex; gap:8px; align-items:center; overflow-x:auto}
+.tab{font-family:var(--display); font-size:1.05rem; color:var(--dim); background:linear-gradient(180deg,var(--plate2),var(--deep)); border:1px solid var(--line); padding:7px 18px 8px; cursor:pointer; white-space:nowrap;
+  clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 50%,calc(100% - 9px) 100%,9px 100%,0 50%); transition:color .15s, background .15s}
+.tab:hover{color:var(--vellum)}
+.tab[aria-selected="true"]{color:#1a1405; background:linear-gradient(180deg,#e3c47f,#b58f45); border-color:#e3c47f}
+.tab:focus-visible,.btn:focus-visible,.chip:focus-visible,.plate.link:focus-visible{outline:2px solid var(--star); outline-offset:3px}
+.spacer{flex:1 0 12px}
+.btn{font-family:var(--body); font-size:.9rem; color:var(--ember); background:transparent; border:1px solid rgba(224,103,47,.6); padding:6px 12px; cursor:pointer; white-space:nowrap; border-radius:2px}
+.btn:hover{background:rgba(224,103,47,.12)}
+
+/* hero */
+.hero{padding:48px 0 8px}
+.hero .work{color:var(--dim); font-size:.92rem}
+.hero p.premise{font-size:1.18rem; max-width:62ch; margin-top:14px}
+.sky{width:100%; height:auto; display:block; margin:10px 0 0}
+.sky .v line{stroke:var(--gold); stroke-width:1.2; stroke-dasharray:5 7; opacity:.55}
+.sky .v circle{fill:var(--gold)}
+.sky .v circle.gone{fill:none; stroke:var(--gold); stroke-width:1; opacity:.6}
+.sky .a line{stroke:var(--ember); stroke-width:1.4; opacity:.9; stroke-dasharray:400; stroke-dashoffset:400; animation:draw 2.4s ease-out .3s forwards}
+.sky .a circle{fill:#ffb27d}
+.sky text{font-family:var(--display); font-style:italic; font-size:22px}
+@keyframes draw{to{stroke-dashoffset:0}}
+.facts{display:flex; flex-wrap:wrap; gap:8px 26px; margin:18px 0 0; padding:14px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); color:var(--dim)}
+.facts b{color:var(--vellum); font-weight:600}
+
+/* plates */
+.grid{display:grid; gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.plate{position:relative; background:linear-gradient(180deg,rgba(20,26,51,.92),rgba(12,16,32,.92)); border:1px solid var(--line); padding:18px 20px 14px}
+.plate::before,.plate::after{content:""; position:absolute; width:12px; height:12px; border:1px solid var(--gold); opacity:.7}
+.plate::before{top:-1px; left:-1px; border-right:0; border-bottom:0}
+.plate::after{bottom:-1px; right:-1px; border-left:0; border-top:0}
+.plate.link{cursor:pointer; text-align:left; color:inherit; font:inherit; width:100%}
+.plate.link:hover{border-color:var(--gold)}
+a.plate.link{display:block; text-decoration:none}
+.plate p:last-child,.plate ul:last-child{margin-bottom:6px}
+.plate .who{color:var(--dim); font-size:.95rem}
+.glyph{width:64px; height:64px; flex:none}
+.glyph *{fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+.glyph .dot{fill:currentColor; stroke:none}
+.rhead{display:flex; gap:14px; align-items:center; margin-bottom:8px}
+.rhead small{display:block; color:var(--dim); font-family:var(--body); font-size:.86rem}
+.kv{color:var(--dim); font-size:.95rem; margin:0 0 6px}
+.kv b{color:var(--vellum); font-weight:600}
+
+/* DM-only */
+.secret{border-left:3px solid var(--ember); background:rgba(224,103,47,.07); padding:10px 14px; margin:12px 0}
+.secret > .tag{display:block; color:var(--ember); font-family:var(--display); font-style:italic; margin-bottom:2px}
+body.veiled .secret > .sb{filter:blur(8px); user-select:none; pointer-events:none}
+body.veiled .secret > .tag::after{content:" (hidden)"}
+
+/* tables */
+.scroll{overflow-x:auto; margin:10px 0 16px; border:1px solid var(--line)}
+table{border-collapse:collapse; width:100%; min-width:560px; background:rgba(12,16,32,.9)}
+th,td{text-align:left; vertical-align:top; padding:9px 12px; border-bottom:1px solid var(--line)}
+th{font-family:var(--display); font-weight:400; color:var(--gold); font-size:1.02rem}
+tr:last-child td{border-bottom:0}
+
+/* races tab */
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 20px}
+.chip{font-family:var(--display); font-size:1rem; color:var(--dim); background:var(--deep); border:1px solid var(--line); padding:5px 14px; cursor:pointer; border-radius:999px}
+.chip:hover{color:var(--vellum)}
+.chip[aria-pressed="true"]{color:var(--vellum); border-color:currentColor; box-shadow:inset 0 0 14px rgba(200,164,90,.25)}
+.traits{list-style:none; padding:0; max-width:none}
+.traits li{padding:8px 0; border-bottom:1px solid var(--line)}
+.traits li:last-child{border-bottom:0}
+.traits b{color:var(--vellum); font-weight:600}
+.src{color:var(--dim); font-size:.88rem}
+.steps{counter-reset:s; list-style:none; padding:0}
+.steps li{counter-increment:s; padding-left:38px; position:relative; margin:8px 0}
+.steps li::before{content:counter(s); position:absolute; left:0; top:0; width:26px; height:26px; border:1px solid var(--gold); color:var(--gold); border-radius:50%; text-align:center; line-height:24px; font-family:var(--display)}
+.check{list-style:none; padding:0}
+.check label{display:flex; gap:10px; align-items:flex-start; cursor:pointer; padding:5px 0}
+.check input{margin-top:7px; accent-color:var(--gold)}
+.check input:checked + span{color:var(--dim); text-decoration:line-through}
+[hidden]{display:none !important}
+
+/* players tab */
+label.f{display:flex; flex-direction:column; gap:3px; font-size:.9rem; color:var(--dim)}
+textarea{font:inherit; font-size:1rem; color:var(--vellum); background:#0a0d1c; border:1px solid var(--line); padding:7px 9px; border-radius:2px; width:100%; min-width:0; resize:vertical}
+textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 2px rgba(200,164,90,.25)}
+.act{font-family:var(--body); font-size:.92rem; color:var(--gold); background:rgba(200,164,90,.08); border:1px solid rgba(200,164,90,.6); padding:6px 13px; cursor:pointer; border-radius:2px}
+.act:hover{background:rgba(200,164,90,.2)}
+.act:focus-visible{outline:2px solid var(--star); outline-offset:3px}
+.act.sm{padding:2px 9px; font-size:.82rem}
+.pstats{display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:8px; margin:10px 0}
+.pstat{border:1px solid var(--line); text-align:center; padding:7px 4px; color:var(--dim); font-size:.84rem}
+.pstat b{display:block; font-family:var(--display); font-size:1.6rem; color:var(--gold); font-weight:400; line-height:1.2}
+.pstat b.sm{font-size:1.02rem; line-height:1.9}
+.pc{margin-top:16px; min-width:0}
+.pc summary{cursor:pointer; color:var(--gold); font-family:var(--display); font-size:1.1rem; margin-top:8px}
+.popt{padding:8px 0; border-bottom:1px solid var(--line)}
+.popt:last-child{border-bottom:0}
+.popt p{margin:2px 0 0; max-width:none; color:var(--dim)}
+.popt .roll{color:var(--gold)}
+.pbadge{font-size:.78rem; border:1px solid var(--star); color:var(--star); padding:0 8px; border-radius:999px; margin-left:8px; white-space:nowrap}
+.pre{white-space:pre-wrap}
+
+@media (max-width:600px){ body{font-size:16px} .plate{padding:16px 16px 12px} }
+@media (prefers-reduced-motion:reduce){ .sky .a line{animation:none; stroke-dashoffset:0} }
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<nav class="tabs" aria-label="Sections">
+  <div class="tabrow" role="tablist">
+    <button class="tab" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+    
+    <button class="tab" role="tab" data-tab="races" aria-selected="false">Races</button>
+    <button class="tab" role="tab" data-tab="divinity" aria-selected="false">Divinity</button>
+    <button class="tab" role="tab" data-tab="factions" aria-selected="false">Factions</button>
+    <!--dm--><button class="tab" role="tab" data-tab="secrets" aria-selected="false">Secrets</button>
+    <button class="tab" role="tab" data-tab="sessions" aria-selected="false">Sessions</button>
+    <button class="tab" role="tab" data-tab="players" aria-selected="false">Players</button><!--/dm-->
+    <button class="tab" role="tab" data-tab="campaign" aria-selected="false">Campaign</button>
+    <!--dm--><span class="spacer"></span>
+    <button class="btn" id="veil" aria-pressed="false">Hide DM secrets</button><!--/dm-->
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ================= OVERVIEW ================= -->
+<section id="overview" role="tabpanel">
+  <header class="hero">
+    <h1>To be a god</h1>
+    
+    <p class="premise">The dragon god of the universe is dead. Her power now lives in the mortals who killed her, and none of them agree on what to do with it.<!--dm--> Somewhere behind them, a prison stands empty.<!--/dm--></p>
+    <svg class="sky" viewBox="0 0 1200 400" role="img" aria-label="Two constellations: the fading dragon Voth and the burning phoenix Ado">
+      <g class="v">
+        <line x1="135" y1="80" x2="120" y2="112"/><line x1="120" y1="112" x2="90" y2="138"/>
+        <line x1="120" y1="112" x2="172" y2="152"/><line x1="172" y1="152" x2="224" y2="192"/>
+        <line x1="224" y1="192" x2="200" y2="72"/><line x1="224" y1="192" x2="304" y2="60"/><line x1="200" y1="72" x2="304" y2="60"/>
+        <line x1="224" y1="192" x2="292" y2="214"/><line x1="292" y1="214" x2="304" y2="60"/>
+        <line x1="292" y1="214" x2="282" y2="278"/><line x1="292" y1="214" x2="362" y2="252"/>
+        <line x1="362" y1="252" x2="432" y2="238"/><line x1="432" y1="238" x2="492" y2="272"/><line x1="492" y1="272" x2="544" y2="250"/>
+        <circle cx="135" cy="80" r="3"/><circle cx="120" cy="112" r="5"/><circle class="gone" cx="90" cy="138" r="4"/>
+        <circle cx="172" cy="152" r="3"/><circle cx="224" cy="192" r="5"/><circle class="gone" cx="200" cy="72" r="4"/>
+        <circle cx="304" cy="60" r="4"/><circle cx="292" cy="214" r="4"/><circle class="gone" cx="282" cy="278" r="4"/>
+        <circle cx="362" cy="252" r="3"/><circle class="gone" cx="432" cy="238" r="4"/><circle cx="492" cy="272" r="3"/><circle class="gone" cx="544" cy="250" r="3"/>
+        <text x="330" y="330" fill="#c8a45a" opacity=".85">Voth, the dragon</text>
+      </g>
+      <!--dm--><g class="a">
+        <line x1="930" y1="78" x2="900" y2="92"/><line x1="900" y1="92" x2="890" y2="150"/><line x1="890" y1="150" x2="880" y2="204"/>
+        <line x1="890" y1="150" x2="820" y2="132"/><line x1="820" y1="132" x2="742" y2="90"/><line x1="742" y1="90" x2="690" y2="122"/><line x1="820" y1="132" x2="760" y2="170"/>
+        <line x1="890" y1="150" x2="960" y2="130"/><line x1="960" y1="130" x2="1040" y2="80"/><line x1="1040" y1="80" x2="1100" y2="110"/><line x1="960" y1="130" x2="1024" y2="166"/>
+        <line x1="880" y1="204" x2="858" y2="272"/><line x1="858" y1="272" x2="836" y2="344"/>
+        <line x1="880" y1="204" x2="892" y2="284"/><line x1="892" y1="284" x2="902" y2="356"/>
+        <line x1="880" y1="204" x2="922" y2="264"/><line x1="922" y1="264" x2="964" y2="334"/>
+        <circle cx="930" cy="78" r="3"/><circle cx="900" cy="92" r="5"/><circle cx="890" cy="150" r="6"/><circle cx="880" cy="204" r="4"/>
+        <circle cx="820" cy="132" r="4"/><circle cx="742" cy="90" r="4"/><circle cx="690" cy="122" r="3"/><circle cx="760" cy="170" r="3"/>
+        <circle cx="960" cy="130" r="4"/><circle cx="1040" cy="80" r="4"/><circle cx="1100" cy="110" r="3"/><circle cx="1024" cy="166" r="3"/>
+        <circle cx="858" cy="272" r="3"/><circle cx="836" cy="344" r="4"/><circle cx="892" cy="284" r="3"/><circle cx="902" cy="356" r="4"/><circle cx="922" cy="264" r="3"/><circle cx="964" cy="334" r="4"/>
+        <text x="1000" y="250" fill="#e0672f">Ado, the phoenix</text>
+      </g><!--/dm-->
+    </svg>
+    <div class="facts">
+      <span><b>4 to 6</b> players</span><span>Start at <b>level 1</b></span><span><b>10 to 15</b> sessions of 2 to 2.5 hours</span>
+      <span><b>55%</b> roleplay, <b>35%</b> combat, <b>10%</b> exploration</span><span>Tragic, dark, political</span><span>Death is <b>permanent</b></span>
+    </div>
+  </header>
+
+  <h2>The two gods</h2>
+  <div class="grid g2">
+    <div class="plate">
+      <h3 style="color:var(--gold)">Voth</h3>
+      <p class="who">Gold dragon. God of the universe. Dead.</p>
+      <p>Killed because mortals were tired of a god running their lives. Her power dispersed into everyone near her when she died.</p>
+      <div class="secret"><span class="tag">DM only</span><div class="sb">She was a good god, not a tyrant. She did interfere too much, but she meant well, and her power was what kept Ado imprisoned. Only the ancient Corrin archivists know the whole truth.</div></div>
+    </div>
+    <!--dm--><div class="plate">
+      <h3 style="color:var(--ember)">Ado <small style="font-size:.9rem;color:var(--dim)">(eh-do)</small></h3>
+      <p class="who">Phoenix. Voth's opposite. The final threat.</p>
+      <div class="secret"><span class="tag">DM only</span><div class="sb">Released when Voth died. He presents himself as a god of peace, and through peaceful politics he assassinates god after god and topples nation after nation until he is the only god left. He is served by a demigod, who is either a player or an NPC depending on how session negative ends. The players do not know he exists.</div></div>
+    </div><!--/dm-->
+  </div>
+
+  <h2>Who holds power</h2>
+  <p class="lede">Players do not know which of them is a god and which is a demigod.</p>
+  <div class="scroll"><table>
+    <tr><th>Tier</th><th>Spark</th><th>How they got here</th><th>What sets them apart</th></tr>
+    <tr><td>Mortal</td><td>0</td><td>Took no part, or stood too far away</td><td>Race traits only</td></tr>
+    <tr><td>Demigod</td><td>1 to 4</td><td>Resisted the power, but some always gets in</td><td>Reads as mortal, goes anywhere unsensed, has no worshippers to threaten</td></tr>
+    <tr><td>God</td><td>5 or more</td><td>Accepted the power</td><td>A realm, worshippers, and Faith to act at a distance, but bound to a domain</td></tr>
+  </table></div>
+  <p>Full rules are under <a href="#" data-go="divinity">Divinity</a>.</p>
+
+  <h2>The factions</h2>
+  <div class="scroll"><table id="facTable"></table></div>
+  <p>Leaders, resources, and moves are under <a href="#" data-go="factions">Factions</a>.</p>
+
+  <h2>The twelve peoples</h2>
+  <p class="lede">Select a people to open its full entry.</p>
+  <div class="grid g3" id="raceCards"></div>
+
+  <!--dm--><h2>Ado's clock</h2><!--/dm-->
+  <div class="secret"><span class="tag">DM only: what happens if nobody interferes</span><div class="sb">
+    <ol class="steps">
+      <li>He appears through his servant as a peacemaker.</li>
+      <li>He brokers the first treaty and gains a seat in the Concord.</li>
+      <li>Gods who signed his treaties start dying, and rivals are blamed.</li>
+      <li>The Concord hands him emergency authority.</li>
+      <li>He is the last god left.</li>
+    </ol></div></div>
+</section>
+
+
+
+<!-- ================= RACES ================= -->
+<section id="races" role="tabpanel" hidden>
+  <h2>Races</h2>
+  <p>Every race gets +2 to one ability score and +1 to another of the player's choice, a size and speed, traits that come from the body, and one signature trait. Each also gains an upgrade at level 7.</p>
+  <div class="chips" id="raceChips"></div>
+  <div id="raceDetail"></div>
+
+  <h2>Level 7 upgrades</h2>
+  <p>Balance comes from raising everyone, not from cutting what is fun. These are not equal in raw combat power: the Ondri and Sough upgrades are strongest in a fight, while the kenku and human ones matter more in roleplay.</p>
+  <div class="scroll"><table id="upTable"></table></div>
+</section>
+
+<!-- ================= DIVINITY ================= -->
+<section id="divinity" role="tabpanel" hidden>
+  <h2>Divinity</h2>
+  <p class="lede">Gods and demigods use the same class and level. They differ in kind, not in strength, so a fight never reveals who is which.</p>
+
+  <div class="grid g2">
+    <div class="plate">
+      <h3>Spark</h3>
+      <p>Spark is how much of Voth's power a character holds. Track it on a private card for each player.</p>
+      <ul><li>0: mortal</li><li>1 to 4: demigod (starts at 1)</li><li>5 or more: god (starts at 5)</li></ul>
+      <p>Power must always be accepted or fought. Refused power flows on to those still choosing, and some always gets in.</p>
+    </div>
+    <div class="plate">
+      <h3>When a god dies nearby</h3>
+      <p>Each witness chooses in secret.</p>
+      <ul>
+        <li><b>Accept:</b> gain 2 Spark, plus 1 for each witness who resisted successfully. If several accept, they split that extra.</li>
+        <li><b>Resist:</b> DC 13 Charisma save. Success: gain 1. Failure: gain 2.</li>
+        <li><b>A demigod's death:</b> every witness gains 1, with no choice.</li>
+      </ul>
+      <p>A demigod who resists every time becomes a god after four god deaths, sooner on a failed save.</p>
+    </div>
+  </div>
+
+  <h2>What every god-slayer gets</h2>
+  <ul class="traits">
+    <li><b>Deathless.</b> No aging, eating, sleeping, or breathing. <span class="src">3e divine rank 0. Dropped its immunities to mind effects and ability damage.</span></li>
+    <li><b>Domain gift.</b> Choose a domain. Once per long rest, cast one spell that fits it without a slot, of a level up to half your character level, rounded up. <span class="src">3e domain powers, converted to 5e slots.</span></li>
+    <li><b>Divine vitality.</b> Add half your Constitution score, rounded down, to hit points at level 1. A fighter with 14 Constitution starts at 19. <span class="src">4e starting hit points, halved.</span></li>
+  </ul>
+
+  <div class="grid g2" style="margin-top:22px">
+    <div class="plate">
+      <h3>Demigod only</h3>
+      <ul>
+        <li><b>Mortal guise:</b> magic and divine senses read you as mortal.</li>
+        <li><b>Unbound:</b> enter any god's realm unsensed and ignore its rules.</li>
+        <li><b>Mortal will:</b> advantage on saves against Spark and against a god's commands.</li>
+      </ul>
+    </div>
+    <div class="plate">
+      <h3>God only</h3>
+      <ul>
+        <li><b>Realm:</b> inside your own realm you sense everything and can reshape terrain and weather. Outside it you get nothing extra. <span class="src">BECMI Immortals and 3e divine realms, cut down.</span></li>
+        <li><b>Faith:</b> a pool equal to your Spark. See below.</li>
+        <li><b>Bound:</b> to act against your domain, make a DC 15 Wisdom save. On a failure you can't. On a success you still lose 1 Faith.</li>
+        <li><b>Sensed:</b> any god knows when you enter their realm.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Faith</h2>
+  <p>Faith is reach. It lets a god act in places they are not, which matters most in a campaign about politics.</p>
+  <div class="scroll"><table>
+    <tr><th>Use</th><th>Cost</th><th>Effect</th></tr>
+    <tr><td>Listen</td><td>Free, or 1</td><td>You always know when a worshipper prays to you. Spend 1 to see and hear through them for a minute.</td></tr>
+    <tr><td>Miracle</td><td>1</td><td>Cast a spell you know with a worshipper as its origin, at any distance.</td></tr>
+    <tr><td>Champion</td><td>2</td><td>A mortal adds 1d4 to attacks, saves, and checks for a week, and acts for you elsewhere.</td></tr>
+    <tr><td>Create</td><td>Varies</td><td>In downtime, make a place, a relic, or a species.</td></tr>
+  </table></div>
+  <p>Regain 1 per long rest while your worshippers thrive. Your maximum drops when they are killed or lose faith, so a god has people to defend and enemies have something to attack. <span class="src">3e divine rank and 5e Theros piety, simplified to one pool.</span></p>
+
+  <h2>Ascending and dying</h2>
+  <div class="grid g2">
+    <div class="plate">
+      <h3>Ascending against your will</h3>
+      <p>At 5 Spark, a demigod's domain binds at the next long rest. They lose the three demigod traits and gain the four god traits. No way back is known.</p>
+      <div class="secret"><span class="tag">DM only</span><div class="sb">The cycle of god-killing can be broken by combining the power of Ado with the power of Voth.</div></div>
+    </div>
+    <div class="plate">
+      <h3>Death</h3>
+      <ul>
+        <li>Death is permanent.</li>
+        <li>The dead character's power disperses to whoever killed them.</li>
+        <li>The amount released reveals whether they were a god or a demigod.</li>
+        <li>The player returns as an heir: a follower or creation of the dead character who caught a splinter, at party level.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Levelling</h2>
+  <p>The divine power burned out the heroes' mortal skill. Level measures how much of their shard they have learned to wield. Level up every two sessions, ending around level 7 or 8.</p>
+
+  <h2>Domains</h2>
+  <p>A domain is the one concept a god-slayer's power attached to: the answer to "god of what?" Gods and demigods both have one, so a domain reveals nothing about tier. It sets the Domain gift's spells, what a god is Bound against, and who a god's natural allies and rivals are.</p>
+  <p>The domain list is not written yet. It waits until after session negative. The plan is fifteen to twenty broad domains, each with its spells by level and what counts as acting against it, and players may propose their own.</p>
+</section>
+
+<!-- ================= FACTIONS ================= -->
+<section id="factions" role="tabpanel" hidden>
+  <h2>Factions</h2>
+  <!--dm--><p>After each session, pick two or three factions the players did not deal with and apply one small move each. Advance a big development about every three sessions. Player actions should replace these freely. Leaders are described by role until the NPC gods are built.</p><!--/dm-->
+  <div class="grid g2" id="facCards"></div>
+
+  <h2>Where the peoples stand</h2>
+  <ul>
+    <li><b>Sough:</b> split among every faction, with many among the Refusers.</li>
+    <li><b>Corrin:</b> largely split between the Concord and the Faithful.<!--dm--> The ancient archivists stay out until late in the story.<!--/dm--></li>
+    <li><b>Dragonborn:</b> most of Voth's Faithful.</li>
+    <li><b>Dural:</b> many of the Reavers.</li>
+    <li><b>Ondri:</b> courted by every faction to vouch for it, the Concord most of all.</li>
+    <li><b>Lorn:</b> mixed in among all peoples.</li>
+  </ul>
+
+  <div class="secret"><span class="tag">DM only: how the factions connect</span><div class="sb"><ul>
+    <li>The dead Maker is Ado's first assassination, and the Reavers get blamed.</li>
+    <li>The Faithful's militant wing, the Unbowed, and the Foundry's weapon all end up killing gods for different reasons. Ado only needs to encourage them.</li>
+    <li>Ado's Lorn work inside the Foundry without knowing whose designs they serve.</li>
+    <li>The Foundry's weapon sends the dead god's power to Ado.</li>
+  </ul></div></div>
+
+  <!--dm--><h2>Ideas in reserve</h2>
+  <p>Proposed but not added. More factions will form as the NPC gods are created.</p>
+  <ul>
+    <li><b>The Wake:</b> opportunists who follow dying gods to catch dispersing power, and eventually arrange the deaths.</li>
+    <li><b>The Penitent:</b> god-slayers who regret killing Voth and will follow anyone who offers absolution.</li>
+    <li><b>The Tri-Court:</b> Ondri arbiters offering neutral ground where gods can meet. Useful as a recurring location.</li>
+  </ul><!--/dm-->
+</section>
+
+<!--dm-->
+<section id="secrets" role="tabpanel" hidden>
+  <h2>Secrets</h2>
+  <p class="lede">Everything on this page is for the DM. Use the button in the top bar to hide it when players can see your screen.</p>
+
+  <div class="secret"><span class="tag">The truth about Voth</span><div class="sb">
+    <ul>
+      <li>She was a good god and the warden holding Ado. She interfered too much, but she meant well and was never tyrannical.</li>
+      <li>A gold dragon who breathed fire. Her four children, her only young, died in the assault that killed her.</li>
+      <li>Her mate, Zandrioch, was taken during the initial imprisonment of Ado. He vanished during that fight without a trace.</li>
+      <li>The party caused Ado's release by killing her.</li>
+      <li>Only the Corrin know her true nature and why she did what she did. The ancient archivists reveal it late in the story.</li>
+      <li>Voth's Faithful revere her and want her power regathered, but hold only fragments of the truth.</li>
+    </ul></div></div>
+
+  <div class="secret"><span class="tag">Voth's island</span><div class="sb">
+    <ul>
+      <li>Reached only by the prayer road, the path prayers take to her. It runs among the stars and between planets, and each step covers thousands of miles. Nobody knew it existed. Only Lorn can see it.</li>
+      <li>At the road's end an island appears, seemingly out of nothing. The last stretch crosses ocean that drops like a curtain into space at the edges.</li>
+      <li>A beach, then jungle, with a clear path to a large mountain at the center. The island is warm and the mountain is hot.</li>
+      <li>The mountain's entrance is the Hall of Asking. Right leads to the roost of Voth and Zandrioch. Left leads to the children's roost. Straight on and deeper is where Voth waited, guarding the Weight.</li>
+      <li>The halls are mostly unornamented. The whole island is simple.</li>
+      <li>Guia is the Lorn who guided the Host there.</li>
+    </ul></div></div>
+
+  <div class="secret"><span class="tag">Ado</span><div class="sb">
+    <ul>
+      <li>A phoenix, the god opposed to Voth, freed when Voth died.</li>
+      <li>Goal: to be the only god left, by posing as a god of peace while gods are assassinated and nations fall.</li>
+      <li>His pitch is what Voth's killers wanted: a god who promises to leave mortals alone. <span class="sug">Suggested</span></li>
+      <li>His servant is a demigod who worships him: a player, offered privately and only if they opt in, or an NPC. Session negative decides.</li>
+      <li>He can sense his Lorn and speak to them in dreams, but cannot control them.</li>
+      <li>He can accept dispersing power from a distance.</li>
+    </ul></div></div>
+
+  <div class="secret"><span class="tag">Clues that Voth was a warden, not a tyrant</span><div class="sb">
+    <ul>
+      <li>The prison stands empty, and its locks were made of Voth's own power.</li>
+      <li>Worlds she "interfered" with are failing without her.</li>
+      <li>The Sough elder fields, which she used to burn back, are swallowing worlds.</li>
+      <li>The Dural, whom she confined, are now conquering.</li>
+      <li>A dragonborn order guarded the prison's location without knowing what it held.</li>
+      <li>No Lorn woken by her grief has been born since she died.</li>
+      <li>The ancient Corrin archivists hold the full record. This arrives late.</li>
+    </ul></div></div>
+
+  <div class="secret"><span class="tag">Clues that point to Ado</span><div class="sb">
+    <ul>
+      <li>Every dead god had recently signed a treaty he brokered.</li>
+      <li>Deaths near his treaties leave less power for the witnesses than they should.</li>
+      <li>Ondri who stood near his servant say the words seemed true, yet their own skin showed dread.</li>
+      <li>Corrin records show Lorn births stopped when Voth died, yet new Lorn keep appearing.</li>
+      <li>New Lorn have orange embers and resist fire, not radiant damage.</li>
+      <li>The Foundry's god-killing weapon leaves no power with its wielder.</li>
+      <li>The dragonborn who guarded the prison are being hunted into silence.</li>
+    </ul></div></div>
+
+  <div class="secret"><span class="tag">The Lorn's two origins</span><div class="sb">
+    <ul>
+      <li><b>Grief-born:</b> woken by Voth's attention when a star died. Nearly all Lorn alive today.</li>
+      <li><b>Leak-born:</b> woken occasionally by Ado's power seeping from his prison. Rare, old, and unaware they differ.</li>
+      <li><b>Since Voth's death:</b> every new Lorn belongs to Ado.</li>
+      <li>Ado's Lorn want to learn just as the others do. The difference is how they use what they learn: they subtly and unwittingly steer technology and development around them according to Ado's designs.</li>
+      <li>Some of the bitter Lorn are leak-born, but not all.</li>
+      <li>Once free, Ado can kill stars on purpose to make more. <span class="sug">Suggested</span></li>
+    </ul></div></div>
+
+  <div class="secret"><span class="tag">The cycle</span><div class="sb">
+    <p>Those who killed Voth believed peace, freedom, and prosperity would follow. Instead the killing of gods repeats.</p>
+    <p>The cycle can be broken by combining the power of Ado with the power of Voth.</p>
+  </div></div>
+</section>
+
+<section id="sessions" role="tabpanel" hidden>
+  <h2>Sessions</h2>
+  <p class="lede">Each session has its own run sheet. They open in a new browser tab.</p>
+  <div class="grid g2">
+    <a class="plate link sess" href="https://claude.ai/artifact/RsZ13pbFQ7aZSABFVr5WEy" target="_blank" rel="noopener">
+      <h3 style="color:var(--gold)">Session negative: To Kill God</h3>
+      <p class="who">One-shot. Level 15. 3 to 4 hours.</p>
+      <p>Two hundred mortals walk the prayer road to kill Voth. Seven beats, two fights, and the choice between god and demigod.</p>
+      <p class="kv"><b>Open the run sheet</b></p>
+    </a>
+    <div class="plate">
+      <h3>Session 0</h3>
+      <p class="who">Not planned yet.</p>
+      <p>The gap years, played. Its run sheet will appear here once it is planned.</p>
+    </div>
+  </div>
+</section>
+
+<section id="players" role="tabpanel" hidden>
+  <h2>Players</h2>
+  <p class="lede">Every character sheet your players have sent you.</p>
+  <div class="grid g2">
+    <a class="plate link" href="https://claude.ai/artifact/U6k7yRYAtfH1maPskEr1w2" target="_blank" rel="noopener">
+      <h3 style="color:var(--gold)">Character builder</h3>
+      <p class="who">The site your players build on.</p>
+      <p>People, class, abilities, skills, gear, and spells, ending in a full sheet and a character code. Its DM controls set which race videos players see.</p>
+      <p class="kv"><b>Open the builder</b></p>
+    </a>
+    <div class="plate">
+      <h3>Add a character</h3>
+      <p class="who">Paste the code a player sent you. A newer code from the same player and character replaces the old sheet.</p>
+      <label class="f">Character code<textarea id="pCode" rows="3" autocomplete="off" spellcheck="false" placeholder="TBG1:..."></textarea></label>
+      <p style="margin-top:10px"><button class="act" id="pAdd">Add to the party</button> <span class="who" id="pMsg"></span></p>
+    </div>
+  </div>
+  <p class="who" id="pState" style="margin-top:14px"></p>
+  <div id="party"></div>
+</section>
+
+<!--/dm-->
+<section id="campaign" role="tabpanel" hidden>
+  <h2>Campaign</h2>
+  <div class="grid g2">
+    <div class="plate">
+      <h3>Your answers</h3>
+      <ul>
+        <li><b>Setting:</b> a new universe at galactic scale, separate from Drakkamor</li>
+        <li><b>Party:</b> 4 to 6 players, starting at level 1</li>
+        <li><b>Sessions:</b> 10 to 15, each 2 to 2.5 hours</li>
+        <li><b>Tone:</b> tragic, dark, political</li>
+        <li><b>Lethality:</b> characters can die permanently</li>
+        <li><b>Balance:</b> 55% roleplay, 35% combat, 10% exploration</li>
+        <li><b>Homebrew:</b> to be decided as we build</li>
+      </ul>
+    </div>
+    <div class="plate">
+      <h3>Table rules</h3>
+      <ul>
+        <li>All editions of D&amp;D are in play, converted to 5e math.</li>
+        <li>Where editions disagree, use the version with more fun, options, and freedom.</li>
+        <li>Balance by adding to others before taking fun away.</li>
+        <li>Player expression first, then roleplay, mystery, and consequences.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>The road to session one</h2>
+  <ol class="steps">
+    <li><b>Session negative.</b> A one-shot. The players are mortal heroes who set out to kill their god, Voth. It ends on a choice: resist the power and become a demigod, or accept it and become a god. Planned in its own chat.</li>
+    <li><b>Session 0.</b> The gap years, played. In private, each player describes what they built or where they went. Together, as authors, everyone adds a world, an NPC god, and a rumor about another god-slayer. Planned in its own chat.</li>
+    <li><b>The campaign.</b> It opens a few years after the kill, on what the players made, still thriving. <span class="sug">Suggested: three to seven years</span></li>
+    <!--dm--><li><b>The end.</b> The scheming among new gods is most of the campaign. Ado is the threat that surfaces toward the end.</li><!--/dm-->
+  </ol>
+
+  <!--dm--><h2>Tone notes</h2>
+  <ul>
+    <li>Let the players enjoy godhood first. Tragedy needs something to lose.</li>
+    <li>Darkness should come from the players' choices and their costs.</li>
+  </ul>
+
+  <h2>Still to decide</h2>
+  <p>Ticks are saved in this browser only.</p>
+  <ul class="check" id="todo"></ul>
+
+  <h2>How to build a creature</h2>
+  <ol class="steps">
+    <li><b>Niche.</b> What did this people do, or survive, in Voth's universe?</li>
+    <li><b>Anchor.</b> One familiar body plan. It need not be an animal.</li>
+    <li><b>Twist.</b> One alien thing that is not anatomy: how they are born, die, sense, or speak.</li>
+    <li><b>Consequence.</b> What the twist does to their society.</li>
+    <li><b>Signature trait.</b> One mechanical hook the table remembers.</li>
+  </ol>
+  <p>Extra creature ideas can live as NPC peoples with a paragraph of lore and no balanced traits.</p><!--/dm-->
+</section>
+
+</div>
+
+<script>
+/* ---------- glyphs ---------- */
+const G = {
+  human:'<circle cx="50" cy="26" r="9"/><path d="M50 35V66M32 46H68M50 66L37 88M50 66L63 88"/>',
+  tortle:'<path d="M18 62C18 40 34 28 50 28s32 12 32 34Z"/><path d="M50 28V62M34 34L40 62M66 34L60 62M18 62H82"/><circle cx="90" cy="54" r="5"/><path d="M28 62V74M72 62V74"/>',
+  aarakocra:'<path d="M50 52C36 30 16 30 6 40C22 40 32 48 50 64C68 48 78 40 94 40C84 30 64 30 50 52Z"/><circle cx="50" cy="42" r="5"/><path d="M50 64V84M44 84H56"/>',
+  kenku:'<path d="M30 62C30 40 45 28 60 30C70 31 76 38 78 44L94 50L76 55C72 67 60 75 46 75Z"/><circle class="dot" cx="63" cy="44" r="3"/><path d="M34 70L26 86M46 75L44 90"/>',
+  hadozee:'<path d="M50 18L82 44L62 58L50 84L38 58L18 44Z"/><circle cx="50" cy="30" r="6"/><path d="M50 84C60 96 74 90 68 78"/>',
+  ape:'<circle cx="50" cy="28" r="10"/><path d="M20 78C20 50 34 42 50 42s30 8 30 36M20 78L14 92M80 78L86 92M38 78V92M62 78V92"/>',
+  dragonborn:'<path d="M24 62L44 40L39 20L55 36L72 34L90 52L70 58L78 66L58 68L46 80L30 76Z"/><circle class="dot" cx="62" cy="46" r="3"/><path d="M39 20L30 30"/>',
+  corrin:'<path d="M50 92V56M50 72L32 54M32 54L25 34M32 54L41 36M50 56V28M50 56L67 41M67 41L62 22M67 41L80 30"/><circle class="dot" cx="25" cy="34" r="3"/><circle class="dot" cx="41" cy="36" r="3"/><circle class="dot" cx="50" cy="28" r="3"/><circle class="dot" cx="62" cy="22" r="3"/><circle class="dot" cx="80" cy="30" r="3"/>',
+  sough:'<path d="M50 86C48 60 40 40 22 26M50 86C52 58 50 36 40 14M50 86C56 60 62 40 60 16M50 86C60 66 72 50 88 34M50 86C44 70 30 60 12 50"/><circle class="dot" cx="50" cy="88" r="5"/>',
+  ondri:'<path d="M50 18C70 30 88 44 95 54C77 56 62 62 50 70C38 62 23 56 5 54C12 44 30 30 50 18Z"/><path d="M50 70C53 82 47 88 54 96M44 21L41 9M56 21L59 9"/><circle class="dot" cx="38" cy="46" r="2.5"/><circle class="dot" cx="62" cy="46" r="2.5"/><circle class="dot" cx="50" cy="56" r="2.5"/>',
+  lorn:'<circle class="dot" cx="50" cy="50" r="8"/><ellipse cx="50" cy="50" rx="34" ry="12" transform="rotate(-24 50 50)"/><ellipse cx="50" cy="50" rx="24" ry="9" transform="rotate(38 50 50)"/><circle class="dot" cx="20" cy="62" r="2.5"/><circle class="dot" cx="78" cy="30" r="2.5"/><circle class="dot" cx="66" cy="70" r="2"/>',
+  dural:'<path d="M50 8L80 34L66 90H34L20 34Z"/><path d="M20 34L50 46L80 34M50 46V8M50 46L34 90M50 46L66 90"/>'
+};
+const glyph = (id,color) => `<svg class="glyph" viewBox="0 0 100 100" style="color:${color}" aria-hidden="true">${G[id]}</svg>`;
+
+/* ---------- races ---------- */
+const RACES = [
+ {id:'corrin', name:'Corrin', kind:'Original', color:'#d9a6b8', size:'Medium', speed:'25 ft',
+  line:'Living coral that remembers its dead.',
+  keys:['Voth\'s archivists','Slow, stony, never forget a promise','Split between the Concord and the Faithful'],
+  look:'Branching, stony bodies in bone-white, rust, or deep violet, with small polyps that open like eyes when they are curious. They move slowly and stand very still.',
+  life:['A Corrin buds from the reef of its dead and grows up attached, hearing old memories as dreams.','It breaks off to walk, and at death returns to become reef.','They live about 300 years.'],
+  culture:['Ancestors are buildings, so vandalism is desecration and exile means dying away from the reef.','Nobody owns an idea, because every thought may be inherited.','They speak slowly and never forget a promise.','They told the Lorn where the Lorn came from.'],
+  voth:'They were her archivists.',
+  slayer:'A Corrin who killed Voth carries that into the reef, and every future Corrin will remember it.',
+  dm:['Only the Corrin know Voth\'s true nature and why she did what she did.','The ancient archivists stay out of the conflict until late in the story, when they reveal the truth.'],
+  traits:[['Stone body','AC is 13 plus Dexterity modifier when unarmored.','5e lizardfolk'],['Tremor sense','You know the location of anything touching the same surface within 10 feet.',''],['Reef memory','When you fail an attack, save, or check, add 1d6. Uses equal your proficiency bonus per long rest.','4e deva, changed from once per encounter']],
+  up:'Reef memory becomes 1d8, and you can give it to an ally within 30 feet as a reaction.'},
+ {id:'sough', name:'Sough', pron:'suff', kind:'Original', color:'#9ccf7a', size:'Medium', speed:'35 ft',
+  line:'Woven grass around a core of soil.',
+  keys:['Shape-changing, quick, weak to fire','Praised for avenging the Elder fields','Split among all factions, many Refusers'],
+  look:'Long blades of grass intertwined into a body, the kind of grass that flows like the ocean in a breeze. All of it grows from a soil core, and it never stops growing. A Sough can take any shape so long as it does not run out of grass.',
+  life:['They never stop growing. The eldest are too vast to move and cover whole plains.'],
+  culture:['They speak by rustling, and their names are wind sounds.','They are patient and find the crack in everything, which makes them surveyors, negotiators, and assassins.','Clearing parasites from one another is their deepest act of trust.'],
+  voth:'Voth used to burn back the Elder fields, and the Sough hated her for it.',
+  slayer:'A Sough who killed Voth is praised for avenging the Elder fields. The praise is public and loud, which makes it hard to stay unnoticed. The Sough expect their hero to defend the fields\' right to grow unchecked.',
+  dm:['Without Voth, the Elder fields are swallowing worlds.','The Sough god-slayer is celebrated for the act that caused it, and may one day have to choose between their people\'s praise and burning the fields back, as Voth did.'],
+  traits:[['Type','Plant. Sough do not count as humanoid, so effects that only target humanoids do not affect them.',''],['Woven form','Reshape your body freely and pass through gaps as narrow as 1 inch. Your gear does not come with you.',''],['Blades','Unarmed strikes deal 1d6 slashing or piercing, using Strength or Dexterity.',''],['Sap','When you hit with Blades, deal extra necrotic damage equal to your proficiency bonus and heal the same amount. Uses equal your proficiency bonus per long rest.',''],['Thatch','Resistance to bludgeoning, vulnerability to fire.',''],['Weave','Bonus action to switch state. Braided: advantage on Strength checks and saves, speed drops 10 feet. Loose: no change. Spread: Blades reach 10 feet but drop to 1d4, with disadvantage on Strength checks and saves.',''],['Root','Bonus action on soil: speed becomes 0 and you can\'t be moved or knocked prone. Leaving costs nothing.',''],['Seek the seam','Advantage on checks to find cracks, weak points, and hidden openings in stone and structures.',''],['Ever-growing','On a short rest rooted in soil, roll one extra Hit Die for free.',''],['Wither','You need an hour of sunlight and water each day. Each day without either drops you one step: (1) lose Sap and Ever-growing, (2) speed 30 feet and Blades 1d4, (3) lose bludgeoning resistance, (4) 1d6 damage each day that can\'t be healed. One hour with both resets you. This applies to Sough god-slayers too: Deathless does not remove the need for sun and water.',''],['Parasite','When a parasitic plant gets in, make a DC 13 Constitution save. On a failure you lose Sap and Ever-growing and drop one Wither step each day regardless. Removing it yourself: one hour, DC 18 Medicine. Someone else: 10 minutes, DC 12. Lesser restoration also works. Sough god-slayers are not immune.','']],
+  up:'Switch Weave for free once per turn, and Spread reaches 15 feet.'},
+ {id:'ondri', name:'Ondri', kind:'Original', color:'#6fd0d6', size:'Medium', speed:'25 ft, swim 60 ft',
+  line:'Six-limbed ray-folk whose skin glows with what they feel.',
+  keys:['Cannot hide their emotions','Voth\'s envoys and arbiters','Every faction wants one to vouch for it'],
+  look:'A flat, diamond-shaped body like a manta ray, with six limbs on the underside. In water they swim with eyes on top. On land they stand on three legs with three arms free, the fins hang like a cloak, and the eyes slide round to the front. Their skin glows in shifting colors with their emotions.',
+  life:['The male\'s tail is both his weapon and how he mates.','They are warm-blooded and bear one live pup at a time, rarely.','Courtship is done in light.','They live about 80 years.'],
+  culture:['Covering your skin is the same as lying, and "going dark" is the worst insult.','They speak with voice and light together.','They decide things in threes: three judges, three witnesses, three votes.'],
+  voth:'Because their sincerity is visible, Voth made them her envoys and arbiters between peoples. They never asked for the job.',
+  slayer:'An Ondri who killed Voth cannot hide how they feel about it. Pride or guilt, their people can read it on them.',
+  dm:['Ondri who have stood near Ado\'s servant say his words seem true, yet their own skin showed dread.'],
+  traits:[['Amphibious','You breathe air and water.',''],['Deep eyes','Darkvision 60 feet, and advantage on sight-based Perception checks for things above or below you.',''],['Tripod','Advantage on checks and saves against being knocked prone or moved.',''],['Tail','A natural weapon dealing 1d6 piercing, using Strength or Dexterity.',''],['Third arm','It can hold an object or a light weapon, but not a shield, and can\'t help with a two-handed weapon.','2e and 5e thri-kreen, cut to one extra arm'],['Many limbs','When you take the Attack action, you can attack once with your tail or third arm as a bonus action.',''],['Glow','You shed dim light for 5 feet unless covered. Disadvantage on Deception against anyone who can see your skin, and advantage on Persuasion when telling the truth. The glow shows emotion, never facts.','']],
+  up:'Limb mastery: once per turn, the extra tail or third-arm attack is part of the Attack action and no longer uses your bonus action. Full damage.'},
+ {id:'lorn', name:'Lorn', kind:'Original', color:'#f3d27a', size:'Small', speed:'30 ft',
+  line:'An ember of a dead star that woke up alone.',
+  keys:['Native to the space between worlds','Inquisitive, independent, mostly peaceful','No homeland, mixed in among all peoples'],
+  look:'The Lorn itself is a fist-sized ember of star-matter. It holds dust and slag around itself with its own faint gravity, forming a body about three feet tall. The ember glows through the gaps.',
+  life:['A Lorn wakes alone in the dark where its star died. It has no parents and no young.','It does not age, but cools very slowly over thousands of years.'],
+  culture:['Very independent, because they did not know where they came from until someone told them.','They have no homeland and no nations, and name themselves.','They greet strangers with a question and trade in answers.','Most are peaceful. A few are cold and bitter.'],
+  voth:'They are the one people she never gave a task. Nobody knows why.',
+  slayer:'A Lorn most likely went to Voth to ask how a dead star\'s dust woke up. Killing her may have destroyed the only one who knew.',
+  dm:['Grief-born Lorn were woken by Voth\'s attention when a star died.','Leak-born Lorn were woken by Ado\'s power seeping from his prison. Since Voth\'s death, every new Lorn is Ado\'s.','Ado\'s Lorn have orange embers and resist fire instead of radiant damage.','They unwittingly steer technology and development according to Ado\'s designs. He can sense them and speak in their dreams, but not control them.','A Lorn player could be leak-born without knowing.'],
+  traits:[['Voidborn','You don\'t breathe, the cold and vacuum of space don\'t harm you, and you can fly at your walking speed where there is no gravity.',''],['Star-matter','Resistance to radiant damage.',''],['Ember light','You shed bright light for 10 feet and can dim it to nothing or restore it as a bonus action.',''],['Drift','You fall slowly and take no falling damage.',''],['Inquisitive','Proficiency in one of Arcana, History, Insight, or Investigation.',''],['Own gravity','Bonus action: pull or push one creature within 30 feet up to 10 feet. Strength save against DC 8 plus your proficiency bonus plus your Constitution modifier. Uses equal your proficiency bonus per long rest. You can also draw a loose object of 5 pounds or less to your hand at will.','4e forced movement, converted to feet']],
+  up:'Own gravity moves the target 20 feet, or affects every creature you choose within 10 feet of a point.'},
+ {id:'dural', name:'Dural', kind:'Original', color:'#cfe3f2', size:'Large', speed:'30 ft',
+  line:'Rough diamond giants made by pressure.',
+  keys:['Large, proud, warlike','Confined by Voth and never forgave her','Many of the Reavers'],
+  look:'Ten to twelve feet of rough, clouded diamond, heavy and angular. The young are dull and uncut. Every blow they survive chips a facet, so veterans glitter.',
+  life:['Two or more Dural bury a shard of themselves together deep in their world, and pressure does the rest over decades. Most seeds fail.','The newly formed climb to the surface, and those who arrive are counted as people.','They last for centuries unless shattered.'],
+  culture:['Their creed: whoever is too weak to hold a thing doesn\'t deserve to keep it.','Disputes are settled by duel, and scars are status.','They respect anyone who endures, including enemies.'],
+  voth:'She confined them to their world and forbade their conquests.',
+  slayer:'The proudest of all. They beat the strongest being there was, so by their creed her power is theirs. A Dural who refused godhood held the greatest prize and let it go, which their people would find shameful.',
+  dm:['With Voth gone, the Dural are expanding. That is another disaster she was holding back.'],
+  traits:[['Large','You take up a 10-foot space, carry double, and can grapple creatures up to Huge. Normal weapons, normal 5-foot reach. In spaces built for smaller people you squeeze: half speed, disadvantage on attacks, and attacks against you have advantage.','3e Large races, without the reach, bigger weapon dice, or level penalty'],['Hardness','Reduce bludgeoning, piercing, and slashing damage you take by your proficiency bonus.','3e damage reduction, rescaled'],['Edges','Unarmed strikes deal 1d6 slashing.',''],['Pressure-born','Crushing depth and heavy gravity don\'t affect you.',''],['Under pressure','While at or below half your hit points, add your proficiency bonus to one melee damage roll each turn.','4e bloodied condition'],['Brittle','Disadvantage on saves against thunder damage.',''],['Dense','You can\'t swim. You sink and walk along the bottom.','']],
+  up:'Hardness doubles while you are at or below half your hit points.'},
+ {id:'dragonborn', name:'Dragonborn', kind:'Imported', src:'3e, 4e, 5e', color:'#c8a45a', size:'Medium', speed:'30 ft',
+  line:'Made in the dead god\'s image.',
+  keys:['Once honored as Voth\'s stewards','Now blamed as collaborators','Most of Voth\'s Faithful'],
+  look:'Scaled and draconic, hatched from eggs laid by mated pairs. They live about 80 years.',
+  culture:['Clan-based and proud of their service.','Their standing is still shifting. Some worlds hunt them, some have stripped their status, and a few still revere them.'],
+  voth:'Her kin and stewards, with privileges others resented.',
+  slayer:'Hated by outsiders for what they are and called traitors by their own for what they did.',
+  dm:['If the truth about Voth comes out they can be vindicated. If it is buried, the persecution gets worse.','A small dragonborn order guarded the location of Ado\'s prison. They knew where it was, not what it held or why.','They are now hunted, by mobs who blame them and by Ado\'s agents who want them silent.'],
+  traits:[['Ancestry','Choose acid, cold, fire, lightning, poison, force, necrotic, psychic, radiant, or thunder.','5e, all three dragon families'],['Resistance','To your ancestry\'s damage type.',''],['Breath weapon','In place of one attack, a 15-foot cone or 30-foot line. Dexterity save against DC 8 plus proficiency bonus plus Constitution modifier. 1d10 damage, half on a success, rising to 2d10 at level 5. Uses equal your proficiency bonus per long rest.','5e Fizban\'s, with a free choice of shape'],['Dragonborn fury','+1 to attack rolls while at or below half your hit points.','4e'],['Level 5, choose one','Immunity to your damage type for a minute, a second breath that knocks back or incapacitates, or spectral wings for a minute. Each once per long rest.','5e Fizban\'s']],
+  up:'Their level 5 choice counts as their upgrade.'},
+ {id:'human', name:'Human', kind:'Imported', src:'5e', sug:true, color:'#e9e2d0', size:'Medium', speed:'30 ft',
+  line:'The most numerous people, and the most managed.', keys:['Led the march against Voth','Short-lived and impatient','Most of the Unbowed and the Foundry'],
+  voth:'The most numerous people and the most managed. She settled their disputes and steadied their harvests, so they never learned to govern themselves.',
+  culture:['Short-lived and impatient.','Proud of having led the march against Voth.'],
+  now:'Most of the Unbowed and the Foundry are human.',
+  slayer:'Seen by everyone else as the ringleaders.',
+  dm:['Human realms are the first to fall apart without Voth\'s quiet management.'],
+  traits:[['Feat','One feat of your choice.',''],['Skill','Proficiency in one skill.','']], up:'Expertise in one skill.'},
+ {id:'tortle', name:'Tortle', kind:'Imported', src:'BECMI, 5e', sug:true, color:'#8fbf8a', size:'Medium', speed:'30 ft',
+  line:'Turtle-folk who wander their whole lives.', keys:['AC 17 without armor','Wanderers and ferrymen','Dying lost since Voth fell'],
+  voth:'Wanderers and ferrymen who spend their lives travelling. At the end, Voth guided each one back to the beach where it hatched to lay its eggs and die.',
+  culture:['Patient, private, and at home anywhere.'],
+  now:'Tortles are dying lost, and fewer hatch each year. Many grieve quietly among the Faithful.',
+  slayer:'A tortle who killed Voth killed the one who would have led them home.',
+  traits:[['Natural armor','AC 17, flat.',''],['Claws','1d6 slashing.',''],['Hold breath','Up to 1 hour.',''],['Nature\'s intuition','One nature-related skill.',''],['Shell defense','Withdraw into your shell for +4 AC.','']], up:'Use your shell as a reaction when hit for +4 AC against that attack.'},
+ {id:'aarakocra', name:'Aarakocra', kind:'Imported', src:'1e, 5e', sug:true, color:'#9fc2e8', size:'Medium', speed:'30 ft, fly 30 ft from level 2',
+  line:'Bird-folk who were the dead god\'s eyes.', keys:['Flight from level 2','Voth\'s watchers, resented as spies','Now sell their eyes to any god'],
+  voth:'Her watchers. From high cloisters they kept a vow to see everything and act on nothing, and reported what they saw to her in daily prayer. Other peoples resented them as spies.',
+  culture:['Cloistered contemplatives who value seeing clearly and saying little.'],
+  now:'Without a master, they sell their eyes to any god who pays. The cloisters that refuse are emptying.',
+  slayer:'They prayed to her every day of their lives and never once saw her. An aarakocra who marched broke the vow to watch and not act, and their order has not decided whether to forgive it.',
+  traits:[['Flight','From level 2, fly 30 feet without medium or heavy armor.','Later 5e version, delayed from level 1 to level 2'],['Talons','1d6 slashing.',''],['Wind caller','Gust of wind once per long rest from level 3.','']], up:'Fly speed rises to 50 feet.'},
+ {id:'kenku', name:'Kenku', kind:'Imported', src:'1e, 5e', sug:true, color:'#9a93b8', size:'Medium', speed:'30 ft',
+  line:'Corvid mimics who were once a god\'s voice.', keys:['Perfect mimicry of sound and craft','Voth spoke through them','Some can still imitate her voice'],
+  voth:'Her mouthpieces. She spoke to mortals through them, borrowing their voices.',
+  culture:['Scribes, performers, and forgers who treasure anything said in their own words.'],
+  now:'Some can still imitate Voth\'s voice perfectly. The Faithful both prize and fear them.',
+  slayer:'The first words they spoke afterward were their own.',
+  dm:['A kenku can fake a message from Voth, and Ado knows it.'],
+  traits:[['Recall','Two skills, and advantage on a trained skill check a few times per long rest.',''],['Mimicry','Mimic sounds you have heard.','Dropped the older speech curse'],['Duplication','Copy handwriting and craftwork.','']], up:'Copy one skill or tool proficiency you watched someone use that day.'},
+ {id:'hadozee', name:'Hadozee', kind:'Imported', src:'2e Spelljammer, 5e', sug:true, color:'#d6a36a', size:'Medium', speed:'30 ft, climb 30 ft',
+  line:'Gliding ape-folk who sail between worlds.', keys:['Climbs and glides','Sailors of the space between worlds','Carry cargo for every faction'],
+  voth:'The sailors of the space between worlds. She set the lanes and they were allowed no others.',
+  culture:['Close crews, loud ships, and a love of open routes.'],
+  now:'Free to sail anywhere, with no one keeping the lanes safe. They carry cargo for every faction.',
+  slayer:'They sailed every lane she allowed and never found one that led to her. Those who marched wanted the lanes open, and learned on the way that there had been a road all along that no ship could sail.',
+  traits:[['Climber','Climb speed 30 feet.',''],['Glide','Glide when falling.',''],['Dexterous feet','Your feet work as hands.',''],['Dodge','Reaction: reduce damage by 1d6 plus your proficiency bonus.','']], up:'Your damage reduction becomes 2d6 plus proficiency bonus.'},
+ {id:'ape', name:'Great ape', kind:'Suggested', sug:true, color:'#b98d6f', size:'Medium', speed:'30 ft, climb 30 ft',
+  line:'The builders of the dead god\'s temples.', keys:['Counts as Large for carrying and lifting','Voth\'s builders, given no choice','Kin to the hadozee'],
+  voth:'Her builders. They raised every temple and monument, and were given no choice about it.',
+  culture:['Kin to the hadozee who stayed on the ground.','They judge a people by what it builds.'],
+  now:'Some tear down her temples, some build realms for the Makers, and many join the Unbowed.',
+  slayer:'They raised every temple to her and were never shown what they were building for. Those who marched wanted to see her with their own eyes, once, before it ended.',
+  traits:[['Hadozee traits','Climber, dexterous feet, and dodge, without the glide.',''],['Powerful build','Counts as Large for carrying, pushing, and lifting.','']], up:'Advantage on grapples and shoves, and you climb at full speed while carrying or dragging a grappled creature.'}
+];
+
+/* ---------- factions ---------- */
+const FACTIONS = [
+ {n:'The Concord', who:'Gods who want a ruling council', want:'Order and peace among the gods', members:'Gods who want a council, with many Corrin among their followers.', leader:'A respected god-slayer who sincerely wants peace.', res:'Legitimacy, treaties, pooled worshippers.',
+ /*dm*/ idle:'It becomes Ado\'s instrument', small:['Invites a god to sign','Mediates a border dispute','Censures a Reaver','Courts an Ondri to vouch for them'], big:'The first Accord is signed, and gods who refuse become suspects. Later, Ado is given a seat.',
+ },
+ {n:'The Makers', who:'Gods who left to build their own worlds', want:'To be left alone', members:'Gods who each keep to their own world.', leader:'None.', res:'Whole worlds, plentiful Faith, their creations.',
+ /*dm*/ idle:'They get picked off one at a time', small:['One seals their borders','One unveils a new species','One trades a creation for protection'], big:'A Maker is found dead inside their own sealed realm. The rest either join the Concord or form a defensive pact.',
+ },
+ {n:'The Reavers', who:'Gods who noticed that killing gods pays', want:'More power', members:'Gods who kill for power, many of them Dural.', leader:'Whoever last won the leadership duel.', res:'War hosts, accumulated Spark, fear.',
+ /*dm*/ idle:'They start a war within a few sessions', small:['Raid a weak god\'s worshippers to starve their Faith','Demand tribute','Issue a duel challenge'], big:'The first open god-kill in front of witnesses proves that killing pays. Open war follows.',
+ },
+ {n:'The Refusers', who:'Demigods who distrust godhood', want:'To stay free of it', members:'Demigods, many of them Sough.', leader:'A loose circle with no head.', res:'They can\'t be sensed, can go anywhere, and have no worshippers to threaten.',
+ /*dm*/ idle:'They splinter, or Ado recruits them', small:['Smuggle mortals out of a harsh god\'s realm','Spy on a god','Quietly help a mortal community'], big:'A member becomes a god against their will, and the group splits over whether to cast them out. Later, Ado\'s servant offers to take unwanted power off their hands.',
+ },
+ {n:'Voth\'s Faithful', who:'Mortals who still worship the dead god', want:'To regather her power', members:'Mortals, mostly dragonborn, with many Corrin.', leader:'A dragonborn high steward.', res:'Temples, relics of Voth, and numbers.',
+ /*dm*/ resDm:' They also have the order that knows where the prison is.', idle:'A militant wing starts hunting god-slayers', small:['Recover a relic','Shelter persecuted dragonborn','Preach against the god-slayers','Ask a player to give the power back'], big:'They learn that Voth\'s power is only released when its holder dies, and a militant wing starts hunting god-slayers.',
+ },
+ {n:'The Unbowed', who:'Mortals who want no gods at all', want:'A universe without gods', members:'Mortals who helped bring down Voth to be free and now have hundreds of gods.', leader:'A mortal who marched on Voth and was too far away to receive any power.', res:'Numbers, hidden cells on many worlds, public sympathy.',
+ /*dm*/ idle:'They kill gods, which only makes more gods', small:['Turn worshippers away from a god','Sabotage a temple','Hide people fleeing a realm'], big:'They kill their first god, and the killers become gods or demigods themselves. The movement splits over whether those people are traitors.',
+ },
+ {n:'The Foundry', who:'Mortal inventors', want:'To never need a god again', members:'Mortal inventors building technology to match divine power.', leader:'A council of guildmasters.', res:'Technology, ships, wealth, weapons.',
+ /*dm*/ idle:'They build weapons that can kill gods', small:['A new invention spreads between worlds','They sell arms to several sides at once','They hire the players to recover divine material'], big:'They unveil a weapon that kills a god without the wielder absorbing the power.',
+ }
+];
+
+/*dm-start*/
+const TODO = [
+ 'Final player count',
+ 'Exact length of the gap between Voth\'s death and session one',
+ 'How the powers of Ado and Voth can be combined, and what it costs',
+ 'House rules and banned content',
+ 'Ado\'s servant: player or NPC (session negative decides)',
+ 'Domain list (after session negative)',
+ 'NPC gods and named faction leaders (after session negative)',
+ 'Session 0 prompts (separate chat)',
+ 'Review the suggested lore for humans, tortles, aarakocra, kenku, hadozee, and great apes'
+];
+/*dm-end*/
+
+/* ---------- render ---------- */
+const $ = s => document.querySelector(s);
+const li = a => a.map(x=>`<li>${x}</li>`).join('');
+
+$('#facTable').innerHTML = `<tr><th>Faction</th><th>Who they are</th><th>What they want</th>${FACTIONS[0].idle?'<th>If the players do nothing</th>':''}</tr>` +
+  FACTIONS.map(f=>`<tr><td><b>${f.n}</b></td><td>${f.who}</td><td>${f.want}</td>${f.idle?`<td>${f.idle}</td>`:''}</tr>`).join('');
+
+$('#facCards').innerHTML = FACTIONS.map(f=>`<div class="plate"><h3>${f.n}</h3>
+  <p class="kv"><b>Members:</b> ${f.members}</p><p class="kv"><b>Leader:</b> ${f.leader}</p>
+  <p class="kv"><b>Resources:</b> ${f.res}${f.resDm||''}</p><p class="kv"><b>Wants:</b> ${f.want}.</p>
+  ${f.small?`<h4>Small moves</h4><ul>${li(f.small)}</ul><h4>Big development</h4><p>${f.big}</p>`:''}</div>`).join('');
+
+$('#raceCards').innerHTML = RACES.map(r=>`<button class="plate link" data-race="${r.id}">
+  <div class="rhead">${glyph(r.id,r.color)}<div><h3>${r.name}</h3><small>${r.kind}${r.src?', '+r.src:''}. ${r.size}.</small></div></div>
+  <p>${r.line}</p><ul>${li(r.keys)}</ul></button>`).join('');
+
+$('#raceChips').innerHTML = RACES.map(r=>`<button class="chip" data-race="${r.id}" aria-pressed="false" style="color:${r.color}">${r.name}</button>`).join('');
+
+$('#upTable').innerHTML = '<tr><th>Race</th><th>Level 7 upgrade</th></tr>' + RACES.map(r=>`<tr><td>${r.name}</td><td>${r.up}</td></tr>`).join('');
+
+function showRace(id){
+  const r = RACES.find(x=>x.id===id) || RACES[0];
+  document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed', c.dataset.race===r.id));
+  const sec = (t,html) => html ? `<h4>${t}</h4>${html}` : '';
+  $('#raceDetail').innerHTML = `<div class="plate">
+    <div class="rhead">${glyph(r.id,r.color)}<div><h3 style="font-size:1.9rem">${r.name}${r.pron?` <small style="display:inline">(${r.pron})</small>`:''}</h3>
+    <small>${r.kind}${r.src?', from '+r.src:''}. ${r.size}, speed ${r.speed}.</small></div></div>
+    ${r.sug?'<p><span class="sug">Suggested lore, may change</span></p>':''}
+    <p class="lede">${r.line}</p>
+    ${sec('Look', r.look?`<p>${r.look}</p>`:'')}
+    ${sec('Life cycle', r.life?`<ul>${li(r.life)}</ul>`:'')}
+    ${sec('Culture', r.culture?`<ul>${li(r.culture)}</ul>`:'')}
+    ${sec('Under Voth', r.voth?`<p>${r.voth}</p>`:'')}
+    ${sec('Now', r.now?`<p>${r.now}</p>`:'')}
+    ${sec('As god-slayers', r.slayer?`<p>${r.slayer}</p>`:'')}
+    ${r.dm?`<div class="secret"><span class="tag">DM only</span><div class="sb"><ul>${li(r.dm)}</ul></div></div>`:''}
+    <h4>Traits</h4>
+    <ul class="traits"><li><b>Ability scores.</b> +2 to one and +1 to another.</li>
+    ${r.traits.map(t=>`<li><b>${t[0]}.</b> ${t[1]}${t[2]?` <span class="src">${t[2]}.</span>`:''}</li>`).join('')}
+    <li><b>Level 7.</b> ${r.up}</li></ul></div>`;
+  try{ localStorage.setItem('av-race', r.id); }catch(e){}
+}
+
+function showTab(id, scroll){
+  document.querySelectorAll('[role=tabpanel]').forEach(p=>p.hidden = p.id!==id);
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===id));
+  try{ localStorage.setItem('av-tab', id); }catch(e){}
+  if(scroll) window.scrollTo({top:0});
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showTab(t.dataset.tab,true)));
+document.addEventListener('click',e=>{
+  const go = e.target.closest('[data-go]'); if(go){ e.preventDefault(); showTab(go.dataset.go,true); return; }
+  const rc = e.target.closest('[data-race]'); if(rc){ showRace(rc.dataset.race); if(rc.classList.contains('link')) showTab('races',true); }
+});
+
+/*dm-start*/
+/* veil */
+const veil = $('#veil');
+function setVeil(on){ document.body.classList.toggle('veiled',on); veil.setAttribute('aria-pressed',on); veil.textContent = on?'Show DM secrets':'Hide DM secrets'; try{ localStorage.setItem('av-veil', on?'1':'0'); }catch(e){} }
+veil.addEventListener('click',()=>setVeil(!document.body.classList.contains('veiled')));
+
+/* to-do */
+let done = {};
+try{ done = JSON.parse(localStorage.getItem('av-todo')||'{}') || {}; }catch(e){ done = {}; }
+$('#todo').innerHTML = TODO.map((t,i)=>`<li><label><input type="checkbox" data-i="${i}" ${done[i]?'checked':''}><span>${t}</span></label></li>`).join('');
+$('#todo').addEventListener('change',e=>{ done[e.target.dataset.i] = e.target.checked; try{ localStorage.setItem('av-todo', JSON.stringify(done)); }catch(err){} });
+/*dm-end*/
+
+/*dm-start*/
+/* players: character sheets pasted in as codes from the builder or the player guide */
+const P_ABS=[['str','Strength'],['dex','Dexterity'],['con','Constitution'],['int','Intelligence'],['wis','Wisdom'],['cha','Charisma']];
+const P_SK=[['Acrobatics','dex'],['Animal Handling','wis'],['Arcana','int'],['Athletics','str'],['Deception','cha'],['History','int'],['Insight','wis'],['Intimidation','cha'],['Investigation','int'],['Medicine','wis'],['Nature','int'],['Perception','wis'],['Performance','cha'],['Persuasion','cha'],['Religion','int'],['Sleight of Hand','dex'],['Stealth','dex'],['Survival','wis']];
+const pesc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pnum=v=>{ const n=parseInt(v,10); return isNaN(n)?0:n; };
+const psgn=n=>(n>=0?'+':'')+n;
+let PARTY={}, partyDb=null, askRemove='';
+function partyLocal(){ try{ localStorage.setItem('tbg-party',JSON.stringify(PARTY)); }catch(e){} }
+try{ PARTY=JSON.parse(localStorage.getItem('tbg-party')||'{}')||{}; }catch(e){ PARTY={}; }
+function readCode(t){ t=String(t||'').replace(/\s+/g,''); if(t.indexOf('TBG1:')!==0) throw new Error('bad'); const o=JSON.parse(decodeURIComponent(escape(atob(t.slice(5))))); if(!o||typeof o!=='object'||!o.ab) throw new Error('bad'); return o; }
+const partyId=o=>((o.player||'player')+'-'+(o.name||'character')).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80)||'character';
+function renderParty(){
+  const ids=Object.keys(PARTY).sort((a,b)=>String(PARTY[a].name).localeCompare(String(PARTY[b].name)));
+  if(!ids.length){ $('#party').innerHTML='<div class="plate pc"><p>No characters yet. When a player finishes the builder, they copy a character code and send it to you. Paste it above and the full sheet appears here.</p></div>'; return; }
+  $('#party').innerHTML=ids.map(id=>{ const c=PARTY[id], ab=c.ab||{}, sv=c.sv||{}, sk=c.sk||{}, L=Math.max(1,Math.min(20,pnum(c.level)||1)), pb=2+Math.floor((L-1)/4);
+    const m=k=>Math.floor((pnum(ab[k])-10)/2), r=RACES.find(x=>x.id===c.race), opts=Array.isArray(c.options)?c.options:[], card=c.card||{};
+    const trained=P_SK.filter(([n])=>pnum(sk[n])>0).map(([n,a])=>pesc(n)+' '+psgn(m(a)+pb*pnum(sk[n]))+(pnum(sk[n])>1?' (expertise)':'')).join(', ');
+    const group=(cat,label)=>{ const xs=opts.filter(o=>o.cat===cat); return xs.length?`<details><summary>${label} (${xs.length})</summary>`+xs.map(o=>`<div class="popt"><b>${pesc(o.name)}</b>${o.cost&&o.cost!=='Passive'?`<span class="pbadge">${pesc(o.cost)}</span>`:''}${o.max?`<span class="pbadge">${pnum(o.max)} uses</span>`:''}${o.roll?` <span class="roll">${pesc(o.roll)}</span>`:''}${o.desc?`<p>${pesc(o.desc)}</p>`:''}</div>`).join('')+'</details>':''; };
+    return `<div class="plate pc">
+      <h3 style="color:var(--gold);font-size:1.7rem">${pesc(c.name||'Unnamed character')}</h3>
+      <p class="who">Level ${L} ${pesc(r?r.name:c.race||'')} ${pesc(c.cls||'')}${c.player?'. Played by '+pesc(c.player):''}${c.t?'. Sheet from '+new Date(c.t).toLocaleDateString():''}.</p>
+      <div class="pstats"><div class="pstat"><b>${pnum(c.ac)}</b>Armor class</div><div class="pstat"><b>${pnum(c.hpMax)}</b>Hit points</div><div class="pstat"><b class="sm">${pesc(c.speed||'')}</b>Speed</div><div class="pstat"><b>${psgn(m('dex'))}</b>Initiative</div><div class="pstat"><b>${10+m('wis')+pb*pnum(sk.Perception)}</b>Passive Perception</div><div class="pstat"><b>${pnum(c.atk)||1}</b>Attacks per action</div></div>
+      <div class="pstats">${P_ABS.map(([k,n])=>`<div class="pstat"><b>${pnum(ab[k])}</b>${n}<br>${psgn(m(k))}, save ${psgn(m(k)+(sv[k]?pb:0))}</div>`).join('')}</div>
+      <p class="kv"><b>Trained skills:</b> ${trained||'none listed'}</p>
+      <div class="secret"><span class="tag">Divinity</span><div class="sb">Tier: ${pesc(c.tier||'not chosen')}. Spark: ${pesc(c.spark===''||c.spark==null?'not set':c.spark)}. Faith: ${pesc(c.faith===''||c.faith==null?'not set':c.faith)}. Domain: ${pesc(c.domain||'not chosen')}.</div></div>
+      ${(card.go||card.sig||card.emg)?`<p class="kv"><b>Go-to attack:</b> ${pesc(card.go)}</p><p class="kv"><b>Signature move:</b> ${pesc(card.sig)}</p><p class="kv"><b>Emergency button:</b> ${pesc(card.emg)}</p>`:''}
+      ${group('Attack','Attacks')}${group('Ability','Abilities')}${group('Spell','Spells')}${group('Item','Items')}${group('Other','Other')}
+      ${c.gear?`<details><summary>Gear</summary><p class="pre">${pesc(c.gear)}</p></details>`:''}
+      ${c.notes?`<details><summary>Notes</summary><p class="pre">${pesc(c.notes)}</p></details>`:''}
+      <p style="margin-top:14px">${askRemove===id?`Remove this sheet from your party page? <button class="act sm" data-prm="${pesc(id)}">Remove it</button> <button class="act sm" data-pkeep="1">Keep it</button>`:`<button class="act sm" data-pask="${pesc(id)}">Remove this character</button>`}</p>
+    </div>`; }).join('');
+}
+$('#pAdd').addEventListener('click',async()=>{ const msg=$('#pMsg'); let o;
+  try{ o=readCode($('#pCode').value); }catch(e){ msg.textContent='That is not a character code. Ask the player to copy it again.'; return; }
+  const id=partyId(o), had=!!PARTY[id]; PARTY[id]=o; partyLocal(); renderParty(); $('#pCode').value='';
+  msg.textContent=(had?'Updated ':'Added ')+(o.name||'the character')+'.';
+  if(partyDb){ try{ await partyDb.doc(id).set({json:JSON.stringify(o),t:o.t||0}); }catch(e){ $('#pState').textContent='This sheet is saved in this browser only. Saving to your account did not work just now.'; } } });
+$('#party').addEventListener('click',async e=>{
+  const ask=e.target.closest('[data-pask]'); if(ask){ askRemove=ask.dataset.pask; renderParty(); return; }
+  if(e.target.closest('[data-pkeep]')){ askRemove=''; renderParty(); return; }
+  const rm=e.target.closest('[data-prm]'); if(rm){ const id=rm.dataset.prm; delete PARTY[id]; askRemove=''; partyLocal(); renderParty(); if(partyDb){ try{ await partyDb.doc(id).delete(); }catch(err){} } } });
+renderParty();
+(async function(){ try{
+  if(!window.claude||!window.claude.use){ $('#pState').textContent='Sheets are saved in this browser.'; return; }
+  const db=await window.claude.use('db'); if(!db){ $('#pState').textContent='Sheets are saved in this browser.'; return; }
+  const col=db.collection('party'); const snap=await col.get(); const remote={};
+  snap.docs.forEach(x=>{ try{ remote[x.id]=JSON.parse(x.data().json); }catch(e){} });
+  const localOnly=Object.keys(PARTY).filter(id=>!remote[id]||(PARTY[id].t||0)>(remote[id].t||0));
+  Object.keys(remote).forEach(id=>{ if(!PARTY[id]||(remote[id].t||0)>=(PARTY[id].t||0)) PARTY[id]=remote[id]; });
+  partyDb=col; partyLocal(); renderParty(); $('#pState').textContent='Sheets are saved to your account, so they follow you to other devices.';
+  for(const id of localOnly){ try{ await col.doc(id).set({json:JSON.stringify(PARTY[id]),t:PARTY[id].t||0}); }catch(e){} }
+}catch(e){ $('#pState').textContent='Sheets are saved in this browser.'; } })();
+/*dm-end*/
+
+/* restore */
+let t0='overview', r0='corrin', v0=false;
+try{ t0 = localStorage.getItem('av-tab')||t0; r0 = localStorage.getItem('av-race')||r0; v0 = localStorage.getItem('av-veil')==='1'; }catch(e){}
+if(!document.getElementById(t0)) t0='overview';
+showRace(r0); showTab(t0,false);
+/*dm-start*/
+setVeil(v0);
+/*dm-end*/
+
+
+
+/* starfield */
+(function(){
+  const c = $('#stars'), x = c.getContext('2d'); let S=[], w, h;
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function size(){ const d = Math.min(window.devicePixelRatio||1,2); w=c.width=innerWidth*d; h=c.height=innerHeight*d;
+    S = Array.from({length:Math.round(innerWidth*innerHeight/5200)},()=>({x:Math.random()*w,y:Math.random()*h,r:(Math.random()*1.2+.3)*d,p:Math.random()*6.28,s:Math.random()*.9+.2,c:Math.random()<.12?'255,190,140':Math.random()<.3?'170,195,255':'235,230,215'})); draw(0); }
+  function draw(t){ x.clearRect(0,0,w,h); for(const s of S){ const a = still?.7:.45+.4*Math.sin(s.p+t*.0006*s.s); x.fillStyle=`rgba(${s.c},${a})`; x.beginPath(); x.arc(s.x,s.y,s.r,0,6.28); x.fill(); } }
+  function loop(t){ draw(t); requestAnimationFrame(loop); }
+  addEventListener('resize',size); size(); if(!still) requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+/* Base for every page inside a campaign. Colours and fonts come from campaigns.theme,
+   set as CSS variables on .campaign by the campaign layout. The values below are only
+   fallbacks for a campaign with an empty theme. */
+.campaign{
+  --void:#101014; --deep:#16161c; --plate:#1c1c24; --plate2:#22222c; --line:#34343f; --field:#0d0d11;
+  --vellum:#e8e6e1; --dim:#a3a1a8; --gold:#b9b2a0; --ember:#c9785a; --star:#8fa7d6; --verd:#6fb3a0; --on-gold:#14140f;
+  --gold-hi:color-mix(in srgb, var(--gold) 80%, white); --gold-lo:color-mix(in srgb, var(--gold) 88%, black);
+  --display:Georgia,"Times New Roman",serif; --body:Georgia,"Times New Roman",serif;
+  color-scheme:dark;
+  position:relative; min-height:100vh; margin:0;
+  background-color:var(--void); color:var(--vellum); font-family:var(--body); font-size:17px; line-height:1.62;
+  background-image:
+    radial-gradient(900px 520px at 12% -5%, color-mix(in srgb, var(--gold) 10%, transparent), transparent 60%),
+    radial-gradient(800px 600px at 95% 8%, color-mix(in srgb, var(--ember) 10%, transparent), transparent 60%),
+    radial-gradient(1200px 900px at 50% 110%, rgba(84,96,170,.14), transparent 60%);
+  background-attachment:fixed;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.campaign #stars{position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none}
+.campaign .page{position:relative; z-index:1}
+@media (max-width:600px){ .campaign{font-size:16px} }
+
+/* the strip above the tabs: the way back to the hub, and the DM's tools */
+.campaign .strip{position:relative; z-index:6; display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; justify-content:space-between;
+  max-width:1120px; margin:0 auto; padding:8px 20px 6px; font-size:.86rem; color:var(--dim)}
+.campaign .strip a{color:var(--dim); text-decoration:none}
+.campaign .strip a:hover{color:var(--vellum)}
+.campaign .strip .tools{display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center}
+.campaign .strip .tools a,.campaign .strip .tools button{font:inherit; color:var(--star); background:none; border:0; padding:0; cursor:pointer; text-decoration:none}
+.campaign .strip .tools a:hover,.campaign .strip .tools button:hover{color:var(--vellum)}
+.campaign .preview{position:relative; z-index:6; background:color-mix(in srgb, var(--verd) 16%, var(--void)); border-bottom:1px solid var(--verd); color:var(--vellum); font-size:.9rem; text-align:center; padding:6px 14px}
+.campaign .preview button{font:inherit; color:var(--verd); background:none; border:1px solid var(--verd); border-radius:2px; padding:1px 10px; margin-left:10px; cursor:pointer}
+.campaign .tabwrap{position:sticky; top:env(safe-area-inset-top,0px); z-index:5}
+
+/* tabs and chips are links here, not buttons */
+.cs-guide a.tab{text-decoration:none; display:inline-block; line-height:1.4}
+.cs-guide a.chip{text-decoration:none; display:inline-block}
+.cs-guide nav.tabs{position:static}
+.cs-guide ol{max-width:72ch}
+.cs-guide .wrap{padding-top:1px}
+
+/* DM tools inside a campaign (manage, editor) and small additions */
+.cs-guide .row{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center}
+.cs-guide .row.end{align-items:flex-end}
+.cs-guide .muted{color:var(--dim); font-size:.92rem}
+.cs-guide .err{color:var(--ember)}
+.cs-guide .okmsg{color:var(--verd)}
+.cs-guide code.code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:1.05rem; letter-spacing:.08em; color:var(--gold); background:var(--field); border:1px solid var(--line); padding:2px 8px; border-radius:2px}
+.cs-guide .act[disabled]{opacity:.5; cursor:default}
+.cs-guide a.act{text-decoration:none; display:inline-block}
+.cs-guide .act.danger{color:var(--ember); border-color:color-mix(in srgb, var(--ember) 60%, transparent); background:color-mix(in srgb, var(--ember) 8%, transparent)}
+.cs-guide .ed{border:1px solid var(--line); background:color-mix(in srgb, var(--deep) 92%, transparent); padding:12px 14px; margin:10px 0; min-width:0}
+.cs-guide .ed.dm{border-left:3px solid var(--ember)}
+.cs-guide .ed.off{opacity:.55}
+.cs-guide .ed > summary{cursor:pointer; display:flex; flex-wrap:wrap; gap:6px 10px; align-items:baseline; list-style:none; margin-top:0}
+.cs-guide .ed > summary::-webkit-details-marker{display:none}
+.cs-guide .ed > summary b{font-family:var(--display); font-weight:400; font-size:1.12rem; color:var(--vellum)}
+.cs-guide .pillb{font-size:.76rem; border:1px solid var(--line); color:var(--dim); padding:0 7px; border-radius:999px; white-space:nowrap; font-family:var(--body)}
+.cs-guide .pillb.dm{border-color:var(--ember); color:var(--ember)}
+.cs-guide .pillb.pl{border-color:var(--verd); color:var(--verd)}
+.cs-guide .rich{border:1px solid var(--line); background:var(--field); padding:10px 12px; min-height:60px; border-radius:2px}
+.cs-guide .rich:focus{outline:none; border-color:var(--gold)}
+.cs-guide .rich > :last-child{margin-bottom:0}
+.cs-guide textarea.mono{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85rem}
+.cs-guide .party-line{display:flex; flex-wrap:wrap; gap:4px 12px; padding:6px 0; border-bottom:1px solid var(--line)}
+.cs-guide .party-line:last-child{border-bottom:0}
+.cs-guide select.small{width:auto; padding:3px 8px; font-size:.9rem}
+.cs-builder .screen video[hidden]{display:none}
+.cs-run .bar{top:env(safe-area-inset-top,0px)}
+.cs-run a.k{text-decoration:none; display:inline-block; color:var(--gold); background:color-mix(in srgb, var(--gold) 8%, transparent); border:1px solid color-mix(in srgb, var(--gold) 55%, transparent); padding:4px 11px; border-radius:2px; font-size:.95rem}
