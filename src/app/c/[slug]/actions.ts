@@ -1,0 +1,304 @@
+'use server';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { requireDm, requireViewer } from '@/lib/auth';
+import { VIEW_AS_PLAYER } from '@/lib/campaign';
+import { blank } from '@/islands/character';
+
+export type ActionState = { error?: string; note?: string } | null;
+
+const campaignId = async (supabase: Awaited<ReturnType<typeof requireViewer>>['supabase'], slug: string) => {
+  const { data } = await supabase.from('campaigns').select('id').eq('slug', slug).maybeSingle();
+  return data?.id as string | undefined;
+};
+const fresh = (slug: string) => revalidatePath('/c/' + slug, 'layout');
+
+// ---------------------------------------------------------------- everyone
+
+export async function setViewAsPlayer(slug: string, on: boolean) {
+  await requireDm();
+  const store = await cookies();
+  if (on) store.set(VIEW_AS_PLAYER, '1', { path: '/', sameSite: 'lax', httpOnly: true });
+  else store.delete(VIEW_AS_PLAYER);
+  fresh(slug);
+  redirect('/c/' + slug);
+}
+
+export async function createBlankCharacter(slug: string) {
+  const { supabase, user, profile } = await requireViewer();
+  const id = await campaignId(supabase, slug);
+  if (!id) redirect('/campaigns');
+  const data = { ...blank(), player: profile.display_name, t: Date.now() };
+  const { data: row } = await supabase.from('characters').insert({ owner: user.id, campaign_id: id, data }).select('id').single();
+  redirect(`/c/${slug}/sheet${row ? '?c=' + row.id : ''}`);
+}
+
+export async function deleteCharacter(slug: string, characterId: string) {
+  const { supabase } = await requireViewer();
+  await supabase.from('characters').delete().eq('id', characterId); // RLS: only the owner or the DM
+  fresh(slug);
+  redirect(`/c/${slug}/sheet`);
+}
+
+// ---------------------------------------------------------------- DM: campaign
+
+export async function setPhase(slug: string, phase: string) {
+  const { supabase } = await requireDm();
+  const { data: c } = await supabase.from('campaigns').select('id, phases').eq('slug', slug).maybeSingle();
+  if (!c || !(c.phases as { id: string }[]).some((p) => p.id === phase)) return;
+  await supabase.from('campaigns').update({ phase }).eq('id', c.id);
+  fresh(slug);
+}
+
+export async function updateCampaign(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const title = String(form.get('title') || '').trim().slice(0, 80);
+  const tagline = String(form.get('tagline') || '').trim().slice(0, 300);
+  if (!title) return { error: 'The title cannot be empty.' };
+  const patch: Record<string, unknown> = { title, tagline };
+  const raw = String(form.get('theme') || '').trim();
+  if (raw) {
+    try { const t = JSON.parse(raw); if (!t || typeof t !== 'object' || Array.isArray(t)) throw new Error(); patch.theme = t; } catch { return { error: 'The theme is not valid JSON. Nothing was saved.' }; }
+  }
+  const phases = String(form.get('phases') || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+    const i = l.indexOf(':');
+    const id = (i > 0 ? l.slice(0, i) : l).trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+    return { id, label: (i > 0 ? l.slice(i + 1) : l).trim() };
+  }).filter((p) => p.id);
+  patch.phases = phases;
+  const { error } = await supabase.from('campaigns').update(patch).eq('slug', slug);
+  if (error) return { error: 'That did not save.' };
+  fresh(slug);
+  revalidatePath('/campaigns');
+  return { note: 'Saved.' };
+}
+
+// ---------------------------------------------------------------- DM: invites and members
+
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no look-alikes
+function newCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join('');
+}
+
+export async function createInvite(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
+  const uses = parseInt(String(form.get('uses') || ''), 10);
+  const days = parseInt(String(form.get('days') || ''), 10);
+  const row = {
+    campaign_id: id,
+    code: newCode(),
+    uses_left: uses > 0 ? uses : null,
+    expires_at: days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : null,
+  };
+  const { error } = await supabase.from('invites').insert(row);
+  if (error) return { error: 'The code could not be created. Try again.' };
+  fresh(slug);
+  return { note: 'New code: ' + row.code };
+}
+
+export async function revokeInvite(slug: string, inviteId: string) {
+  const { supabase } = await requireDm();
+  await supabase.from('invites').update({ revoked: true }).eq('id', inviteId);
+  fresh(slug);
+}
+
+export async function removeMember(slug: string, userId: string) {
+  const { supabase } = await requireDm();
+  const id = await campaignId(supabase, slug);
+  if (id) await supabase.from('memberships').delete().eq('campaign_id', id).eq('user_id', userId);
+  fresh(slug);
+}
+
+// ---------------------------------------------------------------- DM: tabs
+
+export async function addSection(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
+  const title = String(form.get('title') || '').trim().slice(0, 40);
+  const audience = form.get('audience') === 'dm' ? 'dm' : 'all';
+  const s = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  if (!s) return { error: 'Give the tab a name.' };
+  if (['builder', 'manage', 'edit', 'media', 'session'].includes(s)) return { error: 'That name is used by the app. Choose another.' };
+  const { data: last } = await supabase.from('sections').select('sort').eq('campaign_id', id).order('sort', { ascending: false }).limit(1);
+  const { error } = await supabase.from('sections').insert({ campaign_id: id, slug: s, title, audience, kind: 'content', sort: (last?.[0]?.sort ?? 0) + 10 });
+  if (error) return { error: 'A tab with that name already exists.' };
+  fresh(slug);
+  return { note: 'Tab added.' };
+}
+
+export async function updateSection(slug: string, sectionId: string, patch: { title?: string; audience?: 'all' | 'dm' | 'player'; move?: -1 | 1; remove?: boolean }) {
+  const { supabase } = await requireDm();
+  const id = await campaignId(supabase, slug);
+  if (!id) return;
+  const { data: all } = await supabase.from('sections').select('id, slug, sort, kind').eq('campaign_id', id).order('sort');
+  const list = all ?? [];
+  const i = list.findIndex((s) => s.id === sectionId);
+  if (i < 0) return;
+  if (patch.remove) {
+    await supabase.from('content').delete().eq('campaign_id', id).eq('section', list[i].slug);
+    await supabase.from('sections').delete().eq('id', sectionId);
+  } else if (patch.move) {
+    const j = i + patch.move;
+    if (j >= 0 && j < list.length) {
+      [list[i], list[j]] = [list[j], list[i]];
+      await Promise.all(list.map((s, k) => supabase.from('sections').update({ sort: (k + 1) * 10 }).eq('id', s.id)));
+    }
+  } else {
+    const p: Record<string, string> = {};
+    if (patch.title) p.title = patch.title.trim().slice(0, 40);
+    if (patch.audience) p.audience = patch.audience;
+    if (Object.keys(p).length) await supabase.from('sections').update(p).eq('id', sectionId);
+  }
+  fresh(slug);
+}
+
+// ---------------------------------------------------------------- DM: content editor
+
+export async function saveContentRow(slug: string, rowId: string, patch: { title?: string; body?: unknown; visibility?: 'player' | 'dm'; hidden?: boolean; phase?: string | null }): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const p: Record<string, unknown> = {};
+  if (typeof patch.title === 'string') p.title = patch.title.slice(0, 120);
+  if (patch.body !== undefined) p.body = patch.body;
+  if (patch.visibility === 'player' || patch.visibility === 'dm') p.visibility = patch.visibility;
+  if (typeof patch.hidden === 'boolean') p.hidden = patch.hidden;
+  if (patch.phase !== undefined) p.phase = patch.phase || null;
+  const { error } = await supabase.from('content').update(p).eq('id', rowId);
+  if (error) return { error: 'That did not save.' };
+  fresh(slug);
+  return { note: 'Saved.' };
+}
+
+export async function moveContentRow(slug: string, section: string, rowId: string, dir: -1 | 1) {
+  const { supabase } = await requireDm();
+  const id = await campaignId(supabase, slug);
+  if (!id) return;
+  const { data } = await supabase.from('content').select('id, key, sort, visibility').eq('campaign_id', id).eq('section', section).order('sort').order('visibility', { ascending: false });
+  const rows = data ?? [];
+  // a player row and its DM wording move together
+  const groups: { ids: string[]; has: boolean }[] = [];
+  rows.forEach((r) => {
+    const prev = rows.find((x) => x !== r && x.key === r.key && x.sort === r.sort && groups.some((g) => g.ids.includes(x.id)));
+    const g = prev ? groups.find((x) => x.ids.includes(prev.id))! : (groups.push({ ids: [], has: false }), groups[groups.length - 1]);
+    g.ids.push(r.id);
+    if (r.id === rowId) g.has = true;
+  });
+  const i = groups.findIndex((g) => g.has), j = i + dir;
+  if (i < 0 || j < 0 || j >= groups.length) return;
+  [groups[i], groups[j]] = [groups[j], groups[i]];
+  await Promise.all(groups.flatMap((g, k) => g.ids.map((rid) => supabase.from('content').update({ sort: (k + 1) * 10 }).eq('id', rid))));
+  fresh(slug);
+}
+
+export async function deleteContentRow(slug: string, rowId: string) {
+  const { supabase } = await requireDm();
+  await supabase.from('content').delete().eq('id', rowId);
+  fresh(slug);
+}
+
+const NEW_BODY: Record<string, (title: string) => unknown> = {
+  heading: (t) => ({ text: t || 'New heading', level: 2 }),
+  html: () => ({ html: '<p>New text.</p>' }),
+  plate: (t) => ({ html: `<h3>${t || 'New card'}</h3><p>Text.</p>`, grid: 'g2', group: 'new-' + Date.now().toString(36) }),
+  secret: () => ({ tag: 'DM only', html: '<p>Secret text.</p>' }),
+  table: () => ({ html: '<table><tr><th>Column</th><th>Column</th></tr><tr><td>Cell</td><td>Cell</td></tr></table>' }),
+  checklist: () => ({ items: [{ text: 'First item', done: false }] }),
+};
+
+export async function addContentRow(slug: string, section: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
+  const kind = String(form.get('kind') || 'html');
+  if (!NEW_BODY[kind]) return { error: 'Unknown kind of block.' };
+  const title = String(form.get('title') || '').trim().slice(0, 120);
+  const visibility = form.get('visibility') === 'player' ? 'player' : 'dm';
+  const group = String(form.get('group') || '');
+  const { data: last } = await supabase.from('content').select('sort').eq('campaign_id', id).eq('section', section).lt('sort', 1000).order('sort', { ascending: false }).limit(1);
+  const body = NEW_BODY[kind](title) as Record<string, unknown>;
+  if (kind === 'plate' && group) body.group = group;
+  const { error } = await supabase.from('content').insert({
+    campaign_id: id, section, kind, title: title || kind, visibility, body,
+    key: kind + '-' + Date.now().toString(36), sort: (last?.[0]?.sort ?? 0) + 10,
+  });
+  if (error) return { error: 'The block could not be added.' };
+  fresh(slug);
+  return { note: 'Added at the bottom of the page. New blocks start as ' + (visibility === 'dm' ? 'DM only.' : 'visible to players.') };
+}
+
+export async function toggleChecklist(slug: string, rowId: string, index: number, done: boolean) {
+  const { supabase } = await requireDm();
+  const { data: row } = await supabase.from('content').select('body').eq('id', rowId).maybeSingle();
+  const items = row?.body?.items;
+  if (!Array.isArray(items) || !items[index]) return;
+  items[index] = { ...items[index], done };
+  await supabase.from('content').update({ body: { ...row!.body, items } }).eq('id', rowId);
+}
+
+// ---------------------------------------------------------------- DM: sessions
+
+export async function addSession(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
+  const title = String(form.get('title') || '').trim().slice(0, 120);
+  const number = parseInt(String(form.get('number') || ''), 10);
+  if (!title || Number.isNaN(number)) return { error: 'Give the session a number and a title.' };
+  const { error } = await supabase.from('sessions').insert({ campaign_id: id, number, title, summary: String(form.get('summary') || '').trim(), status: 'planned' });
+  if (error) return { error: 'There is already a session with that number.' };
+  fresh(slug);
+  return { note: 'Session added.' };
+}
+
+export async function updateSession(slug: string, sessionId: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const patch = {
+    title: String(form.get('title') || '').trim().slice(0, 120),
+    meta: String(form.get('meta') || '').trim().slice(0, 200),
+    summary: String(form.get('summary') || '').trim(),
+    status: String(form.get('status') || 'planned'),
+  };
+  if (!patch.title) return { error: 'The title cannot be empty.' };
+  const { error } = await supabase.from('sessions').update(patch).eq('id', sessionId);
+  if (error) return { error: 'That did not save.' };
+  fresh(slug);
+  return { note: 'Saved.' };
+}
+
+export async function saveSessionNotes(slug: string, sessionId: string, notes: string) {
+  const { supabase } = await requireDm();
+  const { data } = await supabase.from('sessions').select('content').eq('id', sessionId).maybeSingle();
+  await supabase.from('sessions').update({ content: { ...(data?.content ?? {}), notes } }).eq('id', sessionId);
+  fresh(slug);
+}
+
+export async function saveSessionBeat(slug: string, sessionId: string, beatId: string, html: string): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const { data } = await supabase.from('sessions').select('content').eq('id', sessionId).maybeSingle();
+  const beats = data?.content?.beats;
+  if (!Array.isArray(beats)) return { error: 'This session has no run sheet.' };
+  const next = beats.map((b: { id: string; html: string }) => (b.id === beatId ? { ...b, html } : b));
+  const { error } = await supabase.from('sessions').update({ content: { ...data!.content, beats: next } }).eq('id', sessionId);
+  if (error) return { error: 'That did not save.' };
+  fresh(slug);
+  return { note: 'Saved.' };
+}
+
+export async function duplicateContentRow(slug: string, rowId: string): Promise<ActionState> {
+  const { supabase } = await requireDm();
+  const { data: row } = await supabase.from('content').select('*').eq('id', rowId).maybeSingle();
+  if (!row) return { error: 'That block no longer exists.' };
+  const stamp = Date.now().toString(36);
+  const body = row.body && typeof row.body === 'object' && 'id' in row.body ? { ...row.body, id: row.body.id + '-' + stamp } : row.body;
+  const { error } = await supabase.from('content').insert({
+    campaign_id: row.campaign_id, section: row.section, kind: row.kind, key: row.key + '-' + stamp, sort: row.sort,
+    title: row.title + ' (copy)', body, visibility: 'dm', phase: row.phase, hidden: false,
+  });
+  if (error) return { error: 'The copy could not be made.' };
+  fresh(slug);
+  return { note: 'Copied. The copy is DM only until you change who sees it.' };
+}

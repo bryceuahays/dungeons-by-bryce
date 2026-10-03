@@ -1,0 +1,117 @@
+'use client';
+import { useActionState, useTransition } from 'react';
+import { addContentRow, addSection, addSession, createInvite, updateCampaign, updateSection, updateSession, type ActionState } from '@/app/c/[slug]/actions';
+
+function Msg({ state }: { state: ActionState }) {
+  if (state?.error) return <span className="err" role="alert">{state.error}</span>;
+  if (state?.note) return <span className="okmsg" role="status">{state.note}</span>;
+  return null;
+}
+
+export function SessionForm({ slug }: { slug: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(addSession.bind(null, slug), null);
+  return (
+    <form action={action}>
+      <div className="fields">
+        <label className="f">Number<input name="number" type="number" required /></label>
+        <label className="f">Title<input name="title" required maxLength={120} /></label>
+      </div>
+      <label className="f" style={{ marginTop: 10 }}>Summary<textarea name="summary" rows={2} /></label>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Add session</button> <Msg state={state} /></p>
+    </form>
+  );
+}
+
+export function SessionEditForm({ slug, session }: { slug: string; session: { id: string; title: string; meta: string; summary: string; status: string } }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(updateSession.bind(null, slug, session.id), null);
+  return (
+    <form action={action}>
+      <div className="fields wide">
+        <label className="f">Title<input name="title" defaultValue={session.title} required maxLength={120} /></label>
+        <label className="f">Short line (length, level)<input name="meta" defaultValue={session.meta} maxLength={200} /></label>
+        <label className="f">Status<select name="status" defaultValue={session.status}><option value="unplanned">Not planned yet</option><option value="planned">Planned</option><option value="ready">Ready to run</option><option value="played">Played</option></select></label>
+      </div>
+      <label className="f" style={{ marginTop: 10 }}>Summary<textarea name="summary" rows={3} defaultValue={session.summary} /></label>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Save</button> <Msg state={state} /></p>
+    </form>
+  );
+}
+
+export function InviteForm({ slug }: { slug: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(createInvite.bind(null, slug), null);
+  return (
+    <form action={action}>
+      <div className="fields">
+        <label className="f">How many people can use it (blank for no limit)<input name="uses" type="number" min={1} max={99} placeholder="6" /></label>
+        <label className="f">Days until it expires (blank for never)<input name="days" type="number" min={1} max={365} placeholder="14" /></label>
+      </div>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Create invite code</button> <Msg state={state} /></p>
+    </form>
+  );
+}
+
+export function CampaignForm({ slug, campaign }: { slug: string; campaign: { title: string; tagline: string; theme: unknown; phases: { id: string; label: string }[] } }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(updateCampaign.bind(null, slug), null);
+  return (
+    <form action={action}>
+      <div className="fields wide">
+        <label className="f">Title<input name="title" defaultValue={campaign.title} required maxLength={80} /></label>
+      </div>
+      <label className="f" style={{ marginTop: 10 }}>Tagline (shown on the campaign card)<textarea name="tagline" rows={2} defaultValue={campaign.tagline} maxLength={300} /></label>
+      <label className="f" style={{ marginTop: 10 }}>Phases, one per line, as id: label. Leave empty if this campaign has no phases.
+        <textarea name="phases" rows={3} className="mono" defaultValue={campaign.phases.map((p) => `${p.id}: ${p.label}`).join('\n')} />
+      </label>
+      <details style={{ marginTop: 10 }}>
+        <summary className="muted" style={{ cursor: 'pointer' }}>Theme (colours and fonts)</summary>
+        <p className="muted">These are the design tokens for this campaign only. Colours are hex values. Change a value and save to restyle every page.</p>
+        <textarea name="theme" rows={18} className="mono" defaultValue={JSON.stringify(campaign.theme, null, 2)} spellCheck={false} />
+      </details>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Save campaign settings</button> <Msg state={state} /></p>
+    </form>
+  );
+}
+
+export function AddSectionForm({ slug }: { slug: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(addSection.bind(null, slug), null);
+  return (
+    <form action={action}>
+      <div className="fields">
+        <label className="f">New tab name<input name="title" required maxLength={40} /></label>
+        <label className="f">Who sees it<select name="audience" defaultValue="all"><option value="all">Players and DM</option><option value="dm">DM only</option></select></label>
+      </div>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Add tab</button> <Msg state={state} /></p>
+    </form>
+  );
+}
+
+export function SectionRow({ slug, section, first, last }: { slug: string; section: { id: string; title: string; audience: string; kind: string; slug: string }; first: boolean; last: boolean }) {
+  const [pending, start] = useTransition();
+  const run = (patch: Parameters<typeof updateSection>[2]) => start(() => updateSection(slug, section.id, patch));
+  const builtIn = section.kind !== 'content';
+  return (
+    <div className="orow">
+      <span><b>{section.title}</b> <small>{builtIn ? 'built-in' : 'pages'} · {section.audience === 'all' ? 'players and DM' : section.audience === 'dm' ? 'DM only' : 'players only'}</small></span>
+      <span className="row">
+        <button className="act sm" disabled={pending || first} onClick={() => run({ move: -1 })}>Up</button>
+        <button className="act sm" disabled={pending || last} onClick={() => run({ move: 1 })}>Down</button>
+        <button className="act sm" disabled={pending} onClick={() => { const t = prompt('Tab name', section.title); if (t && t.trim()) run({ title: t }); }}>Rename</button>
+        {!builtIn ? <button className="act sm" disabled={pending} onClick={() => run({ audience: section.audience === 'dm' ? 'all' : 'dm' })}>{section.audience === 'dm' ? 'Show to players' : 'Make DM only'}</button> : null}
+        {!builtIn ? <button className="act sm danger" disabled={pending} onClick={() => { if (confirm(`Delete the "${section.title}" tab and everything on it? This cannot be undone.`)) run({ remove: true }); }}>Delete</button> : null}
+      </span>
+    </div>
+  );
+}
+
+export function AddBlockForm({ slug, section }: { slug: string; section: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(addContentRow.bind(null, slug, section), null);
+  return (
+    <form action={action}>
+      <div className="fields">
+        <label className="f">Kind<select name="kind" defaultValue="html"><option value="heading">Heading</option><option value="html">Text</option><option value="plate">Card</option><option value="secret">Secret box</option><option value="table">Table</option><option value="checklist">Checklist</option></select></label>
+        <label className="f">Title (for headings and cards)<input name="title" maxLength={120} /></label>
+        <label className="f">Who sees it<select name="visibility" defaultValue="dm"><option value="dm">DM only</option><option value="player">Players and DM</option></select></label>
+      </div>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Add block</button> <Msg state={state} /></p>
+    </form>
+  );
+}
