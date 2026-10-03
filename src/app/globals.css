@@ -1,0 +1,60 @@
+/* The hub shell: dark, quiet, and plain. It deliberately shares nothing with any
+   campaign's theme. Campaign styles are scoped under .campaign. */
+:root{
+  --h-bg:#121416; --h-panel:#1a1d20; --h-line:#2c3136; --h-text:#e4e5e2; --h-dim:#9aa0a6; --h-accent:#b8c4cf; --h-bad:#e08a7a; --h-ok:#8fc2a4;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%; -webkit-text-size-adjust:100%}
+body{margin:0; min-height:100%; background:var(--h-bg); color:var(--h-text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55}
+[hidden]{display:none !important}
+
+.hub{min-height:100vh; display:flex; flex-direction:column}
+.hub a{color:var(--h-accent)}
+.hub-bar{border-bottom:1px solid var(--h-line)}
+.hub-bar .in{max-width:960px; margin:0 auto; padding:14px 20px; display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center}
+.hub .hub-name{font-weight:600; letter-spacing:.02em; color:var(--h-text); text-decoration:none; margin-right:auto}
+.hub-bar nav{display:flex; flex-wrap:wrap; gap:6px 18px}
+.hub-bar nav a{color:var(--h-dim); text-decoration:none; font-size:.95rem}
+.hub-bar nav a:hover{color:var(--h-text)}
+.hub-main{max-width:960px; width:100%; margin:0 auto; padding:34px 20px 80px; flex:1}
+.hub h1{font-size:1.7rem; font-weight:600; margin:0 0 6px; letter-spacing:-.01em}
+.hub h2{font-size:1.15rem; font-weight:600; margin:34px 0 10px}
+.hub p{margin:0 0 12px; max-width:64ch}
+.hub .dim{color:var(--h-dim)}
+.hub .panel{background:var(--h-panel); border:1px solid var(--h-line); border-radius:6px; padding:18px 20px; margin:14px 0}
+.hub .narrow{max-width:440px}
+.hub label{display:flex; flex-direction:column; gap:4px; font-size:.9rem; color:var(--h-dim); margin-bottom:12px}
+.hub input,.hub select,.hub textarea{font:inherit; color:var(--h-text); background:var(--h-bg); border:1px solid var(--h-line); border-radius:4px; padding:9px 11px; width:100%; min-width:0}
+.hub input:focus,.hub select:focus,.hub textarea:focus{outline:2px solid var(--h-accent); outline-offset:1px}
+.hub input[type=color]{padding:2px; height:38px}
+.hub button,.hub .button{font:inherit; color:var(--h-bg); background:var(--h-accent); border:1px solid var(--h-accent); border-radius:4px; padding:8px 16px; cursor:pointer; text-decoration:none; display:inline-block}
+.hub button.quiet,.hub .button.quiet{color:var(--h-text); background:transparent; border-color:var(--h-line)}
+.hub button:hover,.hub .button:hover{filter:brightness(1.08)}
+.hub button[disabled]{opacity:.6; cursor:default}
+.hub .bad{color:var(--h-bad)}
+.hub .good{color:var(--h-ok)}
+.hub .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin:16px 0}
+.hub .fieldrow{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:0 14px}
+.hub .inline{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end}
+.hub .inline label{margin-bottom:0; flex:1 1 200px}
+.hub .list{list-style:none; margin:0; padding:0}
+.hub .list li{display:flex; flex-wrap:wrap; gap:4px 14px; justify-content:space-between; align-items:baseline; padding:12px 0; border-bottom:1px solid var(--h-line)}
+.hub .list li:last-child{border-bottom:0}
+.hub-foot{border-top:1px solid var(--h-line); color:var(--h-dim); font-size:.85rem; padding:16px 20px; text-align:center}
+
+/* A campaign card previews that campaign's own theme (tokens set inline). */
+.ccard{display:block; text-decoration:none; border:1px solid var(--line,#34343f); padding:20px 20px 16px; min-height:150px; position:relative;
+  background-color:var(--void,#101014); color:var(--vellum,#e8e6e1); font-family:var(--body,Georgia,serif);
+  background-image:radial-gradient(420px 220px at 0% 0%, color-mix(in srgb, var(--gold,#b9b2a0) 16%, transparent), transparent 70%),
+                   radial-gradient(380px 240px at 100% 100%, color-mix(in srgb, var(--ember,#c9785a) 16%, transparent), transparent 70%)}
+.ccard:hover{border-color:var(--gold,#b9b2a0)}
+.ccard b{display:block; font-family:var(--display,Georgia,serif); font-weight:400; font-size:1.7rem; line-height:1.15; color:var(--gold,#b9b2a0); margin-bottom:8px}
+.ccard span{display:block; color:var(--dim,#a3a1a8); font-size:.95rem; line-height:1.45}
+.ccard i{display:block; font-style:normal; margin-top:12px; font-size:.8rem; color:var(--star,#8fa7d6)}
+
+.landing{min-height:100vh; display:grid; place-items:center; padding:24px}
+.landing .box{max-width:460px; text-align:center}
+.landing h1{font-size:2.1rem; margin-bottom:10px}
+.landing .actions{display:flex; gap:12px; justify-content:center; margin-top:22px; flex-wrap:wrap}
