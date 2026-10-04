@@ -92,3 +92,40 @@ body{margin:0; min-height:100%; background:var(--h-bg); color:var(--h-text); fon
 .center .box{width:100%; max-width:410px}
 .center .hub-name{font-size:1.25rem}
 .center h1{font-size:1.45rem; margin-top:14px}
+
+/* ---------- the signed-in hub: the hall artwork behind every tab ----------
+   Scoped to .hall (the signed-in layout) so the landing, sign-in and sign-up pages
+   and everything inside a campaign are untouched. */
+.hall{background:var(--h-bg)}
+.hall-bg{position:fixed; top:0; left:0; width:100%; height:100vh; height:100lvh; z-index:0; overflow:hidden; pointer-events:none; background:var(--h-bg)}
+.hall-bg picture,.hall-bg img{position:absolute; inset:0; width:100%; height:100%}
+.hall-bg img{object-fit:cover; object-position:center; display:block; user-select:none}
+/* over the image: edges melt into the page colour, and a dark veil that is heavier toward the bottom */
+.hall-bg::after{content:""; position:absolute; inset:0;
+  background:
+    linear-gradient(to right, var(--h-bg) 0%, rgba(1,5,8,0) 14%, rgba(1,5,8,0) 86%, var(--h-bg) 100%),
+    linear-gradient(to bottom, var(--h-bg) 0%, rgba(1,5,8,0) 12%),
+    linear-gradient(to bottom, rgba(1,5,8,.44) 0%, rgba(1,5,8,.55) 40%, rgba(1,5,8,.80) 78%, var(--h-bg) 100%)}
+.hall > header,.hall > main,.hall > footer{position:relative; z-index:1}
+.hall .hub-bar{background:rgba(1,5,8,.82); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
+.hall .hub-foot{background:rgba(1,5,8,.86)}
+
+/* titles sit on the image */
+.hall h1{font-size:clamp(1.7rem,3.4vw,2.3rem); margin-bottom:16px;
+  text-shadow:0 1px 0 rgba(0,0,0,.9), 0 2px 12px #010508, 0 0 26px rgba(79,209,197,.38)}
+.hall h2{text-shadow:0 1px 0 rgba(0,0,0,.9), 0 2px 10px #010508, 0 0 18px rgba(79,209,197,.22)}
+
+/* everything else sits on stone: near-solid panels, so nothing relies on the image to be readable */
+.hall .panel{background:linear-gradient(180deg, rgba(16,29,33,.95), rgba(9,18,21,.95)); border:1px solid #213840;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 12px 34px rgba(0,0,0,.5); transition:border-color .2s, box-shadow .2s}
+.hall .panel:hover{border-color:rgba(79,209,197,.34); box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 12px 34px rgba(0,0,0,.5), 0 0 26px rgba(79,209,197,.09)}
+.hall .panel > :last-child{margin-bottom:0}
+.hall .panel h2:first-child{margin-top:0; text-shadow:none}
+.hall button.quiet,.hall .button.quiet{background:rgba(6,13,16,.9)}
+.hall .ccard{box-shadow:0 12px 34px rgba(0,0,0,.55)}
+.hall .ccard:hover,.hall .ccard:focus-visible{box-shadow:0 12px 34px rgba(0,0,0,.55), 0 0 24px rgba(79,209,197,.12)}
+@media (prefers-reduced-motion:reduce){ .hall .panel{transition:none} }
+/* a soft dark pool behind each title, for the widths where it lands on the glowing arch */
+.hall h1,.hall .hub-main > h2,.hall .hub-main > form > h2{position:relative; z-index:0; width:fit-content; max-width:100%}
+.hall h1::before,.hall .hub-main > h2::before,.hall .hub-main > form > h2::before{content:""; position:absolute; z-index:-1; inset:-16px -56px -16px -40px; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(1,5,8,.84), rgba(1,5,8,.6) 62%, rgba(1,5,8,0) 100%)}

@@ -13,6 +13,7 @@
     "images": "node scripts/build-images.mjs",
     "seed": "node scripts/seed.mjs",
     "verify-seed": "node scripts/verify-seed.mjs",
+    "screenshots": "node scripts/screenshots.mjs",
     "test": "node --test --test-concurrency=1 \"tests/*.test.mjs\""
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "@types/react-dom": "^19.3.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.0.0",
+    "puppeteer-core": "^25.12.0",
     "sharp": "^0.35.5",
     "supabase": "^2.119.0",
     "typescript": "^5.9.0"

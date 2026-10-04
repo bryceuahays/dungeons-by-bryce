@@ -29,7 +29,7 @@ export default async function Campaigns() {
           ))}
         </div>
       ) : (
-        <p className="dim">{isDm ? 'No campaigns yet. Create one to get started.' : 'You are not in a campaign yet. Enter the invite code your DM gave you.'}</p>
+        <div className="panel narrow"><p className="dim">{isDm ? 'No campaigns yet. Create one to get started.' : 'You are not in a campaign yet. Enter the invite code your DM gave you.'}</p></div>
       )}
       {isDm ? (
         <p><Link className="button quiet" href="/new-campaign">Create a new campaign</Link></p>

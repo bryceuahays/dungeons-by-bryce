@@ -328,3 +328,23 @@ test('the DM edits a content row and the player sees the change', async () => {
     await admin.from('content').update({ body: row.body, hidden: false }).eq('id', row.id);
   }
 });
+
+// ------------------------------------------------------------------ hub artwork stays in the hub
+
+test('the hall background is on every signed-in hub tab, and nowhere else', async () => {
+  const hall = (t) => /class="hall-bg"/.test(t) && /\/hub\/hall-wide\.webp/.test(t) && /\/hub\/hall-tall\.webp/.test(t);
+  for (const r of ['/campaigns', '/characters', '/account']) {
+    const res = await page(r, player.session);
+    assert.equal(res.status, 200, r);
+    assert.ok(hall(res.text), r + ' should have the hall background');
+    assert.deepEqual(leaks(res.text), [], r);
+  }
+  const dmNew = await page('/new-campaign', dm.session);
+  assert.ok(hall(dmNew.text), 'New campaign should have the hall background');
+  for (const [r, s] of [['/', null], ['/sign-in', null], ['/sign-up', null], [`/c/${SLUG}/overview`, player.session], [`/c/${SLUG}/sheet`, player.session]]) {
+    const res = await page(r, s);
+    assert.equal(res.status, 200, r);
+    assert.ok(!/hall-bg|hall-wide|hall-tall/.test(res.text), r + ' must not have the hall background');
+  }
+  assert.ok(/doorway-wide\.webp/.test((await page('/', null)).text), 'the landing page keeps the doorway');
+});

@@ -1,5 +1,5 @@
-// Converts the landing page artwork in art/ (originals, never deployed) into WebP files
-// in public/landing/, each under 400 KB, and reports the colours the page design uses.
+// Converts the artwork in art/ (originals, never deployed) into WebP files under public/
+// (landing/ for the doorway, hub/ for the hall), each under 400 KB, and reports the colours the page design uses.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,7 +10,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIMIT = 400 * 1024;
 const hex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
 
-for (const [name, maxWidth] of [['doorway-wide', 2400], ['doorway-tall', 1200]]) {
+for (const [name, maxWidth, dir] of [['doorway-wide', 2400, 'landing'], ['doorway-tall', 1200, 'landing'], ['hall-wide', 2400, 'hub'], ['hall-tall', 1200, 'hub']]) {
   const src = path.join(ROOT, 'art', name + '.png');
   const meta = await sharp(src).metadata();
   const width = Math.min(meta.width, maxWidth);
@@ -20,7 +20,8 @@ for (const [name, maxWidth] of [['doorway-wide', 2400], ['doorway-tall', 1200]])
     if (out.length < LIMIT) break;
   }
   if (out.length >= LIMIT) throw new Error(name + ' could not be brought under 400 KB');
-  fs.writeFileSync(path.join(ROOT, 'public', 'landing', name + '.webp'), out);
+  fs.mkdirSync(path.join(ROOT, 'public', dir), { recursive: true });
+  fs.writeFileSync(path.join(ROOT, 'public', dir, name + '.webp'), out);
   const o = await sharp(out).metadata();
 
   // colours: the outer frame (what the page background has to match) and mid stone

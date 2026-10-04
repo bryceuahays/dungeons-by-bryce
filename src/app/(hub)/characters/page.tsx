@@ -34,7 +34,7 @@ export default async function Characters() {
           </ul>
         </div>
       ) : (
-        <p className="dim">You have not made a character yet. Open one of <Link href="/campaigns">your campaigns</Link> and choose My character.</p>
+        <div className="panel narrow"><p className="dim">You have not made a character yet. Open one of <Link href="/campaigns">your campaigns</Link> and choose My character.</p></div>
       )}
     </>
   );

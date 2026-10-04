@@ -9,7 +9,7 @@ export default async function NewCampaign() {
   return (
     <>
       <h1>New campaign</h1>
-      <p className="dim">This creates an empty campaign with its own look. You add its pages in the content editor, and invite players from Manage.</p>
+      <div className="panel"><p className="dim">This creates an empty campaign with its own look. You add its pages in the content editor, and invite players from Manage.</p></div>
       <NewCampaignForm campaigns={data ?? []} />
     </>
   );
