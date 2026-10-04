@@ -2,7 +2,7 @@
 
 Everything in the brief (phases 0 to 13) is built, on the `commercial` branch. The live site at https://dungeons-by-bryce.vercel.app still shows the old version. Nothing goes live until you say so.
 
-- **Preview of the new version:** https://dungeons-by-bryce-6g9p601q5-bryceuahays.vercel.app (Vercel asks you to be signed in to Vercel to open a preview; you are the only one who can.)
+- **Preview of the new version:** https://dungeons-by-bryce-bp2e9bvjd-bryceuahays.vercel.app (Vercel asks you to be signed in to Vercel to open a preview; you are the only one who can.)
 - **Tests:** 66 automated tests pass, including the 27 that existed before, against a local copy of the site and the real database. A browser run-through of the new screens (desktop and phone size) also passes.
 - **Your data:** your account, "To be a god" (currently showing as "To Kill God"), "For the testing", your character and your run-sheet state are intact. One campaign was added to your account: the demo, "The Lantern Beneath".
 - **Plan, decisions, later list:** `docs/commercial-plan.md`, `docs/decisions.md` (75 items), `TODO-LATER.md`.
@@ -221,7 +221,7 @@ Make a pack under **Homebrew**, then **Head DM**, **Store and custom site reques
 
 ## What you need to do by hand
 
-1. **Look at the preview** (link at the top of this file is the old one; the new one is in my last message), then say "put it live".
+1. **Look at the preview** (the link at the top of this file), then say "put it live".
 2. **Review `docs/originals-report.md`** and decide about the seven left-out traits.
 3. **Stripe test keys** are still needed for anything paid: packs, campaigns, upgrades and commission payment links. Steps are in section 2 above. Until then, free things work and paid buttons say payments are off.
 4. **A client needs an account** before you can deliver to them. The confirmation they see after requesting says so.
