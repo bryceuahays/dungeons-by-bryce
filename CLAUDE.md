@@ -25,3 +25,14 @@ Next.js (App Router, TypeScript) on Vercel. Supabase for Postgres, Auth, Storage
 
 ## Shell note
 On this Windows machine use `npx.cmd` / `npm.cmd` in PowerShell (scripts are blocked by execution policy).
+
+## Commercial build (branch `commercial`)
+
+- Read `docs/commercial-plan.md`, `docs/decisions.md` and `docs/handoff.md` first.
+- Plans and limits: `src/config/plans.ts` is the source; `npm run sync-config` copies it into `app_config.plans`, where the database enforces it (`is_pro`, `campaign_feature`, `campaign_writable`, `can_edit`, and the `*_gate` triggers). Pages ask `src/lib/entitlements.ts`. Never check a plan anywhere else.
+- Rules content: `entities` (SRD has no owner; homebrew belongs to an account; `source` is `srd`, `homebrew` or `private`). The legacy `rules` table is "To be a god" only and is all `private`. `usesLegacySheet()` decides which sheet a campaign gets.
+- Table tools are rows of `entries` (+ `entry_secrets` for the DM-only part). One visibility rule: `entry_open()` in SQL, mirrored by `entryOpen()` in `src/lib/entry-types.ts` for the "view as" preview.
+- Map pictures are served only through `src/lib/map-image.ts`, which paints hidden regions on the server.
+- Nothing that names "To be a god" may appear in code that ships to the browser (its title is hidden from its players before the reveal). A test checks the bundles.
+- Tests: `npm run build && npm run test:local`. They use throwaway accounts on the real database and fail if any are left behind.
+- Stripe is test-mode only by design (`src/lib/stripe.ts`).
