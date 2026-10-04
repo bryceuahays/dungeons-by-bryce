@@ -18,7 +18,10 @@
     "sync-config": "node scripts/sync-config.mjs",
     "seed-srd": "node scripts/seed-srd.mjs",
     "seed-demo": "node scripts/seed-demo.mjs",
-    "test:local": "node scripts/test-local.mjs"
+    "test:local": "node scripts/test-local.mjs",
+    "fetch-srd": "node scripts/fetch-srd.mjs",
+    "import-srd": "node scripts/import-srd.mjs",
+    "seed-originals": "node scripts/seed-originals.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

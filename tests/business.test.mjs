@@ -72,16 +72,16 @@ test('themes: default themes on every plan; premium themes and the editor on Pro
 
 test('custom campaign sites: a public page with the tiers; requests are for the admin only; a campaign can be handed to a client', async () => {
   const pg = await page('/custom', null);
-  assert.ok(pg.status === 200 && pg.text.includes('$70') && COMMISSION_TIERS.every((t) => pg.text.includes(t.name)) && pg.text.includes('name="pitch"') && pg.text.includes('name="deadline"'));
+  assert.ok(pg.status === 200 && pg.text.includes('$50') && COMMISSION_TIERS.every((t) => pg.text.includes(t.name)) && pg.text.includes('name="pitch"') && pg.text.includes('name="deadline"'));
   const made = await admin.from('commissions').insert({ name: 'Test Client', email: 'client-' + rnd() + '@test.dungeons.invalid', tier: 'starter', pitch: 'A haunted lighthouse campaign for four players.' }).select('id').single();
   assert.equal(made.error, null);
   assert.ok((await anonClient().from('commissions').insert({ name: 'x', email: 'x@test.dungeons.invalid', pitch: 'direct' }).select()).error, 'requests go in through the form only');
   assert.ok((await free.client.from('commissions').insert({ name: 'x', email: 'x@test.dungeons.invalid', pitch: 'direct' }).select()).error);
   assert.equal(((await free.client.from('commissions').select('id')).data ?? []).length, 0, 'nobody but the admin reads them');
   assert.ok(((await head.client.from('commissions').select('id, status')).data ?? []).some((r) => r.id === made.data.id));
-  assert.equal((await head.client.from('commissions').update({ status: 'building' }).eq('id', made.data.id)).error, null);
+  assert.equal((await head.client.from('commissions').update({ status: 'in_progress' }).eq('id', made.data.id)).error, null);
   const biz = await page('/admin/business', head.session);
-  assert.ok(biz.status === 200 && biz.text.includes('Test Client') && biz.text.includes('haunted lighthouse') && biz.text.includes('Hand a campaign to a client'));
+  assert.ok(biz.status === 200 && biz.text.includes('Test Client') && biz.text.includes('haunted lighthouse') && biz.text.includes('Hand a campaign to another account'));
   assert.ok((await page('/admin/business', free.session)).status >= 300);
   await admin.from('commissions').delete().eq('id', made.data.id);
 
@@ -186,7 +186,7 @@ test('store: private content cannot be published; a product is a frozen copy; th
   assert.equal((await buyer.client.from('campaign_entities').select('entity_id').eq('campaign_id', copy.id)).data.length, 1);
   // the buyer is its DM, can edit it on the free plan, and it has the tools it was built with
   assert.equal((await buyer.client.from('content').update({ title: 'my copy' }).eq('campaign_id', copy.id).select('id')).data.length, 3);
-  assert.equal((await buyer.client.from('entries').insert({ campaign_id: copy.id, kind: 'beat', title: 'My own beat', status: 'planned', live: false, vis: 'all' }).select('id')).error, null);
+  assert.ok(/upgrade:timeline/.test((await buyer.client.from('entries').insert({ campaign_id: copy.id, kind: 'beat', title: 'My own beat', status: 'planned', live: false, vis: 'all' }).select('id')).error?.message ?? ''), 'what came with it works; making new Pro-only things needs Pro');
   const mg = await page(where.replace(SITE, ''), buyer.session);
   assert.ok(mg.status === 200 && mg.text.includes('Manage The Glass Coast') && !mg.text.includes('read-only'));
   assert.equal(((await head.client.from('campaigns').select('id').eq('id', copy.id)).data ?? []).length, 0, 'the seller cannot see the buyer\'s copy');

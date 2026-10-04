@@ -4,6 +4,7 @@ import { themeStyle } from '@/lib/campaign';
 import { safeFontHref } from '@/lib/fonts';
 import { JoinForm } from '@/components/HubForms';
 import type { Campaign } from '@/lib/types';
+import { COMMISSION_TIERS, tierPrice } from '@/config/commissions';
 
 export const metadata = { title: 'My campaigns' };
 
@@ -42,6 +43,10 @@ export default async function Campaigns() {
       {mine.length ? <div className="cards">{mine.map(card)}</div>
         : <div className="panel narrow"><p className="dim">You are not running a campaign yet. Anyone can start one: you are its DM, and you invite your own players.</p></div>}
       <p><Link className="button quiet" href="/new-campaign">Create a new campaign</Link></p>
+      <div className="cards">
+        <Link className="ccard service" href="/custom"><b>Have Bryce build it</b><span>Send your notes and references and have your campaign set up for you, with a look made for it, then handed over to your account.</span><i>From {tierPrice(COMMISSION_TIERS[0])}</i></Link>
+        <Link className="ccard service" href="/store"><b>Start from a ready-made campaign</b><span>Campaigns and homebrew packs in the store. A bought campaign does not use up your free plan&apos;s one campaign.</span><i>Store</i></Link>
+      </div>
 
       <h2>Campaigns you play in</h2>
       {joined.length ? <div className="cards">{joined.map(card)}</div>

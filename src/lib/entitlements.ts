@@ -21,10 +21,13 @@ export type Plan = {
   plan: 'pro_monthly' | 'pro_yearly' | 'founder' | null;
   status: string | null;
   until: string | null;
+  gift_until?: string | null;   // Pro months that came with a commissioned campaign
   campaigns: number;
   homebrew: number;
 };
-export type CampaignAccess = { pro: boolean; writable: boolean };
+// pro: the campaign has every tool (its DM is on Pro, or it was bought or handed over, so what came with it works).
+// creator: its DM is on Pro, so NEW things of a Pro-only kind can be made in it.
+export type CampaignAccess = { pro: boolean; creator: boolean; writable: boolean };
 
 export const getPlan = cache(async (): Promise<Plan> => {
   const { supabase } = await requireViewer();
@@ -33,7 +36,11 @@ export const getPlan = cache(async (): Promise<Plan> => {
 });
 
 export const can = (plan: Pick<Plan, 'pro'>, feature: Feature) => plan.pro || !FEATURES[feature].pro;
+// may this campaign USE a feature (open the tool, see and edit what is there)?
 export const campaignCan = (access: CampaignAccess | null | undefined, feature: Feature) => !!access?.pro || !FEATURES[feature].pro;
+// may NEW things of this kind be made in it? A bought campaign on the free plan can use
+// everything it came with, but making more of a Pro-only kind needs Pro.
+export const campaignCanMake = (access: CampaignAccess | null | undefined, feature: Feature) => !!access?.creator || !FEATURES[feature].pro;
 
 // How many more of something a free account may make (Infinity on Pro).
 export function remaining(plan: Plan, what: 'campaigns' | 'homebrew'): number {

@@ -46,7 +46,7 @@ export function PasswordForm() {
   );
 }
 
-export function NewCampaignForm({ campaigns, pro }: { campaigns: { id: string; title: string }[]; pro: boolean }) {
+export function NewCampaignForm({ campaigns, pro, packs = [] }: { campaigns: { id: string; title: string }[]; pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[] }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
   return (
     <form action={action}>
@@ -68,6 +68,12 @@ export function NewCampaignForm({ campaigns, pro }: { campaigns: { id: string; t
       </div>
       <h2>Character rules</h2>
       <div className="panel">
+        {packs.length ? (
+          <fieldset className="multi">
+            <legend>Add a homebrew pack (free with your account, and it does not count toward any limit)</legend>
+            {packs.map((p) => <label key={p.id} className="ckrow"><input type="checkbox" name="pack" value={p.id} defaultChecked={p.free} /> <span><b>{p.name}</b> <span className="dim">{p.description}</span></span></label>)}
+          </fieldset>
+        ) : null}
         <label>Rules version<select name="rules" defaultValue={NEW_CAMPAIGN_RULES}>{Object.entries(RULES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
         <label>Character sheet
           <select name="copy" defaultValue="">

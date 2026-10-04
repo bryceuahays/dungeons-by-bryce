@@ -14,7 +14,7 @@ function NpcEditor({ n, p, fields, save, remove, close }: { n: Partial<Entry>; p
   return (
     <div className="plate">
       <h3>{n.id ? 'Edit ' + n.title : 'New NPC'}</h3>
-      <EntryForm fields={fields} entry={{ status: 'alive', ...n }} stages={p.stages} members={p.members} canName={p.can.player_secrets}
+      <EntryForm fields={fields} entry={{ status: 'alive', ...n }} stages={p.stages} members={p.members} canName={p.make.player_secrets}
         onCancel={() => close()} onDelete={n.id ? () => { void remove(n.id!); close(); } : undefined}
         onSave={async (patch, secret) => {
           const r = await save({ ...patch, id: n.id, campaign_id: p.campaignId, kind: 'npc', status: patch.status || 'alive', data: { ...patch.data, file: pic || undefined } }, secret);

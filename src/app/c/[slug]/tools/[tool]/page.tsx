@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCampaign, getSheetEntities, usesLegacySheet, type CampaignCtx } from '@/lib/campaign';
-import { campaignCan } from '@/lib/entitlements';
+import { campaignCan, campaignCanMake } from '@/lib/entitlements';
 import { getEntries, getMembers } from '@/lib/entries';
 import { FEATURES, type Feature } from '@/config/plans';
 import { TOOLS } from '@/config/tools';
@@ -37,6 +37,7 @@ async function toolProps(ctx: CampaignCtx): Promise<ToolProps> {
     dm: ctx.isDm, canWrite: ctx.access.writable && !ctx.asPlayer && !ctx.headView,
     stages: ctx.campaign.phases, members,
     can: Object.fromEntries((Object.keys(FEATURES) as Feature[]).map((f) => [f, campaignCan(ctx.access, f)])),
+    make: Object.fromEntries((Object.keys(FEATURES) as Feature[]).map((f) => [f, campaignCanMake(ctx.access, f)])),
     session: Number(ctx.campaign.settings?.session) || 0,
   };
 }

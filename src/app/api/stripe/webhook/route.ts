@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { stripe, stripeKey, verifyWebhook, webhookSecret } from '@/lib/stripe';
-import { deliverProduct } from '@/lib/store';
+import { deliverProduct, upgradeCopy } from '@/lib/store';
 
 // Stripe calls this when someone subscribes, renews, cancels, or a payment fails.
 // Every call is checked against the webhook secret, test-mode events only, and each
@@ -28,6 +28,12 @@ export async function POST(request: Request) {
     case 'checkout.session.completed': {
       const userId = String(o.metadata?.user_id || o.client_reference_id || '');
       const kind = String(o.metadata?.kind || '');
+      if (kind === 'commission' && /^[0-9a-f-]{36}$/.test(String(o.metadata?.commission_id || ''))) {
+        // a client paid for their custom campaign site
+        await admin.from('commissions').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', o.metadata.commission_id).in('status', ['requested', 'accepted']);
+        await admin.from('purchases').insert({ user_id: /^[0-9a-f-]{36}$/.test(userId) ? userId : null, kind: 'commission', stripe_session: o.id, amount_cents: o.amount_total ?? 0 });
+        break;
+      }
       if (!/^[0-9a-f-]{36}$/.test(userId)) break;
       if (kind === 'pro_monthly' || kind === 'pro_yearly') {
         let until: string | null = null;
@@ -45,7 +51,12 @@ export async function POST(request: Request) {
         if (had?.stripe_subscription && had.plan !== 'founder' && stripeKey()) { try { await stripe('DELETE', '/subscriptions/' + had.stripe_subscription); } catch {} }
       } else if (kind === 'product' && o.metadata?.product_id) {
         const bought = await admin.from('purchases').insert({ user_id: userId, kind: 'product', product_id: o.metadata.product_id, stripe_session: o.id, amount_cents: o.amount_total ?? 0 });
-        if (!bought.error) await deliverProduct(String(o.metadata.product_id), userId);
+        // an upgrade fills in the buyer's existing framework copy; anything else is delivered as a new copy (or a pack)
+        const into = String(o.metadata.upgrade_campaign || '');
+        if (!bought.error) {
+          if (/^[0-9a-f-]{36}$/.test(into)) { await upgradeCopy(into, String(o.metadata.product_id), userId); await admin.from('purchases').update({ campaign_id: into }).eq('stripe_session', o.id); }
+          else await deliverProduct(String(o.metadata.product_id), userId);
+        }
       }
       break;
     }

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { publishProduct } from '@/lib/store';
+import { publishPack } from '@/lib/store';
 import { sameSite } from '@/lib/same-site';
 
-// Publishes (or re-publishes) one of the admin's campaigns as a store product.
+// Publishes one of the admin's homebrew packs as a store product (free or paid).
 export async function POST(request: Request) {
   const back = (q: string) => NextResponse.redirect(new URL('/admin/business?' + q, request.url), { status: 303 });
   if (!sameSite(request)) return new NextResponse('Forbidden', { status: 403 });
@@ -15,17 +15,11 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const title = String(form.get('title') || '').trim();
   const slug = (String(form.get('slug') || '').trim().toLowerCase() || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')).slice(0, 60);
-  if (!title) return back('error=' + encodeURIComponent('Give the product a title.'));
-  const r = await publishProduct(supabase, userId, {
-    campaignId: String(form.get('campaign') || ''), slug, title,
-    pitch: String(form.get('pitch') || ''),
-    includes: String(form.get('includes') || '').split('\n').map((l) => l.trim()).filter(Boolean),
-    previewSections: form.getAll('preview').map(String),
+  if (!title) return back('error=' + encodeURIComponent('Give the pack listing a title.'));
+  const r = await publishPack(supabase, userId, {
+    packId: String(form.get('pack') || ''), slug, title, pitch: String(form.get('pitch') || ''),
     priceCents: Math.round((parseFloat(String(form.get('price') || '0')) || 0) * 100),
-    status: form.get('status') === 'live' ? 'live' : 'draft',
-    edition: form.get('edition') === 'framework' ? 'framework' : form.get('edition') === 'full' ? 'full' : null,
-    fullSlug: String(form.get('full_slug') || '').trim().toLowerCase(),
-    cover: form.has('cover') ? String(form.get('cover') || '').replace(/[^a-zA-Z0-9/_.-]/g, '').slice(0, 200) : undefined,
+    status: form.get('status') === 'live' ? 'live' : 'draft', previewEntity: String(form.get('preview') || ''),
   });
-  return back(r.error ? 'error=' + encodeURIComponent(r.error) : r.note ? 'note=' + encodeURIComponent(r.note) : 'published=' + encodeURIComponent(slug));
+  return back(r.error ? 'error=' + encodeURIComponent(r.error) : 'published=' + encodeURIComponent(slug));
 }

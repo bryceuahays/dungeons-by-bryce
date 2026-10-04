@@ -109,3 +109,42 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 83. **The sheet no longer receives the long text of every spell.** With 300-odd spells per version that was too much for a phone. A spell's text is fetched when it is opened.
 84. **The hand-written core set was replaced by the official entries:** 213 replaced in place (same ids, so nothing that used them broke), 20 removed because the official data names them differently (for example "Path of the Berserker" is "Berserker" in SRD 5.1, and "Chain mail armor" is "Chain Mail"). The lists are in `docs/srd-import-report.md`.
 85. **The SRD browser is now a searchable list by version and category** that opens one entry at a time, instead of printing every entry in full.
+
+## Parts 1 and 2: packs
+
+86. **What counts as "my own creation" was decided by the campaign's own labels.** A race the campaign marks "Original" is in the pack. Inside it, a single trait is left out when its own note says it was adapted from a published book (for example "3e damage reduction, rescaled"). Every class is left out: twelve are from the published fifth edition rules, one is from a fifth edition book outside the SRD, six are conversions from other editions. The full list, with reasons, is in `docs/originals-report.md`.
+87. **The pack uses only what a player of that campaign can already read.** Nothing held back for a later stage is in it.
+88. **Each race in the pack gives +2 and +1 to abilities of the player's choice,** as the campaign does.
+89. **Official packs are attached by reference, not copied.** The entries stay yours; a DM who adds the pack sees your updates. That is why they never count toward the DM's limit. A clone is the DM's own entry and does count.
+90. **"Never counts" is enforced by the database:** each entry records whether the account made it or it arrived with a purchase, and an account cannot set that label itself.
+91. **A paid pack is readable only by accounts that own it** (and by players of a campaign it is attached to). The listing shows the names of everything inside and one whole entry as the preview.
+92. **A pack with a private entry, or with a draft entry, cannot be published.**
+93. **A free pack needs no "purchase".** Every account can use it straight away; the store button simply adds it to a campaign.
+
+## Parts 3 and 4: editions, and what a bought campaign unlocks
+
+94. **Parts 1 to 4 share one commit,** because packs, editions and purchase rules all live in the same store code and database rules.
+95. **A framework is generated as a real campaign in your account,** for you to read and edit before publishing. The generator never publishes. Each run of same-kind blocks becomes one labelled slot; table headers are kept and the rows emptied; tabs, stage tags and DM-only flags are kept; faction entries become one blank faction; race entries and the old character sheet are dropped.
+96. **Tab names and per-stage titles are yours to check.** The generator keeps tab names (they are the layout) and drops per-stage titles from a framework. If a tab name gives the story away, rename it in the copy.
+97. **"Make a publishable copy" was added beside the generator.** A campaign that holds private content cannot go live. The copy is the whole campaign minus the old rule set, the old character sheet, and race entries that come from published material. This is what makes a full edition of "To be a god" possible at all.
+98. **The divinity rules become homebrew of your own** when a copy is generated from "To be a god": a "Divinity" resource and one entry per tier, attached to the copy as DM only. The resource's size is a placeholder for you to set.
+99. **A draft listing can exist for a campaign that cannot be published yet.** That is how the "To be a god" drafts were made: the listing rows exist (framework at $7, full at $20, linked), nothing is frozen, and nothing is for sale.
+100. **An upgrade goes into the copy the buyer already has.** A slot they left as it came is filled. Anything they changed is kept, and the full edition's version is added beside it, marked DM only, for them to merge. Unused placeholder NPCs, beats and clocks are removed; the real ones arrive.
+101. **The upgrade price is the full edition's price minus the framework's,** worked out on the server at checkout. The subscriber discount applies on top.
+102. **The subscriber discount applies to Pro, founder and full-access accounts.**
+103. **Spoiler protection has two halves.** A signed-in player of the source campaign never sees the listing, the preview or the buy button (the database hides the product from them). A signed-out visitor could be one of those players, so while the source campaign has any players its listings are hidden from signed-out visitors too. Listings made from a framework or a publishable copy are protected by the campaign they were copied from.
+104. **A bought campaign now follows the rule in the brief exactly:** everything delivered works on any plan and can be edited; making new things of a Pro-only kind needs Pro. Before this, a bought campaign had been treated as fully Pro.
+105. **Players in a bought campaign can still add notes and pins to what is there,** since that uses what was delivered. New story beats need the DM to be on Pro.
+106. **A bought campaign keeps its theme; changing to a premium or custom theme needs Pro.**
+
+## Parts 5 and 6: the custom campaign service
+
+107. **Why the page could not be found:** it was at `/custom`, linked from the navigation of the public pages and from one button at the very bottom of the landing page. Signed in, the landing page sends you straight to My campaigns, whose navigation had no link, so a signed-in person had no way to reach it. And none of it is on the live site yet.
+108. **The service is called "Have Bryce build it" everywhere,** and the label is one config value.
+109. **Reference images are collected as links,** not uploads. An open upload box on a public page invites abuse; a pasted link to a picture or a board does the same job.
+110. **The example pictures are "To be a god" as its players see it today** (a throwaway player account, the current stage), captioned "From one of my own campaigns" without naming it. One picture is cropped to stop above trait notes that cite published books.
+111. **The price, revision rounds and Pro months are fixed on the request when it is made,** so changing the config later does not change a request already in.
+112. **The payment link is for you to send.** The site can only email your own address until it has a sending domain, so "Make a payment link" shows the link with a copy button. When the client pays, the request is marked paid by itself. You can also mark it paid by hand.
+113. **Delivery is one step:** it moves the campaign to the client's account and starts their Pro months that day (added to any they already have). The client needs an account first.
+114. **Pro months from a commission are a date on the account,** separate from a subscription. The Plans page says when they end.
+115. **"Not taking requests" hides the form and the Request buttons** and says so at the top. The tiers stay visible.

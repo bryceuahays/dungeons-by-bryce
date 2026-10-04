@@ -170,7 +170,9 @@ test('builder pages: three depths, clone from the SRD, upgrade prompts at the fr
   const fresh = await page('/homebrew/new?type=race', pro.session);
   assert.ok(fresh.status === 200 && ['Quick', 'Guided', 'Advanced', 'What your players see', 'Balance hint'].every((t) => fresh.text.includes(t)));
   const srdPage = await page('/homebrew/srd?type=spell', free.session);
-  assert.ok(srdPage.status === 200 && srdPage.text.includes('Fireball') && srdPage.text.includes('Clone and tweak'));
+  assert.ok(srdPage.status === 200 && srdPage.text.includes('Fireball') && srdPage.text.includes('2014 rules (SRD 5.1)'));
+  const fb = /href="(\/homebrew\/[0-9a-f-]{36})"[^>]*><b>Fireball/.exec(srdPage.text);
+  assert.ok(fb && (await page(fb[1], free.session)).text.includes('Clone and tweak'), 'an SRD entry opens on its own page, where it can be cloned');
   const conv = await page('/homebrew/convert', pro.session);
   assert.ok(conv.status === 200 && conv.text.includes('Every change that was made') && conv.text.includes('4th edition'));
   // free plan

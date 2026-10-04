@@ -183,3 +183,17 @@ a.upsell-go{color:var(--gold,#e3c47f);text-decoration:underline}
 .hub fieldset.multi{border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:8px 10px;margin:0 0 12px}
 
 .hub .srd-list li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* ---- the custom campaign service, and the store ---- */
+.hub .tiers{display:grid;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+@media (max-width:860px){.hub .tiers{grid-template-columns:1fr}}
+.hub .tier{display:flex;flex-direction:column}
+.hub .tier ul{flex:1 1 auto}
+.hub .tier li.none{opacity:.55}
+.hub .shots{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));align-items:start;margin:0 0 18px}
+.hub .shots img{width:100%;height:auto;border-radius:10px;border:1px solid rgba(255,255,255,.14)}
+.hub .ccard.service{border-style:dashed}
+.hub .cards.choose{margin-bottom:8px}
+.hub .job{display:flex;flex-direction:column;gap:8px;min-width:min(100%,300px);flex:1 1 300px}
+.hub .job input[readonly]{font-size:.8rem}
+.hub .shots img{aspect-ratio:16/10;object-fit:cover;object-position:top}

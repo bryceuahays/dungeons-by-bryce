@@ -8,6 +8,8 @@ import { insertImported, removeCampaignFiles } from '@/lib/campaign-admin';
 import { emailFeedback } from '@/lib/mail';
 import { cleanTheme, presetOf } from '@/lib/theme';
 import { NEW_CAMPAIGN_RULES } from '@/config/rules';
+import { COMMISSION_STATUS, COMMISSION_TIERS } from '@/config/commissions';
+import { billingIsOn, createCheckout } from '@/lib/stripe';
 
 export type FormState = { error?: string; note?: string } | null;
 
@@ -109,6 +111,9 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
     note = `?imported=${r.tabs}-${r.blocks}`;
   }
 
+  // packs ticked on the form (the database checks the account may use each one)
+  for (const p of form.getAll('pack').map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x)).slice(0, 10)) await supabase.rpc('attach_pack', { p, c: id });
+
   // Optionally start from another campaign's character rules and sheet.
   const from = String(form.get('copy') || '');
   if (from) await supabase.rpc('copy_campaign_rules', { src: from, dst: id });
@@ -184,13 +189,40 @@ export async function setComp(userId: string, on: boolean) {
   revalidatePath('/admin');
 }
 
-export async function setCommission(id: string, patch: { status?: string; notes?: string }) {
+// The commission workflow: accept or decline, payment link, paid, status, revisions, delivery.
+export async function setCommission(id: string, patch: { status?: string; notes?: string; revisions?: number }) {
   const { supabase } = await requireHead();
-  const p: Record<string, string> = {};
-  if (patch.status) p.status = patch.status;
+  const p: Record<string, unknown> = {};
+  if (patch.status && COMMISSION_STATUS.some(([s]) => s === patch.status)) { p.status = patch.status; if (patch.status === 'paid') p.paid_at = new Date().toISOString(); }
   if (patch.notes !== undefined) p.notes = patch.notes.slice(0, 4000);
+  if (patch.revisions !== undefined) p.revisions_used = Math.max(0, Math.min(99, Math.round(patch.revisions)));
   await supabase.from('commissions').update(p).eq('id', id);
   revalidatePath('/admin/business');
+}
+
+// A Stripe payment link (test mode) for an accepted request, for you to send to the client.
+export async function commissionPayLink(id: string): Promise<FormState> {
+  const { supabase } = await requireHead();
+  const { data: job } = await supabase.from('commissions').select('id, email, tier, price_cents, user_id, status').eq('id', id).maybeSingle();
+  if (!job) return { error: 'Request not found.' };
+  if (!billingIsOn()) return { error: 'Payments are not switched on yet (no Stripe test key). You can still mark the request as paid by hand.' };
+  const tier = COMMISSION_TIERS.find((t) => t.id === job.tier);
+  try {
+    const url = await createCheckout({ userId: job.user_id ?? '', email: job.email, kind: 'commission', name: `Dungeons by Bryce: custom campaign, ${tier?.name ?? job.tier}`, cents: job.price_cents, interval: null, meta: { commission_id: job.id }, success: '/custom?paid=1', cancel: '/custom' });
+    await supabase.from('commissions').update({ pay_url: url, ...(job.status === 'requested' ? { status: 'accepted' } : {}) }).eq('id', id);
+  } catch (e) { return { error: e instanceof Error ? e.message : 'The payment link could not be made.' }; }
+  revalidatePath('/admin/business');
+  return { note: 'Payment link made. Copy it and send it to the client. It expires after a day; make a new one if needed.' };
+}
+
+// Hand the finished campaign to the client. Their included Pro months start now.
+export async function deliverCommission(id: string, _: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await requireHead();
+  if (form.get('confirm') !== 'DELIVER') return { error: 'Type DELIVER to confirm.' };
+  const { data: name, error } = await supabase.rpc('deliver_commission', { p_id: id, c: String(form.get('campaign') || '') });
+  if (error) return { error: /no account/.test(error.message) ? 'The client has no account with that email yet. Ask them to sign up (it is free), then deliver.' : 'That could not be delivered. Choose the campaign you built for them.' };
+  revalidatePath('/', 'layout');
+  return { note: `Delivered. ${name || 'The client'} now owns the campaign, and any Pro months in their tier have started.` };
 }
 
 // Hand a finished campaign to a client's account.

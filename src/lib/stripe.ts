@@ -49,19 +49,20 @@ export async function stripe(method: 'GET' | 'POST' | 'DELETE', path: string, bo
 
 export type CheckoutInput = {
   userId: string; email: string; customer?: string | null;
-  kind: 'pro_monthly' | 'pro_yearly' | 'founder' | 'product';
+  kind: 'pro_monthly' | 'pro_yearly' | 'founder' | 'product' | 'commission';
+  meta?: Record<string, string>;
   name: string; cents: number; interval: 'month' | 'year' | null;
   productId?: string; success: string; cancel: string;
 };
 
 export async function createCheckout(i: CheckoutInput): Promise<string> {
-  const metadata = { user_id: i.userId, kind: i.kind, product_id: i.productId };
+  const metadata = { user_id: i.userId, kind: i.kind, product_id: i.productId, ...(i.meta ?? {}) };
   const session = await stripe('POST', '/checkout/sessions', {
     mode: i.interval ? 'subscription' : 'payment',
     success_url: siteUrl() + i.success,
     cancel_url: siteUrl() + i.cancel,
-    client_reference_id: i.userId,
-    ...(i.customer ? { customer: i.customer } : { customer_email: i.email }),
+    ...(i.userId ? { client_reference_id: i.userId } : {}),
+    ...(i.customer ? { customer: i.customer } : i.email ? { customer_email: i.email } : {}),
     line_items: { 0: { quantity: 1, price_data: { currency: 'usd', unit_amount: i.cents, product_data: { name: i.name }, ...(i.interval ? { recurring: { interval: i.interval } } : {}) } } },
     metadata,
     ...(i.interval ? { subscription_data: { metadata } } : {}),

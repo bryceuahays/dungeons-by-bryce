@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getViewer } from '@/lib/auth';
 import { Atmosphere } from '@/components/Atmosphere';
 import { FREE_LIMITS, PRICES } from '@/config/plans';
+import { COMMISSION_TIERS } from '@/config/commissions';
 import './landing.css';
 
 export const metadata: Metadata = {
@@ -87,18 +88,27 @@ export default async function Landing() {
           <article className="card"><h2>Between sessions</h2><p>Log what the party changed, track the clues to every secret, and let the factions&apos; clocks tick.</p></article>
         </div>
 
+        <article className="feature" id="built-for-you">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40l6-2 22-22-4-4L10 34z" /><path d="M30 14l4 4M8 40l2-6 4 4z" /><path className="amber" d="M36 6l1.500 3.500L41 11l-3.500 1.500L36 16l-1.500-3.500L31 11l3.500-1.500z" /></svg>
+          <div>
+            <h2>Or have Bryce build it</h2>
+            <p>Short on time? Send your notes, your world and your references. I set the campaign up here with a look made for it, enter your lore, NPCs and maps, and hand it over to your account. From ${COMMISSION_TIERS[0].cents / 100}.</p>
+            <p className="links" style={{ justifyContent: 'flex-start' }}><Link className="stone-btn primary" href="/custom">Have Bryce build it</Link></p>
+          </div>
+        </article>
+
         <article className="feature close">
           <div>
             <h2>Players are free. Running a campaign is free.</h2>
             <p>The free plan runs one campaign for up to {FREE_LIMITS.players} players with the full fifth edition SRD. Pro is {PRICES.pro_monthly.label} or {PRICES.pro_yearly.label} for the DM, and covers every campaign you run.</p>
-            <p className="links"><Link className="stone-btn primary" href="/sign-up">Start free</Link><Link className="stone-btn" href="/pricing">Pricing</Link><Link className="stone-btn" href="/store">Ready-made campaigns</Link><Link className="stone-btn" href="/custom">Have yours built</Link></p>
+            <p className="links"><Link className="stone-btn primary" href="/sign-up">Start free</Link><Link className="stone-btn" href="/pricing">Pricing</Link><Link className="stone-btn" href="/store">Store</Link><Link className="stone-btn" href="/custom">Have Bryce build it</Link></p>
           </div>
         </article>
       </section>
 
       <footer>
         Dungeons by Bryce
-        <span className="fine">Fifth edition compatible. An independent product, not affiliated with Wizards of the Coast. <Link href="/legal">Legal and licences</Link></span>
+        <span className="fine">Fifth edition compatible. An independent product, not affiliated with Wizards of the Coast. <Link href="/custom">Have Bryce build it</Link> · <Link href="/store">Store</Link> · <Link href="/pricing">Pricing</Link> · <Link href="/legal">Legal and licences</Link></span>
       </footer>
     </main>
   );

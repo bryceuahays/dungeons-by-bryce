@@ -28,7 +28,8 @@ export type ToolProps = {
   canWrite: boolean;  // the campaign is not read-only
   stages: { id: string; label: string }[];
   members: { user_id: string; display_name: string }[];
-  can: Record<string, boolean>;   // plan features of this campaign
+  can: Record<string, boolean>;   // plan features this campaign can USE
+  make: Record<string, boolean>;  // plan features it can make NEW things of (a bought campaign on the free plan: use yes, make no)
   session: number;    // the campaign's current session number
 };
 

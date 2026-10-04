@@ -12,14 +12,14 @@ export default async function PublicLayout({ children }: { children: React.React
           <nav aria-label="Site">
             <Link href="/demo">Demo</Link>
             <Link href="/pricing">Pricing</Link>
-            <Link href="/store">Campaigns</Link>
-            <Link href="/custom">Custom sites</Link>
+            <Link href="/store">Store</Link>
+            <Link href="/custom">Have Bryce build it</Link>
             {viewer ? <Link href="/campaigns">My campaigns</Link> : <Link href="/sign-in">Sign in</Link>}
           </nav>
         </div>
       </header>
       <main className="hub-main">{children}</main>
-      <footer className="hub-foot"><Link href="/legal">Legal and licences</Link> · Dungeons by Bryce</footer>
+      <footer className="hub-foot"><Link href="/custom">Have Bryce build it</Link> · <Link href="/store">Store</Link> · <Link href="/pricing">Pricing</Link> · <Link href="/legal">Legal and licences</Link> · Dungeons by Bryce</footer>
     </div>
   );
 }

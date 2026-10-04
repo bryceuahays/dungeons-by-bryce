@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import type { Entry, ToolProps } from '@/lib/entry-types';
 import { saveSetting } from '@/app/c/[slug]/actions';
 import { VisPicker, visLabel } from '../VisPicker';
+import { UpgradeHint } from '../UpgradeHint';
 import { EntryForm, Problem, useEntries, visOf, type F } from './kit';
 
 export const beatOverdue = (b: Pick<Entry, 'status' | 'data'>, session: number) => b.status === 'planned' && !!b.data.key && Number(b.data.target) > 0 && session > Number(b.data.target);
@@ -55,7 +56,7 @@ export function TimelineTool(p: ToolProps & { initial: Entry[]; npcs: { id: stri
             <label className="f" style={{ maxWidth: 190 }}>The session you are on
               <input type="number" min={0} max={999} value={session} onChange={(e) => setSession(Number(e.target.value) || 0)} onBlur={() => start(async () => { await saveSetting(p.slug, 'session', session); })} />
             </label>
-            {p.canWrite ? <button type="button" className="act" onClick={() => setOpen('new')}>Plan a beat</button> : null}
+            {p.canWrite && p.make.timeline ? <button type="button" className="act" onClick={() => setOpen('new')}>Plan a beat</button> : null}
           </div>
           <h3>Key beats remaining ({key.length})</h3>
           {key.length ? (
@@ -66,7 +67,8 @@ export function TimelineTool(p: ToolProps & { initial: Entry[]; npcs: { id: stri
             </ul>
           ) : <p className="who">No key beats are waiting.</p>}
         </div>
-      ) : (p.canWrite ? <p className="row"><button type="button" className="act" onClick={() => setOpen('new')}>Add to the timeline</button></p> : null)}
+      ) : (p.canWrite && p.make.timeline ? <p className="row"><button type="button" className="act" onClick={() => setOpen('new')}>Add to the timeline</button></p> : null)}
+      {p.dm && p.canWrite && !p.make.timeline ? <><p className="muted">Everything that came with this campaign works: mark beats as they happen, edit them, reorder them. Planning new beats is part of Pro.</p><UpgradeHint feature="timeline" /></> : null}
 
       {open === 'new' ? (
         <div className="plate">

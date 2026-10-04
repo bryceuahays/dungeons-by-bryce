@@ -37,11 +37,11 @@ export function NotesTool(p: ToolProps & { initial: Note[] }) {
       <div className="wrap">
         <h2>Player secrets</h2>
         <p className="lede">Write something for one player. Only that player and you can read it. Your players also keep private notes here, which you cannot read.</p>
-        {p.can.player_secrets ? null : <UpgradeHint feature="player_secrets" />}
+        {p.make.player_secrets ? null : <UpgradeHint feature="player_secrets" />}
         {err ? <p className="err" role="alert">{err}</p> : null}
         {p.members.length ? (
           <>
-            {p.can.player_secrets && p.canWrite ? (
+            {p.make.player_secrets && p.canWrite ? (
               <div className="plate">
                 <div className="fields">
                   <label className="f">For<select value={draft.user} onChange={(e) => setDraft({ ...draft, user: e.target.value })}>{p.members.map((m) => <option key={m.user_id} value={m.user_id}>{m.display_name || 'Unnamed'}</option>)}</select></label>
@@ -143,8 +143,9 @@ export function WorldTool(p: ToolProps & { initial: Entry[]; npcs: { id: string;
       <Problem r={msg} />
 
       <h3>Consequences</h3>
-      {p.dm && p.canWrite ? <p className="row"><button type="button" className="act" onClick={() => setOpen('con')}>Log a consequence</button></p> : null}
-      {open === 'con' ? <div className="plate"><EntryForm fields={conFields} entry={{ vis: 'dm', data: { session: p.session || '' } }} stages={p.stages} members={p.members} canName={p.can.player_secrets} onCancel={() => setOpen(null)}
+      {p.dm && p.canWrite && !p.make.world ? <><p className="muted">What came with this campaign works as it is. Adding new consequences, clocks and secrets is part of Pro.</p><UpgradeHint feature="world" /></> : null}
+      {p.dm && p.canWrite && p.make.world ? <p className="row"><button type="button" className="act" onClick={() => setOpen('con')}>Log a consequence</button></p> : null}
+      {open === 'con' ? <div className="plate"><EntryForm fields={conFields} entry={{ vis: 'dm', data: { session: p.session || '' } }} stages={p.stages} members={p.members} canName={p.make.player_secrets} onCancel={() => setOpen(null)}
         onSave={async (patch) => { const { tagText, ...d } = patch.data as any; const r = await save({ ...patch, campaign_id: p.campaignId, kind: 'consequence', data: { ...d, tags: String(tagText || '').split(',').map((t) => t.trim()).filter(Boolean) } }); if (!r.error) setOpen(null); return r; }} /></div> : null}
       {allTags.length ? <p className="chips"><button type="button" className="fchip" aria-pressed={!tag} onClick={() => setTag('')}>Everything</button>{allTags.map((t) => <button type="button" key={t} className="fchip" aria-pressed={tag === t} onClick={() => setTag(t)}>{t}</button>)}</p> : null}
       {tag ? <p className="muted">How the party has changed things for {tag}:</p> : null}
@@ -159,8 +160,8 @@ export function WorldTool(p: ToolProps & { initial: Entry[]; npcs: { id: string;
       {cons.length ? null : <p className="who">Nothing logged yet.</p>}
 
       <h3>Faction clocks</h3>
-      {p.dm && p.canWrite ? <p className="row"><button type="button" className="act" onClick={() => setOpen('clock')}>Add a clock</button></p> : null}
-      {open === 'clock' ? <div className="plate"><EntryForm fields={clockFields} entry={{ vis: 'dm', data: { segments: '6', filled: 0 } }} stages={p.stages} members={p.members} canName={p.can.player_secrets} onCancel={() => setOpen(null)}
+      {p.dm && p.canWrite && p.make.world ? <p className="row"><button type="button" className="act" onClick={() => setOpen('clock')}>Add a clock</button></p> : null}
+      {open === 'clock' ? <div className="plate"><EntryForm fields={clockFields} entry={{ vis: 'dm', data: { segments: '6', filled: 0 } }} stages={p.stages} members={p.members} canName={p.make.player_secrets} onCancel={() => setOpen(null)}
         onSave={async (patch, secret) => { const r = await save({ ...patch, campaign_id: p.campaignId, kind: 'clock', data: { ...patch.data, filled: 0 } }, secret); if (!r.error) setOpen(null); return r; }} /></div> : null}
       <div className="grid g2">
         {clocks.map((c) => {
@@ -189,7 +190,7 @@ export function WorldTool(p: ToolProps & { initial: Entry[]; npcs: { id: string;
         <>
           <h3>Secrets and their clues</h3>
           <p className="muted">List each thing the players could discover, and the clues that point to it. Three clues is the usual safety margin: players miss one, misread another, and still have a third.</p>
-          {p.canWrite ? <p className="row"><button type="button" className="act" onClick={() => setOpen('secret')}>Add a secret</button></p> : null}
+          {p.canWrite && p.make.world ? <p className="row"><button type="button" className="act" onClick={() => setOpen('secret')}>Add a secret</button></p> : null}
           {open === 'secret' ? <div className="plate"><EntryForm fields={secretFields} entry={{ vis: 'dm' }} stages={p.stages} members={p.members} canName={false} allowVis={null} onCancel={() => setOpen(null)}
             onSave={async (patch, secret) => { const r = await save({ ...patch, campaign_id: p.campaignId, kind: 'secret', vis: 'dm' }, secret); if (!r.error) setOpen(null); return r; }} /></div> : null}
           {secrets.map((s) => {
@@ -210,7 +211,7 @@ export function WorldTool(p: ToolProps & { initial: Entry[]; npcs: { id: string;
                 </ul>
                 {open === 'clue:' + s.id ? <EntryForm fields={clueFields} entry={{ vis: 'dm' }} stages={p.stages} members={p.members} canName={false} allowVis={null} saveLabel="Add clue" onCancel={() => setOpen(null)}
                   onSave={async (patch) => { const r = await save({ ...patch, campaign_id: p.campaignId, kind: 'clue', parent: s.id, vis: 'dm' }); if (!r.error) setOpen(null); return r; }} />
-                  : p.canWrite ? <p className="row"><button type="button" className="act sm" onClick={() => setOpen('clue:' + s.id)}>Add a clue</button><button type="button" className="act sm danger" onClick={() => { if (confirm('Delete this secret and its clues?')) void remove(s.id); }}>Delete</button></p> : null}
+                  : p.canWrite ? <p className="row">{p.make.world ? <button type="button" className="act sm" onClick={() => setOpen('clue:' + s.id)}>Add a clue</button> : null}<button type="button" className="act sm danger" onClick={() => { if (confirm('Delete this secret and its clues?')) void remove(s.id); }}>Delete</button></p> : null}
               </div>
             );
           })}

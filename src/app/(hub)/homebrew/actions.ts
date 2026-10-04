@@ -138,6 +138,18 @@ export async function attachPack(packId: string, _: BrewState, form: FormData): 
   return { note: `${items.length} entr${items.length === 1 ? 'y' : 'ies'} attached.` };
 }
 
+// Add every entry of a pack you may use (your own, an official free one, or one you
+// bought) to a campaign you run. The database checks both halves.
+export async function attachUsablePack(packId: string, _: BrewState, form: FormData): Promise<BrewState> {
+  const { supabase } = await requireViewer();
+  const campaignId = String(form.get('campaign') || '');
+  if (!campaignId) return { error: 'Choose a campaign.' };
+  const { data, error } = await supabase.rpc('attach_pack', { p: packId, c: campaignId });
+  if (error) return { error: 'That pack could not be added. You can add packs to campaigns you run.' };
+  revalidatePath('/', 'layout');
+  return { note: data ? `Added: ${data} entr${data === 1 ? 'y' : 'ies'}. Your players will find them on their sheets.` : 'That campaign already has everything in this pack.' };
+}
+
 // Import a pack from the JSON this site exports.
 export async function importPack(_: BrewState, form: FormData): Promise<BrewState> {
   const { supabase, user } = await requireViewer();

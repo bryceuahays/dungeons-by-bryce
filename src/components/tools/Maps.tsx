@@ -132,7 +132,7 @@ export function MapsTool(p: ToolProps & { initial: Entry[]; beats: { id: string;
             <p className="row">
               <button type="button" className="fchip" aria-pressed={mode === 'look'} onClick={() => { setMode('look'); setDraft([]); }}>Look around</button>
               <button type="button" className="fchip" aria-pressed={mode === 'pin'} onClick={() => { setMode('pin'); setDraft([]); }}>Add a pin</button>
-              {p.dm && p.can.maps_plus ? <button type="button" className="fchip" aria-pressed={mode === 'region'} onClick={() => setMode('region')}>Draw a hidden area</button> : null}
+              {p.dm && p.make.maps_plus ? <button type="button" className="fchip" aria-pressed={mode === 'region'} onClick={() => setMode('region')}>Draw a hidden area</button> : null}
               {mode === 'pin' ? <span className="muted">Tap the map where the pin goes.</span> : null}
               {mode === 'region' ? <><span className="muted">Tap around the edge of the area ({draft.length} point{draft.length === 1 ? '' : 's'}).</span><button type="button" className="act sm" disabled={draft.length < 3} onClick={finishRegion}>Finish area</button><button type="button" className="act sm" disabled={!draft.length} onClick={() => setDraft(draft.slice(0, -1))}>Undo point</button></> : null}
             </p>
@@ -171,13 +171,13 @@ export function MapsTool(p: ToolProps & { initial: Entry[]; beats: { id: string;
               <p className="row"><button type="button" className="act sm danger" disabled={!p.canWrite} onClick={async () => { if (confirm(`Delete the map "${map.title}" with its areas and pins?`)) { await remove(map.id); setCurrent(null); setSel(null); } }}>Delete this map</button></p>
             </details>
           ) : null}
-          {p.dm && !p.can.maps_plus ? <UpgradeHint feature="maps_plus" /> : null}
+          {p.dm && !p.make.maps_plus ? <>{p.can.maps_plus ? <p className="muted">The maps and hidden areas that came with this campaign work as they are: reveal them, edit them, add your own pins. New maps and new hidden areas are part of Pro.</p> : null}<UpgradeHint feature="maps_plus" /></> : null}
           {!p.dm && !p.can.maps_plus ? <p className="muted">Your DM can add pins to this map.</p> : null}
         </>
       ) : <p className="who">{p.dm ? 'No maps yet.' : 'Your DM has not shared a map yet.'}</p>}
 
       {p.dm && p.canWrite ? (
-        maps.length && !p.can.maps_plus ? null : (
+        maps.length && !p.make.maps_plus ? null : (
           <div className="plate">
             <h3>Add a map</h3>
             <div className="fields">
@@ -210,7 +210,7 @@ function PinPanel({ pin, p, maps, save, remove, go, who }: { pin: Entry; p: Tool
           <label className="f" style={{ marginTop: 10 }}>Note<textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} onBlur={() => note !== (pin.data.note ?? '') && save({ ...base, data: { ...pin.data, note } })} /></label>
           {p.dm ? (
             <p style={{ marginTop: 10 }}>
-              <VisPicker value={visOf(pin)} stages={p.stages} members={p.members} beats={p.can.maps_plus ? p.beats : []} allow={['dm', 'all', 'stage', 'players', 'entry']} canName={p.can.player_secrets}
+              <VisPicker value={visOf(pin)} stages={p.stages} members={p.members} beats={p.make.maps_plus ? p.beats : []} allow={['dm', 'all', 'stage', 'players', 'entry']} canName={p.make.player_secrets}
                 onChange={(v) => save({ ...base, ...v, data: { ...pin.data, beat: v.vis === 'entry' ? v.vis_entry : undefined } })} />
             </p>
           ) : <label className="ck" style={{ marginTop: 10 }}><input type="checkbox" checked={pin.vis === 'players'} onChange={(e) => save({ ...base, vis: e.target.checked ? 'players' : 'all', vis_players: e.target.checked ? [p.userId] : [] })} /> Only I see this pin</label>}

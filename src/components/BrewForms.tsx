@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { attachPack, cloneEntity, createPack, deletePack, importPack, saveEntity, setInPack, type BrewState } from '@/app/(hub)/homebrew/actions';
+import { attachPack, attachUsablePack, cloneEntity, createPack, deletePack, importPack, saveEntity, setInPack, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { EDITIONS, type EditionId } from '@/config/editions';
 import { convertItem, convertMonster, convertSpell, type Converted } from '@/lib/rules/convert';
 import { EntityCard } from './EntityCard';
@@ -13,6 +13,20 @@ const Msg = ({ s }: { s: BrewState }) => (s?.error ? <p className="bad" role="al
 export function CloneButton({ id, label = 'Clone and tweak' }: { id: string; label?: string }) {
   const [state, action, pending] = useActionState<BrewState, FormData>(cloneEntity.bind(null, id), null);
   return <form action={action} className="inline"><button type="submit" className="quiet small-btn" disabled={pending}>{pending ? 'Copying' : label}</button><Msg s={state} /></form>;
+}
+
+// One click: add a whole pack to one of your campaigns.
+export function AttachPackForm({ packId, campaigns }: { packId: string; campaigns: { id: string; title: string }[] }) {
+  const [state, action, pending] = useActionState<BrewState, FormData>(attachUsablePack.bind(null, packId), null);
+  return (
+    <form action={action}>
+      <div className="inline">
+        <label>Add it to<select name="campaign" defaultValue={campaigns.length === 1 ? campaigns[0].id : ''}>{campaigns.length === 1 ? null : <option value="">Choose a campaign</option>}{campaigns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</select></label>
+        <button type="submit" disabled={pending}>{pending ? 'Adding' : 'Add to this campaign'}</button>
+      </div>
+      <Msg s={state} />
+    </form>
+  );
 }
 
 export function NewPackForm() {

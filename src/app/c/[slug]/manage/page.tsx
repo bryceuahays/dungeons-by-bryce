@@ -8,7 +8,7 @@ import { RulesForm, SettingForm, StagesForm } from '@/components/DmForms';
 import { RULES, rulesOf } from '@/config/rules';
 import { UpgradeHint } from '@/components/UpgradeHint';
 import { ThemeEditor } from '@/components/ThemeEditor';
-import { campaignCan } from '@/lib/entitlements';
+import { campaignCanMake } from '@/lib/entitlements';
 import type { Section } from '@/lib/types';
 import { FREE_LIMITS } from '@/config/plans';
 import { CopyLink } from '@/components/CopyBox';
@@ -70,8 +70,8 @@ export default async function Manage({ params, searchParams }: { params: Promise
           ) : <p className="who">This campaign has no stages yet, so everything players can see is shown from the start. Add two below for a before-and-after reveal.</p>}
           <details style={{ marginTop: 10 }} open={!campaign.phases.length}>
             <summary className="muted" style={{ cursor: 'pointer' }}>Add, rename, reorder or remove stages</summary>
-            <StagesForm slug={slug} stages={campaign.phases} pro={campaignCan(ctx.access, 'stages')} />
-            {campaignCan(ctx.access, 'stages') ? null : <UpgradeHint feature="stages" />}
+            <StagesForm slug={slug} stages={campaign.phases} pro={campaignCanMake(ctx.access, 'stages')} />
+            {campaignCanMake(ctx.access, 'stages') ? null : <UpgradeHint feature="stages" />}
           </details>
         </div>
 
@@ -144,7 +144,7 @@ export default async function Manage({ params, searchParams }: { params: Promise
         <h2>Theme</h2>
         <div className="plate">
           <p>The colours, fonts and layout of every page in this campaign.</p>
-          <ThemeEditor initial={campaign.theme as any} pro={campaignCan(ctx.access, 'themes')} slug={slug} campaignId={campaign.id} />
+          <ThemeEditor initial={campaign.theme as any} pro={campaignCanMake(ctx.access, 'themes')} slug={slug} campaignId={campaign.id} />
         </div>
 
         <h2>Campaign home</h2>

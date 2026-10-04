@@ -19,7 +19,7 @@ export const getDemo = cache(async (): Promise<CampaignCtx | null> => {
   return {
     supabase, user: { id: GUEST, email: '' }, profile: { id: GUEST, display_name: 'Guest', email: '', role: 'player', hub_bg: {} }, isHead: false,
     campaign, sections, isDm: false, realDm: false, asPlayer: false, headView: false, faces: [], dmTitle: campaign.title,
-    access: { pro: true, writable: false }, canEdit: false, viewAs: { player: null, stage: null }, realPhase: campaign.phase,
+    access: { pro: true, creator: false, writable: false }, canEdit: false, viewAs: { player: null, stage: null }, realPhase: campaign.phase,
   } as unknown as CampaignCtx;
 });
 

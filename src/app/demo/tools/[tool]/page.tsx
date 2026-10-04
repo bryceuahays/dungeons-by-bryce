@@ -17,7 +17,7 @@ export default async function DemoTool({ params }: { params: Promise<{ tool: str
   if (!ctx || !DEMO_TOOLS.some(([id]) => id === tool)) notFound();
   const p: ToolProps = {
     campaignId: ctx.campaign.id, slug: ctx.campaign.slug, base: '/demo', userId: ctx.user.id, dm: false, canWrite: false,
-    stages: ctx.campaign.phases, members: [], can: Object.fromEntries((Object.keys(FEATURES) as Feature[]).map((f) => [f, false])), session: Number(ctx.campaign.settings?.session) || 0,
+    stages: ctx.campaign.phases, members: [], can: Object.fromEntries((Object.keys(FEATURES) as Feature[]).map((f) => [f, false])), make: Object.fromEntries((Object.keys(FEATURES) as Feature[]).map((f) => [f, false])), session: Number(ctx.campaign.settings?.session) || 0,
   };
   if (tool === 'npcs') return <div className="cs-guide"><NpcTool {...p} initial={await getEntries(ctx, ['npc'])} monsters={[]} consequences={await getEntries(ctx, ['consequence'])} /></div>;
   if (tool === 'timeline') return <div className="cs-guide"><TimelineTool {...p} initial={await getEntries(ctx, ['beat', 'note'])} npcs={[]} /></div>;

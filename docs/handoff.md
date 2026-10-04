@@ -130,3 +130,107 @@ Environment variables the site reads: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_S
 4. A separate test database, before real customers arrive.
 5. A sending domain for email, so the site can email people other than you (receipts, invites).
 6. An inventory on the standard sheet that uses SRD and homebrew items.
+
+
+---
+
+# Follow-up: full SRD, store tiers, the free originals pack, and the commission page
+
+Built on the `commercial-followup` branch, which sits on top of `commercial`. The live site is still the old version. 73 automated tests pass (the 66 from before, plus 7 new ones for the SRD, packs, editions, purchases and the service), and the browser run-through passes.
+
+As before, the database changes are already in the one shared database. They are additive. One thing changed in place: the 233 hand-written SRD entries were replaced by the official ones (same ids for 213 of them; 20 were removed because the official SRD names them differently).
+
+## Part 0: the full SRD
+
+**Source:** the `5e-bits/5e-srd-api` project (MIT licence; SRD content only), pinned to one commit. The licence check and the caveat for your lawyer are in `docs/srd-import.md`.
+
+| Category | SRD 5.1 (2014 rules) | SRD 5.2 (2024 rules) |
+|---|---|---|
+| Races / species | 9 | 9 |
+| Classes | 12 | 12 |
+| Subclasses | 12 | 12 |
+| Backgrounds | 1 | 4 |
+| Feats | 1 | 17 |
+| Spells | 319 | 339 |
+| Equipment, magic items and poisons | 599 | 458 |
+| Monsters | 334 | 341 |
+| Conditions | 15 | 15 |
+| Rules reference text | 215 | 73 |
+| **Total** | **1,517** | **1,280** |
+
+- **Failed to import:** nothing.
+- **Not in the source data:** the 2024 rules chapters. The 2014 chapters are in. For 2024 the reference text is conditions plus short entries for skills, damage types, weapon properties and mastery, languages, alignments, schools of magic and ability scores.
+- **Name collisions with your homebrew or private entries:** none. (The import never touches homebrew or private entries; if a name ever matches, both are kept and `docs/srd-import-report.md` lists it.)
+- **Entries marked `srd` that did not match the official SRD:** all 233 hand-written ones. 213 were replaced with the official wording in place. 20 were removed because the official data has them under another name: the nine subclasses I had named in full ("Path of the Berserker" is "Berserker" in SRD 5.1, and so on), nine items ("Chain mail armor" is "Chain Mail", "Light crossbow" is "Crossbow, light", and so on), "Shield, +1" and "Holy symbol". The exact lists are in `docs/srd-import-report.md`.
+- **To run it again** when the SRD is updated: `node scripts/fetch-srd.mjs` then `node scripts/import-srd.mjs`. A second run changes nothing.
+
+**Where it lives:**
+- **Homebrew**, then **Browse the SRD**: both versions, every category, with search. Open an entry to read it or clone it.
+- **Manage** on a campaign, then **Rules**: 2014, 2024, or both. Your existing campaigns are set to 2014, which is what they showed before. New campaigns start on 2024.
+- **New campaign**: the same choice, under Character rules.
+- `/legal`: the attribution for both documents.
+
+## Part 1: Bryce's Originals (free)
+
+**In the pack:** five races, Corrin, Sough, Ondri, Lorn and Dural.
+
+**Left out, for you to review** (33 in all; every one is listed with its reason in `docs/originals-report.md`):
+- **Seven single traits** inside those races, because the trait's own note in your campaign says it was adapted from a published book: Corrin's "Stone body" and "Reef memory"; Ondri's "Third arm"; Lorn's "Own gravity"; Dural's "Large", "Hardness" and "Under pressure". The races are in the pack without them. If you are satisfied they are yours, add them back in the homebrew builder in your own words.
+- **Seven races:** Dragonborn, Human, Tortle, Aarakocra, Kenku and Hadozee (your campaign marks them as imported from published editions) and Great ape (built on Hadozee).
+- **All nineteen classes.** Twelve are the published fifth edition classes (their SRD versions are already free to everyone), Artificer is from a fifth edition book outside the SRD, and Avenger, Psion, Shaman, Swordmage, Warden and Warlord are conversions from other editions.
+
+Dural in particular is thin without its three left-out traits. That one is worth your eye first.
+
+**Where it lives:** the **Store** (free); **Homebrew**, under "Packs you can use", with an "Add to this campaign" button; and a ticked checkbox on **New campaign**. Pack entries never count toward the free plan's three.
+
+## Part 2: paid homebrew packs
+
+Make a pack under **Homebrew**, then **Head DM**, **Store and custom site requests**, **Publish a homebrew pack**: title, price, pitch, and which one entry is the free preview. Buyers get it in their account and attach it to any campaign they run. A pack with a private or draft entry is refused.
+
+## Parts 3 and 4: two editions, and what a bought campaign unlocks
+
+**Where it lives:** **Head DM**, then **Store and custom site requests**.
+- **Make a product-ready copy of a campaign:** "Generate a framework" and "Make a publishable copy". Each makes a new campaign in your account to read and edit. Neither publishes anything.
+- **Publish a campaign as a product:** now has an Edition choice, and for a framework a box for its full edition's store address.
+
+**"To be a god" has two draft listings,** framework ($7) and full ($20), linked. Nothing is frozen and nothing is for sale. To publish when the campaign is finished:
+1. Click **Generate a framework** for it. Open the copy, read every tab, rename any tab whose name gives the story away, and check the "Divinity" entries it made under Homebrew (the size of the pool is a placeholder).
+2. Click **Make a publishable copy** for it. This is needed because the campaign itself holds private rules and cannot go live. The copy leaves out the old character builder and the seven races from published material; buyers get the standard sheet. Read it through.
+3. Publish the publishable copy as the **Full edition** at the store address of the full draft, then publish the framework copy as the **Framework edition**, giving the full edition's address.
+4. Choose the preview tabs carefully: they are readable by anyone who can see the listing.
+
+**Spoiler protection:** your players in "To be a god" will never see its listing, preview or buy button while signed in. Signed-out visitors will not see it either while the campaign has players, since a signed-out visitor could be one of them. Everyone else who is signed in will.
+
+**What a buyer on the free plan gets** (also stated on every listing): everything delivered works and can be edited, and the campaign does not use up their one free campaign. Making new Pro-only things in it (new beats, new maps or hidden regions, more stages, blocks for named players, homebrew past their own three) shows the usual upgrade prompt.
+
+**Prices and discount:** `src/config/store.ts` (framework $7, full $20, subscriber discount 20 percent). Each product's actual price is what you type when publishing.
+
+## Part 5: finding the custom campaign service
+
+**Where the page was, and why you could not reach it:** it was at `/custom`. It was linked from the navigation of the public pages (pricing, store, legal) and from one button at the very bottom of the landing page. When you are signed in, the landing page sends you straight to My campaigns, and the signed-in navigation had no link to it. So signed in, there was no route. It also is not on the live site at all yet, only on the preview.
+
+**It is now linked, as "Have Bryce build it", from:** the navigation signed in and signed out; every footer; its own section on the landing page; the pricing page beside the plans; a card on My campaigns; and the top of New campaign ("Build it myself" or "Have Bryce build it").
+
+## Part 6: the three tiers
+
+`/custom` shows Starter ($50), Full Build ($125) and Premium ($200) side by side (stacked on a phone), three example pictures, and the intake form. "Request this" opens the form with that tier selected.
+
+**Your side:** **Head DM**, **Store and custom site requests**, **Custom campaign requests**. For each request: Accept or Decline; "Make a payment link" (copy it and send it to the client; it is marked paid by itself when they pay, or use "Mark as paid"); a status menu (requested, accepted, paid, in progress, in review, delivered); a counter for revision rounds used; notes; and "Deliver", which hands the campaign to the client and starts their Pro months.
+
+**Config** (`src/config/commissions.ts`): the three tiers with their prices, inclusions, revision rounds and Pro months; `open` (set to `false` for "not taking requests right now"); `waitTime` (for example "Current wait: about three weeks"; empty shows nothing).
+
+## What you need to do by hand
+
+1. **Look at the preview** (link at the top of this file is the old one; the new one is in my last message), then say "put it live".
+2. **Review `docs/originals-report.md`** and decide about the seven left-out traits.
+3. **Stripe test keys** are still needed for anything paid: packs, campaigns, upgrades and commission payment links. Steps are in section 2 above. Until then, free things work and paid buttons say payments are off.
+4. **A client needs an account** before you can deliver to them. The confirmation they see after requesting says so.
+5. **Payment links are yours to send.** The site can only email your own address until it has a sending domain.
+6. **For your lawyer:** the note in `docs/srd-import.md` about the dataset's README naming the OGL while the site relies on the CC-BY-4.0 release.
+7. **The example pictures on `/custom`** show "To Kill God" as your players see it today. If you would rather show something else, replace the three files in `public/custom/` or run `node scripts/screenshots-custom.mjs` after changing what it photographs.
+
+## Not checked against the real thing
+
+- Stripe, as before: purchases, upgrades and commission payments were tested with signed test events, not a Stripe account.
+- The request form's email to you (same code path as feedback email, which works).
+- Generating a framework from "To be a god" itself. The generator is tested on a campaign built for the test; running it on the real one creates a campaign in your account, which is yours to do.
