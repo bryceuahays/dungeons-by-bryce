@@ -5,6 +5,8 @@ import { AddSectionForm, CampaignForm, DeleteCampaignForm, ImportPagesForm, Invi
 import { BackgroundUploader } from '@/components/BackgroundUploader';
 import { removeMember, revokeInvite, setCampaignBackground, setPhase, setViewAsPlayer } from '../actions';
 import type { Section } from '@/lib/types';
+import { FREE_LIMITS } from '@/config/plans';
+import { CopyLink } from '@/components/CopyBox';
 
 export const metadata = { title: 'Manage' };
 
@@ -65,13 +67,15 @@ export default async function Manage({ params, searchParams }: { params: Promise
 
         <h2>Invite codes</h2>
         <div className="plate">
-          <p>A new account sees no campaigns until it enters one of these codes. Send a code to your players; they enter it under My campaigns.</p>
+          <p>Send a player the link. It takes them through making an account and straight into this campaign. (The code on its own also works: they enter it under My campaigns.)</p>
+          {ctx.access.pro ? null : <p className="who">The free plan holds up to {FREE_LIMITS.players} players in a campaign. {memberList.length} have joined.</p>}
           <InviteForm slug={slug} />
           <div style={{ marginTop: 14 }}>
             {(invites ?? []).length ? (invites ?? []).map((i) => (
               <div className="orow" key={i.id}>
                 <span>
                   <code className="code">{i.code}</code>{' '}
+                  {live(i) ? <><CopyLink path={'/join/' + i.code} />{' '}</> : null}
                   <small>
                     {live(i) ? 'active' : i.revoked ? 'revoked' : 'used up or expired'}
                     {i.uses_left != null ? `, ${i.uses_left} use${i.uses_left === 1 ? '' : 's'} left` : ', no limit'}

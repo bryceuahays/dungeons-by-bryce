@@ -607,11 +607,9 @@ test('any account can create a campaign and is its DM; in other campaigns it is 
   assert.ok((await player.client.from('rules').insert({ campaign_id: mine.id, kind: 'class', key: 'evil', data: { feats: [[1, 'x', 'Free', { $fn: '()=>fetch("https://example.com")' }]] } }).select()).error, 'only the Head DM writes rules');
   assert.ok((await other.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id })).error, 'only the DM of the new campaign can copy rules into it');
   assert.ok((await player.client.rpc('copy_campaign_rules', { src: mine.id, dst: C.id })).error, 'and never into a campaign they do not run');
-  const copied = await player.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id });
-  assert.ok(copied.error === null && copied.data > 300, 'a member can copy the rules they can already read');
-  const got = [];
-  for (let from = 0; ; from += 1000) { const { data } = await player.client.from('rules').select('kind, phase').eq('campaign_id', mine.id).range(from, from + 999); got.push(...data); if (data.length < 1000) break; }
-  assert.ok(got.length > 300 && got.every((r) => r.phase === null) && !got.some((r) => ['divine', 'sheet-private', 'party-labels', 'race-phase'].includes(r.kind)), 'nothing held back for a later phase is copied');
+  // the rules of "To be a god" are private to its owner: a player in it cannot copy them into their own campaign
+  assert.ok((await player.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id })).error, 'private rules cannot be copied by a member');
+  assert.equal((await admin.from('rules').select('id', { count: 'exact', head: true }).eq('campaign_id', mine.id)).count, 0);
   assert.equal((await page(`/c/${mine.slug}/builder`, other.session)).status, 200);
 
   // deleting: only the owner (or the Head DM); never someone else's campaign

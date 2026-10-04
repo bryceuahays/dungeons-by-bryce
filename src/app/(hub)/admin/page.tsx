@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireHead } from '@/lib/auth';
 import { emailIsOn } from '@/lib/mail';
-import { AdminDeleteCampaign, EmailWaitingButton, FeedbackRowActions, HeadRevealButton } from '@/components/HubForms';
+import { AdminDeleteCampaign, CompButton, EmailWaitingButton, FeedbackRowActions, HeadRevealButton } from '@/components/HubForms';
 
 export const metadata = { title: 'Head DM' };
 
@@ -11,11 +11,14 @@ type Note = { id: string; name: string; email: string; message: string; emailed:
 // Only the Head DM reaches this page; the database functions behind it refuse anyone else.
 export default async function Admin() {
   const { supabase, user } = await requireHead();
-  const [{ data: campaigns }, { data: notes }, { count: accounts }] = await Promise.all([
+  const [{ data: campaigns }, { data: notes }, { count: accounts }, { data: people }, { data: subs }] = await Promise.all([
     supabase.rpc('admin_campaigns'),
     supabase.from('feedback').select('*').order('created_at', { ascending: false }).limit(200),
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
+    supabase.from('profiles').select('id, display_name, email, role, comp, created_at').order('created_at').limit(500),
+    supabase.from('subscriptions').select('user_id, plan, status'),
   ]);
+  const paid = new Map((subs ?? []).map((s) => [s.user_id, s]));
   const list = (campaigns ?? []) as AdminCampaign[];
   const inbox = (notes ?? []) as Note[];
   const emailOn = emailIsOn();
@@ -47,6 +50,22 @@ export default async function Admin() {
             ))}
           </ul>
         ) : <p className="dim">No notes yet.</p>}
+      </div>
+
+      <h2>Accounts</h2>
+      <div className="panel">
+        <p className="dim">Players are always free. &quot;Full access&quot; gives an account everything in Pro without paying, for friends and for anyone you want to look after.</p>
+        <ul className="list">
+          {(people ?? []).map((p) => {
+            const s = paid.get(p.id);
+            return (
+              <li key={p.id}>
+                <span><b>{p.display_name || 'Unnamed'}</b> <span className="dim">{p.email} · since {day(p.created_at)} · {p.role === 'head' ? 'Head DM' : p.comp ? 'full access' : s ? `${s.plan === 'founder' ? 'founder' : 'Pro'} (${s.status})` : 'free'}</span></span>
+                {p.role === 'head' ? null : <span className="rowend"><CompButton id={p.id} on={p.comp} /></span>}
+              </li>
+            );
+          })}
+        </ul>
       </div>
 
       <h2>Your campaigns</h2>

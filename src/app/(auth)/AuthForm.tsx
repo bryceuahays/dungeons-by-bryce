@@ -5,6 +5,8 @@ import { signIn, signUp, type AuthState } from './actions';
 
 export function AuthForm({ mode, next }: { mode: 'in' | 'up'; next?: string }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(mode === 'in' ? signIn : signUp, null);
+  const q = next ? '?next=' + encodeURIComponent(next) : '';
+  const joining = !!next && next.startsWith('/join/');
   return (
     <main className="hub center">
       <div className="box" style={{ textAlign: 'left', width: '100%', maxWidth: 400 }}>
@@ -20,9 +22,10 @@ export function AuthForm({ mode, next }: { mode: 'in' | 'up'; next?: string }) {
           <button type="submit" disabled={pending}>{pending ? 'One moment' : mode === 'in' ? 'Sign in' : 'Create account'}</button>
         </form>
         <p className="dim">
-          {mode === 'in' ? <>New here? <Link href="/sign-up">Create an account</Link>.</> : <>Already have an account? <Link href="/sign-in">Sign in</Link>.</>}
+          {mode === 'in' ? <>New here? <Link href={'/sign-up' + q}>Create an account</Link>.</> : <>Already have an account? <Link href={'/sign-in' + q}>Sign in</Link>.</>}
         </p>
-        {mode === 'up' ? <p className="dim">After you sign up, enter the invite code your DM gave you to join a campaign.</p> : null}
+        {mode === 'up' ? <p className="dim">{joining ? 'You are joining a campaign. As soon as your account is made you will land on its page.' : 'It is free to play and free to run a campaign. If your DM gave you an invite code, enter it after you sign up.'}</p> : null}
+        <p className="dim"><Link href="/legal">Legal and licences</Link></p>
       </div>
     </main>
   );

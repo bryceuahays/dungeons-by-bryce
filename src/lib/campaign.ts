@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation';
 import { requireViewer } from './auth';
 import { safeCssValue } from './sanitize';
 import type { Campaign, ContentRow, RuleRow, Section } from './types';
+import type { CampaignAccess } from './entitlements';
 
 export const VIEW_AS_PLAYER = 'dbb-view-as-player';
 
@@ -22,8 +23,9 @@ export const getCampaign = cache(async (slug: string) => {
   const viewerP = requireViewer();
   const { supabase } = await viewerP;
   // one round trip: the campaign and its tabs (row-level security filters both)
-  const [viewer, { data: row }] = await Promise.all([
+  const [viewer, { data: plan }, { data: row }] = await Promise.all([
     viewerP,
+    supabase.rpc('campaign_access', { p_slug: slug }),
     supabase.from('campaigns').select('*, sections(*), memberships(user_id, role), head_reveals(campaign_id)').eq('slug', slug).maybeSingle(),
   ]);
   if (!row) {
@@ -49,7 +51,10 @@ export const getCampaign = cache(async (slug: string) => {
     faces = (data ?? []) as Face[];
   }
   const real = faces.find((f) => f.phase === '');
+  // the plan of the DM who owns this campaign, and whether it can still be changed
+  const access: CampaignAccess = { pro: !!plan?.pro, writable: plan?.writable !== false };
   return {
+    access, canEdit: realDm && access.writable,
     ...viewer, campaign, sections, isDm, realDm, asPlayer, headView, faces,
     // what the DM calls the campaign; players only ever get campaign.title
     dmTitle: isDm && real ? real.title : campaign.title,

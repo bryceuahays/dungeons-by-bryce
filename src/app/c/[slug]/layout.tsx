@@ -3,6 +3,8 @@ import { getCampaign, themeStyle } from '@/lib/campaign';
 import { safeFontHref } from '@/lib/fonts';
 import { Starfield } from '@/components/Starfield';
 import { CampaignChrome } from '@/components/CampaignChrome';
+import Link from 'next/link';
+import { campaignCan } from '@/lib/entitlements';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -40,8 +42,10 @@ export default async function CampaignLayout({ children, params }: { children: R
         realDm={ctx.realDm}
         asPlayer={ctx.asPlayer}
         headView={ctx.headView ? campaign.id : null}
+        readOnly={ctx.realDm && !ctx.access.writable}
       />
       <div className="page">{children}</div>
+      {campaignCan(ctx.access, 'no_footer') ? null : <footer className="made">Made with <Link href="/">Dungeons by Bryce</Link></footer>}
     </div>
   );
 }

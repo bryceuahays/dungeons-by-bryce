@@ -26,6 +26,8 @@ export const anonClient = () => createClient(URL_, ANON, { auth: { persistSessio
 //   makeUser('player')                      an ordinary account
 //   makeUser('dm', { dmOf: campaignId })    also a co-DM of that campaign (the real owner is never touched)
 //   makeUser('head', { head: true })        a Head DM
+//   makeUser('free', { free: true })        an account on the free plan (the others are given full access,
+//                                           so tests written before plans existed still mean what they meant)
 export async function makeUser(label, opts = {}) {
   const email = `${label}-${crypto.randomBytes(4).toString('hex')}${DOMAIN}`;
   const password = crypto.randomBytes(18).toString('base64url');
@@ -33,6 +35,10 @@ export async function makeUser(label, opts = {}) {
   if (error) throw error;
   if (opts.head) {
     const r = await admin.from('profiles').update({ role: 'head' }).eq('id', data.user.id);
+    if (r.error) throw r.error;
+  }
+  if (!opts.free && !opts.head) {
+    const r = await admin.from('profiles').update({ comp: true }).eq('id', data.user.id);
     if (r.error) throw r.error;
   }
   if (opts.dmOf) {
@@ -47,6 +53,7 @@ export async function makeUser(label, opts = {}) {
 
 export async function cleanup() {
   await admin.from('feedback').delete().like('email', '%' + DOMAIN);
+  await admin.from('billing_events').delete().like('id', 'evt_test_%');
   for (let page = 1; ; page++) {
     const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     const mine = (data?.users ?? []).filter((u) => (u.email || '').endsWith(DOMAIN));

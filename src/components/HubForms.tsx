@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useActionState, useState, useTransition } from 'react';
-import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
+import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
 import { FONT_PAIRS } from '@/lib/fonts';
 
 function Msg({ state }: { state: FormState }) {
@@ -79,13 +79,13 @@ export function NewCampaignForm({ campaigns }: { campaigns: { id: string; title:
       </div>
       <h2>Character rules</h2>
       <div className="panel">
-        <label>Start from another campaign&apos;s character builder rules and sheet
+        <label>Character sheet
           <select name="copy" defaultValue="">
-            <option value="">Start empty (no character builder)</option>
+            <option value="">The standard fifth edition sheet (SRD and your homebrew)</option>
             {campaigns.map((c) => <option key={c.id} value={c.id}>Copy from {c.title}</option>)}
           </select>
         </label>
-        <p className="dim">You can copy from any campaign you run or play in. Rules cannot be written from scratch here.</p>
+        <p className="dim">Start empty and your players get the standard fifth edition sheet, with the SRD races and classes and any homebrew you attach. Or copy the character builder of another campaign you run.</p>
       </div>
       <Msg state={state} />
       <button type="submit" disabled={pending}>{pending ? 'Creating' : 'Create campaign'}</button>
@@ -152,6 +152,11 @@ export function HeadRevealButton({ id, shown, playing }: { id: string; shown: bo
     );
   }
   return <button type="button" className="small-btn" disabled={pending} onClick={() => (playing ? setAsk(true) : start(() => headReveal(id, true)))}>{pending ? 'Unhiding' : 'Unhide'}</button>;
+}
+
+export function CompButton({ id, on }: { id: string; on: boolean }) {
+  const [pending, start] = useTransition();
+  return <button type="button" className="quiet small-btn" disabled={pending} onClick={() => start(() => setComp(id, !on))}>{on ? 'Take back full access' : 'Give full access'}</button>;
 }
 
 export function EmailWaitingButton({ count }: { count: number }) {

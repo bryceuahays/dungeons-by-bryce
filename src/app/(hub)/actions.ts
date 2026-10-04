@@ -15,7 +15,7 @@ export async function joinCampaign(_: FormState, form: FormData): Promise<FormSt
   const code = String(form.get('code') || '').trim();
   if (!code) return { error: 'Enter the invite code your DM gave you.' };
   const { data: slug, error } = await supabase.rpc('join_campaign', { p_code: code });
-  if (error || !slug) return { error: 'That code did not work. Check it with your DM: it may have expired or been used up.' };
+  if (error || !slug) return { error: /full/i.test(error?.message || '') ? 'That campaign already has as many players as its plan allows. Ask your DM to make room or upgrade.' : 'That code did not work. Check it with your DM: it may have expired or been used up.' };
   revalidatePath('/campaigns');
   redirect('/c/' + slug);
 }
@@ -82,7 +82,7 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
 
   const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme }).select('id').single();
   if (error || !campaign) {
-    if (/limit/i.test(error?.message || '')) return { error: 'You already run 10 campaigns, which is the most one account can have. Delete one first.' };
+    if (/upgrade:/i.test(error?.message || '')) return { error: 'The free plan runs one campaign, and you already have one. Pro runs as many as you like: see Plans in the bar above. Nothing you have made is affected.' };
     return { error: /duplicate|unique/i.test(error?.message || '') ? 'Another campaign already uses that web address. Choose a different one.' : 'The campaign could not be created.' };
   }
   const id = campaign.id as string;
@@ -175,6 +175,13 @@ export async function headReveal(id: string, on: boolean) {
   else await supabase.from('head_reveals').delete().eq('campaign_id', id);
   revalidatePath('/', 'layout');
   if (!on) redirect('/admin');
+}
+
+// Give an account full access without paying (for friends), or take it back.
+export async function setComp(userId: string, on: boolean) {
+  const { supabase } = await requireHead();
+  await supabase.rpc('set_comp', { p_user: userId, on_: on });
+  revalidatePath('/admin');
 }
 
 export async function feedbackDelete(id: string) {

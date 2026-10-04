@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const PUBLIC = new Set(['/', '/sign-in', '/sign-up']);
+const PUBLIC = new Set(['/', '/sign-in', '/sign-up', '/robots.txt', '/sitemap.xml', '/opengraph-image']);
+// Public sections of the site. /join sends a signed-out visitor to sign-up itself, keeping the code.
+const PUBLIC_PREFIX = ['/legal', '/pricing', '/custom', '/store', '/demo', '/join/', '/api/stripe/webhook'];
+const isPublic = (path: string) => PUBLIC.has(path) || PUBLIC_PREFIX.some((p) => path === p || path.startsWith(p.endsWith('/') ? p : p + '/')) || path.endsWith('/opengraph-image');
 
 // Refreshes the Supabase session and requires a login for everything except the
 // landing page and the sign-in pages.
@@ -21,7 +24,7 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims?.sub ? data.claims : null;
   const path = request.nextUrl.pathname;
-  if (!user && !PUBLIC.has(path)) {
+  if (!user && !isPublic(path)) {
     const url = request.nextUrl.clone();
     url.pathname = '/sign-in';
     url.search = '';
@@ -30,7 +33,8 @@ export async function proxy(request: NextRequest) {
   }
   if (user && (path === '/sign-in' || path === '/sign-up')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/campaigns';
+    const next = request.nextUrl.searchParams.get('next') || '';
+    url.pathname = next.startsWith('/') && !next.startsWith('//') ? next : '/campaigns';
     url.search = '';
     return NextResponse.redirect(url);
   }

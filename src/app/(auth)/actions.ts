@@ -29,7 +29,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { display_name } } });
   if (error) return { error: /registered|exists/i.test(error.message) ? 'There is already an account for that email. Sign in instead.' : error.message };
   if (!data.session) return { note: 'Check your email for a confirmation link, then sign in.' };
-  redirect('/campaigns');
+  redirect(safeNext(form.get('next')));
 }
 
 export async function signOut() {

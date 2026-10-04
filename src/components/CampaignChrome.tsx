@@ -7,7 +7,7 @@ import { headReveal } from '@/app/(hub)/actions';
 
 type Tab = { slug: string; title: string; kind: string };
 
-export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, asPlayer, headView }: { slug: string; title: string; playerTitle: string | null; tabs: Tab[]; isDm: boolean; realDm: boolean; asPlayer: boolean; headView: string | null }) {
+export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, asPlayer, headView, readOnly }: { slug: string; title: string; playerTitle: string | null; tabs: Tab[]; isDm: boolean; realDm: boolean; asPlayer: boolean; headView: string | null; readOnly?: boolean }) {
   const path = usePathname();
   const base = '/c/' + slug;
   const rest = path.slice(base.length).split('/').filter(Boolean);
@@ -34,6 +34,11 @@ export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, a
         <div className="preview" role="status">
           You unhid this campaign as Head DM. You are reading what its DM sees, secrets included, and you cannot change anything.
           <form action={headReveal.bind(null, headView, false)} style={{ display: 'inline' }}><button type="submit">Hide it from me again</button></form>
+        </div>
+      ) : null}
+      {readOnly ? (
+        <div className="preview" role="status">
+          This campaign is read-only: the free plan runs one campaign. Nothing has been deleted, and everyone can still open and read it. <Link href="/upgrade">Pro unlocks it again</Link>.
         </div>
       ) : null}
       <div className="strip">

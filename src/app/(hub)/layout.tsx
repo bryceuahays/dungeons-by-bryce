@@ -29,6 +29,8 @@ export default async function HubLayout({ children }: { children: React.ReactNod
             <Link href="/campaigns">My campaigns</Link>
             <Link href="/characters">My characters</Link>
             <Link href="/new-campaign">New campaign</Link>
+            <Link href="/homebrew">Homebrew</Link>
+            <Link href="/upgrade">Plans</Link>
             <Link href="/feedback">Feedback</Link>
             {isHead ? <Link href="/admin">Head DM</Link> : null}
             <Link href="/account">{profile.display_name || 'Account'}</Link>
@@ -37,7 +39,7 @@ export default async function HubLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <main className="hub-main">{children}</main>
-      <footer className="hub-foot">Dungeons by Bryce</footer>
+      <footer className="hub-foot"><Link href="/legal">Legal and licences</Link> · Dungeons by Bryce</footer>
     </div>
   );
 }
