@@ -31,7 +31,7 @@ before(async () => {
   C = await campaign();
   originalPhase = C.phase;
   await setPhase('before');
-  [dm, player, other, outsider] = await Promise.all([makeUser('dm', 'dm'), makeUser('player'), makeUser('other'), makeUser('outsider')]);
+  [dm, player, other, outsider] = await Promise.all([makeUser('dm', { dmOf: C.id }), makeUser('player'), makeUser('other'), makeUser('outsider')]);
   const code = await invite(C.id);
   for (const u of [player, other]) {
     const { error } = await u.client.rpc('join_campaign', { p_code: code });
@@ -61,7 +61,7 @@ test('player: direct queries for DM content return nothing', async () => {
 });
 
 test('player: direct queries for sessions, invites and private tables return nothing', async () => {
-  for (const table of ['sessions', 'invites', 'app_config', 'campaign_faces', 'character_private']) {
+  for (const table of ['sessions', 'invites', 'app_config', 'campaign_faces', 'character_private', 'feedback']) {
     const r = await player.client.from(table).select('*');
     assert.equal((r.data ?? []).length, 0, table + ' must be empty for a player');
   }
@@ -135,7 +135,7 @@ test('player: DM routes are closed', async () => {
     const res = await page(r, player.session);
     assert.equal(res.status, 404, r);
   }
-  for (const r of [`/c/${S}/manage`, `/c/${S}/edit/overview`, '/new-campaign']) {
+  for (const r of [`/c/${S}/manage`, `/c/${S}/edit/overview`, '/admin']) {
     const res = await page(r, player.session);
     assert.ok(res.status >= 300 && res.status < 400, r + ' should redirect a player away');
   }
@@ -480,7 +480,7 @@ test('the DM edits a content row and the player sees the change', async () => {
 
 test('the hall background is on every signed-in hub tab, and nowhere else', async () => {
   const hall = (t) => /class="hall-bg"/.test(t) && /\/hub\/hall-wide\.webp/.test(t) && /\/hub\/hall-tall\.webp/.test(t);
-  for (const r of ['/campaigns', '/characters', '/account']) {
+  for (const r of ['/campaigns', '/characters', '/account', '/new-campaign', '/feedback', '/help/campaign-format']) {
     const res = await page(r, player.session);
     assert.equal(res.status, 200, r);
     assert.ok(hall(res.text), r + ' should have the hall background');
@@ -494,4 +494,207 @@ test('the hall background is on every signed-in hub tab, and nowhere else', asyn
     assert.ok(!/hall-bg|hall-wide|hall-tall/.test(res.text), r + ' must not have the hall background');
   }
   assert.ok(/doorway-wide\.webp/.test((await page('/', null)).text), 'the landing page keeps the doorway');
+});
+
+// ------------------------------------------------------------------ roles: everyone can be a DM in their own campaign
+
+const rnd = () => Math.random().toString(36).slice(2, 8);
+async function ownCampaign(owner, title = 'Test Realm') {
+  const slug = 'test-' + rnd();
+  const made = await owner.client.from('campaigns').insert({ slug, title, tagline: 'A throwaway campaign.' }).select('id, owner_id, slug').single();
+  assert.equal(made.error, null);
+  assert.equal(made.data.owner_id, owner.id, 'whoever creates a campaign owns it');
+  const id = made.data.id;
+  const s = await owner.client.from('sections').insert([
+    { campaign_id: id, slug: 'overview', title: 'Overview', sort: 10, audience: 'all', kind: 'content' },
+    { campaign_id: id, slug: 'secrets', title: 'Secrets', sort: 20, audience: 'dm', kind: 'content' },
+  ]);
+  assert.equal(s.error, null);
+  const code = 'TEST' + rnd().toUpperCase() + rnd().toUpperCase();
+  assert.equal((await owner.client.from('invites').insert({ campaign_id: id, code, uses_left: 5 })).error, null);
+  return { id, slug, code };
+}
+
+test('any account can create a campaign and is its DM; in other campaigns it is only a player', async () => {
+  const mine = await ownCampaign(player);
+  const rows = await player.client.from('content').insert([
+    { campaign_id: mine.id, section: 'overview', kind: 'html', key: 'hello', sort: 10, title: 'hello', visibility: 'player',
+      body: { html: '<p>Hello players</p><script>window.pwned=1</script><img src="x" onerror="window.pwned=2"><a href="javascript:window.pwned=3" onclick="window.pwned=4">link</a><iframe src="https://example.com"></iframe>' } },
+    { campaign_id: mine.id, section: 'overview', kind: 'secret', key: 'whodunnit', sort: 20, title: 'DM only', visibility: 'dm', body: { tag: 'DM only', html: '<p>The butler did it</p>' } },
+  ]);
+  assert.equal(rows.error, null);
+
+  // another account joins as a player
+  assert.equal((await other.client.rpc('join_campaign', { p_code: mine.code })).data, mine.slug);
+  const seen = await other.client.from('content').select('visibility, body').eq('campaign_id', mine.id);
+  assert.ok(seen.data.length === 1 && seen.data[0].visibility === 'player');
+  assert.ok(!JSON.stringify(seen.data).includes('butler'));
+  assert.equal((await other.client.from('sections').select('slug').eq('campaign_id', mine.id)).data.length, 1);
+  const theirs = await page(`/c/${mine.slug}/overview`, other.session);
+  assert.equal(theirs.status, 200);
+  assert.ok(theirs.text.includes('Hello players') && !theirs.text.includes('butler') && !theirs.text.includes('Edit this page'));
+  // what a DM wrote is made safe before it reaches a player
+  assert.ok(!/<script>window\.pwned|onerror=|onclick=|javascript:window|<iframe|<img src="x"/.test(theirs.text), 'unsafe markup must be stripped');
+  assert.equal((await page(`/c/${mine.slug}/secrets`, other.session)).status, 404);
+  const man = await page(`/c/${mine.slug}/manage`, other.session);
+  assert.ok(man.status >= 300 && man.status < 400, 'a player cannot open Manage');
+  // and a player cannot change anything in it
+  assert.equal(((await other.client.from('content').update({ title: 'x' }).eq('campaign_id', mine.id).select('id')).data ?? []).length, 0);
+  assert.ok((await other.client.from('content').insert({ campaign_id: mine.id, section: 'overview', kind: 'html', key: 'z', body: {}, visibility: 'player' }).select()).error);
+  assert.equal(((await other.client.from('campaigns').update({ title: 'x' }).eq('id', mine.id).select('id')).data ?? []).length, 0);
+  assert.equal(((await other.client.from('invites').select('id').eq('campaign_id', mine.id)).data ?? []).length, 0);
+
+  // the owner is the DM here
+  const dmView = await page(`/c/${mine.slug}/overview`, player.session);
+  assert.ok(dmView.text.includes('The butler did it') && dmView.text.includes('Edit this page') && dmView.text.includes('Manage'));
+  assert.equal((await page(`/c/${mine.slug}/manage`, player.session)).status, 200);
+  const members = await player.client.rpc('campaign_members', { c: mine.id });
+  assert.ok(members.data.length === 1 && members.data[0].display_name === 'Test other' && !('email' in members.data[0]));
+  assert.equal(((await other.client.rpc('campaign_members', { c: mine.id })).data ?? []).length, 0, 'players cannot list members');
+  // ...and still only a player in the campaign they joined
+  assert.equal((await player.client.from('content').select('id').eq('campaign_id', C.id).eq('visibility', 'dm')).data.length, 0);
+  assert.equal((await page(`/c/${S}/manage`, player.session)).status >= 300, true);
+
+  // people outside see nothing of it, including the Head DM
+  assert.equal((await outsider.client.from('campaigns').select('id').eq('id', mine.id)).data.length, 0);
+  assert.equal((await page(`/c/${mine.slug}/overview`, outsider.session)).status, 404);
+  const head = await makeUser('head', { head: true });
+  assert.equal((await head.client.from('content').select('id').eq('campaign_id', mine.id)).data.length, 0, 'the Head DM cannot read another DM\'s content');
+  assert.equal((await page(`/c/${mine.slug}/overview`, head.session)).status, 404);
+  const all = await head.client.rpc('admin_campaigns');
+  assert.ok(all.data.some((c) => c.id === mine.id) && all.data.some((c) => c.id === C.id), 'the Head DM can list every campaign');
+  assert.equal(((await player.client.rpc('admin_campaigns')).data ?? []).length, 0, 'nobody else can');
+
+  // character rules: a DM cannot write them, only copy an existing set they can already read
+  assert.ok((await player.client.from('rules').insert({ campaign_id: mine.id, kind: 'class', key: 'evil', data: { feats: [[1, 'x', 'Free', { $fn: '()=>fetch("https://example.com")' }]] } }).select()).error, 'only the Head DM writes rules');
+  assert.ok((await other.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id })).error, 'only the DM of the new campaign can copy rules into it');
+  assert.ok((await player.client.rpc('copy_campaign_rules', { src: mine.id, dst: C.id })).error, 'and never into a campaign they do not run');
+  const copied = await player.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id });
+  assert.ok(copied.error === null && copied.data > 300, 'a member can copy the rules they can already read');
+  const got = [];
+  for (let from = 0; ; from += 1000) { const { data } = await player.client.from('rules').select('kind, phase').eq('campaign_id', mine.id).range(from, from + 999); got.push(...data); if (data.length < 1000) break; }
+  assert.ok(got.length > 300 && got.every((r) => r.phase === null) && !got.some((r) => ['divine', 'sheet-private', 'party-labels', 'race-phase'].includes(r.kind)), 'nothing held back for a later phase is copied');
+  assert.equal((await page(`/c/${mine.slug}/builder`, other.session)).status, 200);
+
+  // deleting: only the owner (or the Head DM); never someone else's campaign
+  assert.ok((await other.client.rpc('delete_campaign', { c: mine.id })).error);
+  assert.ok((await player.client.rpc('delete_campaign', { c: C.id })).error);
+  assert.ok((await dm.client.rpc('delete_campaign', { c: C.id })).error, 'even a co-DM cannot delete a campaign they do not own');
+  assert.equal((await admin.from('campaigns').select('id').eq('id', C.id)).data.length, 1, 'the real campaign is untouched');
+  const ch = await other.client.from('characters').insert({ owner: other.id, campaign_id: mine.id, data: { name: 'Doomed' } }).select('id').single();
+  assert.equal((await player.client.rpc('delete_campaign', { c: mine.id })).error, null);
+  assert.equal((await admin.from('campaigns').select('id').eq('id', mine.id)).data.length, 0);
+  assert.equal((await admin.from('characters').select('id').eq('id', ch.data.id)).data.length, 0, 'its characters go with it');
+  assert.equal((await admin.from('content').select('id').eq('campaign_id', mine.id)).data.length, 0);
+  const second = await ownCampaign(other, 'Second Realm');
+  assert.equal((await head.client.rpc('delete_campaign', { c: second.id })).error, null, 'the Head DM can delete any campaign');
+  assert.equal((await admin.from('campaigns').select('id').eq('id', second.id)).data.length, 0);
+});
+
+test('characters can be deleted by their owner and by that campaign\'s DM, and by nobody else', async () => {
+  const a = await player.client.from('characters').insert({ owner: player.id, campaign_id: C.id, data: { name: 'Delete me' } }).select('id').single();
+  const b = await player.client.from('characters').insert({ owner: player.id, campaign_id: C.id, data: { name: 'DM removes me' } }).select('id').single();
+  assert.equal(((await other.client.from('characters').delete().eq('id', a.data.id).select('id')).data ?? []).length, 0);
+  assert.equal((await player.client.from('characters').delete().eq('id', a.data.id).select('id')).data.length, 1);
+  assert.equal((await dm.client.from('characters').delete().eq('id', b.data.id).select('id')).data.length, 1);
+  const hub = await page('/characters', player.session);
+  assert.ok(hub.status === 200 && !hub.text.includes('Delete me'));
+});
+
+// ------------------------------------------------------------------ feedback
+
+test('feedback: anyone signed in can send a note; only the Head DM can read them', async () => {
+  const sent = await player.client.rpc('submit_feedback', { p_message: 'Please add dice rolling. (automated test)' });
+  assert.ok(sent.error === null && sent.data);
+  assert.equal(((await player.client.from('feedback').select('*')).data ?? []).length, 0, 'players cannot read feedback');
+  assert.ok((await player.client.from('feedback').insert({ message: 'direct insert' }).select()).error, 'notes only go in through the form');
+  for (let i = 0; i < 4; i++) assert.equal((await player.client.rpc('submit_feedback', { p_message: 'note ' + i })).error, null);
+  assert.ok((await player.client.rpc('submit_feedback', { p_message: 'one too many' })).error, 'more than 5 an hour is refused');
+  const head = await makeUser('head2', { head: true });
+  const inbox = await head.client.from('feedback').select('message, name, email').eq('email', player.email);
+  assert.equal(inbox.data.length, 5);
+  assert.ok(inbox.data.some((n) => n.message.includes('dice rolling') && n.name === 'Test player'));
+  assert.equal((await page('/feedback', player.session)).status, 200);
+  const adminPage = await page('/admin', head.session);
+  assert.ok(adminPage.status === 200 && adminPage.text.includes('dice rolling'));
+  const blocked = await page('/admin', player.session);
+  assert.ok(blocked.status >= 300 && blocked.status < 400);
+});
+
+// ------------------------------------------------------------------ uploaded backgrounds
+
+test('backgrounds: people upload only to their own folder or a campaign they run; only members can see a campaign\'s', async () => {
+  // a 1x1 PNG
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  const put = (who, path) => who.client.storage.from('backgrounds').upload(path, png, { upsert: true, contentType: 'image/png' });
+  assert.equal((await put(player, `user/${player.id}/wide`)).error, null);
+  assert.equal((await put(player, `user/${player.id}/tall`)).error, null);
+  assert.ok((await put(player, `user/${other.id}/wide`)).error, 'not into someone else\'s folder');
+  assert.ok((await put(player, `campaign/${C.id}/wide`)).error, 'not into a campaign they only play in');
+  assert.ok((await put(player, 'loose-file')).error);
+  assert.ok((await player.client.storage.from('backgrounds').upload(`user/${player.id}/note`, Buffer.from('hello'), { contentType: 'text/plain' })).error, 'pictures only');
+  assert.ok((await other.client.storage.from('backgrounds').createSignedUrl(`user/${player.id}/wide`, 60)).error, 'nobody else can read it');
+
+  // the hub uses it
+  assert.equal((await player.client.from('profiles').update({ hub_bg: { wide: true, tall: true, v: 7 } }).eq('id', player.id)).error, null);
+  const hub = await page('/campaigns', player.session);
+  assert.ok(hub.text.includes('/bg/me/wide?v=7') && hub.text.includes('/bg/me/tall?v=7') && !hub.text.includes('hall-wide.webp'));
+  const img = await page('/bg/me/wide?v=7', player.session);
+  assert.equal(img.status, 302);
+  assert.equal((await fetch(img.location)).status, 200);
+  assert.equal((await page('/bg/me/wide', other.session)).status, 404, 'someone with no picture gets nothing');
+  assert.ok(((await page('/campaigns', other.session)).text).includes('hall-wide.webp'));
+  await player.client.from('profiles').update({ hub_bg: {} }).eq('id', player.id);
+
+  // a campaign's background: its DM uploads, its members see it
+  const mine = await ownCampaign(other, 'Painted Realm');
+  assert.equal((await other.client.rpc('join_campaign', { p_code: mine.code })).data, mine.slug, 'an owner entering their own code is harmless');
+  assert.equal((await player.client.rpc('join_campaign', { p_code: mine.code })).data, mine.slug);
+  assert.equal((await put(other, `campaign/${mine.id}/wide`)).error, null);
+  assert.equal((await put(other, `campaign/${mine.id}/tall`)).error, null);
+  assert.ok((await put(player, `campaign/${mine.id}/wide`)).error, 'a player cannot replace it');
+  assert.equal((await other.client.from('campaigns').update({ background: { wide: true, tall: true, v: 3 } }).eq('id', mine.id)).error, null);
+  const asMember = await page(`/c/${mine.slug}/overview`, player.session);
+  assert.ok(asMember.status === 200 && asMember.text.includes('camp-bg') && asMember.text.includes(`/c/${mine.slug}/bg/wide?v=3`));
+  const pic = await page(`/c/${mine.slug}/bg/tall?v=3`, player.session);
+  assert.equal(pic.status, 302);
+  assert.equal((await fetch(pic.location)).status, 200);
+  assert.equal((await page(`/c/${mine.slug}/bg/wide`, outsider.session)).status, 404);
+  assert.ok((await outsider.client.storage.from('backgrounds').createSignedUrl(`campaign/${mine.id}/wide`, 60)).error);
+  assert.ok(!(await page(`/c/${S}/overview`, player.session)).text.includes('camp-bg'), 'other campaigns are unchanged');
+});
+
+// ------------------------------------------------------------------ pasting a campaign
+
+test('pasted campaign text becomes tabs, blocks, and DM-only secrets', async () => {
+  const { parseCampaignText, IMPORT_EXAMPLE } = await import('../src/lib/import.ts');
+  const r = parseCampaignText(IMPORT_EXAMPLE);
+  assert.equal(r.title, 'The Sunken Crown');
+  assert.ok(r.tagline.startsWith('A drowned kingdom'));
+  assert.deepEqual(r.tabs.map((t) => [t.title, t.audience]), [['Overview', 'all'], ['Factions', 'all'], ['DM notes', 'dm']]);
+  const kinds = r.tabs[0].blocks.map((b) => b.kind + ':' + b.visibility);
+  assert.deepEqual(kinds, ['html:player', 'heading:player', 'html:player', 'plate:player', 'plate:player', 'secret:dm']);
+  assert.equal(r.tabs[0].blocks[3].body.group, r.tabs[0].blocks[4].body.group, 'cards next to each other share a row');
+  assert.ok(r.tabs[1].blocks[0].kind === 'table' && r.tabs[1].blocks[0].body.html.includes('<th>Faction</th>'));
+  assert.ok(r.tabs[2].blocks.every((b) => b.visibility === 'dm'));
+  const hostile = parseCampaignText('## Notes\nHello <script>alert(1)</script> **bold** [x](javascript:alert(1))\n[dm]\nhidden\n[/dm]\nshown');
+  const html = hostile.tabs[0].blocks.map((b) => b.body.html).join('');
+  assert.ok(html.includes('&lt;script&gt;') && html.includes('<b>bold</b>') && !html.includes('<script>') && !html.includes('href="javascript'));
+  assert.deepEqual(hostile.tabs[0].blocks.map((b) => b.visibility), ['player', 'dm', 'player']);
+
+  // end to end: a DM pastes pages into their campaign and a player gets only the player parts
+  const mine = await ownCampaign(player, 'Pasted Realm');
+  const { data: sess } = await player.client.auth.getSession();
+  assert.ok(sess.session);
+  const imported = parseCampaignText('## Lore\nThe sea is rising.\n\n[secret: Why]\nThe moon is falling.\n[/secret]\n\n## Plans (DM only)\nEnd it in the lighthouse.');
+  for (const tab of imported.tabs) {
+    await player.client.from('sections').insert({ campaign_id: mine.id, slug: tab.slug, title: tab.title, audience: tab.audience, kind: 'content', sort: 50 });
+    await player.client.from('content').insert(tab.blocks.map((b, i) => ({ campaign_id: mine.id, section: tab.slug, kind: b.kind, key: 'k' + i, sort: i, title: b.title, body: b.body, visibility: b.visibility })));
+  }
+  await other.client.rpc('join_campaign', { p_code: mine.code });
+  const lore = await page(`/c/${mine.slug}/lore`, other.session);
+  assert.ok(lore.status === 200 && lore.text.includes('The sea is rising.') && !lore.text.includes('moon is falling'));
+  assert.equal((await page(`/c/${mine.slug}/plans`, other.session)).status, 404);
+  assert.ok((await page(`/c/${mine.slug}/lore`, player.session)).text.includes('The moon is falling.'));
+  assert.equal((await page('/help/campaign-format', other.session)).status, 200);
 });

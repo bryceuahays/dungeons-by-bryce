@@ -1,26 +1,33 @@
 import { redirect } from 'next/navigation';
 import { getCampaign } from '@/lib/campaign';
-import { AddSectionForm, CampaignForm, InviteForm, SectionRow } from '@/components/DmForms';
-import { removeMember, revokeInvite, setPhase, setViewAsPlayer } from '../actions';
+import Link from 'next/link';
+import { AddSectionForm, CampaignForm, DeleteCampaignForm, ImportPagesForm, InviteForm, SectionRow } from '@/components/DmForms';
+import { BackgroundUploader } from '@/components/BackgroundUploader';
+import { removeMember, revokeInvite, setCampaignBackground, setPhase, setViewAsPlayer } from '../actions';
 import type { Section } from '@/lib/types';
 
 export const metadata = { title: 'Manage' };
 
-export default async function Manage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function Manage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ imported?: string }> }) {
   const { slug } = await params;
+  const { imported } = await searchParams;
   const ctx = await getCampaign(slug);
   if (!ctx.realDm) redirect('/c/' + slug);
   const { supabase, campaign } = ctx;
   const [{ data: invites }, { data: members }, { data: profiles }, { data: allSections }, { data: chars }, { data: faces }] = await Promise.all([
     supabase.from('invites').select('*').eq('campaign_id', campaign.id).order('created_at', { ascending: false }),
-    supabase.from('memberships').select('user_id, joined_at').eq('campaign_id', campaign.id).order('joined_at'),
-    supabase.from('profiles').select('id, display_name, email'),
+    supabase.rpc('campaign_members', { c: campaign.id }),
+    Promise.resolve({ data: null }),
     supabase.from('sections').select('*').eq('campaign_id', campaign.id).order('sort'),
     supabase.from('characters').select('owner').eq('campaign_id', campaign.id),
     supabase.from('campaign_faces').select('phase, slug, title, tagline').eq('campaign_id', campaign.id),
   ]);
   const realTitle = (faces ?? []).find((f) => f.phase === '')?.title ?? campaign.title;
-  const who = new Map((profiles ?? []).map((p) => [p.id, p]));
+  void profiles;
+  const memberList = (members ?? []) as { user_id: string; display_name: string; joined_at: string; role: string }[];
+  const isOwner = campaign.owner_id === ctx.user.id;
+  const hasBg = !!(campaign.background?.wide && campaign.background?.tall);
+  const [newTabs, newBlocks] = (imported ?? '').split('-').map((n) => parseInt(n, 10) || 0);
   const sections = (allSections ?? []) as Section[];
   const now = Date.now();
   const live = (i: { revoked: boolean; expires_at: string | null; uses_left: number | null }) =>
@@ -30,7 +37,8 @@ export default async function Manage({ params }: { params: Promise<{ slug: strin
     <div className="cs-guide">
       <div className="wrap">
         <h2>Manage {realTitle}</h2>
-        <p className="lede">Only you see this page.</p>
+        <p className="lede">Only you see this page. You are the DM of this campaign.</p>
+        {imported ? <p className="okmsg" role="status">Your campaign was created, with {newBlocks} block{newBlocks === 1 ? '' : 's'} in {newTabs} tab{newTabs === 1 ? '' : 's'} from the text you pasted. Open a tab and choose Edit this page to change anything.</p> : null}
 
         {campaign.phases.length ? (
           <>
@@ -78,12 +86,11 @@ export default async function Manage({ params }: { params: Promise<{ slug: strin
 
         <h2>Members</h2>
         <div className="plate">
-          {(members ?? []).length ? (members ?? []).map((m) => {
-            const p = who.get(m.user_id);
+          {memberList.length ? memberList.map((m) => {
             const n = (chars ?? []).filter((c) => c.owner === m.user_id).length;
             return (
               <div className="orow" key={m.user_id}>
-                <span><b>{p?.display_name || 'Unnamed'}</b> <small>{p?.email} · joined {new Date(m.joined_at).toLocaleDateString('en-US')} · {n} character{n === 1 ? '' : 's'}</small></span>
+                <span><b>{m.display_name || 'Unnamed'}</b> <small>joined {new Date(m.joined_at).toLocaleDateString('en-US')} · {n} character{n === 1 ? '' : 's'}</small></span>
                 <form action={removeMember.bind(null, slug, m.user_id)}><button className="act sm danger" type="submit">Remove</button></form>
               </div>
             );
@@ -98,8 +105,30 @@ export default async function Manage({ params }: { params: Promise<{ slug: strin
           <div style={{ marginTop: 14 }}><AddSectionForm slug={slug} /></div>
         </div>
 
+        <h2>Paste pages</h2>
+        <div className="plate">
+          <p>Paste text and the site turns it into tabs, headings, cards, tables, and DM-only secrets, added to what is already here. <Link href="/help/campaign-format" target="_blank">How to format it</Link> (opens in a new tab).</p>
+          <ImportPagesForm slug={slug} />
+        </div>
+
+        <h2>Background picture</h2>
+        <div className="plate">
+          <p>A picture behind every page of this campaign, for you and your players. {hasBg ? 'This campaign has its own background.' : 'This campaign has no background picture yet.'}</p>
+          <BackgroundUploader folder={`campaign/${campaign.id}`} has={hasBg} save={setCampaignBackground.bind(null, slug)} />
+        </div>
+
         <h2>Campaign settings</h2>
         <div className="plate"><CampaignForm slug={slug} campaign={campaign} faces={faces ?? []} /></div>
+
+        {isOwner ? (
+          <>
+            <h2>Delete this campaign</h2>
+            <div className="plate">
+              <p>This removes the campaign for good: every page, every invite, every session, and every character your players made in it. It cannot be undone.</p>
+              <DeleteCampaignForm slug={slug} title={realTitle} characters={(chars ?? []).length} members={memberList.length} />
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );

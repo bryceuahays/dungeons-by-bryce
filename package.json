@@ -21,12 +21,14 @@
     "@supabase/supabase-js": "^2.117.2",
     "next": "^16.3.8",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "sanitize-html": "^2.18.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/sanitize-html": "^2.16.2",
     "cheerio": "^1.2.0",
     "dotenv": "^17.0.0",
     "puppeteer-core": "^25.12.0",

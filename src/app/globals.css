@@ -137,3 +137,27 @@ body{margin:0; min-height:100%; background:var(--h-bg); color:var(--h-text); fon
 .nav-progress.on{opacity:1; transition:opacity 0s; animation:nav-run .9s linear infinite; box-shadow:0 0 10px rgba(79,209,197,.6)}
 @keyframes nav-run{from{background-position:-60% 0} to{background-position:160% 0}}
 @media (prefers-reduced-motion:reduce){ .nav-progress.on{animation:none; background-size:100% 100%; background-position:0 0} }
+
+/* ---------- hub: small buttons, confirmations, the background uploader, the format guide ---------- */
+.hub .small-btn{font-size:.74rem; padding:.45em .9em; border-radius:9px}
+.hub button.danger,.hub .small-btn.danger{border-color:rgba(239,154,143,.6); color:#ffd9d3}
+.hub button.danger:hover,.hub button.danger:focus-visible{border-color:var(--h-bad); box-shadow:0 0 0 1px rgba(239,154,143,.4), 0 0 18px rgba(239,154,143,.22)}
+.hub .confirm{display:inline-flex; flex-wrap:wrap; gap:6px 8px; align-items:center}
+.hub .rowend{display:inline-flex; flex-wrap:wrap; gap:6px 12px; align-items:center; justify-content:flex-end}
+.hub .bgup-note{border-left:3px solid var(--h-blue); background:rgba(43,108,176,.10); padding:10px 14px; margin:10px 0 14px; color:var(--h-dim); font-size:.93rem; border-radius:0 8px 8px 0}
+.hub .bgup-note ul{margin:6px 0; padding-left:20px}
+.hub .bgup-note b{color:var(--h-text)}
+.hub .bgup-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:0 16px}
+.hub .bgup-actions{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin:4px 0 0}
+.hub .bgup-hint{color:var(--h-dim); font-size:.9rem}
+.hub input[type=file]{padding:7px}
+.hub textarea.mono,.hub code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.86rem}
+.hub code{background:var(--h-field); border:1px solid var(--h-line); border-radius:5px; padding:1px 6px; white-space:pre-wrap}
+.hub table.fmt{width:100%; border-collapse:collapse}
+.hub table.fmt th,.hub table.fmt td{text-align:left; vertical-align:top; padding:9px 10px; border-bottom:1px solid var(--h-line)}
+.hub table.fmt th{font-family:var(--h-title); font-size:.82rem; letter-spacing:.06em; color:var(--h-dim)}
+.hub table.fmt tr:last-child td{border-bottom:0}
+.hub table.fmt td:first-child{width:42%}
+.hub ul.plain{margin:0; padding-left:20px}
+.hub ul.plain li{margin:6px 0}
+@media (max-width:640px){ .hub table.fmt td:first-child{width:auto} .hub table.fmt td,.hub table.fmt th{display:block; border-bottom:0; padding:4px 0} .hub table.fmt tr{display:block; padding:8px 0; border-bottom:1px solid var(--h-line)} .hub table.fmt thead{display:none} }

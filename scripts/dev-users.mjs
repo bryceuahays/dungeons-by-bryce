@@ -14,7 +14,7 @@ if (process.argv[2] === 'delete') {
   console.log('test accounts removed');
 } else {
   const c = await campaign();
-  const dm = await makeUser('dm', 'dm');
+  const dm = await makeUser('dm', { dmOf: c.id });
   const player = await makeUser('player');
   const code = await invite(c.id);
   await player.client.rpc('join_campaign', { p_code: code });

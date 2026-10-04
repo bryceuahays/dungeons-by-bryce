@@ -1,6 +1,9 @@
-export type Role = 'dm' | 'player';
+// 'head' is the site owner. Everyone else is 'player' at the account level, and is the DM
+// of whatever campaigns they own.
+export type Role = 'head' | 'player';
+export type Background = { wide?: boolean; tall?: boolean; v?: number };
 
-export type Profile = { id: string; display_name: string; email: string; role: Role };
+export type Profile = { id: string; display_name: string; email: string; role: Role; hub_bg: Background };
 
 export type Theme = {
   colors?: Record<string, string>;
@@ -19,6 +22,8 @@ export type Campaign = {
   phase: string;
   phases: { id: string; label: string }[];
   theme: Theme;
+  owner_id: string | null;
+  background: Background;
 };
 
 export type Section = {

@@ -17,9 +17,19 @@ export default async function CampaignLayout({ children, params }: { children: R
   const ctx = await getCampaign(slug);
   const { campaign } = ctx;
   const fonts = safeFontHref(campaign.theme?.fonts?.href);
+  const bg = campaign.background?.wide && campaign.background?.tall ? `?v=${campaign.background.v ?? 1}` : null;
   return (
-    <div className="campaign" style={themeStyle(campaign.theme)}>
+    <div className={'campaign' + (bg ? ' has-bg' : '')} style={themeStyle(campaign.theme)}>
       {fonts ? <link rel="stylesheet" href={fonts} precedence="default" /> : null}
+      {bg ? (
+        <div className="camp-bg" aria-hidden="true">
+          <picture>
+            <source media="(orientation: portrait)" srcSet={`/c/${campaign.slug}/bg/tall${bg}`} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/c/${campaign.slug}/bg/wide${bg}`} alt="" draggable={false} />
+          </picture>
+        </div>
+      ) : null}
       {campaign.theme?.starfield ? <Starfield /> : null}
       <CampaignChrome
         slug={campaign.slug}

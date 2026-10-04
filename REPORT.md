@@ -149,3 +149,26 @@ All 26 are in `DECISIONS.md`. The ones most worth a look:
 - **Three lines of old-host wording were changed** because they would now be false (16). Everything else was moved as written.
 - **The first deployment came after all five phases were working**, not one deployment per phase (24).
 - **Old-host items not carried over** (18): the "open the builder" and "add a character by code" plates on the DM's Players tab, and "They open in a new browser tab".
+
+## Added later (4 October 2026)
+
+See `DECISIONS.md` items 27 onward for the landing page, hub background, before/after session negative, speed, and the roles work. `PHASE-REPORT.md` lists everything tagged for the two phases.
+
+### Turning on feedback email
+
+Feedback notes are already collected on your **Head DM** page. To also get each one by email:
+
+1. Go to https://resend.com and click **Sign up**. **Use bryceuahays@gmail.com.** (On the free plan, Resend only delivers to the address the account was made with. That is the address the notes should go to, so this is what makes it work without owning a web domain.)
+2. Confirm your email when Resend asks.
+3. In Resend, click **API Keys** in the left menu, then **Create API Key**. Name it `dungeons-by-bryce`, leave the permission as **Sending access**, and click **Add**.
+4. Resend shows the key once. Click the copy button. (It starts with `re_`.)
+5. Go to https://vercel.com, open the **dungeons-by-bryce** project, click **Settings**, then **Environment Variables**.
+6. In **Key** type `RESEND_API_KEY`. In **Value** paste the key. Leave all environments ticked. Click **Save**.
+7. Click **Deployments** (top), click the three dots on the newest one, and click **Redeploy**. Wait for it to finish.
+8. Send yourself a note from the **Feedback** tab. It should arrive within a minute, and the note on your Head DM page will say "emailed".
+
+Do not paste the key into a chat. If it ever leaks, delete it in Resend and make a new one.
+
+### Tests
+
+`npm test` now runs 27 tests. `node scripts/smoke-local.mjs` drives the newer screens in a real browser on a local copy (create a campaign by pasting, upload backgrounds, send feedback, delete a character and a campaign).

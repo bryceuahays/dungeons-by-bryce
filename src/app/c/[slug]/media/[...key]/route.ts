@@ -24,9 +24,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   let phase: string = campaign.phase;
   const asked = request.nextUrl.searchParams.get('phase');
   if (asked && asked !== phase) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const { data: runsIt } = await supabase.rpc('is_campaign_dm', { c: campaign.id });
     const asPlayer = (await cookies()).get(VIEW_AS_PLAYER)?.value === '1';
-    if (profile?.role === 'dm' && !asPlayer) phase = asked;
+    if (runsIt && !asPlayer) phase = asked;
   }
 
   // RLS again: a player only ever sees media rows for the current phase.

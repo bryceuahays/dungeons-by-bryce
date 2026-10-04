@@ -6,6 +6,9 @@ A hub for Bryce's D&D campaigns. `BRIEF.md` is the original build brief, `DECISI
 Next.js (App Router, TypeScript) on Vercel. Supabase for Postgres, Auth, Storage, Realtime. Plain CSS.
 
 ## Hard rules
+- Roles: one Head DM account (the site owner). Everyone else is the DM of campaigns they own and a player in campaigns they join. Database policies are per campaign (`is_campaign_dm(campaign_id)`); never add a site-wide "is DM" check. The Head DM does not get into other DMs' content.
+- Content written by a DM is untrusted: it goes through `src/lib/sanitize.ts` on the server before it is sent. Character-builder rules contain runnable formulas and are writable only by the Head DM; other DMs copy them with `copy_campaign_rules`.
+- Phases: rows, tabs, and campaign titles can belong to a phase and are withheld by RLS, not by the page.
 - DM-only content must never reach a player's browser. Row-level security enforces it in the database; pages are built on the server from rows the viewer may read. Never hard-code campaign content in components.
 - `source/` is canon. Do not rewrite campaign text, rules, or numbers.
 - Secrets live in `.env.local` and Vercel environment variables. Never print or commit them.

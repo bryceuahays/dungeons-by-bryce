@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCampaign, getContent, getLore, getRules, phaseLabel, type CampaignCtx } from '@/lib/campaign';
 import { renderSection, esc } from '@/lib/render';
+import { cleanContent, cleanForm } from '@/lib/sanitize';
 import { GuideSection } from '@/components/GuideSection';
 import { SheetIsland, CombatIsland } from '@/components/Islands';
 import { PartyLive } from '@/components/PartyLive';
@@ -33,7 +34,7 @@ async function sectionHtml(ctx: CampaignCtx, section: Section, race?: string) {
   const [rows, lore] = await Promise.all([getContent(ctx, { section: section.slug }), getLore(ctx)]);
   const label = ctx.isDm ? (phase: string | null | undefined) => phaseLabel(ctx.campaign, phase) : undefined;
   const whole = ctx.isDm && section.phase ? `<p class="phase-p phase-tab"><span class="phase-note">${esc(phaseLabel(ctx.campaign, section.phase))}: this whole tab</span></p>` : '';
-  return whole + renderSection(rows, lore, { base: '/c/' + ctx.campaign.slug, race, label });
+  return cleanContent(whole + renderSection(rows, lore, { base: '/c/' + ctx.campaign.slug, race, label }));
 }
 
 async function ContentTab({ ctx, section, race }: { ctx: CampaignCtx; section: Section; race?: string }) {
@@ -98,7 +99,7 @@ async function Sheet({ ctx, pick }: { ctx: CampaignCtx; pick?: string }) {
   // Parts of the form that belong to a later phase are separate rows. The ones this
   // viewer may have are put back in their places; the rest never leave the database.
   const slots = new Map(form.filter((r) => r.kind === 'sheet-slot').map((r) => [r.key, r.body?.html ?? '']));
-  const template = String(form.find((r) => r.kind === 'sheet-template')?.body?.html ?? '').replace(/<!--slot:([a-z0-9-]+)-->/g, (_, k) => slots.get(k) ?? '');
+  const template = cleanForm(String(form.find((r) => r.kind === 'sheet-template')?.body?.html ?? '').replace(/<!--slot:([a-z0-9-]+)-->/g, (_, k) => slots.get(k) ?? ''));
   // The same goes for the private fields of the sheet itself.
   const privateKeys: string[] = rules['sheet-private']?.[0]?.data.v ?? [];
   const sheetData = { ...current.data };
@@ -201,14 +202,15 @@ async function Players({ ctx, section }: { ctx: CampaignCtx; section: Section })
   const [{ data: chars }, lore, { data: members }, { data: stored }, { data: labelRows }] = await Promise.all([
     ctx.supabase.from('characters').select('id, owner, data').eq('campaign_id', ctx.campaign.id),
     getLore(ctx),
-    ctx.supabase.from('profiles').select('id, display_name'),
+    ctx.supabase.rpc('campaign_members', { c: ctx.campaign.id }),
     ctx.supabase.from('character_private').select('character_id, data'),
     ctx.supabase.from('rules').select('data').eq('campaign_id', ctx.campaign.id).eq('kind', 'party-labels').limit(1),
   ]);
   const priv: Record<string, any> = {};
   (stored ?? []).forEach((p) => { priv[p.character_id] = p.data; });
   const names: Record<string, string> = {};
-  (members ?? []).forEach((m) => { names[m.id] = m.display_name; });
+  ((members ?? []) as { user_id: string; display_name: string }[]).forEach((m) => { names[m.user_id] = m.display_name; });
+  names[ctx.user.id] = ctx.profile.display_name;
   return (
     <div className="cs-guide">
       <div className="wrap">

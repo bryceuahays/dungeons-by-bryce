@@ -75,3 +75,22 @@
 .cs-guide .phase-p{margin:10px 0 6px; max-width:none}
 .cs-guide .phase-tab{margin-top:26px}
 .cs-guide .hero .phase-p{margin:0 0 10px}
+
+/* a campaign's own background picture, uploaded by its DM: fixed behind every page, under a veil of the campaign's own dark colour */
+.campaign.has-bg{background-image:none}
+.campaign .camp-bg{position:fixed; top:0; left:0; width:100%; height:100vh; height:100lvh; z-index:0; overflow:hidden; pointer-events:none; background:var(--void)}
+.campaign .camp-bg picture,.campaign .camp-bg img{position:absolute; inset:0; width:100%; height:100%}
+.campaign .camp-bg img{object-fit:cover; object-position:center; display:block}
+.campaign .camp-bg::after{content:""; position:absolute; inset:0;
+  background:linear-gradient(to bottom, color-mix(in srgb, var(--void) 62%, transparent) 0%, color-mix(in srgb, var(--void) 74%, transparent) 45%, color-mix(in srgb, var(--void) 90%, transparent) 100%)}
+.campaign.has-bg .strip{background:color-mix(in srgb, var(--void) 70%, transparent)}
+
+/* background uploader and other shared bits, inside a campaign */
+.cs-guide .bgup-note{border-left:3px solid var(--star); background:color-mix(in srgb, var(--star) 8%, transparent); padding:10px 14px; margin:10px 0 14px; color:var(--dim); font-size:.95rem}
+.cs-guide .bgup-note ul{margin:6px 0}
+.cs-guide .bgup-note b{color:var(--vellum)}
+.cs-guide .bgup-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px 16px}
+.cs-guide .bgup-actions{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-top:12px}
+.cs-guide .bgup-hint{color:var(--dim); font-size:.9rem}
+.cs-guide .act.quiet{color:var(--dim); border-color:var(--line); background:transparent}
+.cs-guide input[type=file]{padding:6px}

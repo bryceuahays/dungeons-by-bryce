@@ -23,13 +23,20 @@ export const admin = createClient(URL_, SERVICE, { auth: { persistSession: false
 export const anonClient = () => createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
 
 // A throwaway account, signed in with its own token (so RLS applies to it).
-export async function makeUser(label, role = 'player') {
+//   makeUser('player')                      an ordinary account
+//   makeUser('dm', { dmOf: campaignId })    also a co-DM of that campaign (the real owner is never touched)
+//   makeUser('head', { head: true })        a Head DM
+export async function makeUser(label, opts = {}) {
   const email = `${label}-${crypto.randomBytes(4).toString('hex')}${DOMAIN}`;
   const password = crypto.randomBytes(18).toString('base64url');
   const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { display_name: 'Test ' + label } });
   if (error) throw error;
-  if (role === 'dm') {
-    const r = await admin.from('profiles').update({ role: 'dm' }).eq('id', data.user.id);
+  if (opts.head) {
+    const r = await admin.from('profiles').update({ role: 'head' }).eq('id', data.user.id);
+    if (r.error) throw r.error;
+  }
+  if (opts.dmOf) {
+    const r = await admin.from('memberships').insert({ user_id: data.user.id, campaign_id: opts.dmOf, role: 'dm' });
     if (r.error) throw r.error;
   }
   const client = anonClient();
@@ -39,10 +46,17 @@ export async function makeUser(label, role = 'player') {
 }
 
 export async function cleanup() {
+  await admin.from('feedback').delete().like('email', '%' + DOMAIN);
   for (let page = 1; ; page++) {
     const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     const mine = (data?.users ?? []).filter((u) => (u.email || '').endsWith(DOMAIN));
-    for (const u of mine) await admin.auth.admin.deleteUser(u.id);
+    for (const u of mine) {
+      // their uploaded pictures, and those of any campaign they made (deleting the account deletes those campaigns)
+      const { data: owned } = await admin.from('campaigns').select('id').eq('owner_id', u.id);
+      const paths = [`user/${u.id}/wide`, `user/${u.id}/tall`, ...(owned ?? []).flatMap((c) => [`campaign/${c.id}/wide`, `campaign/${c.id}/tall`])];
+      await admin.storage.from('backgrounds').remove(paths);
+      await admin.auth.admin.deleteUser(u.id);
+    }
     if (!data || data.users.length < 200) break;
   }
   await admin.from('invites').delete().like('code', 'TEST%');

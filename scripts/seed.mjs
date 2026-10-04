@@ -29,7 +29,7 @@ const chunks = (a, n) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) 
 if (DM_EMAIL) {
   must(await db.from('app_config').upsert({ key: 'dm_email', value: DM_EMAIL.trim().toLowerCase() }), 'dm email');
   // if the DM signed up before this ran, fix their role
-  must(await db.from('profiles').update({ role: 'dm' }).ilike('email', DM_EMAIL.trim()), 'dm role');
+  must(await db.from('profiles').update({ role: 'head' }).ilike('email', DM_EMAIL.trim()), 'head dm role');
 }
 
 // The campaign is found by any of its addresses, whichever phase it is in.
@@ -46,6 +46,9 @@ if (existing) {
   existing = must(await db.from('campaigns').insert(campaignRow).select('id, phase').single(), 'create campaign');
 }
 const campaign_id = existing.id;
+// a campaign made here has no owner yet: give it to the Head DM (if they have signed up; otherwise the sign-up trigger does it)
+const head = must(await db.from('profiles').select('id').eq('role', 'head').limit(1), 'head dm');
+if (head.length) must(await db.from('campaigns').update({ owner_id: head[0].id }).eq('id', campaign_id).is('owner_id', null), 'owner');
 
 // title, address and tagline for each phase; the database keeps campaigns in step
 must(await db.from('campaign_faces').upsert(faces.map((f) => ({ ...f, campaign_id })), { onConflict: 'campaign_id,phase' }), 'faces');

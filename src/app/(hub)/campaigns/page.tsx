@@ -8,43 +8,47 @@ import type { Campaign } from '@/lib/types';
 export const metadata = { title: 'My campaigns' };
 
 export default async function Campaigns() {
-  const { supabase, profile } = await requireViewer();
-  // RLS returns only campaigns this account belongs to (or all of them for the DM).
-  const isDm = profile.role === 'dm';
+  const { supabase, user } = await requireViewer();
+  // Row-level security returns the campaigns this account runs or has joined.
   // The campaigns row holds the title and tagline for the current phase, which is all a
-  // player can read. The DM also gets the real ones (campaign_faces is DM-only).
+  // player can read. A campaign's DM also gets its real ones (campaign_faces).
   const [{ data }, { data: faces }] = await Promise.all([
     supabase.from('campaigns').select('*').order('created_at'),
-    isDm ? supabase.from('campaign_faces').select('campaign_id, title, tagline').eq('phase', '') : Promise.resolve({ data: [] as { campaign_id: string; title: string; tagline: string }[] }),
+    supabase.from('campaign_faces').select('campaign_id, title, tagline').eq('phase', ''),
   ]);
   const campaigns = (data ?? []) as Campaign[];
   const real = new Map((faces ?? []).map((f) => [f.campaign_id, f]));
+  const mine = campaigns.filter((c) => c.owner_id === user.id);
+  const joined = campaigns.filter((c) => c.owner_id !== user.id);
   const fonts = Array.from(new Set(campaigns.map((c) => safeFontHref(c.theme?.fonts?.href)).filter(Boolean)));
+
+  const card = (c: Campaign) => {
+    const face = real.get(c.id);
+    return (
+      <Link key={c.id} className="ccard" href={'/c/' + c.slug} style={themeStyle(c.theme)}>
+        <b>{face?.title ?? c.title}</b>
+        <span>{face?.tagline ?? c.tagline}</span>
+        {face ? <i>You run this campaign{face.title !== c.title ? `. Players see: ${c.title}` : ''}</i> : null}
+      </Link>
+    );
+  };
+
   return (
     <>
       {fonts.map((href) => <link key={href} rel="stylesheet" href={href} precedence="default" />)}
       <h1>My campaigns</h1>
-      {campaigns.length ? (
-        <div className="cards">
-          {campaigns.map((c) => (
-            <Link key={c.id} className="ccard" href={'/c/' + c.slug} style={themeStyle(c.theme)}>
-              <b>{real.get(c.id)?.title ?? c.title}</b>
-              <span>{real.get(c.id)?.tagline ?? c.tagline}</span>
-              {isDm ? <i>You run this campaign{real.get(c.id) && real.get(c.id)!.title !== c.title ? `. Players see: ${c.title}` : ''}</i> : null}
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="panel narrow"><p className="dim">{isDm ? 'No campaigns yet. Create one to get started.' : 'You are not in a campaign yet. Enter the invite code your DM gave you.'}</p></div>
-      )}
-      {isDm ? (
-        <p><Link className="button quiet" href="/new-campaign">Create a new campaign</Link></p>
-      ) : (
-        <>
-          <h2>Join a campaign</h2>
-          <div className="panel narrow"><JoinForm /></div>
-        </>
-      )}
+
+      <h2>Campaigns you run</h2>
+      {mine.length ? <div className="cards">{mine.map(card)}</div>
+        : <div className="panel narrow"><p className="dim">You are not running a campaign yet. Anyone can start one: you are its DM, and you invite your own players.</p></div>}
+      <p><Link className="button quiet" href="/new-campaign">Create a new campaign</Link></p>
+
+      <h2>Campaigns you play in</h2>
+      {joined.length ? <div className="cards">{joined.map(card)}</div>
+        : <div className="panel narrow"><p className="dim">You are not in a campaign yet. Enter the invite code your DM gave you.</p></div>}
+
+      <h2>Join a campaign</h2>
+      <div className="panel narrow"><JoinForm /></div>
     </>
   );
 }

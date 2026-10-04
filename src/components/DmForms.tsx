@@ -1,6 +1,6 @@
 'use client';
-import { useActionState, useTransition } from 'react';
-import { addContentRow, addSection, addSession, createInvite, updateCampaign, updateSection, updateSession, type ActionState } from '@/app/c/[slug]/actions';
+import { useActionState, useState, useTransition } from 'react';
+import { addContentRow, addSection, addSession, createInvite, deleteCampaign, importPages, updateCampaign, updateSection, updateSession, type ActionState } from '@/app/c/[slug]/actions';
 
 function Msg({ state }: { state: ActionState }) {
   if (state?.error) return <span className="err" role="alert">{state.error}</span>;
@@ -135,6 +135,33 @@ export function AddBlockForm({ slug, section }: { slug: string; section: string 
         <label className="f">Who sees it<select name="visibility" defaultValue="dm"><option value="dm">DM only</option><option value="player">Players and DM</option></select></label>
       </div>
       <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Add block</button> <Msg state={state} /></p>
+    </form>
+  );
+}
+
+export function ImportPagesForm({ slug }: { slug: string }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(importPages.bind(null, slug), null);
+  return (
+    <form action={action} key={state?.note ? state.note : 'form'}>
+      <label className="f">Text to add<textarea name="paste" rows={8} spellCheck={false} placeholder={'## A new tab\nSome text…\n\n[secret: DM only]\nSomething only you see.\n[/secret]'} /></label>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>{pending ? 'Adding' : 'Add these pages'}</button> <Msg state={state} /></p>
+    </form>
+  );
+}
+
+export function DeleteCampaignForm({ slug, title, characters, members }: { slug: string; title: string; characters: number; members: number }) {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState<ActionState, FormData>(deleteCampaign.bind(null, slug), null);
+  if (!open) return <p><button type="button" className="act danger" onClick={() => setOpen(true)}>Delete this campaign…</button></p>;
+  return (
+    <form action={action}>
+      <p className="err">You are about to delete &quot;{title}&quot;{members || characters ? `, with ${members} player${members === 1 ? '' : 's'} and ${characters} character${characters === 1 ? '' : 's'}` : ''}.</p>
+      <label className="f" style={{ maxWidth: 320 }}>Type DELETE to confirm<input name="confirm" autoComplete="off" /></label>
+      <p className="row" style={{ marginTop: 10 }}>
+        <button className="act danger" disabled={pending}>{pending ? 'Deleting' : 'Delete for good'}</button>
+        <button type="button" className="act" disabled={pending} onClick={() => setOpen(false)}>Keep it</button>
+        <Msg state={state} />
+      </p>
     </form>
   );
 }

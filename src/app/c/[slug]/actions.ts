@@ -2,9 +2,11 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { requireDm, requireViewer } from '@/lib/auth';
+import { requireViewer } from '@/lib/auth';
 import { VIEW_AS_PLAYER } from '@/lib/campaign';
 import { blank } from '@/islands/character';
+import { parseCampaignText, MAX_IMPORT_CHARS } from '@/lib/import';
+import { insertImported, removeCampaignFiles } from '@/lib/campaign-admin';
 
 export type ActionState = { error?: string; note?: string } | null;
 
@@ -17,7 +19,7 @@ const fresh = (slug: string) => revalidatePath('/c/' + slug, 'layout');
 // ---------------------------------------------------------------- everyone
 
 export async function setViewAsPlayer(slug: string, on: boolean) {
-  await requireDm();
+  await requireViewer();
   const store = await cookies();
   if (on) store.set(VIEW_AS_PLAYER, '1', { path: '/', sameSite: 'lax', httpOnly: true });
   else store.delete(VIEW_AS_PLAYER);
@@ -46,7 +48,7 @@ export async function deleteCharacter(slug: string, characterId: string) {
 // Switching phase can change the campaign's title and address (see campaign_faces), so
 // afterwards the DM is sent to the Manage page at whatever the address is now.
 export async function setPhase(slug: string, phase: string) {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const { data: c } = await supabase.from('campaigns').select('id, phases').eq('slug', slug).maybeSingle();
   if (!c || !(c.phases as { id: string }[]).some((p) => p.id === phase)) return;
   await supabase.from('campaigns').update({ phase }).eq('id', c.id);
@@ -56,7 +58,7 @@ export async function setPhase(slug: string, phase: string) {
 }
 
 export async function updateCampaign(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (!id) return { error: 'Campaign not found.' };
   const title = String(form.get('title') || '').trim().slice(0, 80);
@@ -110,7 +112,7 @@ function newCode() {
 }
 
 export async function createInvite(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (!id) return { error: 'Campaign not found.' };
   const uses = parseInt(String(form.get('uses') || ''), 10);
@@ -128,13 +130,13 @@ export async function createInvite(slug: string, _: ActionState, form: FormData)
 }
 
 export async function revokeInvite(slug: string, inviteId: string) {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   await supabase.from('invites').update({ revoked: true }).eq('id', inviteId);
   fresh(slug);
 }
 
 export async function removeMember(slug: string, userId: string) {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (id) await supabase.from('memberships').delete().eq('campaign_id', id).eq('user_id', userId);
   fresh(slug);
@@ -143,7 +145,7 @@ export async function removeMember(slug: string, userId: string) {
 // ---------------------------------------------------------------- DM: tabs
 
 export async function addSection(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (!id) return { error: 'Campaign not found.' };
   const title = String(form.get('title') || '').trim().slice(0, 40);
@@ -159,7 +161,7 @@ export async function addSection(slug: string, _: ActionState, form: FormData): 
 }
 
 export async function updateSection(slug: string, sectionId: string, patch: { title?: string; audience?: 'all' | 'dm' | 'player'; phase?: string; move?: -1 | 1; remove?: boolean }) {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (!id) return;
   const { data: all } = await supabase.from('sections').select('id, slug, sort, kind').eq('campaign_id', id).order('sort');
@@ -188,7 +190,7 @@ export async function updateSection(slug: string, sectionId: string, patch: { ti
 // ---------------------------------------------------------------- DM: content editor
 
 export async function saveContentRow(slug: string, rowId: string, patch: { title?: string; body?: unknown; visibility?: 'player' | 'dm'; hidden?: boolean; phase?: string | null }): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const p: Record<string, unknown> = {};
   if (typeof patch.title === 'string') p.title = patch.title.slice(0, 120);
   if (patch.body !== undefined) p.body = patch.body;
@@ -202,7 +204,7 @@ export async function saveContentRow(slug: string, rowId: string, patch: { title
 }
 
 export async function moveContentRow(slug: string, section: string, rowId: string, dir: -1 | 1) {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (!id) return;
   const { data } = await supabase.from('content').select('id, key, sort, visibility').eq('campaign_id', id).eq('section', section).order('sort').order('visibility', { ascending: false });
@@ -223,7 +225,7 @@ export async function moveContentRow(slug: string, section: string, rowId: strin
 }
 
 export async function deleteContentRow(slug: string, rowId: string) {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   await supabase.from('content').delete().eq('id', rowId);
   fresh(slug);
 }
@@ -238,7 +240,7 @@ const NEW_BODY: Record<string, (title: string) => unknown> = {
 };
 
 export async function addContentRow(slug: string, section: string, _: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (!id) return { error: 'Campaign not found.' };
   const kind = String(form.get('kind') || 'html');
@@ -259,7 +261,7 @@ export async function addContentRow(slug: string, section: string, _: ActionStat
 }
 
 export async function toggleChecklist(slug: string, rowId: string, index: number, done: boolean) {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const { data: row } = await supabase.from('content').select('body').eq('id', rowId).maybeSingle();
   const items = row?.body?.items;
   if (!Array.isArray(items) || !items[index]) return;
@@ -270,7 +272,7 @@ export async function toggleChecklist(slug: string, rowId: string, index: number
 // ---------------------------------------------------------------- DM: sessions
 
 export async function addSession(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (!id) return { error: 'Campaign not found.' };
   const title = String(form.get('title') || '').trim().slice(0, 120);
@@ -283,7 +285,7 @@ export async function addSession(slug: string, _: ActionState, form: FormData): 
 }
 
 export async function updateSession(slug: string, sessionId: string, _: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const patch = {
     title: String(form.get('title') || '').trim().slice(0, 120),
     meta: String(form.get('meta') || '').trim().slice(0, 200),
@@ -298,14 +300,14 @@ export async function updateSession(slug: string, sessionId: string, _: ActionSt
 }
 
 export async function saveSessionNotes(slug: string, sessionId: string, notes: string) {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const { data } = await supabase.from('sessions').select('content').eq('id', sessionId).maybeSingle();
   await supabase.from('sessions').update({ content: { ...(data?.content ?? {}), notes } }).eq('id', sessionId);
   fresh(slug);
 }
 
 export async function saveSessionBeat(slug: string, sessionId: string, beatId: string, html: string): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const { data } = await supabase.from('sessions').select('content').eq('id', sessionId).maybeSingle();
   const beats = data?.content?.beats;
   if (!Array.isArray(beats)) return { error: 'This session has no run sheet.' };
@@ -317,7 +319,7 @@ export async function saveSessionBeat(slug: string, sessionId: string, beatId: s
 }
 
 export async function duplicateContentRow(slug: string, rowId: string): Promise<ActionState> {
-  const { supabase } = await requireDm();
+  const { supabase } = await requireViewer();
   const { data: row } = await supabase.from('content').select('*').eq('id', rowId).maybeSingle();
   if (!row) return { error: 'That block no longer exists.' };
   const stamp = Date.now().toString(36);
@@ -329,4 +331,48 @@ export async function duplicateContentRow(slug: string, rowId: string): Promise<
   if (error) return { error: 'The copy could not be made.' };
   fresh(slug);
   return { note: 'Copied. The copy is DM only until you change who sees it.' };
+}
+
+// ---------------------------------------------------------------- DM: paste pages, background, delete
+
+// Adds tabs and blocks from pasted text (see /help/campaign-format) to this campaign.
+export async function importPages(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireViewer();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
+  const text = String(form.get('paste') || '').slice(0, MAX_IMPORT_CHARS);
+  if (!text.trim()) return { error: 'Paste some text first.' };
+  const imported = parseCampaignText(text);
+  if (!imported.tabs.length) return { error: 'Nothing to add was found in that text. Check the format guide.' };
+  const { data: last } = await supabase.from('sections').select('sort').eq('campaign_id', id).eq('kind', 'content').order('sort', { ascending: false }).limit(1);
+  const r = await insertImported(supabase, id, imported, (last?.[0]?.sort ?? 0) + 10);
+  if (!r.blocks && !r.tabs) return { error: 'Nothing could be added. Only the DM of a campaign can add pages to it.' };
+  fresh(slug);
+  return { note: `Added ${r.blocks} block${r.blocks === 1 ? '' : 's'}${r.tabs ? ` in ${r.tabs} new tab${r.tabs === 1 ? '' : 's'}` : ''}.${imported.notes.length ? ' ' + imported.notes.join(' ') : ''}` };
+}
+
+// The browser uploads the two images to private storage (only this campaign's DM may
+// write in its folder). This records that they exist so the campaign pages use them.
+export async function setCampaignBackground(slug: string, on: boolean): Promise<ActionState> {
+  const { supabase } = await requireViewer();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
+  if (!on) await supabase.storage.from('backgrounds').remove([`campaign/${id}/wide`, `campaign/${id}/tall`]);
+  const { data, error } = await supabase.from('campaigns').update({ background: on ? { wide: true, tall: true, v: Date.now() } : {} }).eq('id', id).select('id');
+  if (error || !data?.length) return { error: 'That did not save.' };
+  fresh(slug);
+  return { note: on ? 'The background is in place.' : 'The background was removed.' };
+}
+
+// Deletes the campaign and everything in it. The database only allows its owner (or the Head DM).
+export async function deleteCampaign(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireViewer();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
+  if (String(form.get('confirm') || '').trim() !== 'DELETE') return { error: 'Type DELETE in capital letters to confirm.' };
+  const { error } = await supabase.rpc('delete_campaign', { c: id });
+  if (error) return { error: 'Only the person who created this campaign can delete it.' };
+  await removeCampaignFiles(id);
+  revalidatePath('/', 'layout');
+  redirect('/campaigns');
 }

@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { requireViewer } from './auth';
+import { safeCssValue } from './sanitize';
 import type { Campaign, ContentRow, RuleRow, Section } from './types';
 
 export const VIEW_AS_PLAYER = 'dbb-view-as-player';
@@ -23,7 +24,7 @@ export const getCampaign = cache(async (slug: string) => {
   // one round trip: the campaign and its tabs (row-level security filters both)
   const [viewer, { data: row }] = await Promise.all([
     viewerP,
-    supabase.from('campaigns').select('*, sections(*)').eq('slug', slug).maybeSingle(),
+    supabase.from('campaigns').select('*, sections(*), memberships(user_id, role)').eq('slug', slug).maybeSingle(),
   ]);
   if (!row) {
     // an address from another phase sends you to the current one; anything else does not exist
@@ -31,8 +32,9 @@ export const getCampaign = cache(async (slug: string) => {
     if (now) redirect('/c/' + now);
     notFound();
   }
-  const { sections: allSections, ...campaign } = row as Campaign & { sections: Section[] };
-  const realDm = viewer.profile.role === 'dm';
+  const { sections: allSections, memberships, ...campaign } = row as Campaign & { sections: Section[]; memberships: { user_id: string; role: string }[] };
+  // The DM of this campaign is whoever owns it (or has been made a co-DM of it).
+  const realDm = campaign.owner_id === viewer.user.id || (memberships ?? []).some((m) => m.user_id === viewer.user.id && m.role === 'dm');
   const asPlayer = realDm && (await store).get(VIEW_AS_PLAYER)?.value === '1';
   const isDm = realDm && !asPlayer;
   const sections = (allSections ?? [])
@@ -140,10 +142,12 @@ export async function getRules(ctx: CampaignCtx, kinds?: string[]) {
 
 export function themeStyle(theme: Campaign['theme']): Record<string, string> {
   const s: Record<string, string> = {};
-  Object.entries(theme?.colors ?? {}).forEach(([k, v]) => { if (/^[a-z0-9-]+$/.test(k)) s['--' + k] = String(v); });
-  if (theme?.fonts?.display) s['--display'] = theme.fonts.display;
-  if (theme?.fonts?.body) s['--body'] = theme.fonts.body;
-  if (theme?.goldHi) s['--gold-hi'] = theme.goldHi;
-  if (theme?.goldLo) s['--gold-lo'] = theme.goldLo;
+  // theme values are written by the campaign's DM and end up in a style attribute, so each one is checked
+  const put = (name: string, v: unknown) => { const ok = safeCssValue(v); if (ok) s[name] = ok; };
+  Object.entries(theme?.colors ?? {}).forEach(([k, v]) => { if (/^[a-z0-9-]+$/.test(k)) put('--' + k, v); });
+  put('--display', theme?.fonts?.display);
+  put('--body', theme?.fonts?.body);
+  put('--gold-hi', theme?.goldHi);
+  put('--gold-lo', theme?.goldLo);
   return s;
 }
