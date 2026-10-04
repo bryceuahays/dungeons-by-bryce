@@ -107,7 +107,7 @@ export function applyPhases({ content, rules, sections, campaign, builderRaces, 
   });
   note('Overview', 'Page header: title "To Kill God", before tagline, before facts line (added)', 'before');
   content.push({
-    section: 'overview', kind: 'plate', key: 'plate-voth-before', title: BEFORE.vothCard[0], visibility: 'player', phase: 'before', sort: vothAfter.sort,
+    section: 'overview', kind: 'plate', key: 'plate-voth-before', title: BEFORE.vothCard[0], visibility: 'player', phase: 'before', sort: vothAfter.sort - 5,
     body: { html: `<h3 style="color:var(--gold)">${BEFORE.vothCard[0]}</h3>\n      <p class="who">${BEFORE.vothCard[1]}</p>`, grid: 'g2', group: 'overview-before' },
   });
   note('Overview', 'Voth card: "Voth. Gold dragon. God of the universe." (added)', 'before');

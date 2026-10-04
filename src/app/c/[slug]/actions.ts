@@ -43,20 +43,26 @@ export async function deleteCharacter(slug: string, characterId: string) {
 
 // ---------------------------------------------------------------- DM: campaign
 
+// Switching phase can change the campaign's title and address (see campaign_faces), so
+// afterwards the DM is sent to the Manage page at whatever the address is now.
 export async function setPhase(slug: string, phase: string) {
   const { supabase } = await requireDm();
   const { data: c } = await supabase.from('campaigns').select('id, phases').eq('slug', slug).maybeSingle();
   if (!c || !(c.phases as { id: string }[]).some((p) => p.id === phase)) return;
   await supabase.from('campaigns').update({ phase }).eq('id', c.id);
-  fresh(slug);
+  const { data: now } = await supabase.from('campaigns').select('slug').eq('id', c.id).single();
+  revalidatePath('/', 'layout');
+  redirect(`/c/${now?.slug ?? slug}/manage`);
 }
 
 export async function updateCampaign(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
   const { supabase } = await requireDm();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
   const title = String(form.get('title') || '').trim().slice(0, 80);
   const tagline = String(form.get('tagline') || '').trim().slice(0, 300);
   if (!title) return { error: 'The title cannot be empty.' };
-  const patch: Record<string, unknown> = { title, tagline };
+  const patch: Record<string, unknown> = {};
   const raw = String(form.get('theme') || '').trim();
   if (raw) {
     try { const t = JSON.parse(raw); if (!t || typeof t !== 'object' || Array.isArray(t)) throw new Error(); patch.theme = t; } catch { return { error: 'The theme is not valid JSON. Nothing was saved.' }; }
@@ -67,10 +73,31 @@ export async function updateCampaign(slug: string, _: ActionState, form: FormDat
     return { id, label: (i > 0 ? l.slice(i + 1) : l).trim() };
   }).filter((p) => p.id);
   patch.phases = phases;
-  const { error } = await supabase.from('campaigns').update(patch).eq('slug', slug);
+  const { error } = await supabase.from('campaigns').update(patch).eq('id', id);
   if (error) return { error: 'That did not save.' };
-  fresh(slug);
-  revalidatePath('/campaigns');
+
+  // The real title and tagline, and an optional different title, address and tagline per
+  // phase. The database copies the right one onto the campaign for the current phase.
+  const real = await supabase.from('campaign_faces').update({ title, tagline }).eq('campaign_id', id).eq('phase', '');
+  if (real.error) return { error: 'The title did not save.' };
+  for (const p of phases) {
+    const ft = String(form.get('face-title-' + p.id) || '').trim().slice(0, 80);
+    const fs = String(form.get('face-slug-' + p.id) || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+    const fg = String(form.get('face-tagline-' + p.id) || '').trim().slice(0, 300);
+    if (ft && fs.length >= 2) {
+      const r = await supabase.from('campaign_faces').upsert({ campaign_id: id, phase: p.id, slug: fs, title: ft, tagline: fg }, { onConflict: 'campaign_id,phase' });
+      if (r.error) return { error: `The address "${fs}" is already in use. Choose another.` };
+    } else if (!ft) {
+      await supabase.from('campaign_faces').delete().eq('campaign_id', id).eq('phase', p.id);
+    } else return { error: 'A phase title also needs a web address of at least two characters.' };
+  }
+  const keep = ['', ...phases.map((p) => p.id)];
+  const { data: all } = await supabase.from('campaign_faces').select('phase').eq('campaign_id', id);
+  for (const f of all ?? []) if (!keep.includes(f.phase)) await supabase.from('campaign_faces').delete().eq('campaign_id', id).eq('phase', f.phase);
+
+  revalidatePath('/', 'layout');
+  const { data: now } = await supabase.from('campaigns').select('slug').eq('id', id).single();
+  if (now && now.slug !== slug) redirect(`/c/${now.slug}/manage`);
   return { note: 'Saved.' };
 }
 
@@ -131,7 +158,7 @@ export async function addSection(slug: string, _: ActionState, form: FormData): 
   return { note: 'Tab added.' };
 }
 
-export async function updateSection(slug: string, sectionId: string, patch: { title?: string; audience?: 'all' | 'dm' | 'player'; move?: -1 | 1; remove?: boolean }) {
+export async function updateSection(slug: string, sectionId: string, patch: { title?: string; audience?: 'all' | 'dm' | 'player'; phase?: string; move?: -1 | 1; remove?: boolean }) {
   const { supabase } = await requireDm();
   const id = await campaignId(supabase, slug);
   if (!id) return;
@@ -149,9 +176,10 @@ export async function updateSection(slug: string, sectionId: string, patch: { ti
       await Promise.all(list.map((s, k) => supabase.from('sections').update({ sort: (k + 1) * 10 }).eq('id', s.id)));
     }
   } else {
-    const p: Record<string, string> = {};
+    const p: Record<string, string | null> = {};
     if (patch.title) p.title = patch.title.trim().slice(0, 40);
     if (patch.audience) p.audience = patch.audience;
+    if (patch.phase !== undefined) p.phase = patch.phase || null;
     if (Object.keys(p).length) await supabase.from('sections').update(p).eq('id', sectionId);
   }
   fresh(slug);

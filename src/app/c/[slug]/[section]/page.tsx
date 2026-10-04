@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCampaign, getContent, getLore, getRules, type CampaignCtx } from '@/lib/campaign';
+import { getCampaign, getContent, getLore, getRules, phaseLabel, type CampaignCtx } from '@/lib/campaign';
 import { renderSection, esc } from '@/lib/render';
 import { GuideSection } from '@/components/GuideSection';
 import { SheetIsland, CombatIsland } from '@/components/Islands';
@@ -31,7 +31,9 @@ export default async function SectionPage({ params, searchParams }: Props) {
 
 async function sectionHtml(ctx: CampaignCtx, section: Section, race?: string) {
   const [rows, lore] = await Promise.all([getContent(ctx, { section: section.slug }), getLore(ctx)]);
-  return renderSection(rows, lore, { base: '/c/' + ctx.campaign.slug, race });
+  const label = ctx.isDm ? (phase: string | null | undefined) => phaseLabel(ctx.campaign, phase) : undefined;
+  const whole = ctx.isDm && section.phase ? `<p class="phase-p phase-tab"><span class="phase-note">${esc(phaseLabel(ctx.campaign, section.phase))}: this whole tab</span></p>` : '';
+  return whole + renderSection(rows, lore, { base: '/c/' + ctx.campaign.slug, race, label });
 }
 
 async function ContentTab({ ctx, section, race }: { ctx: CampaignCtx; section: Section; race?: string }) {
@@ -84,18 +86,27 @@ async function Sheet({ ctx, pick }: { ctx: CampaignCtx; pick?: string }) {
   if (!current) {
     return <div className="cs-guide"><div className="wrap"><section id="sheet"><h2>My character</h2><NoCharacter slug={slug} /></section></div></div>;
   }
-  const [tpl, lore, rules, party] = await Promise.all([
-    getContent(ctx, { section: 'sheet', kinds: ['sheet-template'] }),
+  const [form, lore, rules, party, stored] = await Promise.all([
+    getContent(ctx, { section: 'sheet', kinds: ['sheet-template', 'sheet-slot'] }),
     getLore(ctx),
-    getRules(ctx, ['divine']),
+    getRules(ctx, ['divine', 'sheet-private']),
     ctx.supabase.rpc('party_cards', { c: ctx.campaign.id }),
+    ctx.supabase.from('character_private').select('data').eq('character_id', current.id).maybeSingle(),
   ]);
   const divine: Record<string, any> = {};
   (rules.divine ?? []).forEach((r) => { divine[r.key] = r.data.v; });
+  // Parts of the form that belong to a later phase are separate rows. The ones this
+  // viewer may have are put back in their places; the rest never leave the database.
+  const slots = new Map(form.filter((r) => r.kind === 'sheet-slot').map((r) => [r.key, r.body?.html ?? '']));
+  const template = String(form.find((r) => r.kind === 'sheet-template')?.body?.html ?? '').replace(/<!--slot:([a-z0-9-]+)-->/g, (_, k) => slots.get(k) ?? '');
+  // The same goes for the private fields of the sheet itself.
+  const privateKeys: string[] = rules['sheet-private']?.[0]?.data.v ?? [];
+  const sheetData = { ...current.data };
+  privateKeys.forEach((k) => { if (stored.data?.data && k in stored.data.data) sheetData[k] = stored.data.data[k]; });
   const building = !current.data?.t && current.builder;
   const html = `<section id="sheet">
   <p class="lede">Only you and your DM can see what you enter here. <span id="saveState"></span></p>
-  ${tpl[0]?.body?.html ?? '<p class="who">This campaign has no character sheet set up yet.</p>'}
+  ${template || '<p class="who">This campaign has no character sheet set up yet.</p>'}
   <div class="plate" style="margin-top:16px">
     <h3>Paste a character code</h3>
     <p class="who">If you built a character before this site existed, your old code still works. Importing replaces this sheet.</p>
@@ -115,7 +126,7 @@ async function Sheet({ ctx, pick }: { ctx: CampaignCtx; pick?: string }) {
           <Link className="act" href={`/c/${slug}/combat?c=${current.id}`}>Go to the combat page</Link>
           <Link className="act" href={`/c/${slug}/builder`}>Build another character</Link>
         </p>
-        <SheetIsland html={html} character={{ id: current.id, data: current.data }} races={lore.races} divine={divine} />
+        <SheetIsland html={html} character={{ id: current.id, data: sheetData }} races={lore.races.map(({ id, name, traits, up }: any) => ({ id, name, traits, up }))} divine={divine} divineBy={Object.keys(divine).length ? 'tier' : ''} privateKeys={privateKeys} />
         <h2>The party</h2>
         <div className="plate">
           {others.length ? others.map((p) => {
@@ -187,11 +198,15 @@ async function Sessions({ ctx, section }: { ctx: CampaignCtx; section: Section }
 
 async function Players({ ctx, section }: { ctx: CampaignCtx; section: Section }) {
   if (!ctx.isDm) notFound();
-  const [{ data: chars }, lore, { data: members }] = await Promise.all([
+  const [{ data: chars }, lore, { data: members }, { data: stored }, { data: labelRows }] = await Promise.all([
     ctx.supabase.from('characters').select('id, owner, data').eq('campaign_id', ctx.campaign.id),
     getLore(ctx),
     ctx.supabase.from('profiles').select('id, display_name'),
+    ctx.supabase.from('character_private').select('character_id, data'),
+    ctx.supabase.from('rules').select('data').eq('campaign_id', ctx.campaign.id).eq('kind', 'party-labels').limit(1),
   ]);
+  const priv: Record<string, any> = {};
+  (stored ?? []).forEach((p) => { priv[p.character_id] = p.data; });
   const names: Record<string, string> = {};
   (members ?? []).forEach((m) => { names[m.id] = m.display_name; });
   return (
@@ -199,7 +214,7 @@ async function Players({ ctx, section }: { ctx: CampaignCtx; section: Section })
       <div className="wrap">
         <h2>{section.title}</h2>
         <p className="lede">Every character in this campaign, in full.</p>
-        <PartyLive campaignId={ctx.campaign.id} initial={(chars ?? []) as any[]} races={lore.races.map((r: any) => ({ id: r.id, name: r.name }))} names={names} />
+        <PartyLive campaignId={ctx.campaign.id} initial={(chars ?? []) as any[]} initialPrivate={priv} labels={labelRows?.[0]?.data ?? null} races={lore.races.map((r: any) => ({ id: r.id, name: r.name }))} names={names} />
       </div>
     </div>
   );

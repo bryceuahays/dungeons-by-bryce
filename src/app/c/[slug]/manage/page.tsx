@@ -11,13 +11,15 @@ export default async function Manage({ params }: { params: Promise<{ slug: strin
   const ctx = await getCampaign(slug);
   if (!ctx.realDm) redirect('/c/' + slug);
   const { supabase, campaign } = ctx;
-  const [{ data: invites }, { data: members }, { data: profiles }, { data: allSections }, { data: chars }] = await Promise.all([
+  const [{ data: invites }, { data: members }, { data: profiles }, { data: allSections }, { data: chars }, { data: faces }] = await Promise.all([
     supabase.from('invites').select('*').eq('campaign_id', campaign.id).order('created_at', { ascending: false }),
     supabase.from('memberships').select('user_id, joined_at').eq('campaign_id', campaign.id).order('joined_at'),
     supabase.from('profiles').select('id, display_name, email'),
     supabase.from('sections').select('*').eq('campaign_id', campaign.id).order('sort'),
     supabase.from('characters').select('owner').eq('campaign_id', campaign.id),
+    supabase.from('campaign_faces').select('phase, slug, title, tagline').eq('campaign_id', campaign.id),
   ]);
+  const realTitle = (faces ?? []).find((f) => f.phase === '')?.title ?? campaign.title;
   const who = new Map((profiles ?? []).map((p) => [p.id, p]));
   const sections = (allSections ?? []) as Section[];
   const now = Date.now();
@@ -27,14 +29,14 @@ export default async function Manage({ params }: { params: Promise<{ slug: strin
   return (
     <div className="cs-guide">
       <div className="wrap">
-        <h2>Manage {campaign.title}</h2>
+        <h2>Manage {realTitle}</h2>
         <p className="lede">Only you see this page.</p>
 
         {campaign.phases.length ? (
           <>
             <h2>Phase</h2>
             <div className="plate">
-              <p>The phase sets which race videos and builder text every player gets. Files for the other phase cannot be reached by players at all.</p>
+              <p>The phase sets what players can reach: the campaign&apos;s title and web address, which tabs and blocks exist for them, and which race videos and builder text they get. Anything marked for another phase is held back by the database itself, not just hidden on the page.</p>
               <div className="chips">
                 {campaign.phases.map((p) => (
                   <form key={p.id} action={setPhase.bind(null, slug, p.id)}>
@@ -42,7 +44,7 @@ export default async function Manage({ params }: { params: Promise<{ slug: strin
                   </form>
                 ))}
               </div>
-              <p className="who">Now: {campaign.phases.find((p) => p.id === campaign.phase)?.label ?? 'not set'}.</p>
+              <p className="who">Now: {campaign.phases.find((p) => p.id === campaign.phase)?.label ?? 'not set'}. Players see this campaign as &quot;{campaign.title}&quot; at /c/{campaign.slug}.</p>
             </div>
           </>
         ) : null}
@@ -92,12 +94,12 @@ export default async function Manage({ params }: { params: Promise<{ slug: strin
         <h2>Tabs</h2>
         <div className="plate">
           <p>The tabs across the top of this campaign. To change what is on a tab, open it and choose Edit this page.</p>
-          {sections.map((s, i) => <SectionRow key={s.id} slug={slug} section={s} first={i === 0} last={i === sections.length - 1} />)}
+          {sections.map((s, i) => <SectionRow key={s.id + (s.phase ?? '')} slug={slug} section={s} first={i === 0} last={i === sections.length - 1} phases={campaign.phases} />)}
           <div style={{ marginTop: 14 }}><AddSectionForm slug={slug} /></div>
         </div>
 
         <h2>Campaign settings</h2>
-        <div className="plate"><CampaignForm slug={slug} campaign={campaign} /></div>
+        <div className="plate"><CampaignForm slug={slug} campaign={campaign} faces={faces ?? []} /></div>
       </div>
     </div>
   );

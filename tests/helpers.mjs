@@ -48,8 +48,12 @@ export async function cleanup() {
   await admin.from('invites').delete().like('code', 'TEST%');
 }
 
+// The campaign, found by its real address. The row's own slug and title are the ones
+// for the current phase (what a player is given).
 export async function campaign() {
-  const { data, error } = await admin.from('campaigns').select('*').eq('slug', SLUG).single();
+  const face = await admin.from('campaign_faces').select('campaign_id').eq('slug', SLUG).single();
+  if (face.error) throw face.error;
+  const { data, error } = await admin.from('campaigns').select('*').eq('id', face.data.campaign_id).single();
   if (error) throw error;
   return data;
 }

@@ -113,7 +113,7 @@ function toHub(){
   const sk={}; Object.keys(D.prof).forEach(k=>{ sk[k]=D.prof[k]; });
   const notes=[S.bg?'Background: '+S.bg:'', c?'Armor: '+c.armor+'. Weapons: '+c.weap.map(w=>w==='simple'?'simple weapons':w==='martial'?'martial weapons':w.toLowerCase()).join(', ')+'.':'', S.langs?'Languages: '+S.langs:'', D.cast?'Spell slots: '+D.cast.slots:'', S.look?'Appearance: '+S.look:'', S.story?'Story: '+S.story:''].filter(Boolean).join('\n\n');
   const gear=[S.armor!=='None'?S.armor:'', S.shield?'Shield':''].concat(S.w.filter(Boolean)).filter(Boolean).join(', ')+(S.gear?(S.armor!=='None'||S.shield||S.w.some(Boolean)?'\n':'')+S.gear:'');
-  return {t:Date.now(),name:S.name,player:S.player,race:S.race,cls:c?c.name+(S.sub?' ('+S.sub+')':''):'',level:L,domain:'',tier:'',spark:'',faith:'',ab:D.ab,sv:D.saves,sk,ac:D.ac,hpMax:D.hp,hp:D.hp,temp:0,speed:D.speed,hd:D.hd,acts:1,bonus:1,react:1,atk:D.atk,card:S.card,options:opts,gear,notes};
+  return {t:Date.now(),name:S.name,player:S.player,race:S.race,cls:c?c.name+(S.sub?' ('+S.sub+')':''):'',level:L,ab:D.ab,sv:D.saves,sk,ac:D.ac,hpMax:D.hp,hp:D.hp,temp:0,speed:D.speed,hd:D.hd,acts:1,bonus:1,react:1,atk:D.atk,card:S.card,options:opts,gear,notes};
 }
 const encode=o=>'TBG1:'+btoa(unescape(encodeURIComponent(JSON.stringify(o))));
 
@@ -315,7 +315,7 @@ function renderSheet(){
     <div class="plate"><h3>Save this character</h3>
       <p>Saving puts this sheet on My character and fills in your Combat page. Your DM sees it too.</p>
       <p><button class="act big" id="saveChar">Save my character</button> <span class="who" id="saveMsg"></span></p>
-      <p class="who" style="margin-top:10px">Changed something? Come back to this step and save again. Saving replaces the sheet with the builder's version. Your tier, Spark, Faith, and domain are kept.</p>
+      <p class="who" style="margin-top:10px">Changed something? Come back to this step and save again. Saving replaces the sheet with the builder's version.</p>
       <p style="margin-top:14px"><button class="act quiet" id="reset">Start a new character</button> <span id="resetAsk" hidden>This clears everything here. <button class="act" id="resetYes">Clear it</button> <button class="act quiet" id="resetNo">Keep it</button></span></p>
     </div>
   </div>`;

@@ -68,3 +68,10 @@
 .cs-builder .screen video[hidden]{display:none}
 .cs-run .bar{top:env(safe-area-inset-top,0px)}
 .cs-run a.k{text-decoration:none; display:inline-block; color:var(--gold); background:color-mix(in srgb, var(--gold) 8%, transparent); border:1px solid color-mix(in srgb, var(--gold) 55%, transparent); padding:4px 11px; border-radius:2px; font-size:.95rem}
+
+/* DM only: the small note on anything players see in just one phase */
+.campaign .phase-note{display:inline-block; font-family:var(--body); font-style:normal; font-weight:400; font-size:.74rem; line-height:1.5; letter-spacing:.01em;
+  color:var(--verd); border:1px dashed color-mix(in srgb, var(--verd) 55%, transparent); border-radius:2px; padding:0 6px; vertical-align:middle; white-space:normal; text-shadow:none}
+.cs-guide .phase-p{margin:10px 0 6px; max-width:none}
+.cs-guide .phase-tab{margin-top:26px}
+.cs-guide .hero .phase-p{margin:0 0 10px}

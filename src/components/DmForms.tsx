@@ -50,14 +50,32 @@ export function InviteForm({ slug }: { slug: string }) {
   );
 }
 
-export function CampaignForm({ slug, campaign }: { slug: string; campaign: { title: string; tagline: string; theme: unknown; phases: { id: string; label: string }[] } }) {
+type FaceRow = { phase: string; slug: string; title: string; tagline: string };
+
+export function CampaignForm({ slug, campaign, faces }: { slug: string; campaign: { title: string; tagline: string; theme: unknown; phases: { id: string; label: string }[] }; faces: FaceRow[] }) {
+  const real = faces.find((f) => f.phase === '') ?? { phase: '', slug, title: campaign.title, tagline: campaign.tagline };
   const [state, action, pending] = useActionState<ActionState, FormData>(updateCampaign.bind(null, slug), null);
   return (
     <form action={action}>
       <div className="fields wide">
-        <label className="f">Title<input name="title" defaultValue={campaign.title} required maxLength={80} /></label>
+        <label className="f">Title<input name="title" defaultValue={real.title} required maxLength={80} /></label>
       </div>
-      <label className="f" style={{ marginTop: 10 }}>Tagline (shown on the campaign card)<textarea name="tagline" rows={2} defaultValue={campaign.tagline} maxLength={300} /></label>
+      <label className="f" style={{ marginTop: 10 }}>Tagline (shown on the campaign card)<textarea name="tagline" rows={2} defaultValue={real.tagline} maxLength={300} /></label>
+      <p className="muted" style={{ marginTop: 6 }}>Web address: /c/{real.slug}</p>
+      {campaign.phases.map((p) => {
+        const f = faces.find((x) => x.phase === p.id);
+        return (
+          <details key={p.id} style={{ marginTop: 10 }} open={!!f}>
+            <summary className="muted" style={{ cursor: 'pointer' }}>A different title while the phase is &quot;{p.label}&quot;{f ? '' : ' (none)'}</summary>
+            <p className="muted">While the campaign is in this phase, players see this title, address, and tagline everywhere, and the real ones cannot be reached by them. Clear the title to remove it.</p>
+            <div className="fields wide">
+              <label className="f">Title<input name={'face-title-' + p.id} defaultValue={f?.title ?? ''} maxLength={80} /></label>
+              <label className="f">Web address (lowercase letters, numbers, dashes)<input name={'face-slug-' + p.id} defaultValue={f?.slug ?? ''} maxLength={60} /></label>
+            </div>
+            <label className="f" style={{ marginTop: 10 }}>Tagline<textarea name={'face-tagline-' + p.id} rows={2} defaultValue={f?.tagline ?? ''} maxLength={300} /></label>
+          </details>
+        );
+      })}
       <label className="f" style={{ marginTop: 10 }}>Phases, one per line, as id: label. Leave empty if this campaign has no phases.
         <textarea name="phases" rows={3} className="mono" defaultValue={campaign.phases.map((p) => `${p.id}: ${p.label}`).join('\n')} />
       </label>
@@ -84,7 +102,7 @@ export function AddSectionForm({ slug }: { slug: string }) {
   );
 }
 
-export function SectionRow({ slug, section, first, last }: { slug: string; section: { id: string; title: string; audience: string; kind: string; slug: string }; first: boolean; last: boolean }) {
+export function SectionRow({ slug, section, first, last, phases }: { slug: string; section: { id: string; title: string; audience: string; kind: string; slug: string; phase: string | null }; first: boolean; last: boolean; phases: { id: string; label: string }[] }) {
   const [pending, start] = useTransition();
   const run = (patch: Parameters<typeof updateSection>[2]) => start(() => updateSection(slug, section.id, patch));
   const builtIn = section.kind !== 'content';
@@ -96,6 +114,11 @@ export function SectionRow({ slug, section, first, last }: { slug: string; secti
         <button className="act sm" disabled={pending || last} onClick={() => run({ move: 1 })}>Down</button>
         <button className="act sm" disabled={pending} onClick={() => { const t = prompt('Tab name', section.title); if (t && t.trim()) run({ title: t }); }}>Rename</button>
         {!builtIn ? <button className="act sm" disabled={pending} onClick={() => run({ audience: section.audience === 'dm' ? 'all' : 'dm' })}>{section.audience === 'dm' ? 'Show to players' : 'Make DM only'}</button> : null}
+        {phases.length && section.audience !== 'dm' ? (
+          <select className="small" aria-label={'When players see ' + section.title} value={section.phase ?? ''} disabled={pending} onChange={(e) => run({ phase: e.target.value })}>
+            <option value="">Players: always</option>{phases.map((p) => <option key={p.id} value={p.id}>Players: only {p.label.charAt(0).toLowerCase() + p.label.slice(1)}</option>)}
+          </select>
+        ) : null}
         {!builtIn ? <button className="act sm danger" disabled={pending} onClick={() => { if (confirm(`Delete the "${section.title}" tab and everything on it? This cannot be undone.`)) run({ remove: true }); }}>Delete</button> : null}
       </span>
     </div>

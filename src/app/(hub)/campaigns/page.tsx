@@ -10,9 +10,15 @@ export const metadata = { title: 'My campaigns' };
 export default async function Campaigns() {
   const { supabase, profile } = await requireViewer();
   // RLS returns only campaigns this account belongs to (or all of them for the DM).
-  const { data } = await supabase.from('campaigns').select('*').order('created_at');
-  const campaigns = (data ?? []) as Campaign[];
   const isDm = profile.role === 'dm';
+  // The campaigns row holds the title and tagline for the current phase, which is all a
+  // player can read. The DM also gets the real ones (campaign_faces is DM-only).
+  const [{ data }, { data: faces }] = await Promise.all([
+    supabase.from('campaigns').select('*').order('created_at'),
+    isDm ? supabase.from('campaign_faces').select('campaign_id, title, tagline').eq('phase', '') : Promise.resolve({ data: [] as { campaign_id: string; title: string; tagline: string }[] }),
+  ]);
+  const campaigns = (data ?? []) as Campaign[];
+  const real = new Map((faces ?? []).map((f) => [f.campaign_id, f]));
   const fonts = Array.from(new Set(campaigns.map((c) => safeFontHref(c.theme?.fonts?.href)).filter(Boolean)));
   return (
     <>
@@ -22,9 +28,9 @@ export default async function Campaigns() {
         <div className="cards">
           {campaigns.map((c) => (
             <Link key={c.id} className="ccard" href={'/c/' + c.slug} style={themeStyle(c.theme)}>
-              <b>{c.title}</b>
-              <span>{c.tagline}</span>
-              {isDm ? <i>You run this campaign</i> : null}
+              <b>{real.get(c.id)?.title ?? c.title}</b>
+              <span>{real.get(c.id)?.tagline ?? c.tagline}</span>
+              {isDm ? <i>You run this campaign{real.get(c.id) && real.get(c.id)!.title !== c.title ? `. Players see: ${c.title}` : ''}</i> : null}
             </Link>
           ))}
         </div>

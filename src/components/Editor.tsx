@@ -35,7 +35,7 @@ const LABELS: Record<string, string> = {
   idle: 'If the players do nothing', small: 'Small moves (one per line)', big: 'Big development', dm: 'DM notes (one per line)',
   id: 'Id (do not change once characters use it)', name: 'Name', pron: 'Pronunciation', kind: 'Origin', src: 'Source editions', color: 'Colour', size: 'Size', speed: 'Speed',
   line: 'One-line summary', keys: 'Key points (one per line)', look: 'Look', life: 'Life cycle (one per line)', culture: 'Culture (one per line)', voth: 'Under Voth', now: 'Now',
-  slayer: 'As god-slayers', traits: 'Traits (one per line: name | rule | source)', up: 'Level 7 upgrade', sug: 'Suggested lore', glyph: 'Glyph (SVG shapes)',
+  slayer: 'Their part in the one-shot', traits: 'Traits (one per line: name | rule | source)', up: 'Level 7 upgrade', sug: 'Suggested lore', glyph: 'Glyph (SVG shapes)',
 };
 
 function Fields({ value, onChange }: { value: Record<string, any>; onChange: (v: Record<string, any>) => void }) {
@@ -72,7 +72,7 @@ const KIND_LABEL: Record<string, string> = {
   hero: 'Page header', heading: 'Heading', html: 'Text', plate: 'Card', secret: 'Secret box', table: 'Table', checklist: 'Checklist',
   'faction-table': 'Faction table (automatic)', 'faction-cards': 'Faction cards (automatic)', 'race-cards': 'Race cards (automatic)',
   'race-browser': 'Race browser (automatic)', 'upgrade-table': 'Upgrade table (automatic)',
-  race: 'Race entry', 'race-dm': 'Race entry: DM notes', faction: 'Faction entry', 'faction-dm': 'Faction entry: DM notes', 'sheet-template': 'Character sheet form',
+  race: 'Race entry', 'race-phase': 'Race entry: one phase', 'race-dm': 'Race entry: DM notes', 'sheet-slot': 'Character sheet form: part', faction: 'Faction entry', 'faction-dm': 'Faction entry: DM notes', 'sheet-template': 'Character sheet form',
 };
 const AUTO = new Set(['faction-table', 'faction-cards', 'race-cards', 'race-browser', 'upgrade-table']);
 

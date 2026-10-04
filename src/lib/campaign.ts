@@ -80,9 +80,9 @@ export async function getContent(ctx: CampaignCtx, opts: { section?: string; kin
   const rows = (data ?? []) as ContentRow[];
   if (!isDm) return rows;
   const twin = new Map(rows.filter((r) => r.visibility === 'player').map((r) => [r.section + '|' + r.kind + '|' + r.key + '|' + (r.phase ?? ''), r]));
-  const dmKeys = new Set(rows.filter((r) => r.visibility === 'dm').map((r) => r.section + '|' + r.key));
+  const dmKeys = new Set(rows.filter((r) => r.visibility === 'dm').map((r) => r.section + '|' + r.kind + '|' + r.key));
   return rows
-    .filter((r) => r.visibility === 'dm' || !dmKeys.has(r.section + '|' + r.key) || r.kind === 'race-phase')
+    .filter((r) => r.visibility === 'dm' || !dmKeys.has(r.section + '|' + r.kind + '|' + r.key))
     .map((r) => {
       if (r.visibility === 'player') return { ...r, _phase: r.phase };
       // the DM's wording of a row players only see in one phase carries that phase's label
@@ -109,6 +109,7 @@ export async function getLore(ctx: CampaignCtx) {
     }
     if (ctx.isDm && main) {
       race._mainPhase = main.phase;
+      race._phased = Object.keys(main.body ?? {});
       race._alts = phased.slice(1).map((p) => ({ phase: p.phase, ...p.body }));
     }
     return race;

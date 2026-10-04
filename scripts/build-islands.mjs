@@ -8,6 +8,7 @@
 //   - media comes from the signed-URL route, not relative t/ and v/ paths
 //   - the "copy a character code" step becomes "Save my character"
 //   - the DM's phase switch is removed here (it lives on the Manage page)
+//   - the sheet it produces leaves out the campaign's private fields (the database keeps those apart)
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -52,7 +53,8 @@ function patcher(code) {
       `<div class="plate"><h3>Save this character</h3>
       <p>Saving puts this sheet on My character and fills in your Combat page. Your DM sees it too.</p>
       <p><button class="act big" id="saveChar">Save my character</button> <span class="who" id="saveMsg"></span></p>
-      <p class="who" style="margin-top:10px">Changed something? Come back to this step and save again. Saving replaces the sheet with the builder's version. Your tier, Spark, Faith, and domain are kept.</p>`)
+      <p class="who" style="margin-top:10px">Changed something? Come back to this step and save again. Saving replaces the sheet with the builder's version.</p>`)
+    .rep('private fields are not part of the builder sheet', "domain:'',tier:'',spark:'',faith:'',", '')
     .rep('save handler',
       /if\(e\.target\.id==='copy'\)\{[\s\S]*?catch\(err\)\{ fail\(\); \} return; \}/,
       "if(e.target.id==='saveChar'){ const msg=$('#saveMsg'); msg.textContent='Saving…'; opts.finish(toHub(),S).then(()=>{ msg.innerHTML='Saved. <a href=\"'+esc(opts.sheetHref)+'\">Open My character</a>'; },()=>{ msg.textContent='That did not save. Try again in a moment.'; }); return; }")

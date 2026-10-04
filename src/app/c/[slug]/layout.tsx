@@ -6,8 +6,8 @@ import { CampaignChrome } from '@/components/CampaignChrome';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const { campaign } = await getCampaign(slug);
-  return { title: campaign.title };
+  const ctx = await getCampaign(slug);
+  return { title: ctx.dmTitle };
 }
 
 // Everything inside a campaign wears that campaign's theme: the tokens stored in
@@ -23,7 +23,8 @@ export default async function CampaignLayout({ children, params }: { children: R
       {campaign.theme?.starfield ? <Starfield /> : null}
       <CampaignChrome
         slug={campaign.slug}
-        title={campaign.title}
+        title={ctx.dmTitle}
+        playerTitle={ctx.isDm && ctx.dmTitle !== campaign.title ? campaign.title : null}
         tabs={ctx.sections.map((s) => ({ slug: s.slug, title: s.title, kind: s.kind }))}
         isDm={ctx.isDm}
         realDm={ctx.realDm}

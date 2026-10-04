@@ -17,7 +17,9 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  const { data: { user } } = await supabase.auth.getUser();
+  // Checked on this server (no network trip); this also refreshes a session that is about to expire.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
   const path = request.nextUrl.pathname;
   if (!user && !PUBLIC.has(path)) {
     const url = request.nextUrl.clone();

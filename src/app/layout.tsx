@@ -5,6 +5,7 @@ import '@/styles/campaign.css';
 import '@/styles/guide.css';
 import '@/styles/builder.css';
 import '@/styles/runsheet.css';
+import { NavProgress } from '@/components/NavProgress';
 
 // The hub's own fonts. Campaign pages use the fonts in their own theme instead.
 const title = Cinzel({ subsets: ['latin'], weight: ['500', '600', '700'], variable: '--font-title', display: 'swap' });
@@ -20,7 +21,10 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, view
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${title.variable} ${body.variable}`}>
-      <body>{children}</body>
+      <body>
+        <NavProgress />
+        {children}
+      </body>
     </html>
   );
 }

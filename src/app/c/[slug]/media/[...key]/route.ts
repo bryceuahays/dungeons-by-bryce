@@ -13,7 +13,8 @@ import { VIEW_AS_PLAYER } from '@/lib/campaign';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string; key: string[] }> }) {
   const { slug, key } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: auth } = await supabase.auth.getClaims();
+  const user = auth?.claims?.sub ? { id: String(auth.claims.sub) } : null;
   if (!user) return new NextResponse('Not signed in', { status: 401 });
 
   // RLS: the campaign row only exists for members and the DM.

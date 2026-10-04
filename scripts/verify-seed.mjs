@@ -17,7 +17,8 @@ const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABA
 const read = (p) => fs.readFileSync(path.join(ROOT, 'source', p), 'utf8');
 const norm = (s) => String(s).replace(/\s+/g, ' ').trim();
 
-const { data: campaign } = await db.from('campaigns').select('id').eq('slug', 'to-be-a-god').single();
+const { data: face } = await db.from('campaign_faces').select('campaign_id').eq('slug', 'to-be-a-god').single();
+const campaign = { id: face.campaign_id };
 const all = async (table, cols) => {
   const out = [];
   for (let from = 0; ; from += 1000) {
@@ -29,7 +30,7 @@ const all = async (table, cols) => {
   return out;
 };
 const [content, rules, sessions, media, sections] = await Promise.all([
-  all('content', 'section, kind, key, title, body, visibility'), all('rules', 'kind, key, data, phase'),
+  all('content', 'section, kind, key, title, body, visibility, phase'), all('rules', 'kind, key, data, phase'),
   all('sessions', 'number, title, summary, meta, content'), all('media', 'key, path, phase'), all('sections', 'slug, title'),
 ]);
 
@@ -41,6 +42,11 @@ const collect = (v) => {
   else if (v && typeof v === 'object') Object.values(v).forEach(collect);
 };
 content.forEach((r) => { collect(r.title); collect(r.body); });
+// a trait whose last sentence only applies in a later phase is stored in two parts; join them again
+content.filter((r) => r.kind === 'race-phase' && r.body.traitAfter).forEach((r) => {
+  const base = content.find((b) => b.kind === 'race' && b.key === r.key);
+  base.body.traits.forEach((t) => { if (r.body.traitAfter[t[0]]) strings.push(norm(t[1] + r.body.traitAfter[t[0]])); });
+});
 sessions.forEach((s) => { collect(s.title); collect(s.summary); collect(s.meta); collect(s.content); });
 sections.forEach((s) => collect(s.title));
 const corpus = strings.join(' \n ');
@@ -124,7 +130,7 @@ count('run sheet beats', sessions.find((s) => s.number === -1)?.content?.beats?.
 const files = ['t', 'v'].flatMap((d) => fs.readdirSync(path.join(ROOT, 'source/character-builder', d)).map((f) => d + '/' + f));
 count('media rows', media.length, files.length);
 const stored = new Set();
-for (const d of ['t', 'v']) { const { data } = await db.storage.from('campaign-media').list('to-be-a-god/' + d, { limit: 200 }); (data ?? []).forEach((o) => stored.add(d + '/' + o.name)); }
+for (const d of ['t', 'v']) { const { data } = await db.storage.from('campaign-media').list(campaign.id + '/' + d, { limit: 200 }); (data ?? []).forEach((o) => stored.add(d + '/' + o.name)); }
 count('media files in the private bucket', files.filter((f) => stored.has(f)).length, files.length);
 count('media marked "before"', media.filter((m) => m.phase === 'before').length, files.filter((f) => /_before\./.test(f)).length);
 count('media marked "after"', media.filter((m) => m.phase === 'after').length, files.filter((f) => /_after\./.test(f)).length);
@@ -136,6 +142,10 @@ report['DM words in player-visible rows'] = leak.length ? leak.join(', ') : 'non
 if (leak.length) failed++;
 report['content rows'] = `${content.length} (${content.filter((r) => r.visibility === 'player').length} player, ${content.filter((r) => r.visibility === 'dm').length} DM only)`;
 report['rules rows'] = String(rules.length);
+const tally = (rows) => ['after', 'before'].map((p) => rows.filter((r) => r.phase === p).length + ' ' + p).join(', ');
+report['player content by phase'] = content.filter((r) => r.visibility === 'player' && !r.phase).length + ' always, ' + tally(content.filter((r) => r.visibility === 'player'));
+report['storage paths that name the campaign'] = String(media.filter((m) => /to-be-a-god|to-kill-god/.test(m.path)).length);
+if (media.some((m) => /to-be-a-god|to-kill-god/.test(m.path))) failed++;
 
 console.table(report);
 console.log(failed ? `\nFAILED: ${failed} item(s) from the source are not in the database.` : '\nOK: everything in the source is in the database.');

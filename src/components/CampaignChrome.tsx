@@ -6,7 +6,7 @@ import { setViewAsPlayer } from '@/app/c/[slug]/actions';
 
 type Tab = { slug: string; title: string; kind: string };
 
-export function CampaignChrome({ slug, title, tabs, isDm, realDm, asPlayer }: { slug: string; title: string; tabs: Tab[]; isDm: boolean; realDm: boolean; asPlayer: boolean }) {
+export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, asPlayer }: { slug: string; title: string; playerTitle: string | null; tabs: Tab[]; isDm: boolean; realDm: boolean; asPlayer: boolean }) {
   const path = usePathname();
   const base = '/c/' + slug;
   const rest = path.slice(base.length).split('/').filter(Boolean);
@@ -32,7 +32,7 @@ export function CampaignChrome({ slug, title, tabs, isDm, realDm, asPlayer }: { 
       <div className="strip">
         <Link href="/campaigns">← Dungeons by Bryce</Link>
         <span className="tools">
-          <span>{title}</span>
+          <span>{title}{playerTitle ? <> <span className="phase-note">players see: {playerTitle}</span></> : null}</span>
           {isDm ? (
             <>
               {onContent ? <Link href={`${base}/edit/${rest[0]}`}>Edit this page</Link> : null}

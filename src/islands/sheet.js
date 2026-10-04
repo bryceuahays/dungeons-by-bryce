@@ -89,8 +89,10 @@ export function mountSheet(root, opts) {
     const r = RACES.find((x) => x.id === S.C.race); if (!r) { $('#raceSel').focus(); return; }
     const list = r.traits.map((t) => ({ name: t[0], desc: t[1] })); if (num(S.C.level) >= 7) list.push({ name: r.name + ' level 7 upgrade', desc: r.up }); addOpts(list);
   });
-  $('#addDivine').addEventListener('click', () => {
-    const list = (DIVINE.all || []).concat(DIVINE[S.C.tier] || []).map((x) => Object.assign({}, x));
+  // only on the page when the campaign's phase allows it
+  const extra = $('#addDivine');
+  if (extra) extra.addEventListener('click', () => {
+    const list = (DIVINE.all || []).concat(DIVINE[S.C[opts.divineBy]] || []).map((x) => Object.assign({}, x));
     addOpts(list);
   });
 
@@ -99,7 +101,7 @@ export function mountSheet(root, opts) {
   if (impBtn) impBtn.addEventListener('click', () => {
     const msg = document.getElementById('impMsg'), box = document.getElementById('impCode'); let o;
     try { o = readCode(box.value); } catch (e) { msg.textContent = 'That is not a character code. It should start with TBG1: and be copied whole.'; return; }
-    S.C = mergeImport(S.C, o);
+    S.C = mergeImport(S.C, o, opts.privateKeys);
     clearOptForm(); fillForm(); derived(); renderOpts(); save(); box.value = '';
     msg.textContent = 'Imported ' + (S.C.name || 'your character') + '. The Combat page is filled in too.';
   });

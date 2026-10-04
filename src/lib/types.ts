@@ -28,6 +28,7 @@ export type Section = {
   sort: number;
   audience: 'all' | 'dm' | 'player';
   kind: 'content' | 'sheet' | 'combat' | 'sessions' | 'players';
+  phase: string | null;
 };
 
 export type ContentRow = {
@@ -43,6 +44,8 @@ export type ContentRow = {
   visibility: 'player' | 'dm';
   phase: string | null;
   hidden: boolean;
+  // set for the DM only: the phase in which players see this row (for the label)
+  _phase?: string | null;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -62,8 +62,7 @@ returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'INSERT' then
     insert into public.campaign_faces (campaign_id, phase, slug, title, tagline)
-    values (new.id, '', new.slug, new.title, new.tagline)
-    on conflict do nothing;
+    values (new.id, '', new.slug, new.title, new.tagline);
   else
     perform public.sync_campaign_face(new.id);
   end if;

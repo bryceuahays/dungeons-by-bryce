@@ -28,8 +28,8 @@ async function saveData(id: string, data: any) {
   if (error) throw error;
 }
 
-export function SheetIsland({ html, character, races, divine }: { html: string; character: { id: string; data: any }; races: any[]; divine: any }) {
-  const host = useIsland(html, (el) => mountSheet(el, { character: character.data, races, divine, save: (C: any) => saveData(character.id, C) }), character.id);
+export function SheetIsland({ html, character, races, divine, divineBy, privateKeys }: { html: string; character: { id: string; data: any }; races: any[]; divine: any; divineBy: string; privateKeys: string[] }) {
+  const host = useIsland(html, (el) => mountSheet(el, { character: character.data, races, divine, divineBy, privateKeys, save: (C: any) => saveData(character.id, C) }), character.id);
   return <div ref={host} />;
 }
 

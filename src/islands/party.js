@@ -1,10 +1,12 @@
 // The DM's party page: one full sheet per character.
 // Lifted from renderParty() in source/dm-hub/index.html. The sheets now come from the
-// database (and update live) instead of pasted character codes.
+// database (and update live) instead of pasted character codes, and the wording of the
+// private block (LABELS) comes from the database too, so it is not in the code players download.
 
 import { ABS as P_ABS, SKILLS as P_SK, esc as pesc, num as pnum, sgn as psgn } from './character';
 
-export function renderParty(chars, RACES, askRemove) {
+export function renderParty(chars, RACES, askRemove, LABELS) {
+  const shown = (v, none) => (v === '' || v == null ? none : v);
   if (!chars.length) return '<div class="plate pc"><p>No characters yet. When a player builds or saves a character in this campaign, the full sheet appears here.</p></div>';
   const sorted = chars.slice().sort((a, b) => String(a.data.name || '').localeCompare(String(b.data.name || '')));
   return sorted.map((row) => {
@@ -19,7 +21,7 @@ export function renderParty(chars, RACES, askRemove) {
       <div class="pstats"><div class="pstat"><b>${pnum(c.ac)}</b>Armor class</div><div class="pstat"><b>${pnum(c.hp)}<small style="font-size:1rem;color:var(--dim)">/${pnum(c.hpMax)}</small></b>Hit points</div><div class="pstat"><b class="sm">${pesc(c.speed || '')}</b>Speed</div><div class="pstat"><b>${psgn(m('dex'))}</b>Initiative</div><div class="pstat"><b>${10 + m('wis') + pb * pnum(sk.Perception)}</b>Passive Perception</div><div class="pstat"><b>${pnum(c.atk) || 1}</b>Attacks per action</div></div>
       <div class="pstats">${P_ABS.map(([k, n]) => `<div class="pstat"><b>${pnum(ab[k])}</b>${n}<br>${psgn(m(k))}, save ${psgn(m(k) + (sv[k] ? pb : 0))}</div>`).join('')}</div>
       <p class="kv"><b>Trained skills:</b> ${trained || 'none listed'}</p>
-      <div class="secret"><span class="tag">Divinity</span><div class="sb">Tier: ${pesc(c.tier || 'not chosen')}. Spark: ${pesc(c.spark === '' || c.spark == null ? 'not set' : c.spark)}. Faith: ${pesc(c.faith === '' || c.faith == null ? 'not set' : c.faith)}. Domain: ${pesc(c.domain || 'not chosen')}.</div></div>
+      ${LABELS ? `<div class="secret"><span class="tag">${pesc(LABELS.title)}</span><div class="sb">${LABELS.fields.map((f) => `${pesc(f.label)}: ${pesc(shown(c[f.key], f.none))}.`).join(' ')}</div></div>` : ''}
       ${(card.go || card.sig || card.emg) ? `<p class="kv"><b>Go-to attack:</b> ${pesc(card.go)}</p><p class="kv"><b>Signature move:</b> ${pesc(card.sig)}</p><p class="kv"><b>Emergency button:</b> ${pesc(card.emg)}</p>` : ''}
       ${group('Attack', 'Attacks')}${group('Ability', 'Abilities')}${group('Spell', 'Spells')}${group('Item', 'Items')}${group('Other', 'Other')}
       ${c.gear ? `<details><summary>Gear</summary><p class="pre">${pesc(c.gear)}</p></details>` : ''}
