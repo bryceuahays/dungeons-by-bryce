@@ -120,3 +120,10 @@ Choices made where the brief was silent. Each one says what was chosen, why, and
 80. **Email goes through Resend.** Supabase cannot send this kind of email, so a mail service is needed. Resend's free plan can send to the address the Resend account was created with, without owning a web domain, which is exactly what is needed here.
 81. **New campaigns no longer get a "Secrets" tab when created from pasted text** (the paste decides the tabs). Created empty, they still do.
 82. **A hidden co-DM setting exists** (a membership marked as DM). It has no screen. The automated tests use it so they never have to touch your ownership of a campaign.
+83. **Other people's campaigns are hidden from the Head DM until unhidden** (this replaces item 67). On the Head DM page each campaign someone else runs is listed as "Hidden campaign" with who runs it and how many people are in it. Its title, address and pages are not sent to you at all. **Unhide** lets you open it and read everything its DM reads, secrets included. **Hide again** (on the Head DM page, or in the notice at the top of the campaign) puts it back. The database enforces this, not just the page.
+84. **Unhidden means read-only.** You can look, not edit: no page editor, no Manage page, no invite codes. Deleting a campaign from the Head DM page works as before, hidden or not.
+85. **A campaign you play in asks twice before unhiding**, because unhiding shows you its DM's secrets.
+86. **The New campaign page now tells people that the Head DM can look inside a campaign.** Other DMs should know that before they write their secrets here.
+87. **The unhide switch is per campaign, not per visit.** A campaign stays unhidden until you hide it again.
+88. **The email key's name is matched without regard to capitals.** In Vercel it was saved as `Resend_API_Key`; the site was looking for `RESEND_API_KEY` and found nothing. Either spelling now works.
+89. **A note that could not be emailed says why**, on the Head DM page, and a button there emails any notes that are still waiting.

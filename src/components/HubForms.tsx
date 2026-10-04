@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useActionState, useState, useTransition } from 'react';
-import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackSetDone, joinCampaign, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
+import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
 import { FONT_PAIRS } from '@/lib/fonts';
 
 function Msg({ state }: { state: FormState }) {
@@ -127,12 +127,42 @@ export function AdminDeleteCampaign({ id, title }: { id: string; title: string }
   if (!open) return <button type="button" className="quiet small-btn" onClick={() => setOpen(true)}>Delete</button>;
   return (
     <form action={action} className="confirm">
-      <span className="bad">Delete “{title}” and everything in it? Type DELETE:</span>
+      <span className="bad">Delete {title.startsWith('the campaign') ? title : `“${title}”`} and everything in it? Type DELETE:</span>
       <input name="confirm" autoComplete="off" style={{ width: 110 }} aria-label="Type DELETE to confirm" />
       <button type="submit" className="small-btn danger" disabled={pending}>Delete</button>
       <button type="button" className="quiet small-btn" onClick={() => setOpen(false)}>Cancel</button>
       {state?.error ? <span className="bad" role="alert">{state.error}</span> : null}
     </form>
+  );
+}
+
+// Unhide a campaign someone else runs, or hide it again.
+export function HeadRevealButton({ id, shown, playing }: { id: string; shown: boolean; playing: boolean }) {
+  const [ask, setAsk] = useState(false);
+  const [pending, start] = useTransition();
+  if (shown) return <button type="button" className="quiet small-btn" disabled={pending} onClick={() => start(() => headReveal(id, false))}>{pending ? 'Hiding' : 'Hide again'}</button>;
+  // a campaign the Head DM plays in gets a second question, because unhiding it spoils it
+  if (playing && ask) {
+    return (
+      <span className="confirm">
+        <span className="bad">You play in this one. Unhiding shows you its DM&apos;s secrets.</span>
+        <button type="button" className="small-btn" disabled={pending} onClick={() => start(() => headReveal(id, true))}>{pending ? 'Unhiding' : 'Unhide anyway'}</button>
+        <button type="button" className="quiet small-btn" disabled={pending} onClick={() => setAsk(false)}>Keep hidden</button>
+      </span>
+    );
+  }
+  return <button type="button" className="small-btn" disabled={pending} onClick={() => (playing ? setAsk(true) : start(() => headReveal(id, true)))}>{pending ? 'Unhiding' : 'Unhide'}</button>;
+}
+
+export function EmailWaitingButton({ count }: { count: number }) {
+  const [state, setState] = useState<FormState>(null);
+  const [pending, start] = useTransition();
+  return (
+    <p className="inline">
+      <button type="button" className="small-btn" disabled={pending} onClick={() => start(async () => setState(await feedbackEmailWaiting()))}>{pending ? 'Sending' : `Email me the ${count} note${count === 1 ? '' : 's'} not emailed yet`}</button>
+      {state?.error ? <span className="bad" role="alert">{state.error}</span> : null}
+      {state?.note ? <span className="good" role="status">{state.note}</span> : null}
+    </p>
   );
 }
 

@@ -565,6 +565,44 @@ test('any account can create a campaign and is its DM; in other campaigns it is 
   assert.ok(all.data.some((c) => c.id === mine.id) && all.data.some((c) => c.id === C.id), 'the Head DM can list every campaign');
   assert.equal(((await player.client.rpc('admin_campaigns')).data ?? []).length, 0, 'nobody else can');
 
+  // ...until the Head DM unhides it. Hidden: not even its title or address.
+  const hiddenRow = all.data.find((c) => c.id === mine.id);
+  assert.ok(hiddenRow.shown === false && hiddenRow.title === '' && hiddenRow.slug === '', 'a hidden campaign is listed without its title or address');
+  const hiddenAdmin = await page('/admin', head.session);
+  assert.ok(hiddenAdmin.status === 200 && hiddenAdmin.text.includes('Hidden campaign') && hiddenAdmin.text.includes('Unhide') && !hiddenAdmin.text.includes('Test Realm') && !hiddenAdmin.text.includes(mine.slug));
+  for (const t of ['campaign_faces', 'sections', 'rules', 'characters', 'sessions', 'memberships']) {
+    assert.equal(((await head.client.from(t).select('*').eq('campaign_id', mine.id)).data ?? []).length, 0, `hidden: no ${t} rows for the Head DM`);
+  }
+  // only a Head DM can unhide
+  assert.ok((await outsider.client.from('head_reveals').insert({ campaign_id: mine.id }).select()).error, 'nobody else can unhide a campaign');
+  assert.ok((await other.client.from('head_reveals').insert({ campaign_id: mine.id }).select()).error);
+  assert.equal(((await outsider.client.from('head_reveals').select('*')).data ?? []).length, 0);
+  assert.equal((await head.client.from('head_reveals').insert({ campaign_id: mine.id })).error, null);
+  // unhidden: reads what its DM reads
+  const shownRow = (await head.client.rpc('admin_campaigns')).data.find((c) => c.id === mine.id);
+  assert.ok(shownRow.shown === true && shownRow.title === 'Test Realm' && shownRow.slug === mine.slug);
+  const headSeen = await head.client.from('content').select('visibility').eq('campaign_id', mine.id);
+  assert.ok(headSeen.data.some((r) => r.visibility === 'dm') && headSeen.data.some((r) => r.visibility === 'player'), 'unhidden: the Head DM reads DM and player rows');
+  const headPage = await page(`/c/${mine.slug}/overview`, head.session);
+  assert.ok(headPage.status === 200 && headPage.text.includes('The butler did it') && headPage.text.includes('Hide it from me again'), 'unhidden: the page opens, with the notice');
+  assert.ok(!headPage.text.includes('Edit this page') && !headPage.text.includes('View as player'), 'and without the DM\'s editing tools');
+  const headManage = await page(`/c/${mine.slug}/manage`, head.session);
+  assert.ok(headManage.status >= 300 && headManage.status < 400, 'the Head DM cannot open Manage in someone else\'s campaign');
+  // ...and changes nothing
+  assert.equal(((await head.client.from('content').update({ title: 'x' }).eq('campaign_id', mine.id).select('id')).data ?? []).length, 0, 'unhidden is read-only');
+  assert.ok((await head.client.from('content').insert({ campaign_id: mine.id, section: 'overview', kind: 'html', key: 'hz', body: {}, visibility: 'player' }).select()).error);
+  assert.equal(((await head.client.from('campaigns').update({ title: 'x' }).eq('id', mine.id).select('id')).data ?? []).length, 0);
+  assert.equal(((await head.client.from('sections').delete().eq('campaign_id', mine.id).select('id')).data ?? []).length, 0);
+  assert.equal(((await head.client.from('invites').select('id').eq('campaign_id', mine.id)).data ?? []).length, 0, 'invite codes stay with the DM');
+  // one campaign unhidden does not open any other
+  assert.equal((await head.client.from('content').select('id').eq('campaign_id', C.id)).data.length, 0, 'other campaigns stay hidden');
+  // another Head DM sees it too (the switch is site-wide); an ordinary account never does
+  assert.equal((await outsider.client.from('content').select('id').eq('campaign_id', mine.id)).data.length, 0);
+  // hide again
+  assert.equal((await head.client.from('head_reveals').delete().eq('campaign_id', mine.id)).error, null);
+  assert.equal((await head.client.from('content').select('id').eq('campaign_id', mine.id)).data.length, 0, 'hidden again: nothing');
+  assert.equal((await page(`/c/${mine.slug}/overview`, head.session)).status, 404);
+
   // character rules: a DM cannot write them, only copy an existing set they can already read
   assert.ok((await player.client.from('rules').insert({ campaign_id: mine.id, kind: 'class', key: 'evil', data: { feats: [[1, 'x', 'Free', { $fn: '()=>fetch("https://example.com")' }]] } }).select()).error, 'only the Head DM writes rules');
   assert.ok((await other.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id })).error, 'only the DM of the new campaign can copy rules into it');

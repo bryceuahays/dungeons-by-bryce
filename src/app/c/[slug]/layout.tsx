@@ -39,6 +39,7 @@ export default async function CampaignLayout({ children, params }: { children: R
         isDm={ctx.isDm}
         realDm={ctx.realDm}
         asPlayer={ctx.asPlayer}
+        headView={ctx.headView ? campaign.id : null}
       />
       <div className="page">{children}</div>
     </div>

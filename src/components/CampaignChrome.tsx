@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { setViewAsPlayer } from '@/app/c/[slug]/actions';
+import { headReveal } from '@/app/(hub)/actions';
 
 type Tab = { slug: string; title: string; kind: string };
 
-export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, asPlayer }: { slug: string; title: string; playerTitle: string | null; tabs: Tab[]; isDm: boolean; realDm: boolean; asPlayer: boolean }) {
+export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, asPlayer, headView }: { slug: string; title: string; playerTitle: string | null; tabs: Tab[]; isDm: boolean; realDm: boolean; asPlayer: boolean; headView: string | null }) {
   const path = usePathname();
   const base = '/c/' + slug;
   const rest = path.slice(base.length).split('/').filter(Boolean);
@@ -29,11 +30,17 @@ export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, a
           <form action={setViewAsPlayer.bind(null, slug, false)} style={{ display: 'inline' }}><button type="submit">Back to the DM view</button></form>
         </div>
       ) : null}
+      {headView ? (
+        <div className="preview" role="status">
+          You unhid this campaign as Head DM. You are reading what its DM sees, secrets included, and you cannot change anything.
+          <form action={headReveal.bind(null, headView, false)} style={{ display: 'inline' }}><button type="submit">Hide it from me again</button></form>
+        </div>
+      ) : null}
       <div className="strip">
         <Link href="/campaigns">← Dungeons by Bryce</Link>
         <span className="tools">
           <span>{title}{playerTitle ? <> <span className="phase-note">players see: {playerTitle}</span></> : null}</span>
-          {isDm ? (
+          {isDm && realDm ? (
             <>
               {onContent ? <Link href={`${base}/edit/${rest[0]}`}>Edit this page</Link> : null}
               {rest[0] === 'edit' ? <Link href={`${base}/${rest[1]}`}>Done editing</Link> : null}

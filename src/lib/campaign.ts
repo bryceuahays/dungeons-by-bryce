@@ -24,7 +24,7 @@ export const getCampaign = cache(async (slug: string) => {
   // one round trip: the campaign and its tabs (row-level security filters both)
   const [viewer, { data: row }] = await Promise.all([
     viewerP,
-    supabase.from('campaigns').select('*, sections(*), memberships(user_id, role)').eq('slug', slug).maybeSingle(),
+    supabase.from('campaigns').select('*, sections(*), memberships(user_id, role), head_reveals(campaign_id)').eq('slug', slug).maybeSingle(),
   ]);
   if (!row) {
     // an address from another phase sends you to the current one; anything else does not exist
@@ -32,11 +32,14 @@ export const getCampaign = cache(async (slug: string) => {
     if (now) redirect('/c/' + now);
     notFound();
   }
-  const { sections: allSections, memberships, ...campaign } = row as Campaign & { sections: Section[]; memberships: { user_id: string; role: string }[] };
+  const { sections: allSections, memberships, head_reveals: reveal, ...campaign } = row as Campaign & { sections: Section[]; memberships: { user_id: string; role: string }[]; head_reveals: unknown };
   // The DM of this campaign is whoever owns it (or has been made a co-DM of it).
   const realDm = campaign.owner_id === viewer.user.id || (memberships ?? []).some((m) => m.user_id === viewer.user.id && m.role === 'dm');
   const asPlayer = realDm && (await store).get(VIEW_AS_PLAYER)?.value === '1';
-  const isDm = realDm && !asPlayer;
+  // The Head DM, in a campaign someone else runs that they have unhidden: reads what its
+  // DM reads, changes nothing (the database refuses the writes).
+  const headView = !realDm && viewer.isHead && (Array.isArray(reveal) ? reveal.length > 0 : !!reveal);
+  const isDm = (realDm && !asPlayer) || headView;
   const sections = (allSections ?? [])
     .filter((s) => (isDm ? s.audience !== 'player' : s.audience !== 'dm' && (!s.phase || s.phase === campaign.phase)))
     .sort((a, b) => a.sort - b.sort);
@@ -47,7 +50,7 @@ export const getCampaign = cache(async (slug: string) => {
   }
   const real = faces.find((f) => f.phase === '');
   return {
-    ...viewer, campaign, sections, isDm, realDm, asPlayer, faces,
+    ...viewer, campaign, sections, isDm, realDm, asPlayer, headView, faces,
     // what the DM calls the campaign; players only ever get campaign.title
     dmTitle: isDm && real ? real.title : campaign.title,
   };

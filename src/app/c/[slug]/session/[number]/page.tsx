@@ -28,16 +28,15 @@ export default async function SessionPage({ params, searchParams }: { params: Pr
           <p className="lede">{s.meta}</p>
           <p>{s.summary}</p>
           <h2>Notes</h2>
-          <SessionNotes slug={slug} sessionId={s.id} notes={c.notes ?? ''} />
-          <h2>Details</h2>
-          <div className="plate"><SessionEditForm slug={slug} session={s} /></div>
+          {ctx.realDm ? <SessionNotes slug={slug} sessionId={s.id} notes={c.notes ?? ''} /> : <p style={{ whiteSpace: 'pre-wrap' }}>{c.notes || 'No notes.'}</p>}
+          {ctx.realDm ? <><h2>Details</h2><div className="plate"><SessionEditForm slug={slug} session={s} /></div></> : null}
           <p style={{ marginTop: 20 }}><Link href={back}>Back to sessions</Link></p>
         </div>
       </div>
     );
   }
 
-  if (edit) {
+  if (edit && ctx.realDm) {
     return (
       <div className="cs-guide">
         <div className="wrap">
@@ -74,7 +73,7 @@ export default async function SessionPage({ params, searchParams }: { params: Pr
 <div class="wrap">
 ${c.beats.map((b: any) => `<section id="${esc(b.id)}" role="tabpanel" hidden>${b.html}</section>`).join('\n')}
 <div class="navrow"><button class="k" id="prev">Back</button><button class="k" id="next">Next</button></div>
-<p style="margin-top:26px"><a class="k" href="${back}">All sessions</a> <a class="k" href="/c/${esc(slug)}/session/${s.number}?edit=1">Edit this run sheet</a></p>
+<p style="margin-top:26px"><a class="k" href="${back}">All sessions</a> ${ctx.realDm ? `<a class="k" href="/c/${esc(slug)}/session/${s.number}?edit=1">Edit this run sheet</a>` : ''}</p>
 </div>
 <template id="tHost">${c.templates?.host ?? ''}</template>
 <template id="tDrop">${c.templates?.drop ?? ''}</template>`;

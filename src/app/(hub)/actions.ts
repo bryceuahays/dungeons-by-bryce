@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { FONT_PAIRS } from '@/lib/fonts';
 import { parseCampaignText, MAX_IMPORT_CHARS } from '@/lib/import';
 import { insertImported, removeCampaignFiles } from '@/lib/campaign-admin';
+import { emailFeedback } from '@/lib/mail';
 
 export type FormState = { error?: string; note?: string } | null;
 
@@ -118,25 +119,9 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
 
 // ---------------------------------------------------------------- feedback
 
-async function emailFeedback(to: string, from: { name: string; email: string }, message: string): Promise<boolean> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return false;
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        from: process.env.FEEDBACK_FROM || 'Dungeons by Bryce <onboarding@resend.dev>',
-        to: [to],
-        reply_to: from.email || undefined,
-        subject: `Dungeons by Bryce feedback from ${from.name || 'a player'}`,
-        text: `${message}\n\nFrom: ${from.name || 'unnamed'} <${from.email}>\nSent from the Feedback tab on Dungeons by Bryce.`,
-      }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+async function feedbackTo(admin: ReturnType<typeof createAdminClient>) {
+  const { data: cfg } = await admin.from('app_config').select('value').eq('key', 'dm_email').maybeSingle();
+  return (Object.entries(process.env).find(([k]) => k.toUpperCase() === 'FEEDBACK_TO')?.[1] || cfg?.value || '') as string;
 }
 
 export async function submitFeedback(_: FormState, form: FormData): Promise<FormState> {
@@ -149,11 +134,9 @@ export async function submitFeedback(_: FormState, form: FormData): Promise<Form
 
   // The note is saved either way. If email is set up, it is also sent to the site owner.
   const admin = createAdminClient();
-  const { data: cfg } = await admin.from('app_config').select('value').eq('key', 'dm_email').maybeSingle();
-  const to = process.env.FEEDBACK_TO || cfg?.value;
-  if (to && (await emailFeedback(to, { name: profile.display_name, email: profile.email }, message))) {
-    await admin.from('feedback').update({ emailed: true }).eq('id', id);
-  }
+  const to = await feedbackTo(admin);
+  const failed = to ? await emailFeedback(to, { name: profile.display_name, email: profile.email }, message) : 'No address to send to.';
+  await admin.from('feedback').update({ emailed: !failed, email_error: failed }).eq('id', id);
   revalidatePath('/admin');
   return { note: 'Thank you. Your note has been sent.' };
 }
@@ -164,6 +147,34 @@ export async function feedbackSetDone(id: string, done: boolean) {
   const { supabase } = await requireHead();
   await supabase.from('feedback').update({ done }).eq('id', id);
   revalidatePath('/admin');
+}
+
+// Email the notes that have not been emailed yet (for example ones sent before email was switched on).
+export async function feedbackEmailWaiting(): Promise<FormState> {
+  const { supabase } = await requireHead();
+  const { data: waiting } = await supabase.from('feedback').select('id, name, email, message').eq('emailed', false).order('created_at').limit(20);
+  if (!waiting?.length) return { note: 'Nothing is waiting.' };
+  const admin = createAdminClient();
+  const to = await feedbackTo(admin);
+  let sent = 0, reason = to ? '' : 'No address to send to.';
+  for (const n of to ? waiting : []) {
+    const failed = await emailFeedback(to, { name: n.name, email: n.email }, n.message);
+    await supabase.from('feedback').update({ emailed: !failed, email_error: failed }).eq('id', n.id);
+    if (failed) { reason = failed; break; }
+    sent++;
+  }
+  revalidatePath('/admin');
+  return reason ? { error: `${sent} sent. Then: ${reason}` } : { note: `${sent} note${sent === 1 ? '' : 's'} emailed to ${to}.` };
+}
+
+// Unhide (or hide again) a campaign someone else runs. Until it is unhidden, nothing
+// about it is sent to the Head DM; the database enforces that, not this page.
+export async function headReveal(id: string, on: boolean) {
+  const { supabase } = await requireHead();
+  if (on) await supabase.from('head_reveals').upsert({ campaign_id: id });
+  else await supabase.from('head_reveals').delete().eq('campaign_id', id);
+  revalidatePath('/', 'layout');
+  if (!on) redirect('/admin');
 }
 
 export async function feedbackDelete(id: string) {

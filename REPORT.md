@@ -163,9 +163,11 @@ Feedback notes are already collected on your **Head DM** page. To also get each 
 3. In Resend, click **API Keys** in the left menu, then **Create API Key**. Name it `dungeons-by-bryce`, leave the permission as **Sending access**, and click **Add**.
 4. Resend shows the key once. Click the copy button. (It starts with `re_`.)
 5. Go to https://vercel.com, open the **dungeons-by-bryce** project, click **Settings**, then **Environment Variables**.
-6. In **Key** type `RESEND_API_KEY`. In **Value** paste the key. Leave all environments ticked. Click **Save**.
+6. In **Key** type `RESEND_API_KEY` (capitals do not matter). In **Value** paste the key. Leave all environments ticked. Click **Save**.
 7. Click **Deployments** (top), click the three dots on the newest one, and click **Redeploy**. Wait for it to finish.
 8. Send yourself a note from the **Feedback** tab. It should arrive within a minute, and the note on your Head DM page will say "emailed".
+
+If a note does not arrive, open your **Head DM** page: the note shows the reason under it, and a button there sends any notes that are still waiting.
 
 Do not paste the key into a chat. If it ever leaks, delete it in Resend and make a new one.
 

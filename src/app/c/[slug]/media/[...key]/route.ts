@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   let phase: string = campaign.phase;
   const asked = request.nextUrl.searchParams.get('phase');
   if (asked && asked !== phase) {
-    const { data: runsIt } = await supabase.rpc('is_campaign_dm', { c: campaign.id });
+    const { data: runsIt } = await supabase.rpc('reads_all', { c: campaign.id });
     const asPlayer = (await cookies()).get(VIEW_AS_PLAYER)?.value === '1';
     if (runsIt && !asPlayer) phase = asked;
   }

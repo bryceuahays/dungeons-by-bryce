@@ -190,8 +190,7 @@ async function Sessions({ ctx, section }: { ctx: CampaignCtx; section: Section }
             );
           })}
         </div>
-        <h2>Add a session</h2>
-        <div className="plate"><SessionForm slug={slug} /></div>
+        {ctx.realDm ? <><h2>Add a session</h2><div className="plate"><SessionForm slug={slug} /></div></> : null}
       </div>
     </div>
   );
