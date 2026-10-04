@@ -10,9 +10,12 @@ export async function HomeExtras({ ctx }: { ctx: CampaignCtx }) {
   const cons = campaignCan(ctx.access, 'world') ? await getEntries(ctx, ['consequence']) : [];
   const latest = Math.max(0, ...cons.map((c) => Number(c.data.session) || 0));
   const since = cons.filter((c) => (Number(c.data.session) || 0) === latest);
-  if (!video && !since.length) return null;
+  const hero = Number(ctx.campaign.theme?.hero) > 0 && campaignCan(ctx.access, 'themes');
+  if (!video && !since.length && !hero) return null;
   return (
     <div className="wrap home-extras">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {hero ? <img className="hero-img" src={`/c/${ctx.campaign.slug}/bg/hero?v=${ctx.campaign.theme!.hero}`} alt="" /> : null}
       {video ? <div dangerouslySetInnerHTML={{ __html: videoFrame(video, 'Featured video') }} /> : null}
       {since.length ? (
         <div className="plate">

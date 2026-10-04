@@ -100,11 +100,21 @@ test('player: cannot change their own role, or write DM tables', async () => {
   assert.ok(mem.error || (mem.data ?? []).length === 0, 'cannot join without a code');
 });
 
-test('signed-out visitors get nothing from the API', async () => {
+test('signed-out visitors get nothing from the API, except the public demo campaign as a player sees it', async () => {
   const anon = anonClient();
-  for (const table of ['content', 'campaigns', 'rules', 'characters', 'sessions', 'media', 'profiles', 'sections', 'campaign_faces', 'character_private']) {
+  for (const table of ['rules', 'characters', 'sessions', 'media', 'profiles', 'campaign_faces', 'character_private']) {
     const r = await anon.from(table).select('*').limit(1);
     assert.equal((r.data ?? []).length, 0, table);
+  }
+  // The one thing a visitor can read is the campaign flagged as the demo (never this one).
+  const demo = ((await admin.from('campaigns').select('id').eq('is_demo', true)).data ?? []).map((c) => c.id);
+  const camps = (await anon.from('campaigns').select('id')).data ?? [];
+  assert.ok(camps.every((c) => demo.includes(c.id)) && !camps.some((c) => c.id === C.id), 'campaigns');
+  for (const table of ['content', 'sections']) {
+    const r = (await anon.from(table).select('*').limit(2000)).data ?? [];
+    assert.ok(r.every((x) => demo.includes(x.campaign_id)), table + ': only the demo');
+    assert.equal(r.filter((x) => x.campaign_id === C.id).length, 0, table);
+    if (table === 'content') assert.ok(r.every((x) => x.visibility === 'player' && !x.hidden), 'and only its player rows');
   }
 });
 

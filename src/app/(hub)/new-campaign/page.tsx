@@ -19,7 +19,7 @@ export default async function NewCampaign() {
       <h1>New campaign</h1>
       <div className="panel"><p className="dim">You will be the DM of this campaign. You add its pages (or paste them in below), invite your own players with a code, and decide what they can see. Only you and your players can open it. The person who runs this site (the Head DM) can also look inside a campaign when they need to, for example to help with a problem or check a report.</p></div>
       {remaining(plan, 'campaigns') <= 0 ? <UpgradeHint feature="campaigns" /> : null}
-      <NewCampaignForm campaigns={(data ?? []).map((c) => ({ id: c.id, title: real.get(c.id) ?? c.title }))} />
+      <NewCampaignForm pro={plan.pro} campaigns={(data ?? []).map((c) => ({ id: c.id, title: real.get(c.id) ?? c.title }))} />
     </>
   );
 }

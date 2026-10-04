@@ -11,6 +11,9 @@ export type Theme = {
   goldHi?: string;
   goldLo?: string;
   starfield?: boolean;
+  preset?: string;
+  layout?: { radius?: string; wrap?: string };
+  hero?: number;
 };
 
 export type Campaign = {

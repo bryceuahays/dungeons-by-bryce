@@ -1,4 +1,4 @@
-export const metadata = { title: 'Legal and licences', description: 'Licence attribution, terms, and privacy for Dungeons by Bryce.' };
+export const metadata = { title: 'Legal and licences', description: 'Licence attribution, terms, and privacy for Dungeons by Bryce.', robots: { index: true, follow: true } };
 
 export default function Legal() {
   return (

@@ -269,7 +269,7 @@ export function ZeroTool(p: ToolProps & { initial: Entry | null; inputs: { id: s
           <p className="muted">Sent by players without their names, mixed together in no particular order. Nothing here says who wrote which line.</p>
           {inputs.length ? <ul className="loglist">{[...inputs].sort((a, b) => a.body.localeCompare(b.body)).map((i) => <li key={i.id}><span className="pillb">{i.kind === 'line' ? 'Line' : i.kind === 'veil' ? 'Veil' : 'Note'}</span> {i.body} {p.canWrite ? <button type="button" className="act sm" onClick={async () => { const { error } = await supabase.from('safety_inputs').delete().eq('id', i.id); if (!error) setInputs(inputs.filter((x) => x.id !== i.id)); }}>Remove</button> : null}</li>)}</ul> : <p className="who">Nothing has been sent.</p>}
         </>
-      ) : (
+      ) : !p.canWrite ? null : (
         <>
           <h3>Tell your DM, without your name</h3>
           <p className="muted">If there is something you would rather not have in the game, or only off-screen, say so here. It reaches your DM as part of one combined list. Your name is not stored with it. Please do not include health or medical details: a few words about the topic is all that is needed.</p>

@@ -73,11 +73,11 @@ export type CharacterV2 = {
   race?: string; cls?: string;                 // display names (the party list reads these)
   raceId?: string | null; clsId?: string | null; subId?: string | null; bgId?: string | null; feats?: string[];
   ab: Record<Ability, number>; anyAb?: Ability[]; skills?: string[]; expert?: string[];
-  hp?: number; hpMax?: number | null; temp?: number; acBase?: number | null; shield?: boolean;
+  hp?: number | null; hpMax?: number | null; temp?: number; acBase?: number | null; shield?: boolean;
   used?: Record<string, number>; slotsUsed?: Record<string, number>; spells?: string[]; extra?: string[];
   gear?: string; notes?: string; seen?: Record<string, number>;
 };
-export const blankV2 = (): CharacterV2 => ({ v: 2, t: 0, name: '', player: '', level: 1, race: '', cls: '', raceId: null, clsId: null, subId: null, bgId: null, feats: [], ab: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }, anyAb: [], skills: [], expert: [], hp: 0, hpMax: null, temp: 0, acBase: null, shield: false, used: {}, slotsUsed: {}, spells: [], extra: [], gear: '', notes: '', seen: {} });
+export const blankV2 = (): CharacterV2 => ({ v: 2, t: 0, name: '', player: '', level: 1, race: '', cls: '', raceId: null, clsId: null, subId: null, bgId: null, feats: [], ab: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }, anyAb: [], skills: [], expert: [], hp: null, hpMax: null, temp: 0, acBase: null, shield: false, used: {}, slotsUsed: {}, spells: [], extra: [], gear: '', notes: '', seen: {} });
 
 export type Derived = ReturnType<typeof derive>;
 

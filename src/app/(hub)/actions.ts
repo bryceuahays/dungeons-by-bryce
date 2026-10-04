@@ -3,10 +3,10 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireHead, requireViewer } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { FONT_PAIRS } from '@/lib/fonts';
 import { parseCampaignText, MAX_IMPORT_CHARS } from '@/lib/import';
 import { insertImported, removeCampaignFiles } from '@/lib/campaign-admin';
 import { emailFeedback } from '@/lib/mail';
+import { cleanTheme, presetOf } from '@/lib/theme';
 
 export type FormState = { error?: string; note?: string } | null;
 
@@ -72,13 +72,11 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
   if (!title) return { error: 'Give the campaign a title (or start your pasted text with a line like "# My campaign").' };
   if (!/^[a-z0-9][a-z0-9-]{1,60}$/.test(slug)) return { error: 'The web address can use lowercase letters, numbers, and dashes, and needs at least two characters.' };
 
-  const colors: Record<string, string> = {};
-  for (const k of ['void', 'deep', 'plate', 'plate2', 'line', 'field', 'vellum', 'dim', 'gold', 'ember', 'star', 'verd', 'on-gold']) {
-    const v = String(form.get('c-' + k) || '');
-    if (HEX.test(v)) colors[k] = v;
-  }
-  const fonts = FONT_PAIRS.find((f) => f.id === form.get('fonts')) ?? FONT_PAIRS[0];
-  const theme = { colors, fonts: { display: fonts.display, body: fonts.body, href: fonts.href }, starfield: form.get('starfield') === 'on' };
+  // the look: a preset as it is, or (on Pro) the editor's own colours and fonts. A free
+  // account that sends anything else is given the default theme by the database.
+  let chosen: unknown = null;
+  try { chosen = JSON.parse(String(form.get('theme') || 'null')); } catch { chosen = null; }
+  const theme = presetOf(chosen)?.theme ?? cleanTheme(chosen ?? { preset: 'slate' });
 
   const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme }).select('id').single();
   if (error || !campaign) {
@@ -182,6 +180,25 @@ export async function setComp(userId: string, on: boolean) {
   const { supabase } = await requireHead();
   await supabase.rpc('set_comp', { p_user: userId, on_: on });
   revalidatePath('/admin');
+}
+
+export async function setCommission(id: string, patch: { status?: string; notes?: string }) {
+  const { supabase } = await requireHead();
+  const p: Record<string, string> = {};
+  if (patch.status) p.status = patch.status;
+  if (patch.notes !== undefined) p.notes = patch.notes.slice(0, 4000);
+  await supabase.from('commissions').update(p).eq('id', id);
+  revalidatePath('/admin/business');
+}
+
+// Hand a finished campaign to a client's account.
+export async function transferCampaign(_: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await requireHead();
+  if (form.get('confirm') !== 'HAND OVER') return { error: 'Type HAND OVER to confirm.' };
+  const { data: name, error } = await supabase.rpc('transfer_campaign', { c: String(form.get('campaign') || ''), to_email: String(form.get('email') || '') });
+  if (error) return { error: /no account/.test(error.message) ? 'There is no account with that email yet. Ask the client to sign up first (it is free), then try again.' : 'That campaign could not be handed over.' };
+  revalidatePath('/', 'layout');
+  return { note: `Done. ${name || 'The client'} now runs that campaign.` };
 }
 
 export async function feedbackDelete(id: string) {

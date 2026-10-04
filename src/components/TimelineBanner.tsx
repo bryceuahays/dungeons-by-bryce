@@ -6,7 +6,7 @@ import { getEntries } from '@/lib/entries';
 // have happened and that they may see. The DM also gets what is planned and a count of
 // key beats still to hit. It is left out entirely while there is nothing to show, so a
 // campaign that does not use the timeline looks exactly as it did.
-export async function TimelineBanner({ ctx }: { ctx: CampaignCtx }) {
+export async function TimelineBanner({ ctx, base }: { ctx: CampaignCtx; base?: string }) {
   const beats = (await getEntries(ctx, ['beat'])).sort((a, b) => a.sort - b.sort || a.created_at.localeCompare(b.created_at));
   if (!beats.length) return null;
   const session = Number(ctx.campaign.settings?.session) || 0;
@@ -33,7 +33,7 @@ export async function TimelineBanner({ ctx }: { ctx: CampaignCtx }) {
           </li>
         ))}
       </ol>
-      <p><Link href={`/c/${ctx.campaign.slug}/tools/timeline`}>Open the timeline</Link></p>
+      <p><Link href={`${base ?? '/c/' + ctx.campaign.slug}/tools/timeline`}>Open the timeline</Link></p>
     </details>
   );
 }

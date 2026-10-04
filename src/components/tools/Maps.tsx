@@ -137,7 +137,7 @@ export function MapsTool(p: ToolProps & { initial: Entry[]; beats: { id: string;
               {mode === 'region' ? <><span className="muted">Tap around the edge of the area ({draft.length} point{draft.length === 1 ? '' : 's'}).</span><button type="button" className="act sm" disabled={draft.length < 3} onClick={finishRegion}>Finish area</button><button type="button" className="act sm" disabled={!draft.length} onClick={() => setDraft(draft.slice(0, -1))}>Undo point</button></> : null}
             </p>
           ) : null}
-          <MapView src={`/c/${p.slug}/map/${map.id}?v=${encodeURIComponent(version.slice(-40) + (map.data.file ?? '').slice(-8))}`} ratio={(Number(map.data.w) || 4) / (Number(map.data.h) || 3)} onTap={mode === 'look' ? undefined : tap} version={version}>
+          <MapView src={`${p.base ?? '/c/' + p.slug}/map/${map.id}?v=${encodeURIComponent(version.slice(-40) + (map.data.file ?? '').slice(-8))}`} ratio={(Number(map.data.w) || 4) / (Number(map.data.h) || 3)} onTap={mode === 'look' ? undefined : tap} version={version}>
             <svg className="mapsvg" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
               {p.dm ? regions.map((r) => <polygon key={r.id} className={'reg ' + (r.vis === 'all' ? 'open' : 'shut') + (sel === r.id ? ' sel' : '')} points={(r.data.pts as Pt[]).map(([x, y]) => `${x * 1000},${y * 1000}`).join(' ')} onPointerUp={(e) => { if (mode === 'look') { e.stopPropagation(); setSel(r.id); } }} />) : null}
               {draft.length ? <polyline className="reg draft" points={draft.map(([x, y]) => `${x * 1000},${y * 1000}`).join(' ')} /> : null}
@@ -225,7 +225,7 @@ function PinPanel({ pin, p, maps, save, remove, go, who }: { pin: Entry; p: Tool
         </>
       )}
       <p className="row">
-        {beat && (p.dm || beat.status === 'hit') ? <Link className="act sm" href={`/c/${p.slug}/tools/timeline`}>On the timeline: {beat.title}</Link> : null}
+        {beat && (p.dm || beat.status === 'hit') ? <Link className="act sm" href={`${p.base ?? '/c/' + p.slug}/tools/timeline`}>On the timeline: {beat.title}</Link> : null}
         {pin.data.toMap && maps.some((m) => m.id === pin.data.toMap) ? <button type="button" className="act" onClick={() => go(pin.data.toMap)}>Go to {maps.find((m) => m.id === pin.data.toMap)!.title}</button> : null}
       </p>
     </div>

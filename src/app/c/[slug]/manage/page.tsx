@@ -6,11 +6,13 @@ import { BackgroundUploader } from '@/components/BackgroundUploader';
 import { previewAs, removeMember, revokeInvite, setCampaignBackground, setPhase, stepStage } from '../actions';
 import { SettingForm, StagesForm } from '@/components/DmForms';
 import { UpgradeHint } from '@/components/UpgradeHint';
+import { ThemeEditor } from '@/components/ThemeEditor';
 import { campaignCan } from '@/lib/entitlements';
 import type { Section } from '@/lib/types';
 import { FREE_LIMITS } from '@/config/plans';
 import { CopyLink } from '@/components/CopyBox';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export const metadata = { title: 'Manage' };
 
 export default async function Manage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ imported?: string }> }) {
@@ -130,6 +132,12 @@ export default async function Manage({ params, searchParams }: { params: Promise
         <div className="plate">
           <p>Paste text and the site turns it into tabs, headings, cards, tables, and DM-only secrets, added to what is already here. <Link href="/help/campaign-format" target="_blank">How to format it</Link> (opens in a new tab).</p>
           <ImportPagesForm slug={slug} />
+        </div>
+
+        <h2>Theme</h2>
+        <div className="plate">
+          <p>The colours, fonts and layout of every page in this campaign.</p>
+          <ThemeEditor initial={campaign.theme as any} pro={campaignCan(ctx.access, 'themes')} slug={slug} campaignId={campaign.id} />
         </div>
 
         <h2>Campaign home</h2>

@@ -93,3 +93,23 @@
   .door .lantern,.door .dust{display:none}
   .stone-btn{transition:none}
 }
+
+/* ---------- the product, below the doorway ---------- */
+.door .below{display:flex; flex-direction:column; gap:22px}
+.door .feature{display:grid; grid-template-columns:auto 1fr; gap:22px; align-items:start; border:1px solid var(--h-line); border-radius:16px; padding:28px 26px;
+  background:linear-gradient(180deg, rgba(21,37,37,.42), rgba(10,20,23,.72)); box-shadow:inset 0 1px 0 rgba(255,255,255,.03), 0 10px 30px rgba(0,0,0,.35)}
+.door .feature svg{width:56px; height:56px; fill:none; stroke:var(--h-accent); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round}
+.door .feature svg .amber{stroke:var(--h-amber)}
+.door .feature h2{margin:0 0 8px; font-family:var(--h-title); font-size:clamp(1.15rem,2.4vw,1.5rem); font-weight:600; letter-spacing:.05em; color:var(--h-text); text-wrap:balance}
+.door .feature.lead h2{font-size:clamp(1.3rem,3vw,1.9rem)}
+.door .feature p,.door .feature li{color:var(--h-dim); font-size:1.02rem; line-height:1.6}
+.door .feature p{margin:0 0 10px}
+.door .feature ul{margin:6px 0 0; padding-left:20px}
+.door .feature li{margin:6px 0}
+.door .feature b{color:var(--h-text)}
+.door .feature.close{grid-template-columns:1fr; text-align:center}
+.door .feature .links{display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:16px}
+.door .trio.two{grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+.door footer .fine{display:block; margin-top:10px; font-family:var(--h-body, inherit); letter-spacing:0; font-size:.8rem; opacity:.85}
+.door footer a{color:inherit; text-decoration:underline}
+@media (max-width:560px){ .door .feature{grid-template-columns:1fr; padding:22px 18px} .door .feature svg{width:44px; height:44px} }

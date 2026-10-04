@@ -174,3 +174,10 @@ body{margin:0; min-height:100%; background:var(--h-bg); color:var(--h-text); fon
 a.upsell-go{color:var(--gold,#e3c47f);text-decoration:underline}
 .campaign .made{text-align:center;font-size:.8rem;opacity:.65;padding:18px 12px 26px}
 .campaign .made a{color:inherit;text-decoration:underline}
+
+.hub .ccard.product img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;margin-bottom:6px}
+.hub .product-cover{display:block;width:100%;max-height:420px;object-fit:cover;border-radius:10px;margin:0 0 14px}
+.hub .price{font-family:var(--font-title),serif;font-size:1.3rem}
+.hub .product-preview{border-radius:12px;overflow:hidden;background:var(--void,#070914);color:var(--vellum,#e9e2d0);padding:8px 0;margin-top:10px}
+.hub .product-preview .wrap{padding-bottom:24px}
+.hub fieldset.multi{border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:8px 10px;margin:0 0 12px}

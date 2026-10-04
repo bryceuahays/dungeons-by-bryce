@@ -22,7 +22,7 @@ export default async function CampaignLayout({ children, params }: { children: R
   const fonts = safeFontHref(campaign.theme?.fonts?.href);
   const bg = campaign.background?.wide && campaign.background?.tall ? `?v=${campaign.background.v ?? 1}` : null;
   return (
-    <div className={'campaign' + (bg ? ' has-bg' : '')} style={themeStyle(campaign.theme)}>
+    <div className={'campaign' + (bg ? ' has-bg' : '')} style={themeStyle(campaign.theme)} data-radius={campaign.theme?.layout?.radius ? '' : undefined} data-wrap={campaign.theme?.layout?.wrap ? '' : undefined}>
       {fonts ? <link rel="stylesheet" href={fonts} precedence="default" /> : null}
       {bg ? (
         <div className="camp-bg" aria-hidden="true">

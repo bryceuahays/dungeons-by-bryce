@@ -23,6 +23,7 @@ export function entryOpen(e: Pick<Entry, 'vis' | 'vis_players' | 'vis_stage' | '
 // What every table tool is handed.
 export type ToolProps = {
   campaignId: string; slug: string; userId: string;
+  base?: string;      // where this campaign's pages live (default /c/<slug>)
   dm: boolean;        // may edit as the DM (not while previewing, not the Head DM's read-only view)
   canWrite: boolean;  // the campaign is not read-only
   stages: { id: string; label: string }[];

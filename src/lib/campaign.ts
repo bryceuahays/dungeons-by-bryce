@@ -200,14 +200,4 @@ export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class
   return [...((srd.data ?? []) as any[]), ...mine];
 }
 
-export function themeStyle(theme: Campaign['theme']): Record<string, string> {
-  const s: Record<string, string> = {};
-  // theme values are written by the campaign's DM and end up in a style attribute, so each one is checked
-  const put = (name: string, v: unknown) => { const ok = safeCssValue(v); if (ok) s[name] = ok; };
-  Object.entries(theme?.colors ?? {}).forEach(([k, v]) => { if (/^[a-z0-9-]+$/.test(k)) put('--' + k, v); });
-  put('--display', theme?.fonts?.display);
-  put('--body', theme?.fonts?.body);
-  put('--gold-hi', theme?.goldHi);
-  put('--gold-lo', theme?.goldLo);
-  return s;
-}
+export { themeStyle } from './theme-style';

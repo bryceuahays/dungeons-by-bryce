@@ -350,6 +350,22 @@ test('video: only YouTube and Vimeo links embed, by id; nothing else gets throug
 
 // ------------------------------------------------------------------ isolation and read-only
 
+test('a campaign full of linked entries can be deleted, and everything in it goes', async () => {
+  const doomed = await makeCampaign(dm, 'Doomed Realm');
+  const beat = await entry(dm, { campaign_id: doomed.id, kind: 'beat', title: 'b', status: 'planned', live: false, vis: 'all' });
+  const map = await entry(dm, { campaign_id: doomed.id, kind: 'map', title: 'm', vis: 'all', data: {} });
+  const pin = await entry(dm, { campaign_id: doomed.id, kind: 'pin', parent: map.data.id, title: 'p', vis: 'entry', vis_entry: beat.data.id, data: { beat: beat.data.id } });
+  await entry(dm, { campaign_id: doomed.id, kind: 'region', parent: map.data.id, title: 'r', vis: 'entry', vis_entry: beat.data.id, data: { pts: [] } });
+  await entry(dm, { campaign_id: doomed.id, kind: 'note', parent: beat.data.id, title: 'n', vis: 'all' });
+  await dm.client.from('entry_secrets').insert({ entry_id: pin.data.id, campaign_id: doomed.id, data: { x: 1 } });
+  // deleting the beat on its own clears the links to it and leaves the pin
+  assert.equal((await dm.client.from('entries').delete().eq('id', beat.data.id).select('id')).data.length, 1);
+  assert.equal((await admin.from('entries').select('vis_entry').eq('id', pin.data.id).single()).data.vis_entry, null);
+  assert.equal((await dm.client.rpc('delete_campaign', { c: doomed.id })).error, null);
+  assert.equal((await admin.from('entries').select('id', { count: 'exact', head: true }).eq('campaign_id', doomed.id)).count, 0);
+  assert.equal((await admin.from('campaigns').select('id').eq('id', doomed.id)).data.length, 0);
+});
+
 test('table tools never cross campaigns, and a read-only campaign cannot be changed', async () => {
   const other = await makeCampaign(dm, 'Other Realm');
   const there = await entry(dm, { campaign_id: other.id, kind: 'npc', title: 'Elsewhere', vis: 'all' });

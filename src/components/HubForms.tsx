@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useActionState, useState, useTransition } from 'react';
 import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
-import { FONT_PAIRS } from '@/lib/fonts';
+import { ThemeEditor } from './ThemeEditor';
 
 function Msg({ state }: { state: FormState }) {
   if (state?.error) return <p className="bad" role="alert">{state.error}</p>;
@@ -45,19 +45,13 @@ export function PasswordForm() {
   );
 }
 
-const TOKENS: [string, string, string][] = [
-  ['void', 'Page background', '#101014'], ['deep', 'Deep panels', '#16161c'], ['plate', 'Cards', '#1c1c24'], ['plate2', 'Card highlight', '#22222c'],
-  ['line', 'Borders', '#34343f'], ['field', 'Form fields', '#0d0d11'], ['vellum', 'Text', '#e8e6e1'], ['dim', 'Quiet text', '#a3a1a8'],
-  ['gold', 'Main accent', '#7fb8a4'], ['ember', 'Second accent', '#c97a8f'], ['star', 'Links', '#8fa7d6'], ['verd', 'Notes', '#9bc47a'], ['on-gold', 'Text on the accent', '#0f1513'],
-];
-
-export function NewCampaignForm({ campaigns }: { campaigns: { id: string; title: string }[] }) {
+export function NewCampaignForm({ campaigns, pro }: { campaigns: { id: string; title: string }[]; pro: boolean }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
   return (
     <form action={action}>
       <div className="panel">
         <label>Title<input name="title" maxLength={80} placeholder="Leave empty if your pasted text starts with # Title" /></label>
-        <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the title.<input name="slug" pattern="[a-z0-9][a-z0-9-]{1,60}" placeholder="my-next-campaign" /></label>
+        <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the title.<input name="slug" pattern="[a-z0-9][a-z0-9\-]{1,60}" placeholder="my-next-campaign" /></label>
         <label>Tagline<textarea name="tagline" rows={2} maxLength={300} /></label>
       </div>
       <h2>Paste your campaign (optional)</h2>
@@ -68,14 +62,8 @@ export function NewCampaignForm({ campaigns }: { campaigns: { id: string; title:
       </div>
       <h2>Look</h2>
       <div className="panel">
-        <p className="dim">Each campaign has its own colours and fonts. You can change these later, and upload your own background image, on the campaign&apos;s Manage page.</p>
-        <div className="fieldrow">
-          {TOKENS.map(([k, label, def]) => (
-            <label key={k}>{label}<input type="color" name={'c-' + k} defaultValue={def} /></label>
-          ))}
-        </div>
-        <label>Fonts<select name="fonts" defaultValue="cinzel">{FONT_PAIRS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</select></label>
-        <label style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><input type="checkbox" name="starfield" style={{ width: 'auto' }} /> Starfield behind the pages</label>
+        <p className="dim">Each campaign has its own look. You can change it later on the campaign&apos;s Manage page, where you can also upload a background image.</p>
+        <ThemeEditor initial={null} pro={pro} />
       </div>
       <h2>Character rules</h2>
       <div className="panel">

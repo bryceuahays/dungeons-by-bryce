@@ -75,7 +75,7 @@ export function NpcTool(p: ToolProps & { initial: Entry[]; monsters: { id: strin
         {shown.map((n) => (open === n.id ? <NpcEditor key={n.id} n={n} p={p} fields={fields} save={save} remove={remove} close={() => setOpen(null)} /> : (
           <article key={n.id} className="plate npc">
             <div className="npc-head">
-              {n.data.file ? <img src={`/c/${p.slug}/file/${n.id}?v=${encodeURIComponent(n.data.file.slice(-12))}`} alt="" loading="lazy" /> : null}
+              {n.data.file ? <img src={`${p.base ?? '/c/' + p.slug}/file/${n.id}?v=${encodeURIComponent(n.data.file.slice(-12))}`} alt="" loading="lazy" /> : null}
               <div>
                 <h3>{n.title}</h3>
                 <p className="who">{[STATUSES.find((s) => s[0] === n.status)?.[1], n.data.faction, n.data.location].filter(Boolean).join(' · ')}</p>

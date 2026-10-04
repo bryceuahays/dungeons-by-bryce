@@ -4,7 +4,8 @@
 // refuse things itself). After changing anything here, run:  npm run sync-config
 // A test fails if the database copy and this file differ.
 //
-// No imports here: scripts and tests load this file directly.
+// Scripts and tests load this file directly, so the one import carries its .ts extension.
+import { freeThemes } from './themes.ts';
 
 export const PRICES = {
   pro_monthly: { cents: 700, label: '$7 a month', interval: 'month' },
@@ -80,4 +81,6 @@ export const dbPlanConfig = () => ({
   limits: { ...FREE_LIMITS },
   pro_features: (Object.keys(FEATURES) as Feature[]).filter((f) => FEATURES[f].pro),
   founder: { ...FOUNDER },
+  // the default themes, exactly as stored on a campaign (a free campaign's theme must be one of these)
+  free_themes: freeThemes(),
 });

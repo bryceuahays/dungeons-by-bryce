@@ -76,11 +76,6 @@ export function CampaignForm({ slug, campaign, faces }: { slug: string; campaign
           </details>
         );
       })}
-      <details style={{ marginTop: 10 }}>
-        <summary className="muted" style={{ cursor: 'pointer' }}>Theme (colours and fonts)</summary>
-        <p className="muted">These are the design tokens for this campaign only. Colours are hex values. Change a value and save to restyle every page.</p>
-        <textarea name="theme" rows={18} className="mono" defaultValue={JSON.stringify(campaign.theme, null, 2)} spellCheck={false} />
-      </details>
       <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Save campaign settings</button> <Msg state={state} /></p>
     </form>
   );

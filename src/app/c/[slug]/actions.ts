@@ -6,6 +6,7 @@ import { requireViewer } from '@/lib/auth';
 import { VIEW_AS_PLAYER } from '@/lib/campaign';
 import { blank } from '@/islands/character';
 import { blankV2 } from '@/lib/rules/engine';
+import { cleanTheme, presetOf } from '@/lib/theme';
 import { parseCampaignText, MAX_IMPORT_CHARS } from '@/lib/import';
 import { insertImported, removeCampaignFiles } from '@/lib/campaign-admin';
 
@@ -119,6 +120,18 @@ export async function saveSetting(slug: string, key: 'feed' | 'session' | 'video
   return { note: 'Saved.' };
 }
 
+// The campaign's look. Free campaigns use a default theme as it is; the rest is Pro
+// (the database refuses anything else on a free campaign, whatever is sent here).
+export async function saveTheme(slug: string, theme: unknown): Promise<ActionState> {
+  const { supabase } = await requireViewer();
+  const id = await campaignId(supabase, slug);
+  if (!id) return { error: 'Campaign not found.' };
+  const { error } = await supabase.from('campaigns').update({ theme: presetOf(theme)?.theme ?? cleanTheme(theme) }).eq('id', id);
+  if (error) return /upgrade:/.test(error.message) ? { error: 'Premium themes and the theme editor are part of Pro. Your theme is unchanged.' } : { error: 'That did not save.' };
+  revalidatePath('/', 'layout');
+  return { note: 'Theme saved.' };
+}
+
 export async function updateCampaign(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
   const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
@@ -126,16 +139,9 @@ export async function updateCampaign(slug: string, _: ActionState, form: FormDat
   const title = String(form.get('title') || '').trim().slice(0, 80);
   const tagline = String(form.get('tagline') || '').trim().slice(0, 300);
   if (!title) return { error: 'The title cannot be empty.' };
-  const patch: Record<string, unknown> = {};
-  const raw = String(form.get('theme') || '').trim();
-  if (raw) {
-    try { const t = JSON.parse(raw); if (!t || typeof t !== 'object' || Array.isArray(t)) throw new Error(); patch.theme = t; } catch { return { error: 'The theme is not valid JSON. Nothing was saved.' }; }
-  }
   // the stages themselves are edited under "Reveal stages"; this form only sets a title for each
   const { data: cur } = await supabase.from('campaigns').select('phases').eq('id', id).single();
   const phases = (cur?.phases ?? []) as { id: string; label: string }[];
-  const { error } = await supabase.from('campaigns').update(patch).eq('id', id);
-  if (error) return { error: 'That did not save.' };
 
   // The real title and tagline, and an optional different title, address and tagline per
   // phase. The database copies the right one onto the campaign for the current phase.

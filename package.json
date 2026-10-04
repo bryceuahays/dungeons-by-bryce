@@ -16,7 +16,9 @@
     "screenshots": "node scripts/screenshots.mjs",
     "test": "node --test --test-concurrency=1 \"tests/*.test.mjs\"",
     "sync-config": "node scripts/sync-config.mjs",
-    "seed-srd": "node scripts/seed-srd.mjs"
+    "seed-srd": "node scripts/seed-srd.mjs",
+    "seed-demo": "node scripts/seed-demo.mjs",
+    "test:local": "node scripts/test-local.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

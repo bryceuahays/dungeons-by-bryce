@@ -62,11 +62,26 @@ export async function cleanup() {
       const { data: owned } = await admin.from('campaigns').select('id').eq('owner_id', u.id);
       const paths = [`user/${u.id}/wide`, `user/${u.id}/tall`, ...(owned ?? []).flatMap((c) => [`campaign/${c.id}/wide`, `campaign/${c.id}/tall`])];
       await admin.storage.from('backgrounds').remove(paths);
+      // pictures of table tools in campaigns they made, and frozen copies of products they published
+      for (const c of owned ?? []) for (const dir of ['maps', 'maps-painted', 'npc']) {
+        const { data: files } = await admin.storage.from('campaign-files').list(`${c.id}/${dir}`, { limit: 200 });
+        if (files?.length) await admin.storage.from('campaign-files').remove(files.map((f) => `${c.id}/${dir}/${f.name}`));
+      }
+      const { data: prods } = await admin.from('products').select('id').eq('seller_id', u.id);
+      for (const p of prods ?? []) {
+        const { data: files } = await admin.storage.from('campaign-files').list(`products/${p.id}`, { limit: 200 });
+        if (files?.length) await admin.storage.from('campaign-files').remove(files.map((f) => `products/${p.id}/${f.name}`));
+      }
+      await admin.from('purchases').delete().eq('user_id', u.id);
       await admin.auth.admin.deleteUser(u.id);
     }
     if (!data || data.users.length < 200) break;
   }
   await admin.from('invites').delete().like('code', 'TEST%');
+  await admin.from('purchases').delete().is('user_id', null).or('stripe_session.is.null,stripe_session.like.cs_test_%');
+  // nothing of a test may be left behind: if an account could not be deleted, say so loudly
+  const { data: left } = await admin.from('profiles').select('id').like('email', '%' + DOMAIN);
+  if (left?.length) throw new Error(`cleanup left ${left.length} test account(s) behind`);
 }
 
 // The campaign, found by its real address. The row's own slug and title are the ones

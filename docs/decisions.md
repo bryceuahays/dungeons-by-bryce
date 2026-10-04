@@ -66,3 +66,31 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 51. **Videos play through YouTube's no-cookie player or Vimeo's player.** Nothing else can be embedded. The featured video sits above the first tab.
 52. **Free campaigns get:** two stages, DM-only blocks, "view as", NPCs, initiative, session zero, video, the compendium, one map with the DM's own pins, and private player notes. **Pro adds:** more stages, anything for named players, the timeline, hidden map regions, more maps, beat-linked and player pins, and world state.
 53. **The Head DM's read-only view of an unhidden campaign extends to its table tools.**
+
+## Phases 11 to 13: themes, custom sites, the store, the public face
+
+54. **The first theme is named "Midnight and gold", not "To be a god".** It is that campaign's look, token for token (a test checks they match). But theme names are sent to every browser, and that campaign's real title is a secret from its own players until its reveal, so the preset is named for how it looks. The campaign keeps its own stored theme and looks exactly as before.
+55. **Four default themes on every plan** (Slate and sea-glass, Ember and ash, Deep grove, Vellum) and three premium ones (Midnight and gold, Abyssal, Frostbound). The theme editor adds your own colours, fonts, corner style, page width, starfield and a hero image.
+56. **A free account that creates a campaign with a custom look gets the default theme instead of an error.** Changing an existing campaign to a premium or custom theme on the free plan is refused. A campaign's current theme is never changed or locked by a downgrade.
+57. **The raw theme box on the Manage page is gone.** The theme editor replaces it.
+58. **Custom-site requests are saved and emailed to you** through the same mail service as feedback. The form has a hidden field that only scripts fill in, and a daily cap (3 per email address, 60 in all).
+59. **Handing a campaign to a client makes them its owner and removes your access.** The client needs an account first (free is fine). A handed-over campaign does not count toward their free plan's one campaign and stays editable on any plan, like a bought one.
+60. **A product is a frozen copy.** It is taken when you publish. Later changes to your campaign do not reach buyers until you publish again under the same store address.
+61. **Publishing resets play state.** Beats marked as hit go back to planned, the session counter goes back to zero, and players' own additions (their beats, notes and pins) are left out. The reveal log, the initiative tracker and the consequence log are not part of a product.
+62. **Blocks and entries that were for named players are delivered as DM-only,** because the buyer's players are different people.
+63. **A bought campaign does not count toward the free plan's one campaign, is editable on any plan, and has every tool it was built with** (timeline, hidden map regions, and so on), even for a buyer on the free plan. Otherwise a free buyer could not run what they bought.
+64. **Buyers get their own copies of the campaign's homebrew,** attached to their copy and fully editable. Private entries can never be in a product, because a campaign with private content cannot be published.
+65. **A product priced at $0 is delivered straight away** with no payment step. Paid products go through Stripe Checkout (test mode) and are delivered when Stripe confirms the payment, once.
+66. **Only the site admin can publish.** The products table has a seller and a "site cut" column so other creators can sell later. Nothing on the creator side is built.
+67. **The demo is a real campaign in your account, flagged as the demo.** Signed-out visitors read it through the database's own rules for a guest: exactly the rows a player gets, of that one campaign, and nothing else. It appears in "Campaigns you run" so you can edit it like any other.
+68. **The demo is an original short campaign, "The Lantern Beneath",** written for this site with a map drawn in code. It contains nothing private, so it can also be your first store product.
+69. **The demo's tabs include the table tools** (NPCs, Timeline, Maps, World state, Session zero) so a visitor finds them without hunting. They are read-only.
+70. **Search engines may index the public pages only:** landing, demo, pricing, store, custom sites, legal. Everything signed-in stays unindexed.
+71. **The share image is drawn in code** (a glowing doorway and the tagline), so no artwork is borrowed.
+72. **The landing page's second button is "See the demo"** and the third is "Sign in". "Join a campaign" is gone from it, because invite links now carry new players straight in.
+
+## Things found and fixed along the way
+
+73. **Deleting a campaign that had map pins linked to story beats was being blocked** by a check added in this build. Fixed, with a test. The test clean-up now fails loudly if it ever leaves a test account behind.
+74. **Two form fields had a pattern that newer browsers reject** (the campaign address box). Fixed.
+75. **A new character on the standard sheet started at 0 hit points.** It now starts at full.
