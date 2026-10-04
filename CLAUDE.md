@@ -36,3 +36,11 @@ On this Windows machine use `npx.cmd` / `npm.cmd` in PowerShell (scripts are blo
 - Nothing that names "To be a god" may appear in code that ships to the browser (its title is hidden from its players before the reveal). A test checks the bundles.
 - Tests: `npm run build && npm run test:local`. They use throwaway accounts on the real database and fail if any are left behind.
 - Stripe is test-mode only by design (`src/lib/stripe.ts`).
+
+## Follow-up build (branch `commercial-followup`, on top of `commercial`)
+
+- SRD: both versions live in `entities` with `srd_version` 5.1 or 5.2. `node scripts/fetch-srd.mjs` then `node scripts/import-srd.mjs` (repeatable; data is not in the repo). A campaign's `settings.rules` is `2014`, `2024` or `both` (`src/config/rules.ts`).
+- Packs: `packs.official` / `packs.free`, `pack_owners`, `attach_pack()`. Entities carry `origin` (`own` or `product`); only `own` counts toward the free limit.
+- Store: `src/lib/store.ts` (publish campaign or pack, generate framework or publishable copy, deliver, upgrade). Prices and discount in `src/config/store.ts`. Listings are hidden from players of `products.spoiler_campaign`, and from signed-out visitors while that campaign has players.
+- A bought campaign: `campaign_feature` (use what came with it) is true; `campaign_can_create` (make new Pro-only things) follows the owner's plan. In pages: `campaignCan` vs `campaignCanMake`; in tools: `p.can` vs `p.make`.
+- Commissions: `src/config/commissions.ts`; statuses requested, accepted, declined, paid, in_progress, in_review, delivered; `deliver_commission()` transfers the campaign and sets `profiles.pro_until`.
