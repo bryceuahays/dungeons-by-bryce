@@ -10,6 +10,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import * as cheerio from 'cheerio';
+import { applyPhases } from './phases.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'source');
@@ -357,7 +358,7 @@ for (const dir of ['t', 'v']) {
     const m = f.match(/^(.*)_(before|after)(\.\w+)$/);
     media.push({
       key: dir + '/' + (m ? m[1] + m[3] : f),
-      path: SLUG + '/' + dir + '/' + f,
+      path: dir + '/' + f,   // scripts/seed.mjs puts the campaign's id in front, so no path names the campaign
       phase: m ? m[2] : null,
       content_type: TYPES[ext] || 'application/octet-stream',
       file: 'source/character-builder/' + dir + '/' + f,
@@ -385,6 +386,10 @@ const campaign = {
   },
 };
 
+// ------------------------------------------------------------------ before and after session negative
+
+const phaseLog = applyPhases({ content, rules, sections, campaign, builderRaces: B.RACES, hubJs });
+
 // ------------------------------------------------------------------ write
 
 const counts = {
@@ -409,6 +414,6 @@ const counts = {
 };
 
 fs.mkdirSync(path.join(ROOT, 'seed'), { recursive: true });
-fs.writeFileSync(path.join(ROOT, 'seed', SLUG + '.json'), JSON.stringify({ campaign, sections, content, rules, sessions, media, counts }, null, 1));
+fs.writeFileSync(path.join(ROOT, 'seed', SLUG + '.json'), JSON.stringify({ campaign, sections, content, rules, sessions, media, counts, phaseLog }, null, 1));
 console.log(report.join('\n'));
 console.log(counts);
