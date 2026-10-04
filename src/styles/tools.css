@@ -1,0 +1,92 @@
+/* Styles for everything added by the commercial build. Colours fall back so the same
+   components work in the hub (stone) and inside a campaign (that campaign's theme). */
+.ecard{line-height:1.5}
+.ecard h3{margin:0 0 2px;font-size:1.25rem}
+.ecard h4{margin:14px 0 4px;font-size:1rem;border-bottom:1px solid var(--line,rgba(255,255,255,.18))}
+.ecard p{margin:6px 0}
+.ecard .who{opacity:.75;font-style:italic;margin:0 0 8px}
+.ecard .kv{margin:3px 0}
+.ecard .etag{display:inline-block;margin-left:8px;padding:1px 7px;border:1px solid currentColor;border-radius:99px;font-size:.72rem;font-style:normal;letter-spacing:.04em;opacity:.85}
+.ecard .etag.test{color:var(--ember,#e0a04a)}
+.ecard ul.traits{list-style:none;margin:8px 0;padding:0}
+.ecard ul.traits li{margin:6px 0;padding:0}
+.ecard .src{opacity:.7;font-size:.9em}
+.ecard .abrow{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:8px 0;text-align:center;font-size:.9rem}
+.ecard .abrow b{display:block;font-size:.75rem;opacity:.75}
+.ecard .scroll{overflow-x:auto;margin-top:10px}
+.ecard table.ctable{border-collapse:collapse;width:100%;font-size:.85rem}
+.ecard table.ctable th,.ecard table.ctable td{padding:4px 6px;border-bottom:1px solid var(--line,rgba(255,255,255,.14));text-align:left;white-space:nowrap}
+.ecard table.ctable td:nth-child(3){white-space:normal;min-width:180px}
+
+.brew{display:grid;gap:16px;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start}
+@media (max-width:900px){.brew{grid-template-columns:1fr}}
+.brew .panel h3{margin:14px 0 6px;font-size:1.05rem}
+.brew .panel h3:first-child{margin-top:0}
+.brew .depth{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.brew .fgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.brew .hint{display:block;font-size:.82rem;margin-top:3px}
+.brew .ckrow,.hub .ckrow{display:flex;flex-direction:row;align-items:center;gap:8px}
+.brew .ckrow input,.hub .ckrow input{width:auto}
+.brew fieldset.multi{border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;grid-column:1/-1}
+.brew fieldset.multi legend{padding:0 6px;font-size:.9rem;opacity:.85}
+.brew fieldset.abs label{width:64px}
+.brew fieldset.col{flex-direction:column}
+.brew .pair{display:grid;grid-template-columns:minmax(110px,1fr) 2.2fr auto;gap:8px;align-items:start}
+@media (max-width:560px){.brew .pair{grid-template-columns:1fr}}
+.brew .fx{display:flex;flex-direction:column;gap:10px}
+.brew .fxrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:8px}
+.brew .fxrow.col{flex-direction:column;align-items:stretch}
+.brew .fxrow > b{flex:1 1 100%}
+.brew .fxrow label{flex:1 1 130px}
+.brew ol.stepper{list-style:none;display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:8px 0 14px}
+.brew ol.stepper li[aria-current] button{outline:2px solid var(--hub-gold,#c8a45a)}
+.brew .attach{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.brew .bal-above{border-left:4px solid #d98a3a}
+.brew .bal-below{border-left:4px solid #6f9bd6}
+.brew .bal-in-line{border-left:4px solid #6fb38a}
+.hub .brewtypes .ccard{min-height:0}
+.hub details.srd-entry > summary{cursor:pointer}
+.hub details.srd-entry[open] > summary{margin-bottom:10px}
+
+.vis{display:inline-flex;flex-wrap:wrap;gap:6px 12px;align-items:flex-end}
+.vis .vis-l{display:inline-flex;flex-direction:column;font-size:.85rem;gap:2px}
+.vis .vis-who{display:inline-flex;flex-wrap:wrap;gap:4px 12px}
+.vis .vis-ck{display:inline-flex;flex-direction:row;align-items:center;gap:5px;font-size:.9rem}
+.vis .vis-ck input{width:auto}
+
+/* ---- the standard fifth edition sheet ---- */
+.s5{border:0;padding:0;margin:0;min-width:0}
+.s5 .s5-name{margin:14px 0 8px}
+.s5 .s5-name small{font-size:.55em;opacity:.75;font-family:var(--body,inherit);margin-left:8px}
+.s5 .s5-block{background:var(--plate,#10152a);border:1px solid var(--line,#2a3152);border-radius:10px;padding:14px;margin:12px 0}
+.s5 .s5-block h3{margin:14px 0 8px;font-size:1.05rem}
+.s5 .s5-block h3:first-child{margin-top:0}
+.s5 .s5-block h3 small{font-weight:400;opacity:.7;font-size:.8em}
+.s5 .s5-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px}
+.s5 .s5-stat{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:8px 6px;border:1px solid var(--line,#2a3152);border-radius:8px;background:var(--field,#0a0d1c);font-size:.8rem}
+.s5 .s5-stat b{font-size:1.35rem;font-family:var(--display,inherit);color:var(--gold,#c8a45a)}
+.s5 .s5-stat input{width:72px;text-align:center;font-size:1.1rem}
+.s5 .s5-stat small{opacity:.7}
+.s5 .s5-hp{display:inline-flex;align-items:center;gap:6px}
+.s5 .s5-hp button,.s5 .s5-pips button{min-width:36px;min-height:36px;border-radius:8px;border:1px solid var(--line,#2a3152);background:var(--plate2,#141a33);color:inherit;font-size:1.1rem;cursor:pointer}
+.s5 .s5-pips{display:inline-flex;flex-wrap:wrap;gap:6px}
+.s5 .s5-pips button{min-width:30px;min-height:30px;border-radius:50%}
+.s5 .s5-pips button[aria-pressed="true"]{background:var(--gold,#c8a45a);border-color:var(--gold,#c8a45a)}
+.s5 .s5-res{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line,#2a3152)}
+.s5 .s5-res:last-child{border-bottom:0}
+.s5 .s5-res small,.s5 .s5-item small{opacity:.7}
+.s5 .s5-abs{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.s5 .s5-ab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.8rem;padding:8px 4px;border:1px solid var(--line,#2a3152);border-radius:8px}
+.s5 .s5-ab input{width:64px;text-align:center}
+.s5 .s5-ab b{font-size:1.3rem;color:var(--gold,#c8a45a)}
+.s5 .s5-ab small{opacity:.7;font-size:.72rem}
+.s5 .s5-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.s5 .s5-chips span{padding:4px 10px;border:1px solid var(--line,#2a3152);border-radius:99px;font-size:.9rem}
+.s5 .s5-chips span.on,.s5 .s5-skills label.on{border-color:var(--gold,#c8a45a);color:var(--gold,#c8a45a)}
+.s5 .s5-skills{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:4px 12px}
+.s5 .s5-skills label{display:flex;align-items:center;gap:8px;padding:5px 0;min-height:36px}
+.s5 .s5-skills label b{margin-left:auto}
+.s5 .s5-skills input{width:auto}
+.s5 .s5-item{padding:8px 0;border-bottom:1px solid var(--line,#2a3152)}
+.s5 .s5-item summary{cursor:pointer;min-height:30px}
+.s5 .s5-changed{padding:10px 12px;border:1px solid var(--ember,#e0672f);border-radius:8px;margin:10px 0}

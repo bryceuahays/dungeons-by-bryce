@@ -1,0 +1,265 @@
+'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import Link from 'next/link';
+import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { EFFECTS, STATUS, TYPES, type Field } from '@/config/homebrew';
+import { ABILITIES, balanceHint, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
+import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
+import { EntityCard } from './EntityCard';
+import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
+
+const get = (o: any, path: string) => path.split('.').reduce((v, k) => (v == null ? v : v[k]), o);
+const set = (o: any, path: string, v: any): any => {
+  const [k, ...rest] = path.split('.');
+  return { ...o, [k]: rest.length ? set(o?.[k] ?? {}, rest.join('.'), v) : v };
+};
+const AB = Object.fromEntries(ABILITIES) as Record<string, string>;
+
+// ---------------------------------------------------------------- one field of the type's form
+
+function FieldInput({ f, data, onChange }: { f: Field; data: any; onChange: (d: any) => void }) {
+  const v = get(data, f.key) ?? f.def;
+  const put = (nv: any) => onChange(set(data, f.key, nv));
+  const help = f.help ? <span className="dim hint">{f.help}</span> : null;
+  switch (f.kind) {
+    case 'long': return <label>{f.label}<textarea rows={3} value={v ?? ''} onChange={(e) => put(e.target.value)} />{help}</label>;
+    case 'number': return <label>{f.label}<input type="number" value={v ?? ''} onChange={(e) => put(e.target.value === '' ? '' : Number(e.target.value))} />{help}</label>;
+    case 'select': return <label>{f.label}<select value={String(v ?? '')} onChange={(e) => put(/^\d+$/.test(e.target.value) && f.key === 'hd' ? Number(e.target.value) : e.target.value)}>{(f.options ?? []).map((o) => <option key={o} value={o}>{AB[o] ?? (o || 'None')}</option>)}</select>{help}</label>;
+    case 'check': return <label className="ckrow"><input type="checkbox" checked={!!v} onChange={(e) => put(e.target.checked)} /> {f.label}</label>;
+    case 'multi': return (
+      <fieldset className="multi"><legend>{f.label}</legend>
+        {(f.options ?? []).map((o) => <label key={o} className="ckrow"><input type="checkbox" checked={(v ?? []).includes(o)} onChange={(e) => put(e.target.checked ? [...(v ?? []), o] : (v ?? []).filter((x: string) => x !== o))} /> {AB[o] ?? o}</label>)}
+      </fieldset>
+    );
+    case 'abilities': return (
+      <fieldset className="multi abs"><legend>{f.label}</legend>
+        {ABILITIES.map(([k, label]) => <label key={k}>{label.slice(0, 3)}<input type="number" min={1} max={30} value={(v ?? {})[k] ?? 10} onChange={(e) => put({ ...(v ?? {}), [k]: Number(e.target.value) })} /></label>)}
+      </fieldset>
+    );
+    case 'pairs': return (
+      <fieldset className="multi col"><legend>{f.label}</legend>
+        {(v ?? []).map((p: any, i: number) => (
+          <div key={i} className="pair">
+            <input aria-label="Name" placeholder="Name" value={p.name ?? ''} onChange={(e) => put((v as any[]).map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+            <textarea aria-label="Text" rows={2} placeholder="What it does" value={p.text ?? ''} onChange={(e) => put((v as any[]).map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} />
+            <button type="button" className="quiet small-btn" onClick={() => put((v as any[]).filter((_, j) => j !== i))}>Remove</button>
+          </div>
+        ))}
+        <button type="button" className="quiet small-btn" onClick={() => put([...(v ?? []), { name: '', text: '' }])}>Add one</button>
+      </fieldset>
+    );
+    default: return <label>{f.label}<input value={v ?? ''} onChange={(e) => put(e.target.value)} />{help}</label>;
+  }
+}
+
+// ---------------------------------------------------------------- effects
+
+const stepsText = (steps: any) => (Array.isArray(steps) ? steps.map(([l, v]: [number, string]) => `${l}=${v}`).join(', ') : String(steps ?? ''));
+const parseSteps = (s: string): [number, string][] => s.split(',').map((p) => p.split('=').map((x) => x.trim())).filter((p) => p.length === 2 && /^\d+$/.test(p[0]) && p[1]).map(([l, v]) => [Number(l), v]);
+
+export function EffectsEditor({ value, onChange, levels }: { value: Effect[]; onChange: (v: Effect[]) => void; levels: boolean }) {
+  const [add, setAdd] = useState('ability');
+  const upd = (i: number, patch: any) => onChange(value.map((x, j) => (j === i ? ({ ...x, ...patch } as Effect) : x)));
+  return (
+    <div className="fx">
+      {value.map((x, i) => {
+        const def = EFFECTS.find((e) => e.t === x.t);
+        return (
+          <div key={i} className="fxrow">
+            <b>{def?.label ?? x.t}</b>
+            {(def?.fields ?? []).map((f) => {
+              const v = (x as any)[f.k];
+              if (f.kind === 'select') return <label key={f.k}>{f.label}<select value={String(v ?? f.def)} onChange={(e) => upd(i, { [f.k]: e.target.value })}>{f.options!.map((o) => <option key={o} value={o}>{AB[o] ?? o}</option>)}</select></label>;
+              if (f.kind === 'check') return <label key={f.k} className="ckrow"><input type="checkbox" checked={!!v} onChange={(e) => upd(i, { [f.k]: e.target.checked })} /> {f.label}</label>;
+              if (f.kind === 'number') return <label key={f.k}>{f.label}<input type="number" value={v ?? ''} onChange={(e) => upd(i, { [f.k]: Number(e.target.value) })} /></label>;
+              if (f.k === 'steps') return <label key={f.k}>{f.label}<input defaultValue={stepsText(v)} onBlur={(e) => upd(i, { steps: parseSteps(e.target.value) })} /></label>;
+              return <label key={f.k}>{f.label}<input value={v ?? ''} onChange={(e) => upd(i, { [f.k]: e.target.value })} /></label>;
+            })}
+            {levels ? <label>From level<input type="number" min={1} max={20} value={x.at ?? 1} onChange={(e) => upd(i, { at: Math.max(1, Number(e.target.value) || 1) })} /></label> : null}
+            <button type="button" className="quiet small-btn" onClick={() => onChange(value.filter((_, j) => j !== i))}>Remove</button>
+          </div>
+        );
+      })}
+      <div className="inline">
+        <label>Add an effect<select value={add} onChange={(e) => setAdd(e.target.value)}>{EFFECTS.map((e) => <option key={e.t} value={e.t}>{e.label}</option>)}</select></label>
+        <button type="button" className="quiet" onClick={() => { const def = EFFECTS.find((e) => e.t === add)!; const fresh: any = { t: add }; def.fields.forEach((f) => { fresh[f.k] = f.k === 'steps' ? parseSteps(String(f.def)) : f.def; }); onChange([...value, fresh]); }}>Add</button>
+      </div>
+    </div>
+  );
+}
+
+function FeaturesEditor({ value, onChange, levels, effects }: { value: Feature[]; onChange: (v: Feature[]) => void; levels: boolean; effects: boolean }) {
+  const upd = (i: number, patch: Partial<Feature>) => onChange(value.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  return (
+    <div className="fx">
+      {value.map((f, i) => (
+        <div key={i} className="fxrow col">
+          <div className="inline">
+            {levels ? <label>Level<input type="number" min={1} max={20} value={f.level ?? 1} onChange={(e) => upd(i, { level: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })} /></label> : null}
+            <label style={{ flex: '1 1 200px' }}>Name<input value={f.name ?? ''} onChange={(e) => upd(i, { name: e.target.value })} /></label>
+            <button type="button" className="quiet small-btn" onClick={() => onChange(value.filter((_, j) => j !== i))}>Remove</button>
+          </div>
+          <label>What it does<textarea rows={2} value={f.text ?? ''} onChange={(e) => upd(i, { text: e.target.value })} /></label>
+          {effects ? (
+            <details><summary>Effects this applies to the sheet ({(f.effects ?? []).length})</summary>
+              <EffectsEditor value={f.effects ?? []} onChange={(e) => upd(i, { effects: e })} levels={false} />
+            </details>
+          ) : null}
+        </div>
+      ))}
+      <button type="button" className="quiet" onClick={() => onChange([...value, { level: 1, name: '', text: '' }])}>Add a trait or feature</button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- the editor
+
+type Version = { version: number; note: string; name: string; data: any; created_at: string };
+type CampaignLink = { id: string; title: string; stages: Stage[]; members: Member[]; attached: Vis | null };
+
+export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom }: {
+  id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
+  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null;
+}) {
+  const router = useRouter();
+  const def = TYPES[initial.type];
+  const [name, setName] = useState(initial.name);
+  const [status, setStatus] = useState(initial.status);
+  const [depth, setDepth] = useState(initial.depth);
+  const [source, setSource] = useState(initial.source);
+  const [data, setData] = useState<any>(initial.data ?? {});
+  const [step, setStep] = useState(0);
+  const [note, setNote] = useState('');
+  const [msg, setMsg] = useState<BrewState>(null);
+  const [links, setLinks] = useState(campaigns);
+  const [pending, start] = useTransition();
+  const balance = useMemo(() => balanceHint(initial.type as EntityType, data, srd), [initial.type, data, srd]);
+
+  const save = (asVersion: boolean) => start(async () => {
+    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data, cloned_from: clonedFrom }, asVersion ? note : undefined);
+    setMsg(r);
+    if (r?.id && !id) router.replace('/homebrew/' + r.id);
+    else if (r?.note) { setNote(''); router.refresh(); }
+  });
+
+  const guidedFields = def.fields.filter((f) => f.guided);
+  const steps = ['Basics', ...(guidedFields.length ? ['Details'] : []), ...(def.features ? ['Traits'] : []), ...(def.effects ? ['Effects'] : []), 'Review'];
+  const basics = (
+    <>
+      <label>Name<input value={name} maxLength={120} onChange={(e) => setName(e.target.value)} /></label>
+      <label>Description<textarea rows={depth === 'quick' ? 8 : 4} value={data.desc ?? ''} onChange={(e) => setData({ ...data, desc: e.target.value })} placeholder={depth === 'quick' ? 'Write it the way you would explain it at the table. Free text is always allowed.' : ''} /></label>
+    </>
+  );
+  const fieldList = (fields: Field[]) => <div className="fgrid">{fields.map((f) => <FieldInput key={f.key} f={f} data={data} onChange={setData} />)}</div>;
+  const traits = <FeaturesEditor value={data.features ?? []} onChange={(v) => setData({ ...data, features: v })} levels={def.featureLevels} effects={def.effects} />;
+  const fx = <EffectsEditor value={data.effects ?? []} onChange={(v) => setData({ ...data, effects: v })} levels={def.featureLevels} />;
+  const fillDefaults = () => { let d = data; guidedFields.forEach((f) => { if (get(d, f.key) === undefined) d = set(d, f.key, f.def); }); setData(d); };
+
+  return (
+    <div className="brew">
+      <div className="brew-form">
+        <div className="panel">
+          <div className="depth" role="tablist" aria-label="How much detail">
+            {(['quick', 'guided', 'advanced'] as const).map((d) => (
+              <button key={d} type="button" role="tab" aria-selected={depth === d} className={depth === d ? '' : 'quiet'} disabled={!pro && d !== 'quick' && initial.depth === 'quick'}
+                onClick={() => { setDepth(d); if (d === 'guided') { fillDefaults(); setStep(0); } }}>
+                {d === 'quick' ? 'Quick' : d === 'guided' ? 'Guided' : 'Advanced'}{!pro && d !== 'quick' && initial.depth === 'quick' ? ' (Pro)' : ''}
+              </button>
+            ))}
+          </div>
+          <p className="dim">{depth === 'quick' ? 'Quick: a name and a description. Enough to play with.' : depth === 'guided' ? 'Guided: one step at a time, with sensible defaults already filled in.' : 'Advanced: every field on one page.'} Switching keeps everything you have entered.</p>
+
+          {depth === 'quick' ? basics : null}
+
+          {depth === 'guided' ? (
+            <>
+              <ol className="stepper">{steps.map((s, i) => <li key={s} aria-current={i === step ? 'step' : undefined}><button type="button" className="quiet small-btn" onClick={() => setStep(i)}>{i + 1}. {s}</button></li>)}</ol>
+              {steps[step] === 'Basics' ? basics : null}
+              {steps[step] === 'Details' ? fieldList(guidedFields) : null}
+              {steps[step] === 'Traits' ? <><p className="dim">The named things it gives a character{def.featureLevels ? ', and the level each arrives' : ''}. Text only is fine.</p>{traits}</> : null}
+              {steps[step] === 'Effects' ? <><p className="dim">Effects change the character sheet by themselves: scores, proficiencies, speed, senses, resistances, resources, spells. Leave this empty if a description is enough.</p>{fx}</> : null}
+              {steps[step] === 'Review' ? <p className="dim">Check the preview and the balance hint, set a status, then save.</p> : null}
+              <div className="inline" style={{ marginTop: 12 }}>
+                <button type="button" className="quiet" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</button>
+                <button type="button" disabled={step === steps.length - 1} onClick={() => setStep(step + 1)}>Next</button>
+              </div>
+            </>
+          ) : null}
+
+          {depth === 'advanced' ? (
+            <>
+              {basics}
+              {def.fields.length ? <><h3>Details</h3>{fieldList(def.fields)}</> : null}
+              {def.features ? <><h3>Traits and features</h3>{traits}</> : null}
+              {def.effects ? <><h3>Effects</h3>{fx}</> : null}
+              <details><summary>The raw data</summary><textarea className="mono" rows={12} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /></details>
+            </>
+          ) : null}
+        </div>
+
+        <div className="panel">
+          <div className="inline">
+            <label>Status<select value={status} onChange={(e) => setStatus(e.target.value)}>{STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
+            <label className="ckrow" title="Private entries are never included in anything you publish or sell."><input type="checkbox" checked={source === 'private'} onChange={(e) => setSource(e.target.checked ? 'private' : 'homebrew')} /> Private (never published or sold)</label>
+          </div>
+          <p className="dim">{STATUS.find((s) => s.id === status)?.what}</p>
+          <div className="inline">
+            <button type="button" disabled={pending} onClick={() => save(false)}>{pending ? 'Saving' : id ? 'Save' : 'Create'}</button>
+            {id ? <button type="button" className="quiet danger" disabled={pending} onClick={() => { if (confirm('Delete this entry for good?')) start(() => deleteEntity(id)); }}>Delete</button> : null}
+          </div>
+          {id && pro ? (
+            <div className="inline" style={{ marginTop: 10 }}>
+              <label style={{ flex: '1 1 260px' }}>What changed (saves it as version {version + 1})<input value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} placeholder="For example: breath weapon is now a bonus action" /></label>
+              <button type="button" className="quiet" disabled={pending || !note.trim()} onClick={() => save(true)}>Save as a new version</button>
+            </div>
+          ) : null}
+          {msg?.error ? <p className="bad" role="alert">{msg.error} {msg.upgrade ? <Link href="/upgrade">See plans</Link> : null}</p> : null}
+          {msg?.note ? <p className="good" role="status">{msg.note}</p> : null}
+        </div>
+
+        {id ? (
+          <div className="panel">
+            <h3>Use it in a campaign</h3>
+            {links.length ? links.map((c) => (
+              <div key={c.id} className="attach">
+                <label className="ckrow"><input type="checkbox" checked={!!c.attached} disabled={pending}
+                  onChange={(e) => { const on = e.target.checked; const v = on ? { vis: 'all', vis_players: [], vis_stage: null } : null; setLinks(links.map((x) => (x.id === c.id ? { ...x, attached: v } : x))); start(async () => setMsg(await setAttached(id, c.id, on, v ?? undefined))); }} /> <b>{c.title}</b></label>
+                {c.attached ? <VisPicker value={c.attached} stages={c.stages} members={c.members} canName={pro} disabled={pending}
+                  onChange={(v) => { setLinks(links.map((x) => (x.id === c.id ? { ...x, attached: v } : x))); start(async () => setMsg(await setAttached(id, c.id, true, v))); }} /> : null}
+              </div>
+            )) : <p className="dim">You are not running a campaign yet.</p>}
+            <p className="dim">Players see an attached entry once its status is Playtest or Live.</p>
+          </div>
+        ) : null}
+
+        {id && (versions.length || version > 1) ? (
+          <div className="panel">
+            <h3>Versions</h3>
+            <ul className="list">
+              <li><span><b>Version {version}</b> (current) <span className="dim">{changeNote}</span></span></li>
+              {versions.map((v) => (
+                <li key={v.version}>
+                  <span><b>Version {v.version}</b> <span className="dim">{new Date(v.created_at).toLocaleDateString('en-US')}{v.note ? ' · ' + v.note : ''}</span></span>
+                  <button type="button" className="quiet small-btn" onClick={() => { setName(v.name || name); setData(v.data); setMsg({ note: `Version ${v.version} is loaded in the form. Save to keep it.` }); }}>Load this version</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+
+      <aside className="brew-side">
+        <div className="panel">
+          <h3>What your players see</h3>
+          <EntityCard type={initial.type} name={name} status={status} data={data} />
+        </div>
+        <div className={'panel bal bal-' + balance.verdict.replace(' ', '-')}>
+          <h3>Balance hint: {balance.verdict === 'no baseline' ? 'nothing to compare' : balance.verdict === 'in line' ? 'in line with the SRD' : balance.verdict + ' the SRD'}</h3>
+          {balance.reasons.map((r, i) => <p key={i}>{r}</p>)}
+          <p className="dim">A hint only. It is your table.</p>
+        </div>
+      </aside>
+    </div>
+  );
+}

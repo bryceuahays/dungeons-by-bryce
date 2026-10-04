@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requireViewer } from '@/lib/auth';
 import { VIEW_AS_PLAYER } from '@/lib/campaign';
 import { blank } from '@/islands/character';
+import { blankV2 } from '@/lib/rules/engine';
 import { parseCampaignText, MAX_IMPORT_CHARS } from '@/lib/import';
 import { insertImported, removeCampaignFiles } from '@/lib/campaign-admin';
 
@@ -33,6 +34,15 @@ export async function createBlankCharacter(slug: string) {
   if (!id) redirect('/campaigns');
   const data = { ...blank(), player: profile.display_name, t: Date.now() };
   const { data: row } = await supabase.from('characters').insert({ owner: user.id, campaign_id: id, data }).select('id').single();
+  redirect(`/c/${slug}/sheet${row ? '?c=' + row.id : ''}`);
+}
+
+// A new character on the standard fifth edition sheet.
+export async function createCharacterV2(slug: string) {
+  const { supabase, user, profile } = await requireViewer();
+  const id = await campaignId(supabase, slug);
+  if (!id) redirect('/campaigns');
+  const { data: row } = await supabase.from('characters').insert({ owner: user.id, campaign_id: id, data: { ...blankV2(), player: profile.display_name, t: Date.now() } }).select('id').single();
   redirect(`/c/${slug}/sheet${row ? '?c=' + row.id : ''}`);
 }
 

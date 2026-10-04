@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getCampaign, getRules } from '@/lib/campaign';
+import { redirect } from 'next/navigation';
+import { getCampaign, getRules, usesLegacySheet } from '@/lib/campaign';
 import { BuilderIsland } from '@/components/Islands';
 
 export const metadata = { title: 'Build your character' };
@@ -8,6 +9,7 @@ export default async function Builder({ params, searchParams }: { params: Promis
   const { slug } = await params;
   const { c } = await searchParams;
   const ctx = await getCampaign(slug);
+  if (!(await usesLegacySheet(ctx.campaign.id))) redirect(`/c/${slug}/sheet${c ? '?c=' + c : ''}`);
   const by = await getRules(ctx);
   const v = (kind: string) => (by[kind] ?? []).map((r) => r.data.v);
   const misc = (key: string) => (by.misc ?? []).find((r) => r.key === key)?.data.v;

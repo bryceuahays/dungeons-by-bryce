@@ -148,6 +148,30 @@ export async function getRules(ctx: CampaignCtx, kinds?: string[]) {
   return by;
 }
 
+// "To be a god" (and any campaign given its rule set) keeps its own builder and sheet.
+// Every other campaign uses the standard fifth edition sheet.
+export const usesLegacySheet = cache(async (campaignId: string) => {
+  const { supabase } = await requireViewer();
+  const { count } = await supabase.from('rules').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('kind', 'class');
+  return (count ?? 0) > 0;
+});
+
+// What the standard sheet can draw on: the SRD, plus the homebrew attached to this
+// campaign that this viewer is allowed to see (row-level security decides).
+export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource']) {
+  const cols = 'id, type, name, source, status, version, change_note, data';
+  const [srd, attached] = await Promise.all([
+    ctx.supabase.from('entities').select(cols).eq('source', 'srd').in('type', types).limit(2000),
+    ctx.supabase.from('campaign_entities').select(`vis, vis_players, vis_stage, entities(${cols})`).eq('campaign_id', ctx.campaign.id),
+  ]);
+  const mine = ((attached.data ?? []) as any[])
+    .filter((a) => a.entities && types.includes(a.entities.type))
+    // the DM previewing as a player gets what players get
+    .filter((a) => ctx.realDm && !ctx.asPlayer ? true : a.entities.status !== 'draft' && a.vis !== 'dm')
+    .map((a) => a.entities);
+  return [...((srd.data ?? []) as any[]), ...mine];
+}
+
 export function themeStyle(theme: Campaign['theme']): Record<string, string> {
   const s: Record<string, string> = {};
   // theme values are written by the campaign's DM and end up in a style attribute, so each one is checked

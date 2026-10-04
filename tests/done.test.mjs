@@ -610,7 +610,7 @@ test('any account can create a campaign and is its DM; in other campaigns it is 
   // the rules of "To be a god" are private to its owner: a player in it cannot copy them into their own campaign
   assert.ok((await player.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id })).error, 'private rules cannot be copied by a member');
   assert.equal((await admin.from('rules').select('id', { count: 'exact', head: true }).eq('campaign_id', mine.id)).count, 0);
-  assert.equal((await page(`/c/${mine.slug}/builder`, other.session)).status, 200);
+  { const b = await page(`/c/${mine.slug}/builder`, other.session); assert.ok(b.status >= 300 && b.status < 400 && b.location.endsWith("/sheet"), "a campaign without its own rule set uses the standard sheet"); }
 
   // deleting: only the owner (or the Head DM); never someone else's campaign
   assert.ok((await other.client.rpc('delete_campaign', { c: mine.id })).error);

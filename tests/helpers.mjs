@@ -99,7 +99,7 @@ export function cookieFor(session) {
 
 export async function page(pathname, session, extraCookie = '') {
   const res = await fetch(SITE + pathname, { headers: { cookie: (session ? cookieFor(session) : '') + (extraCookie ? '; ' + extraCookie : '') }, redirect: 'manual' });
-  return { status: res.status, location: res.headers.get('location'), text: res.status < 300 ? await res.text() : '' };
+  return { status: res.status, location: res.headers.get('location'), text: res.status < 300 ? (await res.text()).replace(/<!-- -->/g, '') : '' };
 }
 
 export const wait = (ms) => new Promise((r) => setTimeout(r, ms));

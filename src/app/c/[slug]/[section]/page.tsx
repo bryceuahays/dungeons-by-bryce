@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCampaign, getContent, getLore, getRules, phaseLabel, type CampaignCtx } from '@/lib/campaign';
+import { getCampaign, getContent, getLore, getRules, getSheetEntities, phaseLabel, usesLegacySheet, type CampaignCtx } from '@/lib/campaign';
+import { Sheet5e } from '@/components/Sheet5e';
 import { renderSection, esc } from '@/lib/render';
 import { cleanContent, cleanForm } from '@/lib/sanitize';
 import { GuideSection } from '@/components/GuideSection';
 import { SheetIsland, CombatIsland } from '@/components/Islands';
 import { PartyLive } from '@/components/PartyLive';
 import { SessionForm } from '@/components/DmForms';
-import { createBlankCharacter, deleteCharacter } from '../actions';
+import { createBlankCharacter, createCharacterV2, deleteCharacter } from '../actions';
 import type { CharacterRow, Section, SessionRow } from '@/lib/types';
 
 type Props = { params: Promise<{ slug: string; section: string }>; searchParams: Promise<{ race?: string; c?: string }> };
@@ -80,7 +81,51 @@ function CharacterPicker({ slug, tab, chars, current }: { slug: string; tab: str
   );
 }
 
+// The standard fifth edition sheet (every campaign that does not have its own rule set).
+async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: string; play: boolean }) {
+  const slug = ctx.campaign.slug;
+  const [chars, entities, party] = await Promise.all([myCharacters(ctx), getSheetEntities(ctx), ctx.supabase.rpc('party_cards', { c: ctx.campaign.id })]);
+  const current = chars.find((c) => c.id === pick) ?? chars[0];
+  if (!current) {
+    return (
+      <div className="cs-guide"><div className="wrap"><h2>{play ? 'Combat' : 'My character'}</h2>
+        <div className="plate" style={{ marginTop: 16 }}>
+          <h3>You have no character in this campaign yet</h3>
+          <p>Pick a race, a class and a background, set your ability scores, and the sheet works out the rest: bonuses, hit points, proficiencies, resources and spell slots.</p>
+          <form action={createCharacterV2.bind(null, slug)}><button className="act" type="submit">Create a character</button></form>
+        </div>
+      </div></div>
+    );
+  }
+  const others = ((party.data ?? []) as any[]).filter((p) => p.id !== current.id);
+  return (
+    <div className="cs-guide">
+      <div className="wrap">
+        <CharacterPicker slug={slug} tab={play ? 'combat' : 'sheet'} chars={chars} current={current} />
+        <Sheet5e key={current.id} character={{ id: current.id, data: current.data }} entities={entities} play={play} />
+        {play ? <p className="row"><Link className="act" href={`/c/${slug}/sheet?c=${current.id}`}>Open the full sheet</Link></p> : (
+          <>
+            <h2>The party</h2>
+            <div className="plate">
+              {others.length ? others.map((p) => <div className="party-line" key={p.id}><b>{p.name || 'Unnamed character'}</b><span className="who">Level {p.level} {p.race} {p.cls}{p.player ? `. Played by ${p.player}` : ''}</span></div>) : <p className="who">Nobody else has a character here yet.</p>}
+            </div>
+            <form action={createCharacterV2.bind(null, slug)} style={{ marginTop: 16 }}><button className="act sm" type="submit">Make another character</button></form>
+            <details style={{ marginTop: 30 }}>
+              <summary className="who" style={{ cursor: 'pointer' }}>Delete this character</summary>
+              <form action={deleteCharacter.bind(null, slug, current.id)} style={{ marginTop: 8 }}>
+                <p className="who">This removes {current.data?.name || 'this character'} for good. It cannot be undone.</p>
+                <button className="act danger" type="submit">Delete for good</button>
+              </form>
+            </details>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 async function Sheet({ ctx, pick }: { ctx: CampaignCtx; pick?: string }) {
+  if (!(await usesLegacySheet(ctx.campaign.id))) return <StandardSheet ctx={ctx} pick={pick} play={false} />;
   const slug = ctx.campaign.slug;
   const chars = await myCharacters(ctx);
   const current = chars.find((c) => c.id === pick) ?? chars[0];
@@ -148,6 +193,7 @@ async function Sheet({ ctx, pick }: { ctx: CampaignCtx; pick?: string }) {
 }
 
 async function Combat({ ctx, pick }: { ctx: CampaignCtx; pick?: string }) {
+  if (!(await usesLegacySheet(ctx.campaign.id))) return <StandardSheet ctx={ctx} pick={pick} play />;
   const slug = ctx.campaign.slug;
   const chars = await myCharacters(ctx);
   const current = chars.find((c) => c.id === pick) ?? chars[0];
