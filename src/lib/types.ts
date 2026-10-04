@@ -24,6 +24,8 @@ export type Campaign = {
   theme: Theme;
   owner_id: string | null;
   background: Background;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  settings?: Record<string, any>;
 };
 
 export type Section = {
@@ -34,6 +36,7 @@ export type Section = {
   audience: 'all' | 'dm' | 'player';
   kind: 'content' | 'sheet' | 'combat' | 'sessions' | 'players';
   phase: string | null;
+  from_stage?: string | null;
 };
 
 export type ContentRow = {
@@ -49,6 +52,8 @@ export type ContentRow = {
   visibility: 'player' | 'dm';
   phase: string | null;
   hidden: boolean;
+  from_stage?: string | null;
+  only_players?: string[] | null;
   // set for the DM only: the phase in which players see this row (for the label)
   _phase?: string | null;
 };

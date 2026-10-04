@@ -4,6 +4,7 @@ import { safeFontHref } from '@/lib/fonts';
 import { Starfield } from '@/components/Starfield';
 import { CampaignChrome } from '@/components/CampaignChrome';
 import Link from 'next/link';
+import { TimelineBanner } from '@/components/TimelineBanner';
 import { campaignCan } from '@/lib/entitlements';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -41,9 +42,11 @@ export default async function CampaignLayout({ children, params }: { children: R
         isDm={ctx.isDm}
         realDm={ctx.realDm}
         asPlayer={ctx.asPlayer}
+        previewNote={ctx.asPlayer ? [ctx.viewAs.player ? 'one named player' : 'any player', ctx.viewAs.stage ? `at "${campaign.phases.find((p) => p.id === ctx.viewAs.stage)?.label ?? ctx.viewAs.stage}"` : ''].filter(Boolean).join(', ') : ''}
         headView={ctx.headView ? campaign.id : null}
         readOnly={ctx.realDm && !ctx.access.writable}
       />
+      {campaignCan(ctx.access, 'timeline') ? <TimelineBanner ctx={ctx} /> : null}
       <div className="page">{children}</div>
       {campaignCan(ctx.access, 'no_footer') ? null : <footer className="made">Made with <Link href="/">Dungeons by Bryce</Link></footer>}
     </div>

@@ -19,10 +19,12 @@ const fresh = (slug: string) => revalidatePath('/c/' + slug, 'layout');
 
 // ---------------------------------------------------------------- everyone
 
-export async function setViewAsPlayer(slug: string, on: boolean) {
+export async function setViewAsPlayer(slug: string, on: boolean, pick?: { player?: string; stage?: string } | FormData) {
   await requireViewer();
   const store = await cookies();
-  if (on) store.set(VIEW_AS_PLAYER, '1', { path: '/', sameSite: 'lax', httpOnly: true });
+  const who = pick && !(pick instanceof FormData) ? pick : null;
+  const value = who && (who.player || who.stage) ? JSON.stringify({ p: who.player || '', s: who.stage || '' }) : '1';
+  if (on) store.set(VIEW_AS_PLAYER, value, { path: '/', sameSite: 'lax', httpOnly: true });
   else store.delete(VIEW_AS_PLAYER);
   fresh(slug);
   redirect('/c/' + slug);
@@ -67,6 +69,56 @@ export async function setPhase(slug: string, phase: string) {
   redirect(`/c/${now?.slug ?? slug}/manage`);
 }
 
+// "View as" from the Manage page: any player, at any stage.
+export async function previewAs(slug: string, form: FormData) {
+  await setViewAsPlayer(slug, true, { player: String(form.get('player') || ''), stage: String(form.get('stage') || '') });
+}
+
+// Reveal stages: the ordered list, and one-click forward and back.
+export async function saveStages(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await requireViewer();
+  const { data: c } = await supabase.from('campaigns').select('id, phase, phases').eq('slug', slug).maybeSingle();
+  if (!c) return { error: 'Campaign not found.' };
+  const old = c.phases as { id: string; label: string }[];
+  const labels = String(form.get('stages') || '').split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 20);
+  const used = new Set<string>();
+  const stages = labels.map((label) => {
+    // a stage keeps its id when only its position or wording changes, so nothing tagged with it is lost
+    let id = old.find((o) => o.label === label && !used.has(o.id))?.id ?? (label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'stage');
+    while (used.has(id)) id += '-2';
+    used.add(id);
+    return { id, label: label.slice(0, 60) };
+  });
+  const phase = stages.some((s) => s.id === c.phase) ? c.phase : stages[0]?.id ?? '';
+  const { error } = await supabase.from('campaigns').update({ phases: stages, phase }).eq('id', c.id);
+  if (error) return /upgrade:/.test(error.message) ? { error: 'More than two stages is part of Pro. Your two stages are unchanged.' } : { error: 'That did not save.' };
+  revalidatePath('/', 'layout');
+  const { data: now } = await supabase.from('campaigns').select('slug').eq('id', c.id).single();
+  if (now && now.slug !== slug) redirect(`/c/${now.slug}/manage`);
+  return { note: stages.length ? 'Stages saved.' : 'Stages removed. Everything tagged for a stage is now treated as always shown.' };
+}
+
+export async function stepStage(slug: string, dir: 1 | -1) {
+  const { supabase } = await requireViewer();
+  const { data: c } = await supabase.from('campaigns').select('id, phase, phases').eq('slug', slug).maybeSingle();
+  if (!c) return;
+  const order = (c.phases as { id: string }[]).map((p) => p.id);
+  const next = order[order.indexOf(c.phase) + dir];
+  if (next) await setPhase(slug, next);
+}
+
+// Settings every member may read: the "newly revealed" feed, the current session number, the featured video.
+export async function saveSetting(slug: string, key: 'feed' | 'session' | 'video' | 'timeline', value: unknown): Promise<ActionState> {
+  const { supabase } = await requireViewer();
+  const { data: c } = await supabase.from('campaigns').select('id, settings').eq('slug', slug).maybeSingle();
+  if (!c) return { error: 'Campaign not found.' };
+  const v = key === 'feed' || key === 'timeline' ? !!value : key === 'session' ? Math.max(0, Math.min(999, Number(value) || 0)) : String(value || '').slice(0, 300);
+  const { error } = await supabase.from('campaigns').update({ settings: { ...(c.settings ?? {}), [key]: v } }).eq('id', c.id);
+  if (error) return { error: 'That did not save.' };
+  fresh(slug);
+  return { note: 'Saved.' };
+}
+
 export async function updateCampaign(slug: string, _: ActionState, form: FormData): Promise<ActionState> {
   const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
@@ -79,12 +131,9 @@ export async function updateCampaign(slug: string, _: ActionState, form: FormDat
   if (raw) {
     try { const t = JSON.parse(raw); if (!t || typeof t !== 'object' || Array.isArray(t)) throw new Error(); patch.theme = t; } catch { return { error: 'The theme is not valid JSON. Nothing was saved.' }; }
   }
-  const phases = String(form.get('phases') || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
-    const i = l.indexOf(':');
-    const id = (i > 0 ? l.slice(0, i) : l).trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-');
-    return { id, label: (i > 0 ? l.slice(i + 1) : l).trim() };
-  }).filter((p) => p.id);
-  patch.phases = phases;
+  // the stages themselves are edited under "Reveal stages"; this form only sets a title for each
+  const { data: cur } = await supabase.from('campaigns').select('phases').eq('id', id).single();
+  const phases = (cur?.phases ?? []) as { id: string; label: string }[];
   const { error } = await supabase.from('campaigns').update(patch).eq('id', id);
   if (error) return { error: 'That did not save.' };
 
@@ -170,7 +219,7 @@ export async function addSection(slug: string, _: ActionState, form: FormData): 
   return { note: 'Tab added.' };
 }
 
-export async function updateSection(slug: string, sectionId: string, patch: { title?: string; audience?: 'all' | 'dm' | 'player'; phase?: string; move?: -1 | 1; remove?: boolean }) {
+export async function updateSection(slug: string, sectionId: string, patch: { title?: string; audience?: 'all' | 'dm' | 'player'; phase?: string; from_stage?: string; move?: -1 | 1; remove?: boolean }) {
   const { supabase } = await requireViewer();
   const id = await campaignId(supabase, slug);
   if (!id) return;
@@ -192,6 +241,7 @@ export async function updateSection(slug: string, sectionId: string, patch: { ti
     if (patch.title) p.title = patch.title.trim().slice(0, 40);
     if (patch.audience) p.audience = patch.audience;
     if (patch.phase !== undefined) p.phase = patch.phase || null;
+    if (patch.from_stage !== undefined) p.from_stage = patch.from_stage || null;
     if (Object.keys(p).length) await supabase.from('sections').update(p).eq('id', sectionId);
   }
   fresh(slug);
@@ -199,7 +249,7 @@ export async function updateSection(slug: string, sectionId: string, patch: { ti
 
 // ---------------------------------------------------------------- DM: content editor
 
-export async function saveContentRow(slug: string, rowId: string, patch: { title?: string; body?: unknown; visibility?: 'player' | 'dm'; hidden?: boolean; phase?: string | null }): Promise<ActionState> {
+export async function saveContentRow(slug: string, rowId: string, patch: { title?: string; body?: unknown; visibility?: 'player' | 'dm'; hidden?: boolean; phase?: string | null; from_stage?: string | null; only_players?: string[] | null }): Promise<ActionState> {
   const { supabase } = await requireViewer();
   const p: Record<string, unknown> = {};
   if (typeof patch.title === 'string') p.title = patch.title.slice(0, 120);
@@ -207,8 +257,16 @@ export async function saveContentRow(slug: string, rowId: string, patch: { title
   if (patch.visibility === 'player' || patch.visibility === 'dm') p.visibility = patch.visibility;
   if (typeof patch.hidden === 'boolean') p.hidden = patch.hidden;
   if (patch.phase !== undefined) p.phase = patch.phase || null;
-  const { error } = await supabase.from('content').update(p).eq('id', rowId);
-  if (error) return { error: 'That did not save.' };
+  if (patch.from_stage !== undefined) p.from_stage = patch.from_stage || null;
+  if (patch.only_players !== undefined) p.only_players = patch.only_players && patch.only_players.length ? patch.only_players.filter((x) => /^[0-9a-f-]{36}$/.test(x)) : null;
+  const { data: saved, error } = await supabase.from('content').update(p).eq('id', rowId).select('campaign_id, section, visibility, hidden, only_players').maybeSingle();
+  if (error) return /upgrade:/.test(error.message) ? { error: 'Blocks for named players are part of Pro.' } : { error: 'That did not save.' };
+  // the reveal log: a block has just been shown to players
+  if (saved && (patch.visibility === 'player' || patch.hidden === false) && saved.visibility === 'player' && !saved.hidden) {
+    const { data: c } = await supabase.from('campaigns').select('settings').eq('id', saved.campaign_id).maybeSingle();
+    const { data: tab } = await supabase.from('sections').select('title').eq('campaign_id', saved.campaign_id).eq('slug', saved.section).maybeSingle();
+    await supabase.from('entries').insert({ campaign_id: saved.campaign_id, kind: 'log', owner: null, title: `New on the ${tab?.title ?? saved.section} page`, live: !!c?.settings?.feed, vis: saved.only_players ? 'players' : 'all', vis_players: saved.only_players ?? [], data: { kind: 'block', section: saved.section } });
+  }
   fresh(slug);
   return { note: 'Saved.' };
 }
@@ -247,6 +305,7 @@ const NEW_BODY: Record<string, (title: string) => unknown> = {
   secret: () => ({ tag: 'DM only', html: '<p>Secret text.</p>' }),
   table: () => ({ html: '<table><tr><th>Column</th><th>Column</th></tr><tr><td>Cell</td><td>Cell</td></tr></table>' }),
   checklist: () => ({ items: [{ text: 'First item', done: false }] }),
+  video: () => ({ url: '', caption: '' }),
 };
 
 export async function addContentRow(slug: string, section: string, _: ActionState, form: FormData): Promise<ActionState> {

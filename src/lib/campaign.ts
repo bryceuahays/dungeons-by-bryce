@@ -8,6 +8,13 @@ import type { Campaign, ContentRow, RuleRow, Section } from './types';
 import type { CampaignAccess } from './entitlements';
 
 export const VIEW_AS_PLAYER = 'dbb-view-as-player';
+// The preview cookie is "1" (any player, at the current stage) or JSON {p: player id, s: stage id}.
+export type ViewAs = { player: string | null; stage: string | null };
+export function readViewAs(value: string | undefined): ViewAs | null {
+  if (!value) return null;
+  if (value === '1') return { player: null, stage: null };
+  try { const v = JSON.parse(value); return { player: typeof v.p === 'string' && /^[0-9a-f-]{36}$/.test(v.p) ? v.p : null, stage: typeof v.s === 'string' ? v.s : null }; } catch { return null; }
+}
 
 export type Face = { phase: string; slug: string; title: string; tagline: string };
 
@@ -37,13 +44,25 @@ export const getCampaign = cache(async (slug: string) => {
   const { sections: allSections, memberships, head_reveals: reveal, ...campaign } = row as Campaign & { sections: Section[]; memberships: { user_id: string; role: string }[]; head_reveals: unknown };
   // The DM of this campaign is whoever owns it (or has been made a co-DM of it).
   const realDm = campaign.owner_id === viewer.user.id || (memberships ?? []).some((m) => m.user_id === viewer.user.id && m.role === 'dm');
-  const asPlayer = realDm && (await store).get(VIEW_AS_PLAYER)?.value === '1';
+  const preview = realDm ? readViewAs((await store).get(VIEW_AS_PLAYER)?.value) : null;
+  const asPlayer = !!preview;
   // The Head DM, in a campaign someone else runs that they have unhidden: reads what its
   // DM reads, changes nothing (the database refuses the writes).
   const headView = !realDm && viewer.isHead && (Array.isArray(reveal) ? reveal.length > 0 : !!reveal);
   const isDm = (realDm && !asPlayer) || headView;
+  // Previewing at another stage: the page is built as if the campaign were at that stage.
+  const order = campaign.phases.map((p) => p.id);
+  const realPhase = campaign.phase;
+  let viewFace: Face | null = null;
+  if (preview?.stage && order.includes(preview.stage) && preview.stage !== campaign.phase) {
+    campaign.phase = preview.stage;
+    const { data: f } = await supabase.from('campaign_faces').select('phase, slug, title, tagline').eq('campaign_id', campaign.id).in('phase', [preview.stage, '']);
+    viewFace = ((f ?? []) as Face[]).find((x) => x.phase === preview.stage) ?? ((f ?? []) as Face[]).find((x) => x.phase === '') ?? null;
+    if (viewFace) { campaign.title = viewFace.title; campaign.tagline = viewFace.tagline; }
+  }
+  const reached = (stage: string | null | undefined) => !stage || (order.indexOf(stage) >= 0 && order.indexOf(campaign.phase) >= order.indexOf(stage));
   const sections = (allSections ?? [])
-    .filter((s) => (isDm ? s.audience !== 'player' : s.audience !== 'dm' && (!s.phase || s.phase === campaign.phase)))
+    .filter((s) => (isDm ? s.audience !== 'player' : s.audience !== 'dm' && (!s.phase || s.phase === campaign.phase) && reached(s.from_stage)))
     .sort((a, b) => a.sort - b.sort);
   let faces: Face[] = [];
   if (isDm) {
@@ -54,7 +73,8 @@ export const getCampaign = cache(async (slug: string) => {
   // the plan of the DM who owns this campaign, and whether it can still be changed
   const access: CampaignAccess = { pro: !!plan?.pro, writable: plan?.writable !== false };
   return {
-    access, canEdit: realDm && access.writable,
+    access, canEdit: realDm && access.writable && !asPlayer,
+    viewAs: preview ?? { player: null, stage: null }, realPhase,
     ...viewer, campaign, sections, isDm, realDm, asPlayer, headView, faces,
     // what the DM calls the campaign; players only ever get campaign.title
     dmTitle: isDm && real ? real.title : campaign.title,
@@ -87,8 +107,16 @@ export async function getContent(ctx: CampaignCtx, opts: { section?: string; kin
     q = campaign.phase ? q.or(`phase.is.null,phase.eq.${campaign.phase}`) : q.is('phase', null);
   }
   const { data } = await q.order('sort').order('visibility');
-  const rows = (data ?? []) as ContentRow[];
-  if (!isDm) return rows;
+  const all = (data ?? []) as ContentRow[];
+  if (!isDm) {
+    // The database has already applied these two rules for a real player. They are
+    // applied again here for a DM who is previewing as a player (whose login reads everything).
+    const order = campaign.phases.map((p) => p.id);
+    const me = ctx.asPlayer ? ctx.viewAs.player : ctx.user.id;
+    return all.filter((r) => (!r.from_stage || (order.indexOf(r.from_stage) >= 0 && order.indexOf(campaign.phase) >= order.indexOf(r.from_stage)))
+      && (!r.only_players || (!!me && r.only_players.includes(me))));
+  }
+  const rows = all;
   const twin = new Map(rows.filter((r) => r.visibility === 'player').map((r) => [r.section + '|' + r.kind + '|' + r.key + '|' + (r.phase ?? ''), r]));
   const dmKeys = new Set(rows.filter((r) => r.visibility === 'dm').map((r) => r.section + '|' + r.kind + '|' + r.key));
   return rows

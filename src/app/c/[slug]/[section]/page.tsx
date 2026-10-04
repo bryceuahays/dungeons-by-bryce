@@ -5,6 +5,9 @@ import { getCampaign, getContent, getLore, getRules, getSheetEntities, phaseLabe
 import { Sheet5e } from '@/components/Sheet5e';
 import { renderSection, esc } from '@/lib/render';
 import { cleanContent, cleanForm } from '@/lib/sanitize';
+import { embedVideos } from '@/lib/video';
+import { HomeExtras } from '@/components/HomeExtras';
+import { SheetAccess } from '@/components/SheetAccess';
 import { GuideSection } from '@/components/GuideSection';
 import { SheetIsland, CombatIsland } from '@/components/Islands';
 import { PartyLive } from '@/components/PartyLive';
@@ -24,8 +27,8 @@ export default async function SectionPage({ params, searchParams }: Props) {
     case 'sheet': return <Sheet ctx={ctx} pick={query.c} />;
     case 'combat': return <Combat ctx={ctx} pick={query.c} />;
     case 'sessions': return <Sessions ctx={ctx} section={section} />;
-    case 'players': return <Players ctx={ctx} section={section} />;
-    default: return <ContentTab ctx={ctx} section={section} race={query.race} />;
+    case 'players': return <Players ctx={ctx} section={section} open={query.c} />;
+    default: return <>{ctx.sections[0]?.id === section.id ? <div className="cs-guide"><HomeExtras ctx={ctx} /></div> : null}<ContentTab ctx={ctx} section={section} race={query.race} /></>;
   }
 }
 
@@ -35,7 +38,7 @@ async function sectionHtml(ctx: CampaignCtx, section: Section, race?: string) {
   const [rows, lore] = await Promise.all([getContent(ctx, { section: section.slug }), getLore(ctx)]);
   const label = ctx.isDm ? (phase: string | null | undefined) => phaseLabel(ctx.campaign, phase) : undefined;
   const whole = ctx.isDm && section.phase ? `<p class="phase-p phase-tab"><span class="phase-note">${esc(phaseLabel(ctx.campaign, section.phase))}: this whole tab</span></p>` : '';
-  return cleanContent(whole + renderSection(rows, lore, { base: '/c/' + ctx.campaign.slug, race, label }));
+  return embedVideos(cleanContent(whole + renderSection(rows, lore, { base: '/c/' + ctx.campaign.slug, race, label })));
 }
 
 async function ContentTab({ ctx, section, race }: { ctx: CampaignCtx; section: Section; race?: string }) {
@@ -242,8 +245,32 @@ async function Sessions({ ctx, section }: { ctx: CampaignCtx; section: Section }
   );
 }
 
-async function Players({ ctx, section }: { ctx: CampaignCtx; section: Section }) {
+async function OpenSheet({ ctx, id }: { ctx: CampaignCtx; id: string }) {
+  const { data: ch } = await ctx.supabase.from('characters').select('id, owner, campaign_id, data, builder, updated_at').eq('id', id).eq('campaign_id', ctx.campaign.id).maybeSingle();
+  if (!ch) return <p className="who">That character is not in this campaign.</p>;
+  const back = <p className="row"><Link className="act sm" href={`/c/${ctx.campaign.slug}/players`}>Back to all players</Link></p>;
+  if (ch.data?.v === 2 || !(await usesLegacySheet(ctx.campaign.id))) {
+    const entities = await getSheetEntities(ctx);
+    return <>{back}<SheetAccess name={ch.data?.name || 'this character'} canEdit={ctx.canEdit}><Sheet5e character={{ id: ch.id, data: ch.data }} entities={entities} /></SheetAccess></>;
+  }
+  // the campaign's own sheet, built the way the player's page builds it, with the DM's reach
+  const [form, lore, rules, stored] = await Promise.all([
+    getContent(ctx, { section: 'sheet', kinds: ['sheet-template', 'sheet-slot'] }), getLore(ctx), getRules(ctx, ['divine', 'sheet-private']),
+    ctx.supabase.from('character_private').select('data').eq('character_id', ch.id).maybeSingle(),
+  ]);
+  const divine: Record<string, any> = {};
+  (rules.divine ?? []).forEach((r) => { divine[r.key] = r.data.v; });
+  const slots = new Map(form.filter((r) => r.kind === 'sheet-slot').map((r) => [r.key, r.body?.html ?? '']));
+  const template = cleanForm(String(form.find((r) => r.kind === 'sheet-template')?.body?.html ?? '').replace(/<!--slot:([a-z0-9-]+)-->/g, (_, k) => slots.get(k) ?? ''));
+  const privateKeys: string[] = rules['sheet-private']?.[0]?.data.v ?? [];
+  const sheetData = { ...ch.data, ...(stored.data?.data ?? {}) };
+  const html = `<section id="sheet"><p class="lede"><span id="saveState"></span></p>${template}</section>`;
+  return <>{back}<SheetAccess name={ch.data?.name || 'this character'} canEdit={ctx.canEdit}><SheetIsland html={html} character={{ id: ch.id, data: sheetData }} races={lore.races.map(({ id, name, traits, up }: any) => ({ id, name, traits, up }))} divine={divine} divineBy={Object.keys(divine).length ? 'tier' : ''} privateKeys={privateKeys} /></SheetAccess></>;
+}
+
+async function Players({ ctx, section, open }: { ctx: CampaignCtx; section: Section; open?: string }) {
   if (!ctx.isDm) notFound();
+  if (open && /^[0-9a-f-]{36}$/.test(open)) return <div className="cs-guide"><div className="wrap"><h2>{section.title}</h2><OpenSheet ctx={ctx} id={open} /></div></div>;
   const [{ data: chars }, lore, { data: members }, { data: stored }, { data: labelRows }] = await Promise.all([
     ctx.supabase.from('characters').select('id, owner, data').eq('campaign_id', ctx.campaign.id),
     getLore(ctx),
@@ -261,6 +288,7 @@ async function Players({ ctx, section }: { ctx: CampaignCtx; section: Section })
       <div className="wrap">
         <h2>{section.title}</h2>
         <p className="lede">Every character in this campaign, in full.</p>
+        <p className="row"><span className="who">Open a sheet (read-only until you choose to edit):</span>{((chars ?? []) as any[]).map((c) => <Link key={c.id} className="fchip" style={{ textDecoration: 'none' }} href={`/c/${ctx.campaign.slug}/players?c=${c.id}`}>{c.data?.name || 'Unnamed'}</Link>)}</p>
         <PartyLive campaignId={ctx.campaign.id} initial={(chars ?? []) as any[]} initialPrivate={priv} labels={labelRows?.[0]?.data ?? null} races={lore.races.map((r: any) => ({ id: r.id, name: r.name }))} names={names} />
       </div>
     </div>

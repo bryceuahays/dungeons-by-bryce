@@ -7,11 +7,11 @@ import { headReveal } from '@/app/(hub)/actions';
 
 type Tab = { slug: string; title: string; kind: string };
 
-export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, asPlayer, headView, readOnly }: { slug: string; title: string; playerTitle: string | null; tabs: Tab[]; isDm: boolean; realDm: boolean; asPlayer: boolean; headView: string | null; readOnly?: boolean }) {
+export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, asPlayer, headView, readOnly, previewNote }: { slug: string; title: string; playerTitle: string | null; tabs: Tab[]; isDm: boolean; realDm: boolean; asPlayer: boolean; headView: string | null; readOnly?: boolean; previewNote?: string }) {
   const path = usePathname();
   const base = '/c/' + slug;
   const rest = path.slice(base.length).split('/').filter(Boolean);
-  const current = rest[0] === 'edit' ? rest[1] : rest[0] === 'session' ? 'sessions' : rest[0] === 'builder' ? 'sheet' : rest[0] || tabs[0]?.slug;
+  const current = rest[0] === 'tools' ? '' : rest[0] === 'edit' ? rest[1] : rest[0] === 'session' ? 'sessions' : rest[0] === 'builder' ? 'sheet' : rest[0] || tabs[0]?.slug;
   const onContent = tabs.find((t) => t.slug === rest[0])?.kind === 'content';
 
   // "Hide DM secrets": blurs secret blocks while players can see the DM's screen.
@@ -26,7 +26,7 @@ export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, a
     <>
       {asPlayer ? (
         <div className="preview" role="status">
-          You are viewing this campaign exactly as a player receives it.
+          You are viewing this campaign exactly as a player receives it{previewNote ? ` (${previewNote})` : ''}.
           <form action={setViewAsPlayer.bind(null, slug, false)} style={{ display: 'inline' }}><button type="submit">Back to the DM view</button></form>
         </div>
       ) : null}
@@ -53,6 +53,7 @@ export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, a
               <form action={setViewAsPlayer.bind(null, slug, true)} style={{ display: 'inline' }}><button type="submit">View as player</button></form>
             </>
           ) : null}
+          <Link href={`${base}/tools`} aria-current={rest[0] === 'tools' ? 'page' : undefined}>Table tools</Link>
           {!realDm ? <Link href="/account">Account</Link> : null}
         </span>
       </div>

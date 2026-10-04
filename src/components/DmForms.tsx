@@ -1,6 +1,6 @@
 'use client';
 import { useActionState, useState, useTransition } from 'react';
-import { addContentRow, addSection, addSession, createInvite, deleteCampaign, importPages, updateCampaign, updateSection, updateSession, type ActionState } from '@/app/c/[slug]/actions';
+import { addContentRow, addSection, addSession, createInvite, deleteCampaign, importPages, saveSetting, saveStages, updateCampaign, updateSection, updateSession, type ActionState } from '@/app/c/[slug]/actions';
 
 function Msg({ state }: { state: ActionState }) {
   if (state?.error) return <span className="err" role="alert">{state.error}</span>;
@@ -66,8 +66,8 @@ export function CampaignForm({ slug, campaign, faces }: { slug: string; campaign
         const f = faces.find((x) => x.phase === p.id);
         return (
           <details key={p.id} style={{ marginTop: 10 }} open={!!f}>
-            <summary className="muted" style={{ cursor: 'pointer' }}>A different title while the phase is &quot;{p.label}&quot;{f ? '' : ' (none)'}</summary>
-            <p className="muted">While the campaign is in this phase, players see this title, address, and tagline everywhere, and the real ones cannot be reached by them. Clear the title to remove it.</p>
+            <summary className="muted" style={{ cursor: 'pointer' }}>A different title while the stage is &quot;{p.label}&quot;{f ? '' : ' (none)'}</summary>
+            <p className="muted">While the campaign is at this stage, players see this title, address, and tagline everywhere, and the real ones cannot be reached by them. Clear the title to remove it.</p>
             <div className="fields wide">
               <label className="f">Title<input name={'face-title-' + p.id} defaultValue={f?.title ?? ''} maxLength={80} /></label>
               <label className="f">Web address (lowercase letters, numbers, dashes)<input name={'face-slug-' + p.id} defaultValue={f?.slug ?? ''} maxLength={60} /></label>
@@ -76,15 +76,38 @@ export function CampaignForm({ slug, campaign, faces }: { slug: string; campaign
           </details>
         );
       })}
-      <label className="f" style={{ marginTop: 10 }}>Phases, one per line, as id: label. Leave empty if this campaign has no phases.
-        <textarea name="phases" rows={3} className="mono" defaultValue={campaign.phases.map((p) => `${p.id}: ${p.label}`).join('\n')} />
-      </label>
       <details style={{ marginTop: 10 }}>
         <summary className="muted" style={{ cursor: 'pointer' }}>Theme (colours and fonts)</summary>
         <p className="muted">These are the design tokens for this campaign only. Colours are hex values. Change a value and save to restyle every page.</p>
         <textarea name="theme" rows={18} className="mono" defaultValue={JSON.stringify(campaign.theme, null, 2)} spellCheck={false} />
       </details>
       <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Save campaign settings</button> <Msg state={state} /></p>
+    </form>
+  );
+}
+
+export function SettingForm({ slug, name, label, value }: { slug: string; name: 'video'; label: string; value: string }) {
+  const [v, setV] = useState(value);
+  const [msg, setMsg] = useState<ActionState>(null);
+  const [pending, start] = useTransition();
+  return (
+    <div>
+      <label className="f">{label}<input value={v} onChange={(e) => setV(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></label>
+      <p className="row" style={{ marginTop: 10 }}><button type="button" className="act" disabled={pending} onClick={() => start(async () => setMsg(await saveSetting(slug, name, v)))}>Save</button> <Msg state={msg} /></p>
+    </div>
+  );
+}
+
+// The ordered list of reveal stages, one per line.
+export function StagesForm({ slug, stages, pro }: { slug: string; stages: { id: string; label: string }[]; pro: boolean }) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(saveStages.bind(null, slug), null);
+  return (
+    <form action={action}>
+      <label className="f">Stages, one per line, in the order they happen
+        <textarea name="stages" rows={Math.max(3, stages.length + 1)} defaultValue={stages.map((s) => s.label).join('\n')} placeholder={'Before the reveal\nAfter the reveal'} />
+      </label>
+      <p className="muted" style={{ marginTop: 6 }}>{pro ? 'As many stages as your story needs.' : 'Two stages on the free plan. More are part of Pro.'} Renaming a stage keeps everything tagged with it. Removing one leaves its blocks tagged for a stage that no longer exists, so players stop seeing them until you retag them.</p>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Save stages</button> <Msg state={state} /></p>
     </form>
   );
 }
@@ -102,7 +125,7 @@ export function AddSectionForm({ slug }: { slug: string }) {
   );
 }
 
-export function SectionRow({ slug, section, first, last, phases }: { slug: string; section: { id: string; title: string; audience: string; kind: string; slug: string; phase: string | null }; first: boolean; last: boolean; phases: { id: string; label: string }[] }) {
+export function SectionRow({ slug, section, first, last, phases }: { slug: string; section: { id: string; title: string; audience: string; kind: string; slug: string; phase: string | null; from_stage?: string | null }; first: boolean; last: boolean; phases: { id: string; label: string }[] }) {
   const [pending, start] = useTransition();
   const run = (patch: Parameters<typeof updateSection>[2]) => start(() => updateSection(slug, section.id, patch));
   const builtIn = section.kind !== 'content';
@@ -119,6 +142,11 @@ export function SectionRow({ slug, section, first, last, phases }: { slug: strin
             <option value="">Players: always</option>{phases.map((p) => <option key={p.id} value={p.id}>Players: only {p.label.charAt(0).toLowerCase() + p.label.slice(1)}</option>)}
           </select>
         ) : null}
+        {phases.length && section.audience !== 'dm' && !section.phase ? (
+          <select className="small" aria-label={'From which stage players see ' + section.title} value={section.from_stage ?? ''} disabled={pending} onChange={(e) => run({ from_stage: e.target.value })}>
+            <option value="">From the start</option>{phases.slice(1).map((p) => <option key={p.id} value={p.id}>From: {p.label}</option>)}
+          </select>
+        ) : null}
         {!builtIn ? <button className="act sm danger" disabled={pending} onClick={() => { if (confirm(`Delete the "${section.title}" tab and everything on it? This cannot be undone.`)) run({ remove: true }); }}>Delete</button> : null}
       </span>
     </div>
@@ -130,7 +158,7 @@ export function AddBlockForm({ slug, section }: { slug: string; section: string 
   return (
     <form action={action}>
       <div className="fields">
-        <label className="f">Kind<select name="kind" defaultValue="html"><option value="heading">Heading</option><option value="html">Text</option><option value="plate">Card</option><option value="secret">Secret box</option><option value="table">Table</option><option value="checklist">Checklist</option></select></label>
+        <label className="f">Kind<select name="kind" defaultValue="html"><option value="heading">Heading</option><option value="html">Text</option><option value="plate">Card</option><option value="secret">Secret box</option><option value="table">Table</option><option value="checklist">Checklist</option><option value="video">Video (YouTube or Vimeo link)</option></select></label>
         <label className="f">Title (for headings and cards)<input name="title" maxLength={120} /></label>
         <label className="f">Who sees it<select name="visibility" defaultValue="dm"><option value="dm">DM only</option><option value="player">Players and DM</option></select></label>
       </div>

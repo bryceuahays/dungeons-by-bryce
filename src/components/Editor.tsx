@@ -69,14 +69,14 @@ function JsonField({ label, value, onChange }: { label: string; value: any; onCh
 // ---------------------------------------------------------------- one content row
 
 const KIND_LABEL: Record<string, string> = {
-  hero: 'Page header', heading: 'Heading', html: 'Text', plate: 'Card', secret: 'Secret box', table: 'Table', checklist: 'Checklist',
+  hero: 'Page header', heading: 'Heading', html: 'Text', video: 'Video', plate: 'Card', secret: 'Secret box', table: 'Table', checklist: 'Checklist',
   'faction-table': 'Faction table (automatic)', 'faction-cards': 'Faction cards (automatic)', 'race-cards': 'Race cards (automatic)',
   'race-browser': 'Race browser (automatic)', 'upgrade-table': 'Upgrade table (automatic)',
   race: 'Race entry', 'race-phase': 'Race entry: one phase', 'race-dm': 'Race entry: DM notes', 'sheet-slot': 'Character sheet form: part', faction: 'Faction entry', 'faction-dm': 'Faction entry: DM notes', 'sheet-template': 'Character sheet form',
 };
 const AUTO = new Set(['faction-table', 'faction-cards', 'race-cards', 'race-browser', 'upgrade-table']);
 
-function RowEditor({ slug, row, twin, phases }: { slug: string; row: ContentRow; twin?: ContentRow; phases: { id: string; label: string }[] }) {
+function RowEditor({ slug, row, twin, phases, members, canName }: { slug: string; row: ContentRow; twin?: ContentRow; phases: { id: string; label: string }[]; members: { user_id: string; display_name: string }[]; canName: boolean }) {
   const [body, setBody] = useState<any>(row.body || {});
   const [title, setTitle] = useState(row.title);
   const [msg, setMsg] = useState<{ error?: string; note?: string } | null>(null);
@@ -88,6 +88,7 @@ function RowEditor({ slug, row, twin, phases }: { slug: string; row: ContentRow;
   let form: React.ReactNode;
   if (AUTO.has(row.kind)) form = <p className="muted">This block fills itself in from the {row.kind.startsWith('race') || row.kind === 'upgrade-table' ? 'race' : 'faction'} entries. Edit those entries to change it.</p>;
   else if (row.kind === 'heading') form = <label className="f">Heading<input value={body.text ?? ''} onChange={(e) => { setBody({ ...body, text: e.target.value }); setTitle(e.target.value); }} /></label>;
+  else if (row.kind === 'video') form = <><label className="f">YouTube or Vimeo link<input value={body.url ?? ''} placeholder="https://www.youtube.com/watch?v=..." onChange={(e) => setBody({ ...body, url: e.target.value })} /></label><label className="f" style={{ marginTop: 8 }}>Caption (optional)<input value={body.caption ?? ''} onChange={(e) => setBody({ ...body, caption: e.target.value })} /></label><p className="muted">Paste the link from your browser. The video plays on this page; nothing is uploaded here.</p></>;
   else if (row.kind === 'secret') form = <><label className="f">Label<input value={body.tag ?? ''} onChange={(e) => setBody({ ...body, tag: e.target.value })} /></label><div style={{ marginTop: 8 }}><RichHtml value={body.html ?? ''} onChange={(html) => setBody({ ...body, html })} /></div></>;
   else if (row.kind === 'checklist') form = <label className="f">Items, one per line<textarea rows={(body.items?.length ?? 0) + 2} value={(body.items ?? []).map((i: any) => i.text).join('\n')} onChange={(e) => setBody({ ...body, items: e.target.value.split('\n').filter((l) => l.trim()).map((text) => ({ text, done: !!(body.items ?? []).find((i: any) => i.text === text)?.done })) })} /></label>;
   else if (typeof body.html === 'string') form = <RichHtml value={body.html} onChange={(html) => setBody({ ...body, html })} />;
@@ -101,6 +102,8 @@ function RowEditor({ slug, row, twin, phases }: { slug: string; row: ContentRow;
         <span className={'pillb ' + (isDm ? 'dm' : 'pl')}>{isDm ? 'DM only' : 'Players and DM'}</span>
         {twin ? <span className="pillb">{isDm ? 'your wording; players see another' : 'players’ wording; you see another'}</span> : null}
         {row.phase ? <span className="pillb">{phases.find((p) => p.id === row.phase)?.label ?? row.phase}</span> : null}
+        {row.from_stage ? <span className="pillb">from: {phases.find((p) => p.id === row.from_stage)?.label ?? row.from_stage}</span> : null}
+        {row.only_players ? <span className="pillb dm">only {row.only_players.map((id) => members.find((m) => m.user_id === id)?.display_name ?? 'a player').join(', ')}</span> : null}
         {row.hidden ? <span className="pillb">hidden</span> : null}
       </summary>
       <div style={{ marginTop: 10 }}>
@@ -115,9 +118,28 @@ function RowEditor({ slug, row, twin, phases }: { slug: string; row: ContentRow;
           {phases.length ? (
             <label className="row muted">When
               <select className="small" value={row.phase ?? ''} disabled={pending} onChange={(e) => save({ phase: e.target.value || null })}>
-                <option value="">Always</option>{phases.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                <option value="">Always</option>{phases.map((p) => <option key={p.id} value={p.id}>Only: {p.label}</option>)}
               </select>
             </label>
+          ) : null}
+          {phases.length > 1 && !row.phase ? (
+            <label className="row muted">From
+              <select className="small" value={row.from_stage ?? ''} disabled={pending} onChange={(e) => save({ from_stage: e.target.value || null })}>
+                <option value="">The start</option>{phases.slice(1).map((p) => <option key={p.id} value={p.id}>{p.label} onward</option>)}
+              </select>
+            </label>
+          ) : null}
+          {row.visibility === 'player' && members.length ? (
+            <details className="muted" style={{ flex: '1 1 100%' }}>
+              <summary style={{ cursor: 'pointer' }}>Only for named players{row.only_players ? ` (${row.only_players.length})` : ''}{canName ? '' : ' (Pro)'}</summary>
+              <p className="row">
+                {members.map((m) => (
+                  <label key={m.user_id} className="ck"><input type="checkbox" disabled={pending || !canName} checked={(row.only_players ?? []).includes(m.user_id)}
+                    onChange={(e) => save({ only_players: e.target.checked ? [...(row.only_players ?? []), m.user_id] : (row.only_players ?? []).filter((x) => x !== m.user_id) })} /> {m.display_name || 'Unnamed'}</label>
+                ))}
+              </p>
+              <p>Tick players and only they (and you) get this block. Untick everyone to show it to the whole table again.</p>
+            </details>
           ) : null}
           <button className="act sm" disabled={pending} onClick={() => save({ hidden: !row.hidden })}>{row.hidden ? 'Show again' : 'Hide'}</button>
           <button className="act sm" disabled={pending} onClick={() => run(() => moveContentRow(slug, row.section, row.id, -1))}>Move up</button>
@@ -132,15 +154,15 @@ function RowEditor({ slug, row, twin, phases }: { slug: string; row: ContentRow;
   );
 }
 
-export function ContentEditor({ slug, rows, phases }: { slug: string; rows: ContentRow[]; phases: { id: string; label: string }[] }) {
+export function ContentEditor({ slug, rows, phases, members = [], canName = false }: { slug: string; rows: ContentRow[]; phases: { id: string; label: string }[]; members?: { user_id: string; display_name: string }[]; canName?: boolean }) {
   const twinOf = (r: ContentRow) => rows.find((x) => x.id !== r.id && x.key === r.key && x.visibility !== r.visibility && !/-dm$/.test(x.kind) && !/-dm$/.test(r.kind) && x.kind === r.kind);
   const blocks = rows.filter((r) => r.sort < 1000);
   const entries = rows.filter((r) => r.sort >= 1000);
   return (
     <>
-      {blocks.map((r) => <RowEditor key={r.id + r.visibility + String(r.hidden) + (r.phase ?? '')} slug={slug} row={r} twin={twinOf(r)} phases={phases} />)}
+      {blocks.map((r) => <RowEditor key={r.id + r.visibility + String(r.hidden) + (r.phase ?? '') + (r.from_stage ?? '') + (r.only_players ?? []).join()} slug={slug} row={r} twin={twinOf(r)} phases={phases} members={members} canName={canName} />)}
       {entries.length ? <><h2>Entries</h2><p className="muted">These fill in the automatic blocks above. To add one, duplicate an entry and change it.</p></> : null}
-      {entries.map((r) => <RowEditor key={r.id + r.visibility + String(r.hidden) + (r.phase ?? '')} slug={slug} row={r} phases={phases} />)}
+      {entries.map((r) => <RowEditor key={r.id + r.visibility + String(r.hidden) + (r.phase ?? '')} slug={slug} row={r} phases={phases} members={members} canName={canName} />)}
     </>
   );
 }

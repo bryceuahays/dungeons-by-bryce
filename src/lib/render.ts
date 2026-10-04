@@ -1,5 +1,6 @@
 import 'server-only';
 import type { ContentRow } from './types';
+import { videoSlot } from './video';
 
 // Turns content rows into the same markup the source sites produced, on the server.
 // The templates below are the source sites' own render functions, fed from the database.
@@ -105,6 +106,7 @@ export function renderBlock(r: ContentRow, lore: { races: any[]; factions: any[]
     case 'hero': return `<header class="hero">${before}${b.html || ''}</header>`;
     case 'heading': { const n = Math.min(6, Math.max(1, Number(b.level) || 2)); return `<h${n}>${esc(b.text)} ${note(opts, ph)}</h${n}>`; }
     case 'html': return before + (b.html || '');
+    case 'video': { const slot = videoSlot(b.url); return slot ? `${before}<div class="video-block">${slot}${b.caption ? `<p class="who">${esc(b.caption)}</p>` : ''}</div>` : ''; }
     case 'table': return `${before}<div class="scroll">${b.html || ''}</div>`;
     case 'secret': return `${before}<div class="secret"><span class="tag">${esc(b.tag)}</span><div class="sb">${b.html || ''}</div></div>`;
     case 'plate': return `<div class="plate">${before}${b.html || ''}</div>`;
