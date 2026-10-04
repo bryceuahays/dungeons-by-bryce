@@ -48,7 +48,7 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
             : type === 'monster' ? `${d.size ?? ''} ${String(d.mtype ?? '').toLowerCase()}${d.align ? ', ' + d.align : ''}`
             : type === 'item' ? `${d.kind ?? 'Item'}${d.rarity && d.rarity !== 'Standard' ? ', ' + String(d.rarity).toLowerCase() : ''}${d.attune ? ' (requires attunement)' : ''}`
             : type === 'subclass' ? `${def?.label}${d.parent ? ' of the ' + d.parent : ''}`
-            : def?.label ?? type}
+            : def?.label ?? (type === 'condition' ? 'Condition' : type === 'rule' ? 'Rules reference' : type)}
           {source === 'srd' ? <span className="etag">SRD</span> : null}
           {status === 'playtest' ? <span className="etag test">Playtest</span> : null}
           {status === 'draft' ? <span className="etag test">Draft</span> : null}
@@ -79,6 +79,8 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
           {type === 'background' ? <><Fact k="Skills" v={d.skills} /><Fact k="Tools" v={d.toolProfs} /><Fact k="Languages" v={d.languages} /><Fact k="Equipment" v={d.equipment} /></> : null}
           {type === 'feat' ? <Fact k="Prerequisite" v={d.prereq} /> : null}
           {type === 'item' ? <><Fact k="Damage" v={d.damage} /><Fact k="Armor class" v={d.ac} /><Fact k="Properties" v={d.props} /><Fact k="Cost" v={d.cost} /><Fact k="Weight" v={d.weight} /></> : null}
+          {type === 'rule' && d.section ? <Fact k="Section" v={d.section} /> : null}
+          {type === 'feat' && d.category ? <Fact k="Category" v={d.category} /> : null}
           {type === 'resource' ? <><Fact k="Each character has" v={d.max ? describeMax(String(d.max)) + ' ' + (d.unit || 'point') + 's' : ''} /><Fact k="Comes back on" v={d.recharge === 'none' ? 'Does not recharge by itself' : d.recharge ? `a ${d.recharge} rest` : ''} /></> : null}
           {effects.length ? <ul className="traits">{effects.map((x, i) => <li key={i}>{describeEffect(x)}</li>)}</ul> : null}
           {features.length && !compact ? (

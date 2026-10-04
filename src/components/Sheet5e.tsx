@@ -4,6 +4,21 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { ABILITIES, blankV2, derive, sgn, type Ability, type CharacterV2, type Entity } from '@/lib/rules/engine';
 import { EntityCard } from './EntityCard';
+import { yearOf } from '@/config/rules';
+
+// A spell on the sheet. The long text of SRD spells is not sent with the page (there are
+// hundreds); it is fetched the first time a spell is opened.
+function SpellDetail({ entity }: { entity: Entity }) {
+  const [data, setData] = useState<any>(entity.data._lite ? null : entity.data);
+  useEffect(() => {
+    if (data) return;
+    let gone = false;
+    supabaseBrowser().from('entities').select('data').eq('id', entity.id).maybeSingle().then(({ data: row }: { data: { data: unknown } | null }) => { if (!gone && row) setData(row.data); });
+    return () => { gone = true; };
+  }, [entity.id, data]);
+  return data ? <EntityCard type="spell" name={entity.name} source={entity.source} data={data} compact /> : <p className="who">Loading…</p>;
+}
+
 
 // The standard fifth edition character sheet. Choices (race, class, level, scores) are
 // typed in; everything else is worked out from the SRD and homebrew entries the
@@ -50,6 +65,10 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
   const known = (c.spells ?? []).map((id) => entities.find((e) => e.id === id)).filter(Boolean) as Entity[];
   const grantedSpells = d.granted.map((g) => ({ ...g, entity: entities.find((e) => e.type === 'spell' && e.name.toLowerCase() === g.name.toLowerCase()) }));
   const hp = c.hp ?? d.hpMax;
+  const [opened, setOpened] = useState<string[]>([]);
+  const both = new Set(entities.filter((e) => e.source === 'srd').map((e) => e.srd_version)).size > 1;
+  const tag = (e: Entity) => (e.source === 'srd' ? (both ? ` (${yearOf(e.srd_version)})` : '') : e.status === 'playtest' ? ' (homebrew, playtest)' : ' (homebrew)');
+
 
   const vitals = (
     <section className="s5-block">
@@ -94,9 +113,9 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
           <span className="s5-pips">{Array.from({ length: n }, (_, k) => { const u = Math.min(n, slotsUsed[i + 1] ?? 0); return <button type="button" key={k} aria-pressed={k < u} aria-label={`Level ${i + 1} slot ${k + 1}${k < u ? ', spent' : ''}`} onClick={() => up({ slotsUsed: { ...slotsUsed, [i + 1]: k < u ? k : k + 1 } })} />; })}</span>
         </div>) : null)) : null}
       {[...grantedSpells.map((g) => ({ key: 'g' + g.name, name: g.name, from: g.from, entity: g.entity, id: null as string | null })), ...known.map((s) => ({ key: s.id, name: s.name, from: '', entity: s, id: s.id }))].map((s) => (
-        <details key={s.key} className="s5-item">
+        <details key={s.key} className="s5-item" onToggle={(e) => { if ((e.target as HTMLDetailsElement).open) setOpened((o) => (o.includes(s.key) ? o : [...o, s.key])); }}>
           <summary><b>{s.name}</b> <small>{s.entity ? (Number(s.entity.data.level) ? 'level ' + s.entity.data.level : 'cantrip') : ''}{s.from ? ' · from ' + s.from : ''}</small></summary>
-          {s.entity ? <EntityCard type="spell" name={s.entity.name} source={s.entity.source} data={s.entity.data} compact /> : <p className="who">Ask your DM for the details of this spell.</p>}
+          {s.entity ? (opened.includes(s.key) ? <SpellDetail entity={s.entity} /> : null) : <p className="who">Ask your DM for the details of this spell.</p>}
           {s.id && !readOnly ? <button type="button" className="act sm" onClick={() => up({ spells: (c.spells ?? []).filter((x) => x !== s.id) })}>Remove</button> : null}
         </details>
       ))}
@@ -104,7 +123,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
         <label className="f">Add a spell
           <select value="" onChange={(e) => { if (e.target.value) up({ spells: [...(c.spells ?? []), e.target.value] }); }}>
             <option value="">Choose…</option>
-            {classSpells.filter((s) => !(c.spells ?? []).includes(s.id)).sort((a, b) => Number(a.data.level) - Number(b.data.level) || a.name.localeCompare(b.name)).map((s) => <option key={s.id} value={s.id}>{Number(s.data.level) ? `Level ${s.data.level}` : 'Cantrip'}: {s.name}{s.source === 'srd' ? '' : ' (homebrew)'}</option>)}
+            {classSpells.filter((s) => !(c.spells ?? []).includes(s.id)).sort((a, b) => Number(a.data.level) - Number(b.data.level) || a.name.localeCompare(b.name)).map((s) => <option key={s.id} value={s.id}>{Number(s.data.level) ? `Level ${s.data.level}` : 'Cantrip'}: {s.name}{tag(s)}</option>)}
           </select>
         </label>
       ) : null}
@@ -115,7 +134,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
     <label className="f">{label}
       <select value={c[key] ?? ''} onChange={(e) => up({ [key]: e.target.value || null, ...(key === 'clsId' ? { subId: null } : {}) } as any)}>
         <option value="">None yet</option>
-        {list.map((e) => <option key={e.id} value={e.id}>{e.name}{e.source === 'srd' ? '' : e.status === 'playtest' ? ' (homebrew, playtest)' : ' (homebrew)'}</option>)}
+        {list.map((e) => <option key={e.id} value={e.id}>{e.name}{tag(e)}</option>)}
         {c[key] && !list.some((e) => e.id === c[key]) ? <option value={c[key]!}>(no longer available)</option> : null}
       </select>
     </label>
@@ -135,7 +154,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
         <label className="f" style={{ marginTop: 10 }}>Feats
           <select value="" onChange={(e) => { if (e.target.value) up({ feats: [...(c.feats ?? []), e.target.value] }); }}>
             <option value="">Add a feat…</option>
-            {of('feat').filter((x) => !(c.feats ?? []).includes(x.id)).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+            {of('feat').filter((x) => !(c.feats ?? []).includes(x.id)).map((x) => <option key={x.id} value={x.id}>{x.name}{tag(x)}</option>)}
           </select>
         </label>
       ) : null}

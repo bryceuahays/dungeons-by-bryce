@@ -7,6 +7,7 @@ import { parseCampaignText, MAX_IMPORT_CHARS } from '@/lib/import';
 import { insertImported, removeCampaignFiles } from '@/lib/campaign-admin';
 import { emailFeedback } from '@/lib/mail';
 import { cleanTheme, presetOf } from '@/lib/theme';
+import { NEW_CAMPAIGN_RULES } from '@/config/rules';
 
 export type FormState = { error?: string; note?: string } | null;
 
@@ -78,7 +79,8 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
   try { chosen = JSON.parse(String(form.get('theme') || 'null')); } catch { chosen = null; }
   const theme = presetOf(chosen)?.theme ?? cleanTheme(chosen ?? { preset: 'slate' });
 
-  const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme }).select('id').single();
+  const rules = form.get('rules') === '2014' || form.get('rules') === 'both' ? String(form.get('rules')) : NEW_CAMPAIGN_RULES;
+  const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme, settings: { rules } }).select('id').single();
   if (error || !campaign) {
     if (/upgrade:/i.test(error?.message || '')) return { error: 'The free plan runs one campaign, and you already have one. Pro runs as many as you like: see Plans in the bar above. Nothing you have made is affected.' };
     return { error: /duplicate|unique/i.test(error?.message || '') ? 'Another campaign already uses that web address. Choose a different one.' : 'The campaign could not be created.' };

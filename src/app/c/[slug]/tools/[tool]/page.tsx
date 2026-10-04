@@ -62,7 +62,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
       getEntries(ctx, ['encounter'], { secrets: true }),
       dm ? ctx.supabase.from('characters').select('id, owner, data').eq('campaign_id', ctx.campaign.id) : { data: [] },
       dm ? getSheetEntities(ctx, ['monster']) : [],
-      dm && !(await usesLegacySheet(ctx.campaign.id)) ? getSheetEntities(ctx) : [],
+      dm && !(await usesLegacySheet(ctx.campaign.id)) ? getSheetEntities(ctx, undefined, { liteSpells: true }) : [],
     ]);
     const names = Object.fromEntries(p.members.map((m) => [m.user_id, m.display_name]));
     body = <InitiativeTool {...p} initial={rows[0] ?? null} characters={(chars.data ?? []) as any[]} monsters={monsters as any[]} entities={entities as any[]} names={names} />;

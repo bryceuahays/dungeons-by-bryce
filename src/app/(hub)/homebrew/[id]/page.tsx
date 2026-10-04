@@ -22,13 +22,14 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
       <>
         <h1>{e.name}</h1>
         <div className="panel"><EntityCard type={e.type} name={e.name} source={e.source} status={e.status} data={e.data} /></div>
-        <p className="inline">{e.source !== 'private' ? <CloneButton id={e.id} /> : null}<Link className="button quiet" href="/homebrew">Back</Link></p>
+        {e.source === 'srd' ? <p className="dim">From the System Reference Document {e.srd_version} ({e.srd_version === '5.2' ? '2024' : '2014'} rules), CC-BY-4.0. <Link href="/legal">Licence</Link>.</p> : null}
+        <p className="inline">{e.source !== 'private' && TYPES[e.type] ? <CloneButton id={e.id} /> : null}<Link className="button quiet" href={e.source === 'srd' ? `/homebrew/srd?type=${e.type}&v=${e.srd_version}` : '/homebrew'}>Back</Link></p>
       </>
     );
   }
   const [plan, { data: srd }, { data: versions }, { data: campaigns }, { data: attached }] = await Promise.all([
     getPlan(),
-    supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', e.type).limit(400),
+    supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', e.type).order('srd_version').limit(700),
     supabase.from('entity_versions').select('version, note, name, data, created_at').eq('entity_id', id).order('version', { ascending: false }),
     supabase.from('campaigns').select('id, title, phases').eq('owner_id', user.id).order('created_at'),
     supabase.from('campaign_entities').select('campaign_id, vis, vis_players, vis_stage').eq('entity_id', id),

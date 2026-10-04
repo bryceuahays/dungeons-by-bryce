@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { AddSectionForm, CampaignForm, DeleteCampaignForm, ImportPagesForm, InviteForm, SectionRow } from '@/components/DmForms';
 import { BackgroundUploader } from '@/components/BackgroundUploader';
 import { previewAs, removeMember, revokeInvite, setCampaignBackground, setPhase, stepStage } from '../actions';
-import { SettingForm, StagesForm } from '@/components/DmForms';
+import { RulesForm, SettingForm, StagesForm } from '@/components/DmForms';
+import { RULES, rulesOf } from '@/config/rules';
 import { UpgradeHint } from '@/components/UpgradeHint';
 import { ThemeEditor } from '@/components/ThemeEditor';
 import { campaignCan } from '@/lib/entitlements';
@@ -132,6 +133,12 @@ export default async function Manage({ params, searchParams }: { params: Promise
         <div className="plate">
           <p>Paste text and the site turns it into tabs, headings, cards, tables, and DM-only secrets, added to what is already here. <Link href="/help/campaign-format" target="_blank">How to format it</Link> (opens in a new tab).</p>
           <ImportPagesForm slug={slug} />
+        </div>
+
+        <h2>Rules</h2>
+        <div className="plate">
+          <p>Which open rules this campaign uses. It decides which races or species, classes, spells and creatures your players and you can pick from. Characters keep whatever they already chose. Your own homebrew is always available whichever you choose.</p>
+          <RulesForm slug={slug} value={rulesOf(campaign.settings)} options={Object.entries(RULES).map(([k, v]) => [k, v.label])} />
         </div>
 
         <h2>Theme</h2>

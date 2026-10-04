@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useActionState, useState, useTransition } from 'react';
 import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
 import { ThemeEditor } from './ThemeEditor';
+import { NEW_CAMPAIGN_RULES, RULES } from '@/config/rules';
 
 function Msg({ state }: { state: FormState }) {
   if (state?.error) return <p className="bad" role="alert">{state.error}</p>;
@@ -67,6 +68,7 @@ export function NewCampaignForm({ campaigns, pro }: { campaigns: { id: string; t
       </div>
       <h2>Character rules</h2>
       <div className="panel">
+        <label>Rules version<select name="rules" defaultValue={NEW_CAMPAIGN_RULES}>{Object.entries(RULES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
         <label>Character sheet
           <select name="copy" defaultValue="">
             <option value="">The standard fifth edition sheet (SRD and your homebrew)</option>

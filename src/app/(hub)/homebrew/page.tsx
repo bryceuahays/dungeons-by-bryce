@@ -23,7 +23,7 @@ export default async function Homebrew() {
       <div className="panel">
         <p>Make your own races, classes, subclasses, backgrounds, feats, spells, items, monsters, and resources. Start from nothing, or clone anything in the SRD and change it. Attach an entry to a campaign and it shows up on your players&apos; sheets.</p>
         <p className="dim">{plan.pro ? 'You have the full builder.' : `Free plan: ${entries.length} of ${FREE_LIMITS.homebrew} entries used, in Quick mode.`}</p>
-        <p className="inline"><Link className="button quiet" href="/homebrew/srd">Browse the SRD to clone</Link> <Link className="button quiet" href="/homebrew/convert">Convert from an older edition</Link></p>
+        <p className="inline"><Link className="button quiet" href="/homebrew/srd">Browse the SRD (2014 and 2024 rules)</Link> <Link className="button quiet" href="/homebrew/convert">Convert from an older edition</Link></p>
       </div>
       {left <= 0 ? <UpgradeHint feature="homebrew" /> : null}
 

@@ -93,6 +93,18 @@ export function SettingForm({ slug, name, label, value }: { slug: string; name: 
   );
 }
 
+// Which rules the character sheet, the compendium and the initiative tracker draw on.
+export function RulesForm({ slug, value, options }: { slug: string; value: string; options: [string, string][] }) {
+  const [msg, setMsg] = useState<ActionState>(null);
+  const [pending, start] = useTransition();
+  return (
+    <p className="row">
+      <label className="f">Rules version<select defaultValue={value} disabled={pending} onChange={(e) => start(async () => setMsg(await saveSetting(slug, 'rules', e.target.value)))}>{options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+      <Msg state={msg} />
+    </p>
+  );
+}
+
 // The ordered list of reveal stages, one per line.
 export function StagesForm({ slug, stages, pro }: { slug: string; stages: { id: string; label: string }[]; pro: boolean }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveStages.bind(null, slug), null);

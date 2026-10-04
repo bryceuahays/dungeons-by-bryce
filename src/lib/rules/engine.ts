@@ -24,7 +24,7 @@ export type Effect = { at?: number } & (
   | { t: 'text'; text: string }
 );
 export type Feature = { level: number; name: string; text: string; effects?: Effect[] };
-export type Entity = { id: string; type: EntityType; name: string; source: string; status?: string; version?: number; change_note?: string; data: Record<string, any> };
+export type Entity = { id: string; type: EntityType; name: string; source: string; srd_version?: string | null; status?: string; version?: number; change_note?: string; data: Record<string, any> };
 
 export const mod = (score: number) => Math.floor((Number(score) - 10) / 2);
 export const sgn = (n: number) => (n >= 0 ? '+' : '') + n;

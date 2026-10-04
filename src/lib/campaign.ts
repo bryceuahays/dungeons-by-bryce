@@ -6,6 +6,7 @@ import { requireViewer } from './auth';
 import { safeCssValue } from './sanitize';
 import type { Campaign, ContentRow, RuleRow, Section } from './types';
 import type { CampaignAccess } from './entitlements';
+import { RULES, rulesOf } from '@/config/rules';
 
 export const VIEW_AS_PLAYER = 'dbb-view-as-player';
 // The preview cookie is "1" (any player, at the current stage) or JSON {p: player id, s: stage id}.
@@ -186,10 +187,25 @@ export const usesLegacySheet = cache(async (campaignId: string) => {
 
 // What the standard sheet can draw on: the SRD, plus the homebrew attached to this
 // campaign that this viewer is allowed to see (row-level security decides).
-export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource']) {
-  const cols = 'id, type, name, source, status, version, change_note, data';
-  const [srd, attached] = await Promise.all([
-    ctx.supabase.from('entities').select(cols).eq('source', 'srd').in('type', types).limit(2000),
+export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], opts: { liteSpells?: boolean } = {}) {
+  const cols = 'id, type, name, source, srd_version, status, version, change_note, data';
+  const versions = RULES[rulesOf(ctx.campaign.settings)].versions as readonly string[];
+  // the SRD is large: it is read in pages, and (for the sheet) spells come without their
+  // long text, which the sheet fetches when a spell is opened
+  const lite = opts.liteSpells && types.includes('spell');
+  const page = async (wanted: string[], select: string) => {
+    const out: any[] = [];
+    if (!wanted.length) return out;
+    for (let from = 0; ; from += 1000) {
+      const { data } = await ctx.supabase.from('entities').select(select).eq('source', 'srd').in('srd_version', versions).in('type', wanted).order('name').range(from, from + 999);
+      out.push(...(data ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    return out;
+  };
+  const [srd, spells, attached] = await Promise.all([
+    page(types.filter((t) => !(lite && t === 'spell')), cols),
+    lite ? page(['spell'], 'id, type, name, source, srd_version, status, version, level:data->level, school:data->school, classes:data->classes, ritual:data->ritual') : [],
     ctx.supabase.from('campaign_entities').select(`vis, vis_players, vis_stage, entities(${cols})`).eq('campaign_id', ctx.campaign.id),
   ]);
   const mine = ((attached.data ?? []) as any[])
@@ -197,7 +213,7 @@ export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class
     // the DM previewing as a player gets what players get
     .filter((a) => ctx.realDm && !ctx.asPlayer ? true : a.entities.status !== 'draft' && a.vis !== 'dm')
     .map((a) => a.entities);
-  return [...((srd.data ?? []) as any[]), ...mine];
+  return [...srd, ...spells.map(({ level, school, classes, ritual, ...e }) => ({ ...e, change_note: '', data: { level, school, classes, ritual, _lite: true } })), ...mine];
 }
 
 export { themeStyle } from './theme-style';

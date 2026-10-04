@@ -13,8 +13,13 @@ const byName = (type, name) => srd.find((e) => e.type === type && e.name === nam
 
 before(async () => {
   await cleanup();
-  const { data } = await admin.from('entities').select('id, type, name, source, status, version, change_note, data').eq('source', 'srd').limit(2000);
-  srd = data;
+  // the 2014 rules (SRD 5.1), read in pages: there are more than a thousand entries
+  srd = [];
+  for (let from = 0; ; from += 1000) {
+    const { data } = await admin.from('entities').select('id, type, name, source, srd_version, status, version, change_note, data').eq('source', 'srd').eq('srd_version', '5.1').in('type', ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'monster']).range(from, from + 999);
+    srd.push(...data);
+    if (data.length < 1000) break;
+  }
   [pro, free, friend] = await Promise.all([makeUser('brewer'), makeUser('brewfree', { free: true }), makeUser('brewfriend', { free: true })]);
 });
 after(cleanup);

@@ -12,7 +12,7 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
   const def = TYPES[type];
   if (!def) notFound();
   const { supabase } = await requireViewer();
-  const [plan, { data: srd }] = await Promise.all([getPlan(), supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', type).limit(400)]);
+  const [plan, { data: srd }] = await Promise.all([getPlan(), supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', type).order('srd_version').limit(700)]);
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>New {def.label.toLowerCase()}</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>

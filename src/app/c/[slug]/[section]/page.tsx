@@ -87,7 +87,7 @@ function CharacterPicker({ slug, tab, chars, current }: { slug: string; tab: str
 // The standard fifth edition sheet (every campaign that does not have its own rule set).
 async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: string; play: boolean }) {
   const slug = ctx.campaign.slug;
-  const [chars, entities, party] = await Promise.all([myCharacters(ctx), getSheetEntities(ctx), ctx.supabase.rpc('party_cards', { c: ctx.campaign.id })]);
+  const [chars, entities, party] = await Promise.all([myCharacters(ctx), getSheetEntities(ctx, undefined, { liteSpells: true }), ctx.supabase.rpc('party_cards', { c: ctx.campaign.id })]);
   const current = chars.find((c) => c.id === pick) ?? chars[0];
   if (!current) {
     return (
@@ -250,7 +250,7 @@ async function OpenSheet({ ctx, id }: { ctx: CampaignCtx; id: string }) {
   if (!ch) return <p className="who">That character is not in this campaign.</p>;
   const back = <p className="row"><Link className="act sm" href={`/c/${ctx.campaign.slug}/players`}>Back to all players</Link></p>;
   if (ch.data?.v === 2 || !(await usesLegacySheet(ctx.campaign.id))) {
-    const entities = await getSheetEntities(ctx);
+    const entities = await getSheetEntities(ctx, undefined, { liteSpells: true });
     return <>{back}<SheetAccess name={ch.data?.name || 'this character'} canEdit={ctx.canEdit}><Sheet5e character={{ id: ch.id, data: ch.data }} entities={entities} /></SheetAccess></>;
   }
   // the campaign's own sheet, built the way the player's page builds it, with the DM's reach

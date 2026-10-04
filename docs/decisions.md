@@ -94,3 +94,18 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 73. **Deleting a campaign that had map pins linked to story beats was being blocked** by a check added in this build. Fixed, with a test. The test clean-up now fails loudly if it ever leaves a test account behind.
 74. **Two form fields had a pattern that newer browsers reject** (the campaign address box). Fixed.
 75. **A new character on the standard sheet started at 0 hit points.** It now starts at full.
+
+# Follow-up build: full SRD, packs, editions, commissions
+
+## Part 0: the full SRD
+
+76. **The brief's instruction to import the SRD from an open dataset was taken as the go-ahead to download it.** The handoff had asked for exactly that say-so.
+77. **Source: the `5e-bits/5e-srd-api` project, pinned to one commit.** It is the maintained home of the best-known structured SRD dataset, it holds only SRD content, and it has both the 2014 and the 2024 rules. Details and the licence check are in `docs/srd-import.md`. The data files are downloaded by a script and not stored in the repository.
+78. **The dataset supplies the official wording; the import works out what each entry does to a sheet.** For the 2014 races and classes, the hand-written core set is used as the guide for those mechanics, so sheets behave as before with the official text.
+79. **Subraces are folded into their race** (hill dwarf into Dwarf, and so on), and the 2024 lineages, legacies and ancestries are listed as traits to choose from. The sheet has no separate subrace choice.
+80. **New campaigns start on the 2024 rules; every existing campaign is set to the 2014 rules**, which is what it showed before. The DM can switch to 2014, 2024 or both on the Manage page at any time. Characters keep what they chose.
+81. **Conditions and rules text are two new kinds of SRD entry.** They can be read and searched but not cloned, because the homebrew builder has nine kinds and these are reference text.
+82. **The 2024 data has no rules chapters yet.** The 2014 chapters are imported; for 2024 the reference text is the short entries (skills, damage types, weapon properties and mastery, languages, alignments, schools, ability scores) and conditions.
+83. **The sheet no longer receives the long text of every spell.** With 300-odd spells per version that was too much for a phone. A spell's text is fetched when it is opened.
+84. **The hand-written core set was replaced by the official entries:** 213 replaced in place (same ids, so nothing that used them broke), 20 removed because the official data names them differently (for example "Path of the Berserker" is "Berserker" in SRD 5.1, and "Chain mail armor" is "Chain Mail"). The lists are in `docs/srd-import-report.md`.
+85. **The SRD browser is now a searchable list by version and category** that opens one entry at a time, instead of printing every entry in full.

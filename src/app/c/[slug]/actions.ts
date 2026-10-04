@@ -109,11 +109,11 @@ export async function stepStage(slug: string, dir: 1 | -1) {
 }
 
 // Settings every member may read: the "newly revealed" feed, the current session number, the featured video.
-export async function saveSetting(slug: string, key: 'feed' | 'session' | 'video' | 'timeline', value: unknown): Promise<ActionState> {
+export async function saveSetting(slug: string, key: 'feed' | 'session' | 'video' | 'timeline' | 'rules', value: unknown): Promise<ActionState> {
   const { supabase } = await requireViewer();
   const { data: c } = await supabase.from('campaigns').select('id, settings').eq('slug', slug).maybeSingle();
   if (!c) return { error: 'Campaign not found.' };
-  const v = key === 'feed' || key === 'timeline' ? !!value : key === 'session' ? Math.max(0, Math.min(999, Number(value) || 0)) : String(value || '').slice(0, 300);
+  const v = key === 'rules' ? (value === '2024' || value === 'both' ? value : '2014') : key === 'feed' || key === 'timeline' ? !!value : key === 'session' ? Math.max(0, Math.min(999, Number(value) || 0)) : String(value || '').slice(0, 300);
   const { error } = await supabase.from('campaigns').update({ settings: { ...(c.settings ?? {}), [key]: v } }).eq('id', c.id);
   if (error) return { error: 'That did not save.' };
   fresh(slug);
