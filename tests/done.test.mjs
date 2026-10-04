@@ -262,7 +262,7 @@ test('sign up, join by code, build a character, edit it: the DM sees it live', a
       .subscribe((s) => { if (s === 'SUBSCRIBED') resolve(); if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') reject(new Error(s)); });
   });
   await ready;
-  await wait(1500);
+  await wait(4000); // Realtime needs a moment after SUBSCRIBED before it delivers table changes
 
   // build (the builder inserts the row, then saves the finished sheet)
   const ins = await fresh.from('characters').insert({ owner: up.data.user.id, campaign_id: C.id, data: { name: '', level: 1 }, builder: { race: 'corrin', cls: 'fighter', name: 'Brannoch' } }).select('id').single();
@@ -273,7 +273,7 @@ test('sign up, join by code, build a character, edit it: the DM sees it live', a
   const edit = await fresh.from('characters').update({ data: { t: Date.now(), name: 'Brannoch', race: 'corrin', cls: 'Fighter', level: 15, hp: 77, hpMax: 120, ab: { str: 16 } } }).eq('id', ins.data.id).select('id');
   assert.equal(edit.data.length, 1);
 
-  for (let i = 0; i < 40 && !events.some((e) => e.new?.data?.hp === 77); i++) await wait(250);
+  for (let i = 0; i < 100 && !events.some((e) => e.new?.data?.hp === 77); i++) await wait(250);
   await dmLive.removeAllChannels();
   assert.ok(events.some((e) => e.eventType === 'INSERT' && e.new.id === ins.data.id), 'DM received the new character live');
   assert.ok(events.some((e) => e.eventType === 'UPDATE' && e.new.data.hp === 77), 'DM received the edit live, without a reload');
