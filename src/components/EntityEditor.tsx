@@ -29,6 +29,7 @@ function FieldInput({ f, data, onChange }: { f: Field; data: any; onChange: (d: 
     case 'check': return <label className="ckrow"><input type="checkbox" checked={!!v} onChange={(e) => put(e.target.checked)} /> {f.label}</label>;
     case 'multi': return (
       <fieldset className="multi"><legend>{f.label}</legend>
+        {help ? <p style={{ flexBasis: '100%', margin: '0 0 6px' }}>{help}</p> : null}
         {(f.options ?? []).map((o) => <label key={o} className="ckrow"><input type="checkbox" checked={(v ?? []).includes(o)} onChange={(e) => put(e.target.checked ? [...(v ?? []), o] : (v ?? []).filter((x: string) => x !== o))} /> {AB[o] ?? o}</label>)}
       </fieldset>
     );
