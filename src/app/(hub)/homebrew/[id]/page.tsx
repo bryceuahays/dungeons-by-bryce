@@ -23,7 +23,7 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
         <h1>{e.name}</h1>
         <div className="panel"><EntityCard type={e.type} name={e.name} source={e.source} status={e.status} data={e.data} /></div>
         {e.source === 'srd' ? <p className="dim">From the System Reference Document {e.srd_version} ({e.srd_version === '5.2' ? '2024' : '2014'} rules), CC-BY-4.0. <Link href="/legal">Licence</Link>.</p> : null}
-        <p className="inline">{e.source !== 'private' && TYPES[e.type] ? <CloneButton id={e.id} /> : null}<Link className="button quiet" href={e.source === 'srd' ? `/homebrew/srd?type=${e.type}&v=${e.srd_version}` : '/homebrew'}>Back</Link></p>
+        <div className="inline" style={{ marginBottom: 12 }}>{e.source !== 'private' && TYPES[e.type] ? <CloneButton id={e.id} /> : null}<Link className="button quiet" href={e.source === 'srd' ? `/homebrew/srd?type=${e.type}&v=${e.srd_version}` : '/homebrew'}>Back</Link></div>
       </>
     );
   }
@@ -46,7 +46,7 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
   return (
     <>
       <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>
-      <p className="inline"><Link className="button quiet" href="/homebrew">All my homebrew</Link><CloneButton id={e.id} label="Make a copy" /></p>
+      <div className="inline" style={{ marginBottom: 12 }}><Link className="button quiet" href="/homebrew">All my homebrew</Link><CloneButton id={e.id} label="Make a copy" /></div>
       <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data: e.data }} />
     </>

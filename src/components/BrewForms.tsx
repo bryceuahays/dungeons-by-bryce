@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { attachPack, attachUsablePack, cloneEntity, createPack, deletePack, importPack, saveEntity, setInPack, type BrewState } from '@/app/(hub)/homebrew/actions';
+import { attachPack, attachUsablePack, cloneEntity, createPack, deleteEntity, deletePack, importPack, saveEntity, setInPack, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { EDITIONS, type EditionId } from '@/config/editions';
 import { convertItem, convertMonster, convertSpell, type Converted } from '@/lib/rules/convert';
 import { EntityCard } from './EntityCard';
@@ -13,6 +13,12 @@ const Msg = ({ s }: { s: BrewState }) => (s?.error ? <p className="bad" role="al
 export function CloneButton({ id, label = 'Clone and tweak' }: { id: string; label?: string }) {
   const [state, action, pending] = useActionState<BrewState, FormData>(cloneEntity.bind(null, id), null);
   return <form action={action} className="inline"><button type="submit" className="quiet small-btn" disabled={pending}>{pending ? 'Copying' : label}</button><Msg s={state} /></form>;
+}
+
+// Delete from the "Your entries" list, without opening the entry first.
+export function DeleteEntryButton({ id, name }: { id: string; name: string }) {
+  const [pending, start] = useTransition();
+  return <button type="button" className="quiet small-btn danger" disabled={pending} onClick={() => { if (confirm(`Delete "${name}" for good?`)) start(() => deleteEntity(id)); }}>{pending ? 'Deleting' : 'Delete'}</button>;
 }
 
 // One click: add a whole pack to one of your campaigns.

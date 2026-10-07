@@ -4,7 +4,7 @@ import { getPlan, remaining } from '@/lib/entitlements';
 import { TYPES } from '@/config/homebrew';
 import { FREE_LIMITS } from '@/config/plans';
 import { UpgradeHint } from '@/components/UpgradeHint';
-import { AttachPackForm, ImportPackForm, NewPackForm } from '@/components/BrewForms';
+import { AttachPackForm, DeleteEntryButton, ImportPackForm, NewPackForm } from '@/components/BrewForms';
 
 export const metadata = { title: 'Homebrew' };
 
@@ -48,7 +48,7 @@ export default async function Homebrew() {
             {entries.map((e) => (
               <li key={e.id}>
                 <span><Link href={'/homebrew/' + e.id}><b>{e.name}</b></Link> <span className="dim">{TYPES[e.type]?.label ?? e.type} · {e.status}{e.version > 1 ? ' · version ' + e.version : ''}{e.source === 'private' ? ' · private' : ''}{e.origin === 'product' ? ' · came with a purchase' : ''}</span></span>
-                <Link href={'/homebrew/' + e.id}>Edit</Link>
+                <span className="inline"><Link href={'/homebrew/' + e.id}>Edit</Link><DeleteEntryButton id={e.id} name={e.name} /></span>
               </li>
             ))}
           </ul>
