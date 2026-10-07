@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { saveEntity, spellDetail } from '@/app/(hub)/homebrew/actions';
+import { deleteSpell, saveEntity, spellDetail } from '@/app/(hub)/homebrew/actions';
 import { STATUS, TYPES, type Field } from '@/config/homebrew';
 import type { SpellOption } from '@/lib/class-spells';
 import { EntityCard } from './EntityCard';
@@ -12,8 +12,8 @@ import { EntityCard } from './EntityCard';
 
 export const SPELL_LEVELS = ['Cantrips', '1st level', '2nd level', '3rd level', '4th level', '5th level', '6th level', '7th level', '8th level', '9th level'];
 
-export function ClassSpells({ spells, value, onChange, onSpellSaved, pro }: {
-  spells: SpellOption[]; value: string[]; onChange: (v: string[]) => void; onSpellSaved: (s: SpellOption) => void; pro: boolean;
+export function ClassSpells({ spells, value, onChange, onSpellSaved, onSpellDeleted, pro }: {
+  spells: SpellOption[]; value: string[]; onChange: (v: string[]) => void; onSpellSaved: (s: SpellOption) => void; onSpellDeleted: (id: string) => void; pro: boolean;
 }) {
   const [q, setQ] = useState('');
   const [level, setLevel] = useState('all');
@@ -42,6 +42,12 @@ export function ClassSpells({ spells, value, onChange, onSpellSaved, pro }: {
     const next = value.filter((x) => x !== replaces && x !== s.id);
     onChange([...next, s.id]);
     setOpen((o) => { const n = { ...o }; delete n[s.id]; return n; });
+    setEditing(null);
+  };
+  // after the pop-up deletes one of your spells: gone from the list too
+  const deleted = (id: string) => {
+    onSpellDeleted(id);
+    onChange(value.filter((x) => x !== id));
     setEditing(null);
   };
 
@@ -81,7 +87,7 @@ export function ClassSpells({ spells, value, onChange, onSpellSaved, pro }: {
         );
       })}
       {!shown.length ? <p className="dim">No spells match.</p> : null}
-      {editing ? <SpellPopup key={(editing.id ?? '') + (editing.from ?? '')} id={editing.id} from={editing.from} pro={pro} onClose={() => setEditing(null)} onSaved={saved} /> : null}
+      {editing ? <SpellPopup key={(editing.id ?? '') + (editing.from ?? '')} id={editing.id} from={editing.from} pro={pro} onClose={() => setEditing(null)} onSaved={saved} onDeleted={deleted} /> : null}
     </div>
   );
 }
@@ -90,7 +96,7 @@ export function ClassSpells({ spells, value, onChange, onSpellSaved, pro }: {
 
 const SPELL_FIELDS: Field[] = TYPES.spell.fields.filter((f) => f.key !== 'classes'); // the class's list decides that now
 
-function SpellPopup({ id, from, pro, onClose, onSaved }: { id: string | null; from?: string; pro: boolean; onClose: () => void; onSaved: (s: SpellOption, replaces?: string) => void }) {
+function SpellPopup({ id, from, pro, onClose, onSaved, onDeleted }: { id: string | null; from?: string; pro: boolean; onClose: () => void; onSaved: (s: SpellOption, replaces?: string) => void; onDeleted: (id: string) => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState('');
   const [status, setStatus] = useState('draft');
@@ -98,6 +104,7 @@ function SpellPopup({ id, from, pro, onClose, onSaved }: { id: string | null; fr
   const [loading, setLoading] = useState(!!(id || from));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [sure, setSure] = useState(false);
 
   useEffect(() => { ref.current?.showModal(); }, []);
   useEffect(() => {
@@ -117,6 +124,15 @@ function SpellPopup({ id, from, pro, onClose, onSaved }: { id: string | null; fr
     setBusy(false);
     if (!r?.id) { setError(r?.error || 'That did not save.'); return; }
     onSaved({ id: r.id, name: name.trim(), level: Number(clean.level) || 0, school: clean.school ?? '', mine: true, classes: [] }, from);
+  };
+
+  const remove = async () => {
+    if (!id) return;
+    setBusy(true); setError('');
+    const r = await deleteSpell(id);
+    setBusy(false);
+    if (r?.error) { setError(r.error); setSure(false); return; }
+    onDeleted(id);
   };
 
   return (
@@ -139,7 +155,14 @@ function SpellPopup({ id, from, pro, onClose, onSaved }: { id: string | null; fr
           <p className="inline">
             <button type="button" disabled={busy || !name.trim()} onClick={save}>{busy ? 'Saving' : id ? 'Save spell' : 'Create spell'}</button>
             <button type="button" className="quiet" onClick={() => ref.current?.close()}>Cancel</button>
+            {id && !sure ? <button type="button" className="quiet danger" style={{ marginLeft: 'auto' }} disabled={busy} onClick={() => setSure(true)}>Delete spell</button> : null}
           </p>
+          {id && sure ? (
+            <div className="popup-confirm" role="alert">
+              <p>Delete <b>{name || 'this spell'}</b> for good? It comes off this class&apos;s list, and any other class or character using it loses it too.</p>
+              <p className="inline"><button type="button" className="danger" disabled={busy} onClick={remove}>{busy ? 'Deleting' : 'Yes, delete it'}</button><button type="button" className="quiet" disabled={busy} onClick={() => setSure(false)}>Keep it</button></p>
+            </div>
+          ) : null}
         </div>
       )}
     </dialog>

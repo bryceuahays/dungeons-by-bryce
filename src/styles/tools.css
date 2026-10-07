@@ -222,3 +222,5 @@ dialog.popup::backdrop{background:rgba(0,0,0,.65)}
 .popup-body{display:grid;gap:12px}
 .popup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .popup-grid .wide{grid-column:1/-1}
+.popup-confirm{border:1px solid var(--h-bad,#e06c75);border-radius:10px;padding:10px 14px}
+.popup-confirm p{margin:0 0 8px}

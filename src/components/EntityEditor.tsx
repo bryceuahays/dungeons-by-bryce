@@ -234,7 +234,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const [tab, setTab] = useState(CLASS_TABS[0]);
   // spells made or changed in the pop-up during this visit, on top of what the page loaded
   const [madeSpells, setMadeSpells] = useState<SpellOption[]>([]);
-  const allSpells = useMemo(() => { const made = new Set(madeSpells.map((m) => m.id)); return [...madeSpells, ...(spells ?? []).filter((x) => !made.has(x.id))]; }, [madeSpells, spells]);
+  const [goneSpells, setGoneSpells] = useState<string[]>([]);
+  const allSpells = useMemo(() => { const made = new Set(madeSpells.map((m) => m.id)); return [...madeSpells, ...(spells ?? []).filter((x) => !made.has(x.id))].filter((x) => !goneSpells.includes(x.id)); }, [madeSpells, spells, goneSpells]);
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<BrewState>(null);
   const [links, setLinks] = useState(campaigns);
@@ -342,7 +343,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                       <p className="dim">How many spells a character can have ready at each class level, chosen from the class's spell list.</p>
                       <LevelNumbers label="Prepared" values={twenty(data.casting?.prepared)} onChange={(v) => setData({ ...data, casting: { ...data.casting, prepared: v } })} />
                       <h3>Spells available to this class</h3>
-                      <ClassSpells spells={allSpells} value={data.spellList ?? []} pro={pro} onChange={(v) => setData((d: any) => ({ ...d, spellList: v }))} onSpellSaved={(sp) => setMadeSpells((m) => [sp, ...m.filter((x) => x.id !== sp.id)])} />
+                      <ClassSpells spells={allSpells} value={data.spellList ?? []} pro={pro} onChange={(v) => setData((d: any) => ({ ...d, spellList: v }))} onSpellSaved={(sp) => setMadeSpells((m) => [sp, ...m.filter((x) => x.id !== sp.id)])} onSpellDeleted={(sid) => setGoneSpells((g) => [...g, sid])} />
                     </>
                   ) : null}
                 </>

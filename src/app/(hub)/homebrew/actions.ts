@@ -181,3 +181,12 @@ export async function spellDetail(id: string): Promise<{ name: string; source: s
   const { data } = await supabase.from('entities').select('name, source, status, data').eq('id', id).eq('type', 'spell').maybeSingle();
   return data ?? null;
 }
+
+// Delete one of your own spells from inside the class editor (no page change, unlike deleteEntity).
+export async function deleteSpell(id: string): Promise<BrewState> {
+  const { supabase, user } = await requireViewer();
+  const { data, error } = await supabase.from('entities').delete().eq('id', id).eq('type', 'spell').eq('owner_id', user.id).select('id');
+  if (error || !data?.length) return { error: 'That spell could not be deleted.' };
+  revalidatePath('/homebrew');
+  return { note: 'Deleted.' };
+}
