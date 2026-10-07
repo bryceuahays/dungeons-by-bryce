@@ -244,3 +244,13 @@ dialog.popup::backdrop{background:rgba(0,0,0,.65)}
 .res-row > button{justify-self:end}
 .res-steps{grid-column:span 1}
 .res-step{display:inline-flex;align-items:center;gap:4px}
+.res-box{border:1px solid var(--h-line);border-radius:10px;padding:10px 12px}
+.res-box .res-row{border:0;padding:0}
+.res-foot{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-top:8px}
+.res-foot .danger{margin-left:auto}
+.chip-link{cursor:pointer;background:none;color:var(--h-text);min-height:0;letter-spacing:0;text-transform:none;font:inherit;font-size:.85rem}
+.feat-uses-tag{margin-left:10px;font-size:.75rem;padding:0 8px;opacity:.85}
+fieldset.feat-uses{border:1px solid var(--h-line);border-radius:10px;padding:8px 12px;margin:0}
+fieldset.feat-uses legend{padding:0 6px;font-size:.9rem;opacity:.85}
+.feat-uses-pick{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:6px}
+fieldset.feat-uses .res-row{border:0;padding:0}

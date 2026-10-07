@@ -15,7 +15,7 @@ type Amount =
   | { mode: 'level'; n: number }                    // class level x n
   | { mode: 'ability'; ab: string }                 // an ability modifier (at least 1)
   | { mode: 'other'; raw: string };                 // anything older the choices cannot show
-export type Resource = { name: string; amount: Amount; recharge: 'long' | 'short' | 'short1' | 'none'; from: number };
+export type Resource = { id: string; name: string; amount: Amount; recharge: 'long' | 'short' | 'short1' | 'none'; from: number };
 
 const AB_KEYS = ABILITIES.map(([k]) => k as string);
 const RECHARGE: [Resource['recharge'], string][] = [['long', 'All back on a long rest'], ['short', 'All back on a short or long rest'], ['short1', 'One back on a short rest, all on a long rest'], ['none', 'Never comes back']];
@@ -39,10 +39,18 @@ const maxOf = (a: Amount): string => {
   }
 };
 
+// A resource keeps the same id when it is renamed, so the features that use it stay linked.
+const idFor = (name: string) => 'r:' + name.trim().toLowerCase();
+const freshId = (name: string, taken: Resource[]) => {
+  let id = idFor(name || 'resource'), n = 2;
+  while (taken.some((r) => r.id === id)) id = idFor(name || 'resource') + '-' + n++;
+  return id;
+};
+
 // Resources saved before this tab are the class's "resource" effects: read them from there.
 export function readResources(data: any): Resource[] {
-  if (Array.isArray(data.resources)) return data.resources;
-  return (data.effects ?? []).filter((x: any) => x.t === 'resource').map((x: any) => ({ name: x.name, amount: amountOf(x.max), recharge: x.recharge ?? 'long', from: Number(x.at) || 1 }));
+  if (Array.isArray(data.resources)) return data.resources.map((r: any) => ({ ...r, id: r.id ?? idFor(r.name) }));
+  return (data.effects ?? []).filter((x: any) => x.t === 'resource').map((x: any) => ({ id: idFor(x.name), name: x.name, amount: amountOf(x.max), recharge: x.recharge ?? 'long', from: Number(x.at) || 1 }));
 }
 
 // The character sheet and the class table read resources from the class's effects:
@@ -54,32 +62,96 @@ export function syncResources(data: any) {
   return { ...data, effects: [...others, ...fx] };
 }
 
-export function ResourcesEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  const list = readResources(data);
-  const put = (next: Resource[]) => onChange({ ...data, resources: next });
-  const edit = (i: number, r: Partial<Resource>) => put(list.map((x, j) => (j === i ? { ...x, ...r } : x)));
+// ---------------------------------------------------------------- which feature spends which resource
+
+// feature.uses: { res: resource id, cost: number, or '' when it varies (a healing pool) }; null: none.
+type Uses = { res: string; cost: number | '' } | null;
+
+// Features saved before links existed: a feature named like a resource is that resource's feature,
+// and one whose text says it expends or spends a resource uses one of it.
+function guessUses(f: Feature, resources: Resource[]): Uses {
+  if (f.uses !== undefined) return f.uses;
+  const same = resources.find((r) => r.name.trim().toLowerCase() === (f.name ?? '').trim().toLowerCase());
+  if (same) return { res: same.id, cost: '' };
+  const text = (f.text ?? '').toLowerCase();
+  const spent = resources.find((r) => r.name.trim() && text.includes(r.name.trim().toLowerCase()) && /expend|spend/.test(text));
+  // "expend 5 Hit Points from the pool": the number after expend or spend, else one use
+  const n = Number(text.match(/(?:expend|spend)s?\s+(\d+)/)?.[1]);
+  return spent ? { res: spent.id, cost: n > 0 ? n : 1 } : null;
+}
+// Saved with the class so the links are kept (and the guesses are only made once).
+export function syncUses(data: any) {
+  if (!Array.isArray(data.features)) return data;
+  const resources = readResources(data);
+  return { ...data, resources, features: data.features.map((f: Feature) => ({ ...f, uses: guessUses(f, resources) })) };
+}
+
+// ---------------------------------------------------------------- the Features tab
+
+type Feature = { level: number; name: string; text: string; effects?: any[]; uses?: Uses };
+
+export function FeaturesTab({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const resources = readResources(data);
+  const feats: Feature[] = (data.features ?? []).map((f: Feature) => ({ ...f, uses: guessUses(f, resources) }));
+  const sorted = (list: Feature[]) => list.map((f, i) => [f, i] as const).sort((a, b) => Number(a[0].level) - Number(b[0].level) || a[1] - b[1]).map(([f]) => f);
+  const write = (next: { resources?: Resource[]; features?: Feature[] }) =>
+    onChange({ ...data, resources: next.resources ?? resources, features: sorted(next.features ?? feats) });
+
+  // a new feature already linked to a resource, opened so it can be filled in
+  const addUsing = (r: Resource) => {
+    write({ features: [...feats, { level: r.from, name: 'New feature', text: '', uses: { res: r.id, cost: 1 } }] });
+    setOpen(feats.filter((f) => Number(f.level) <= r.from).length);
+  };
+  const removeResource = (id: string) => write({ resources: resources.filter((r) => r.id !== id), features: feats.map((f) => (f.uses?.res === id ? { ...f, uses: null } : f)) });
+
   return (
-    <div className="res-list">
-      {list.map((r, i) => (
-        <div key={i} className="res-row">
-          <label>Name<input value={r.name} maxLength={60} onChange={(e) => edit(i, { name: e.target.value })} placeholder="For example: Channel Divinity" /></label>
-          <label>How much
-            <select value={r.amount.mode} onChange={(e) => edit(i, { amount: blankAmount(e.target.value as Amount['mode'], r.amount) })}>
-              <option value="fixed">A set number</option>
-              <option value="steps">A number that changes at certain levels</option>
-              <option value="level">Class level × a number</option>
-              <option value="ability">An ability modifier (at least 1)</option>
-              {r.amount.mode === 'other' ? <option value="other">Formula (older entry)</option> : null}
-            </select>
-          </label>
-          <AmountInput a={r.amount} onChange={(a) => edit(i, { amount: a })} />
-          <label>Comes back<select value={r.recharge} onChange={(e) => edit(i, { recharge: e.target.value as Resource['recharge'] })}>{RECHARGE.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
-          <label>From level<input type="number" min={1} max={20} value={r.from} onChange={(e) => edit(i, { from: Math.min(20, Math.max(1, Number(e.target.value) || 1)) })} /></label>
-          <button type="button" className="quiet small-btn danger" onClick={() => put(list.filter((_, j) => j !== i))}>Remove</button>
-        </div>
-      ))}
-      {!list.length ? <p className="dim">No resources yet. A resource is a pool of uses or points that features spend, like Channel Divinity, Lay on Hands or Focus Points.</p> : null}
-      <p><button type="button" className="quiet small-btn" onClick={() => put([...list, { name: '', amount: { mode: 'fixed', n: 1 }, recharge: 'long', from: 1 }])}>+ Add a resource</button></p>
+    <>
+      <h3>Resources</h3>
+      <p className="dim">Pools of uses or points the class&apos;s features spend. Each one is tracked on the character sheet and gets a column in the table. One resource can be shared by several features.</p>
+      <div className="res-list">
+        {resources.map((r) => {
+          const users = feats.filter((f) => f.uses?.res === r.id);
+          return (
+            <div key={r.id} className="res-box">
+              <ResourceFields r={r} onChange={(nr) => write({ resources: resources.map((x) => (x.id === r.id ? nr : x)) })} />
+              <div className="res-foot">
+                <span className="dim">Used by:</span>
+                {users.length ? users.map((f) => <button key={f.name + f.level} type="button" className="chip chip-link" onClick={() => setOpen(feats.indexOf(f))}>{f.name} (level {f.level})</button>) : <span className="dim">no feature yet</span>}
+                <button type="button" className="quiet small-btn" onClick={() => addUsing(r)}>+ Add a feature that uses this</button>
+                <button type="button" className="quiet small-btn danger" onClick={() => removeResource(r.id)}>Remove</button>
+              </div>
+            </div>
+          );
+        })}
+        {!resources.length ? <p className="dim">No resources yet. A resource is a pool of uses or points that features spend, like Channel Divinity, Lay on Hands or Focus Points.</p> : null}
+        <p><button type="button" className="quiet small-btn" onClick={() => write({ resources: [...resources, { id: freshId('New resource', resources), name: 'New resource', amount: { mode: 'fixed', n: 1 }, recharge: 'long', from: 1 }] })}>+ Add a resource</button></p>
+      </div>
+
+      <h3>Features by level</h3>
+      <p className="dim">What the class gives a character at each level. Click a feature to read or change it.</p>
+      <FeatureTimeline feats={feats} resources={resources} open={open} setOpen={setOpen} write={write} />
+    </>
+  );
+}
+
+function ResourceFields({ r, onChange }: { r: Resource; onChange: (r: Resource) => void }) {
+  const edit = (p: Partial<Resource>) => onChange({ ...r, ...p });
+  return (
+    <div className="res-row">
+      <label>Name<input value={r.name} maxLength={60} onChange={(e) => edit({ name: e.target.value })} placeholder="For example: Channel Divinity" /></label>
+      <label>How much
+        <select value={r.amount.mode} onChange={(e) => edit({ amount: blankAmount(e.target.value as Amount['mode'], r.amount) })}>
+          <option value="fixed">A set number</option>
+          <option value="steps">A number that changes at certain levels</option>
+          <option value="level">Class level × a number</option>
+          <option value="ability">An ability modifier (at least 1)</option>
+          {r.amount.mode === 'other' ? <option value="other">Formula (older entry)</option> : null}
+        </select>
+      </label>
+      <AmountInput a={r.amount} onChange={(a) => edit({ amount: a })} />
+      <label>Comes back<select value={r.recharge} onChange={(e) => edit({ recharge: e.target.value as Resource['recharge'] })}>{RECHARGE.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+      <label>From level<input type="number" min={1} max={20} value={r.from} onChange={(e) => edit({ from: Math.min(20, Math.max(1, Number(e.target.value) || 1)) })} /></label>
     </div>
   );
 }
@@ -116,19 +188,26 @@ function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void
 
 // ---------------------------------------------------------------- features by level
 
-type Feature = { level: number; name: string; text: string; effects?: any[] };
-
-export function FeatureTimeline({ data, onChange }: { data: any; onChange: (d: any) => void }) {
-  const feats: Feature[] = data.features ?? [];
-  const [open, setOpen] = useState<number | null>(null);
+function FeatureTimeline({ feats, resources, open, setOpen, write }: {
+  feats: Feature[]; resources: Resource[]; open: number | null; setOpen: (i: number | null) => void;
+  write: (next: { resources?: Resource[]; features?: Feature[] }) => void;
+}) {
   const [many, setMany] = useState({ name: '', levels: '' });
-  const put = (next: Feature[]) => onChange({ ...data, features: next.map((f, i) => [f, i] as const).sort((a, b) => Number(a[0].level) - Number(b[0].level) || a[1] - b[1]).map(([f]) => f) });
-  const edit = (i: number, f: Partial<Feature>) => put(feats.map((x, j) => (j === i ? { ...x, ...f } : x)));
+  const edit = (i: number, f: Partial<Feature>) => write({ features: feats.map((x, j) => (j === i ? { ...x, ...f } : x)) });
   // the list is kept in level order, so the new card's place is after every feature at its level or below
-  const add = (level: number) => { put([...feats, { level, name: 'New feature', text: '' }]); setOpen(feats.filter((f) => Number(f.level) <= level).length); };
+  const add = (level: number) => { write({ features: [...feats, { level, name: 'New feature', text: '', uses: null }] }); setOpen(feats.filter((f) => Number(f.level) <= level).length); };
   // add one feature at several levels at once, skipping levels that already have it
-  const addAt = (name: string, levels: number[], text = '') => put([...feats, ...levels.filter((l) => !feats.some((f) => Number(f.level) === l && f.name.toLowerCase() === name.toLowerCase())).map((level) => ({ level, name, text: feats.find((f) => f.name.toLowerCase() === name.toLowerCase())?.text ?? text }))]);
+  const addAt = (name: string, levels: number[], text = '') => write({ features: [...feats, ...levels.filter((l) => !feats.some((f) => Number(f.level) === l && f.name.toLowerCase() === name.toLowerCase())).map((level) => ({ level, name, text: feats.find((f) => f.name.toLowerCase() === name.toLowerCase())?.text ?? text, uses: null }))] });
   const levelsIn = (s: string) => [...new Set(s.split(/[ ,]+/).map(Number).filter((n) => n >= 1 && n <= 20))];
+  const resName = (id?: string) => resources.find((r) => r.id === id)?.name;
+
+  // the feature's resource: none, an existing one, or a new one made for it (named after it)
+  const setUses = (i: number, f: Feature, value: string) => {
+    if (value === '__new') {
+      const r: Resource = { id: freshId(f.name, resources), name: f.name || 'New resource', amount: { mode: 'fixed', n: 1 }, recharge: 'long', from: Number(f.level) || 1 };
+      write({ resources: [...resources, r], features: feats.map((x, j) => (j === i ? { ...x, uses: { res: r.id, cost: '' } } : x)) });
+    } else edit(i, { uses: value ? { res: value, cost: f.uses?.cost ?? 1 } : null });
+  };
 
   return (
     <div className="feat-timeline">
@@ -147,23 +226,44 @@ export function FeatureTimeline({ data, onChange }: { data: any; onChange: (d: a
         return (
           <section key={level} className="feat-level">
             <h4>Level {level}</h4>
-            {here.length ? here.map(([f, idx]) => (
-              <div key={idx} className={'feat-card' + (open === idx ? ' open' : '')}>
-                <button type="button" className="feat-head" aria-expanded={open === idx} onClick={() => setOpen(open === idx ? null : idx)}>
-                  <span>{f.name || 'Untitled feature'}</span><span className="dim">{open === idx ? 'Close' : 'Open'}</span>
-                </button>
-                {open === idx ? (
-                  <div className="feat-body">
-                    <div className="feat-meta">
-                      <label>Name<input value={f.name} maxLength={120} onChange={(e) => edit(idx, { name: e.target.value })} /></label>
-                      <label>Level<select value={Number(f.level)} onChange={(e) => { edit(idx, { level: Number(e.target.value) }); setOpen(null); }}>{Array.from({ length: 20 }, (_, l) => <option key={l} value={l + 1}>{l + 1}</option>)}</select></label>
+            {here.length ? here.map(([f, idx]) => {
+              const linked = resources.find((r) => r.id === f.uses?.res);
+              const sharedWith = linked ? feats.filter((x) => x !== f && x.uses?.res === linked.id).map((x) => x.name) : [];
+              return (
+                <div key={idx} className={'feat-card' + (open === idx ? ' open' : '')}>
+                  <button type="button" className="feat-head" aria-expanded={open === idx} onClick={() => setOpen(open === idx ? null : idx)}>
+                    <span>{f.name || 'Untitled feature'}{linked ? <span className="chip feat-uses-tag">uses {resName(f.uses?.res)}</span> : null}</span><span className="dim">{open === idx ? 'Close' : 'Open'}</span>
+                  </button>
+                  {open === idx ? (
+                    <div className="feat-body">
+                      <div className="feat-meta">
+                        <label>Name<input value={f.name} maxLength={120} onChange={(e) => edit(idx, { name: e.target.value })} /></label>
+                        <label>Level<select value={Number(f.level)} onChange={(e) => { edit(idx, { level: Number(e.target.value) }); setOpen(null); }}>{Array.from({ length: 20 }, (_, l) => <option key={l} value={l + 1}>{l + 1}</option>)}</select></label>
+                      </div>
+                      <label>What it does<textarea rows={8} value={f.text ?? ''} onChange={(e) => edit(idx, { text: e.target.value })} /></label>
+                      <fieldset className="feat-uses">
+                        <legend>Uses a resource</legend>
+                        <div className="feat-uses-pick">
+                          <label>Resource<select value={f.uses?.res ?? ''} onChange={(e) => setUses(idx, f, e.target.value)}>
+                            <option value="">None (always on, or no limit)</option>
+                            {resources.map((r) => <option key={r.id} value={r.id}>{r.name || 'Unnamed resource'}</option>)}
+                            <option value="__new">+ New resource for this feature</option>
+                          </select></label>
+                          {linked ? <label>Each use spends<input type="number" min={0} placeholder="varies" value={f.uses?.cost ?? ''} onChange={(e) => edit(idx, { uses: { res: linked.id, cost: e.target.value === '' ? '' : Number(e.target.value) } })} /></label> : null}
+                        </div>
+                        {linked ? (
+                          <>
+                            <p className="dim">{f.uses?.cost === '' ? 'Leave "each use spends" blank when the amount varies, like a healing pool.' : ''} {sharedWith.length ? `Shared with: ${sharedWith.join(', ')}. Changes here change it for them too.` : 'Only this feature uses it.'}</p>
+                            <ResourceFields r={linked} onChange={(nr) => write({ resources: resources.map((x) => (x.id === linked.id ? nr : x)) })} />
+                          </>
+                        ) : null}
+                      </fieldset>
+                      <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { write({ features: feats.filter((_, j) => j !== idx) }); setOpen(null); }}>Remove this feature</button></p>
                     </div>
-                    <label>What it does<textarea rows={8} value={f.text ?? ''} onChange={(e) => edit(idx, { text: e.target.value })} /></label>
-                    <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { put(feats.filter((_, j) => j !== idx)); setOpen(null); }}>Remove this feature</button></p>
-                  </div>
-                ) : null}
-              </div>
-            )) : <p className="dim feat-none">–</p>}
+                  ) : null}
+                </div>
+              );
+            }) : <p className="dim feat-none">–</p>}
             <button type="button" className="quiet small-btn feat-add" onClick={() => add(level)}>+ Add a feature at level {level}</button>
           </section>
         );

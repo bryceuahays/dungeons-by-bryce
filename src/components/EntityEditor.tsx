@@ -9,7 +9,7 @@ import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hu
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
-import { FeatureTable, FeatureTimeline, ResourcesEditor, syncResources } from './ClassFeatures';
+import { FeatureTable, FeaturesTab, syncResources, syncUses } from './ClassFeatures';
 import type { SpellOption } from '@/lib/class-spells';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
 
@@ -260,7 +260,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   );
   const rules24 = (d: any) => (onlyAdvanced && d.casting?.kind && d.casting.kind !== 'none' ? { ...d, casting: { ...d.casting, rules: '2024' } } : d);
   // what is saved, and what the side tables show: the tabs' choices written into the class's effects
-  const classOut = (d: any) => rules24(syncResources(syncSaves(d)));
+  const classOut = (d: any) => rules24(syncResources(syncUses(syncSaves(d))));
   const field = (k: string) => def.fields.find((x) => x.key === k)!;
   const fieldList = (fields: Field[]) => <div className="fgrid">{fields.map((f) => <FieldInput key={f.key} f={f} data={data} onChange={setData} />)}</div>;
   const traits = <FeaturesEditor value={data.features ?? []} onChange={(v) => setData({ ...data, features: v })} levels={def.featureLevels} effects={def.effects} />;
@@ -353,12 +353,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               ) : null}
               {tab === 'Features' ? (
                 <>
-                  <h3>Resources</h3>
-                  <p className="dim">Pools of uses or points the class's features spend. Each one is tracked on the character sheet and gets a column in the table.</p>
-                  <ResourcesEditor data={data} onChange={setData} />
-                  <h3>Features by level</h3>
-                  <p className="dim">What the class gives a character at each level. Click a feature to read or change it.</p>
-                  <FeatureTimeline data={data} onChange={setData} />
+                  <FeaturesTab data={data} onChange={setData} />
                   <details><summary>Other sheet effects (the old editor, being replaced)</summary>{fx}</details>
                   <details><summary>The raw data</summary><textarea className="mono" rows={16} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /></details>
                 </>
