@@ -118,6 +118,24 @@ function FeaturesEditor({ value, onChange, levels, effects }: { value: Feature[]
 type Version = { version: number; note: string; name: string; data: any; created_at: string };
 type CampaignLink = { id: string; title: string; stages: Stage[]; members: Member[]; attached: Vis | null };
 
+// The class editor's tabs, and which fields from TYPES.class each one shows.
+const CLASS_TABS = ['Main info', 'Spellcasting', 'Features', 'Effects', 'Raw data'];
+const CLASS_MAIN = ['hd', 'primary', 'saves', 'armor', 'weapons', 'tools', 'skillCount', 'skillList'];
+const CLASS_CASTING = ['casting.kind', 'casting.ability'];
+const pick = (fields: Field[], keys: string[]) => keys.map((k) => fields.find((f) => f.key === k)).filter((f): f is Field => !!f);
+
+// The same for every class in fifth edition, so it is shown, not edited.
+function ProfChart() {
+  const bands = [[1, 4], [5, 8], [9, 12], [13, 16], [17, 20]];
+  return (
+    <>
+      <table className="ctable"><thead><tr><th>Levels</th>{bands.map(([a, b]) => <th key={a}>{a}–{b}</th>)}</tr></thead>
+        <tbody><tr><td>Bonus</td>{bands.map(([a], i) => <td key={a}>+{i + 2}</td>)}</tr></tbody></table>
+      <p className="dim">Every class uses this chart, so it cannot be changed here.</p>
+    </>
+  );
+}
+
 export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom }: {
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
   srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null;
@@ -132,6 +150,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const [source, setSource] = useState(initial.source);
   const [data, setData] = useState<any>(initial.data ?? {});
   const [step, setStep] = useState(0);
+  const [tab, setTab] = useState(CLASS_TABS[0]);
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<BrewState>(null);
   const [links, setLinks] = useState(campaigns);
@@ -191,7 +210,18 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
             </>
           ) : null}
 
-          {depth === 'advanced' ? (
+          {onlyAdvanced ? (
+            <>
+              <div className="depth" role="tablist" aria-label="Parts of the class">
+                {CLASS_TABS.map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? '' : 'quiet'} onClick={() => setTab(t)}>{t}</button>)}
+              </div>
+              {tab === 'Main info' ? <>{basics}{fieldList(pick(def.fields, CLASS_MAIN))}<h3>Proficiency bonus by level</h3><ProfChart /></> : null}
+              {tab === 'Spellcasting' ? fieldList(pick(def.fields, CLASS_CASTING)) : null}
+              {tab === 'Features' ? <><p className="dim">The named things the class gives a character, and the level each arrives.</p>{traits}</> : null}
+              {tab === 'Effects' ? <><p className="dim">Effects change the character sheet by themselves: proficiencies, resources, scaling numbers, spells.</p>{fx}</> : null}
+              {tab === 'Raw data' ? <textarea className="mono" rows={20} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /> : null}
+            </>
+          ) : depth === 'advanced' ? (
             <>
               {basics}
               {def.fields.length ? <><h3>Details</h3>{fieldList(def.fields)}</> : null}

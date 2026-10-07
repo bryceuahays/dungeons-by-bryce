@@ -17,6 +17,9 @@
 .ecard table.ctable{border-collapse:collapse;width:100%;font-size:.85rem}
 .ecard table.ctable th,.ecard table.ctable td{padding:4px 6px;border-bottom:1px solid var(--line,rgba(255,255,255,.14));text-align:left;white-space:nowrap}
 .ecard table.ctable td:nth-child(3){white-space:normal;min-width:180px}
+.brew-form table.ctable{border-collapse:collapse;width:100%;font-size:.9rem;margin:4px 0 6px}
+.brew-form table.ctable th,.brew-form table.ctable td{padding:6px 8px;border-bottom:1px solid var(--line,rgba(255,255,255,.14));text-align:center}
+.brew-form table.ctable th:first-child,.brew-form table.ctable td:first-child{text-align:left}
 
 .brew{display:grid;gap:16px;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start}
 @media (max-width:900px){.brew{grid-template-columns:1fr}}
