@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { EFFECTS, STATUS, TYPES, type Field } from '@/config/homebrew';
-import { ABILITIES, balanceHint, classTable, profBonus, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
+import { ABILITIES, balanceHint, classTable, profBonus, spellSlots, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
 import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
@@ -54,7 +54,7 @@ function FieldInput({ f, data, onChange }: { f: Field; data: any; onChange: (d: 
     case 'primary': return <PrimaryAbility data={data} onChange={onChange} label={f.label} help={help} />;
     case 'long': return <label>{f.label}<textarea rows={3} value={v ?? ''} onChange={(e) => put(e.target.value)} />{help}</label>;
     case 'number': return <label>{f.label}<input type="number" value={v ?? ''} onChange={(e) => put(e.target.value === '' ? '' : Number(e.target.value))} />{help}</label>;
-    case 'select': return <label>{f.label}<select value={String(v ?? '')} onChange={(e) => put(/^\d+$/.test(e.target.value) && f.key === 'hd' ? Number(e.target.value) : e.target.value)}>{(f.options ?? []).map((o) => <option key={o} value={o}>{AB[o] ?? (o || 'None')}</option>)}</select>{help}</label>;
+    case 'select': return <label>{f.label}<select value={String(v ?? '')} onChange={(e) => put(/^\d+$/.test(e.target.value) && f.key === 'hd' ? Number(e.target.value) : e.target.value)}>{(f.options ?? []).map((o) => <option key={o} value={o}>{f.optionLabels?.[o] ?? AB[o] ?? (o || 'None')}</option>)}</select>{help}</label>;
     case 'check': return <label className="ckrow"><input type="checkbox" checked={!!v} onChange={(e) => put(e.target.checked)} /> {f.label}</label>;
     case 'multi': return (
       <fieldset className="multi"><legend>{f.label}</legend>
@@ -165,6 +165,22 @@ function SkillsBox({ data, onChange, list }: { data: any; onChange: (d: any) => 
   );
 }
 
+// The Spells tab's side panel: spell slots by class level for the chosen kind of caster.
+function SlotTable({ casting }: { casting: any }) {
+  const kind = casting?.kind;
+  if (!kind || kind === 'none') return <p className="dim">No spellcasting. Pick a kind of caster to see its spell slots here.</p>;
+  const top = spellSlots(kind, 20, casting.rules).length;
+  return (
+    <>
+      <p className="dim">{kind === 'pact' ? 'Pact slots are all one level (the highest shown) and refill on a short rest.' : 'How many slots of each spell level a character has at each class level. Slots refill on a long rest.'}</p>
+      <div className="scroll"><table className="ctable slots">
+        <thead><tr><th>Level</th>{Array.from({ length: top }, (_, i) => <th key={i}>{['1st', '2nd', '3rd'][i] ?? i + 1 + 'th'}</th>)}</tr></thead>
+        <tbody>{Array.from({ length: 20 }, (_, l) => { const row = spellSlots(kind, l + 1, casting.rules); return <tr key={l}><td>{l + 1}</td>{Array.from({ length: top }, (_, i) => <td key={i}>{row[i] || '-'}</td>)}</tr>; })}</tbody>
+      </table></div>
+    </>
+  );
+}
+
 // The proficiency bonus by level. Standard unless the DM changes it; the sheet and the class table follow it.
 function ProfChart({ data, onChange }: { data: any; onChange: (d: any) => void }) {
   const chart: (number | string)[] = data.profChart ?? Array.from({ length: 20 }, (_, i) => profBonus(i + 1));
@@ -208,7 +224,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const balance = useMemo(() => balanceHint(initial.type as EntityType, data, srd), [initial.type, data, srd]);
 
   const save = (asVersion: boolean) => start(async () => {
-    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? syncSaves(data) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
+    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? rules24(syncSaves(data)) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
     setMsg(r);
     if (r?.id && !id) router.replace('/homebrew/' + r.id);
     else if (r?.note) { setNote(''); router.refresh(); }
@@ -222,6 +238,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       <label>Description<textarea rows={depth === 'quick' ? 8 : 4} value={data.desc ?? ''} onChange={(e) => setData({ ...data, desc: e.target.value })} placeholder={depth === 'quick' ? 'Write it the way you would explain it at the table. Free text is always allowed.' : ''} /></label>
     </>
   );
+  const rules24 = (d: any) => (onlyAdvanced && d.casting?.kind && d.casting.kind !== 'none' ? { ...d, casting: { ...d.casting, rules: '2024' } } : d);
   const field = (k: string) => def.fields.find((x) => x.key === k)!;
   const fieldList = (fields: Field[]) => <div className="fgrid">{fields.map((f) => <FieldInput key={f.key} f={f} data={data} onChange={setData} />)}</div>;
   const traits = <FeaturesEditor value={data.features ?? []} onChange={(v) => setData({ ...data, features: v })} levels={def.featureLevels} effects={def.effects} />;
@@ -387,8 +404,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
       <aside className="brew-side">
         <div className="panel">
-          <h3>{onlyAdvanced ? 'Class table' : 'What your players see'}</h3>
-          {onlyAdvanced ? <div className="ecard"><ClassTableView table={classTable({ data })} /></div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
+          <h3>{onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : 'Class table') : 'What your players see'}</h3>
+          {onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={rules24(data).casting} /> : <ClassTableView table={classTable({ data: rules24(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
         </div>
         <div className={'panel bal bal-' + balance.verdict.replace(' ', '-')}>
           <h3>Balance hint: {balance.verdict === 'no baseline' ? 'nothing to compare' : balance.verdict === 'in line' ? 'in line with the SRD' : balance.verdict + ' the SRD'}</h3>

@@ -135,7 +135,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
     const derived = [...saves.map((s) => ({ t: 'prof', kind: 'save', v: s })), ...levelEffects(own)];
     add(v, 'class', c.name, {
       hd: c.hit_die, primary: c.primary_ability?.desc ?? guide?.data.primary ?? '', saves, ...classProfs(c),
-      casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int' },
+      casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024' }) },
       desc: guide?.data.desc ?? '', effects: guide?.data.effects ?? derived, features: feats,
     });
   }

@@ -200,3 +200,5 @@
 .cls-row fieldset.col select{width:100%}
 .brew-form table.prof-edit td input{width:3.2em;padding:4px;text-align:center}
 .brew-form table.prof-edit{margin-bottom:10px}
+.ecard table.ctable.slots td:nth-child(3){min-width:0}
+.ecard table.ctable.slots th,.ecard table.ctable.slots td{text-align:center}

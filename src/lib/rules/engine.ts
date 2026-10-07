@@ -40,10 +40,11 @@ export const classProf = (data: Record<string, any> | undefined, level: number) 
 const FULL: number[][] = [[2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 3, 1], [4, 3, 3, 3, 2], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 2, 1, 1, 1, 1], [4, 3, 3, 3, 3, 1, 1, 1, 1], [4, 3, 3, 3, 3, 2, 1, 1, 1], [4, 3, 3, 3, 3, 2, 2, 1, 1]];
 const HALF: number[][] = [[], [2], [3], [3], [4, 2], [4, 2], [4, 3], [4, 3], [4, 3, 2], [4, 3, 2], [4, 3, 3], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 2], [4, 3, 3, 3, 1], [4, 3, 3, 3, 1], [4, 3, 3, 3, 2], [4, 3, 3, 3, 2]];
 const PACT: [number, number][] = [[1, 1], [2, 1], [2, 2], [2, 2], [2, 3], [2, 3], [2, 4], [2, 4], [2, 5], [2, 5], [3, 5], [3, 5], [3, 5], [3, 5], [3, 5], [3, 5], [4, 5], [4, 5], [4, 5], [4, 5]];
-export function spellSlots(kind: string | undefined, level: number): number[] {
+// rules: '2024' for classes on the 2024 rules, where a half caster already has two slots at level 1.
+export function spellSlots(kind: string | undefined, level: number, rules?: string): number[] {
   const l = Math.max(1, Math.min(20, level)) - 1;
   if (kind === 'full') return FULL[l];
-  if (kind === 'half') return HALF[l];
+  if (kind === 'half') return rules === '2024' && l === 0 ? [2] : HALF[l];
   if (kind === 'pact') { const [n, at] = PACT[l]; const out = Array(at).fill(0); out[at - 1] = n; return out; }
   return [];
 }
@@ -145,7 +146,7 @@ export function derive(c: CharacterV2, entities: Entity[]) {
 
   const cast = cls?.data.casting && cls.data.casting.kind && cls.data.casting.kind !== 'none' ? cls.data.casting : null;
   const castMod = cast ? mods[cast.ability as Ability] ?? 0 : 0;
-  const casting = cast ? { ability: cast.ability as Ability, kind: cast.kind as string, dc: 8 + prof + castMod, attack: prof + castMod, slots: spellSlots(cast.kind, level) } : null;
+  const casting = cast ? { ability: cast.ability as Ability, kind: cast.kind as string, dc: 8 + prof + castMod, attack: prof + castMod, slots: spellSlots(cast.kind, level, cast.rules) } : null;
 
   // entries that changed since this character last looked at them
   const changed = chosen.filter((e) => e.source !== 'srd' && (e.version ?? 1) > ((c.seen ?? {})[e.id] ?? 1)).map((e) => ({ id: e.id, name: e.name, version: e.version ?? 1, note: e.change_note ?? '' }));
@@ -162,11 +163,11 @@ export function classTable(cls: { data: Record<string, any> }, sub?: { data: Rec
   const scaleCols = eff.filter((x) => x.t === 'scale') as Extract<Effect, { t: 'scale' }>[];
   const resCols = (eff.filter((x) => x.t === 'resource') as Extract<Effect, { t: 'resource' }>[]).filter((r) => !/^\d+$/.test(String(r.max)) || r.at);
   const kind = d.casting?.kind;
-  const maxSlot = kind && kind !== 'none' ? spellSlots(kind, 20).length : 0;
+  const maxSlot = kind && kind !== 'none' ? spellSlots(kind, 20, d.casting?.rules).length : 0;
   const zero = { str: 3, dex: 3, con: 3, int: 3, wis: 3, cha: 3 } as Record<Ability, number>;
   const rows = Array.from({ length: 20 }, (_, i) => {
     const level = i + 1;
-    const slots = kind && kind !== 'none' ? spellSlots(kind, level) : [];
+    const slots = kind && kind !== 'none' ? spellSlots(kind, level, d.casting?.rules) : [];
     return {
       level, prof: classProf(d, level),
       features: feats.filter((f) => Number(f.level) === level).map((f) => f.name),
