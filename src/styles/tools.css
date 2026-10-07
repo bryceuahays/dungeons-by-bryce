@@ -267,3 +267,5 @@ fieldset.feat-uses .res-row{border:0;padding:0}
 @media (min-width:901px){.brew-wide > .brew-side{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .brew-wide > .brew-side > .panel:first-child{margin-top:0}}
 .lvl-copy{display:grid;gap:8px}
+/* the Player tab is a full-width mock-up: no side panel */
+@media (min-width:901px){.brew-wide.brew-full{grid-template-columns:1fr}}

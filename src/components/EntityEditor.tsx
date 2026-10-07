@@ -310,7 +310,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const fillDefaults = () => { let d = data; guidedFields.forEach((f) => { if (get(d, f.key) === undefined) d = set(d, f.key, f.def); }); setData(d); };
 
   return (
-    <div className={'brew' + (onlyAdvanced ? ' brew-wide' : '')}>
+    <div className={'brew' + (onlyAdvanced ? ' brew-wide' : '') + (onlyAdvanced && tab === 'Player' ? ' brew-full' : '')}>
       {onlyAdvanced ? (
         <div className="brew-head">
           <div className="depth" role="tablist" aria-label="How much detail">
@@ -483,7 +483,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
         ) : null}
       </div>
 
-      <aside className="brew-side">
+      <aside className="brew-side" hidden={onlyAdvanced && tab === 'Player'}>
         <div className="panel">
           <h3>{onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
           {onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
