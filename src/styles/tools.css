@@ -175,3 +175,21 @@
 .campaign[data-wrap] .cs-guide .wrap,.campaign[data-wrap] .cs-guide .tabrow,.campaign[data-wrap] .tl-banner{max-width:var(--wrap)}
 .campaign[data-radius] .cs-guide .plate,.campaign[data-radius] .s5 .s5-block,.campaign[data-radius] .cs-guide input,.campaign[data-radius] .cs-guide select,.campaign[data-radius] .cs-guide textarea,.campaign[data-radius] .cs-guide .act{border-radius:var(--radius)}
 .cs-guide .hero-img{display:block;width:100%;max-height:340px;object-fit:cover;border-radius:10px;margin:14px 0 4px;border:1px solid var(--line)}
+
+/* class editor: wider page, a header with the class name, and the Main tab laid out in rows */
+.hub-main:has(.brew-wide),body:has(.brew-wide) .hub-bar .in{max-width:1400px}
+@media (min-width:901px){.brew-wide{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}}
+.brew-head{grid-column:1/-1;display:grid;grid-template-columns:1fr minmax(0,2fr) 1fr;align-items:center;gap:16px}
+.brew-head .depth{margin:0}
+.brew-head .cls-name{text-align:center;font-family:var(--h-title);font-size:2rem;letter-spacing:.06em;padding:14px 18px;border-radius:14px}
+.cls-main{display:grid;gap:14px}
+.cls-row{display:grid;gap:14px;align-items:start}
+.cls-row.two{grid-template-columns:1fr 1fr}
+.cls-row.wide-right{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.cls-row.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cls-stack{display:grid;gap:14px}
+.cls-main label{margin:0}
+.cls-row > fieldset.multi,.cls-stack > fieldset.multi{grid-column:auto;align-self:stretch}
+.cls-row textarea{width:100%;min-height:150px}
+@media (max-width:900px){.brew-head{grid-template-columns:1fr}.cls-row.two,.cls-row.wide-right,.cls-row.three{grid-template-columns:1fr}}
+.brew-wide > *,.brew-wide fieldset{min-width:0}

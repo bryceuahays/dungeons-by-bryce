@@ -148,10 +148,21 @@ type Version = { version: number; note: string; name: string; data: any; created
 type CampaignLink = { id: string; title: string; stages: Stage[]; members: Member[]; attached: Vis | null };
 
 // The class editor's tabs, and which fields from TYPES.class each one shows.
-const CLASS_TABS = ['Main info', 'Spellcasting', 'Features', 'Effects', 'Raw data'];
-const CLASS_MAIN = ['hd', 'primary', 'saves', 'armor', 'weapons', 'tools', 'skillCount', 'skillList'];
+const CLASS_TABS = ['Main', 'Spells', 'Features', 'Leveling', 'Player'];
 const CLASS_CASTING = ['casting.kind', 'casting.ability'];
+const levelsOf = (data: any, re: RegExp) => [...new Set((data.features ?? []).filter((x: any) => re.test(x.name ?? '')).map((x: any) => Number(x.level)))].sort((p: any, q: any) => p - q).join(', ');
 const pick = (fields: Field[], keys: string[]) => keys.map((k) => fields.find((f) => f.key === k)).filter((f): f is Field => !!f);
+
+function SkillsBox({ data, onChange, list }: { data: any; onChange: (d: any) => void; list: Field }) {
+  const v: string[] = data.skillList ?? [];
+  return (
+    <fieldset className="multi"><legend>Skills</legend>
+      <label className="ckrow" style={{ flexBasis: '100%' }}>Players pick <input type="number" min={0} max={18} style={{ width: 70 }} value={data.skillCount ?? ''} onChange={(e) => onChange({ ...data, skillCount: e.target.value === '' ? '' : Number(e.target.value) })} /> from these:</label>
+      <p className="dim hint" style={{ flexBasis: '100%', margin: '0 0 6px' }}>{list.help}</p>
+      {(list.options ?? []).map((o) => <label key={o} className="ckrow"><input type="checkbox" checked={v.includes(o)} onChange={(e) => onChange({ ...data, skillList: e.target.checked ? [...v, o] : v.filter((x) => x !== o) })} /> {o}</label>)}
+    </fieldset>
+  );
+}
 
 // The same for every class in fifth edition, so it is shown, not edited.
 function ProfChart() {
@@ -201,13 +212,23 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       <label>Description<textarea rows={depth === 'quick' ? 8 : 4} value={data.desc ?? ''} onChange={(e) => setData({ ...data, desc: e.target.value })} placeholder={depth === 'quick' ? 'Write it the way you would explain it at the table. Free text is always allowed.' : ''} /></label>
     </>
   );
+  const field = (k: string) => def.fields.find((x) => x.key === k)!;
   const fieldList = (fields: Field[]) => <div className="fgrid">{fields.map((f) => <FieldInput key={f.key} f={f} data={data} onChange={setData} />)}</div>;
   const traits = <FeaturesEditor value={data.features ?? []} onChange={(v) => setData({ ...data, features: v })} levels={def.featureLevels} effects={def.effects} />;
   const fx = <EffectsEditor value={data.effects ?? []} onChange={(v) => setData({ ...data, effects: v })} levels={def.featureLevels} />;
   const fillDefaults = () => { let d = data; guidedFields.forEach((f) => { if (get(d, f.key) === undefined) d = set(d, f.key, f.def); }); setData(d); };
 
   return (
-    <div className="brew">
+    <div className={'brew' + (onlyAdvanced ? ' brew-wide' : '')}>
+      {onlyAdvanced ? (
+        <div className="brew-head">
+          <div className="depth" role="tablist" aria-label="How much detail">
+            <button type="button" role="tab" aria-selected={false} className="quiet" disabled title="Coming later">Quick</button>
+            <button type="button" role="tab" aria-selected>Advanced</button>
+          </div>
+          <input className="cls-name" aria-label="Class name" value={name} maxLength={120} placeholder="Class name" onChange={(e) => setName(e.target.value)} />
+        </div>
+      ) : null}
       <div className="brew-form">
         <div className="panel">
           {!onlyAdvanced ? <>
@@ -244,11 +265,53 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               <div className="depth" role="tablist" aria-label="Parts of the class">
                 {CLASS_TABS.map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? '' : 'quiet'} onClick={() => setTab(t)}>{t}</button>)}
               </div>
-              {tab === 'Main info' ? <>{basics}{fieldList(pick(def.fields, CLASS_MAIN))}<h3>Proficiency bonus by level</h3><ProfChart /></> : null}
-              {tab === 'Spellcasting' ? fieldList(pick(def.fields, CLASS_CASTING)) : null}
-              {tab === 'Features' ? <><p className="dim">The named things the class gives a character, and the level each arrives.</p>{traits}</> : null}
-              {tab === 'Effects' ? <><p className="dim">Effects change the character sheet by themselves: proficiencies, resources, scaling numbers, spells.</p>{fx}</> : null}
-              {tab === 'Raw data' ? <textarea className="mono" rows={20} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /> : null}
+              {tab === 'Main' ? (
+                <div className="cls-main">
+                  <div className="cls-row two">
+                    <label>Description<textarea rows={6} value={data.desc ?? ''} onChange={(e) => setData({ ...data, desc: e.target.value })} /></label>
+                    <FieldInput f={field('primary')} data={data} onChange={setData} />
+                  </div>
+                  <div className="cls-row wide-right">
+                    <div className="cls-stack">
+                      <FieldInput f={field('hd')} data={data} onChange={setData} />
+                      <FieldInput f={field('saves')} data={data} onChange={setData} />
+                    </div>
+                    <SkillsBox data={data} onChange={setData} list={field('skillList')} />
+                  </div>
+                  <div className="cls-row three">
+                    <FieldInput f={field('armor')} data={data} onChange={setData} />
+                    <FieldInput f={field('weapons')} data={data} onChange={setData} />
+                    <FieldInput f={field('tools')} data={data} onChange={setData} />
+                  </div>
+                </div>
+              ) : null}
+              {tab === 'Spells' ? fieldList(pick(def.fields, CLASS_CASTING)) : null}
+              {tab === 'Features' ? (
+                <>
+                  <p className="dim">The named things the class gives a character, and the level each arrives.</p>
+                  {traits}
+                  <details><summary>Sheet effects (the old editor, to be folded into the tabs)</summary>{fx}</details>
+                  <details><summary>The raw data</summary><textarea className="mono" rows={16} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /></details>
+                </>
+              ) : null}
+              {tab === 'Leveling' ? (
+                <>
+                  <h3>Hit points</h3>
+                  <p>At level 1: {data.hd || '?'} + Constitution modifier. Each level after: roll 1d{data.hd || '?'}, or take {data.hd ? Number(data.hd) / 2 + 1 : '?'}, + Constitution modifier.</p>
+                  <h3>Proficiency bonus by level</h3>
+                  <ProfChart />
+                  <h3>Milestones</h3>
+                  <p>Ability Score Improvements at levels: {levelsOf(data, /ability score improvement/i) || 'none yet'}</p>
+                  <p>Subclass features at levels: {levelsOf(data, /subclass/i) || 'none yet'}</p>
+                  <p className="dim">Read from the Features tab for now. Editing these here comes next.</p>
+                </>
+              ) : null}
+              {tab === 'Player' ? (
+                <>
+                  <p className="dim">A mock-up of what a player sees when they choose this class. Once there is a character creator, this will match it.</p>
+                  <EntityCard type={initial.type} name={name} status={status} data={data} />
+                </>
+              ) : null}
             </>
           ) : depth === 'advanced' ? (
             <>
@@ -314,7 +377,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
       <aside className="brew-side">
         <div className="panel">
-          <h3>What your players see</h3>
+          <h3>{onlyAdvanced ? 'Class table' : 'What your players see'}</h3>
           {onlyAdvanced ? <div className="ecard"><ClassTableView table={classTable({ data })} /></div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
         </div>
         <div className={'panel bal bal-' + balance.verdict.replace(' ', '-')}>

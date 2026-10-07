@@ -45,7 +45,7 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
   });
   return (
     <>
-      <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>
+      {e.type === 'class' ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
       <div className="inline" style={{ marginBottom: 12 }}><Link className="button quiet" href="/homebrew">All my homebrew</Link><CloneButton id={e.id} label="Make a copy" /></div>
       <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data: e.data }} />
