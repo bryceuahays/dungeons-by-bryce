@@ -266,3 +266,4 @@ fieldset.feat-uses .res-row{border:0;padding:0}
 /* class editor: the side panel follows you down the page instead of leaving an empty column */
 @media (min-width:901px){.brew-wide > .brew-side{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .brew-wide > .brew-side > .panel:first-child{margin-top:0}}
+.lvl-copy{display:grid;gap:8px}

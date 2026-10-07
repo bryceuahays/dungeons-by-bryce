@@ -218,6 +218,48 @@ function ProfChart({ data, onChange }: { data: any; onChange: (d: any) => void }
   );
 }
 
+// Copy one class's leveling and paste it into another. The copy is plain text ("1:+2 2:+2 ...")
+// so it can sit in the clipboard, a note or a message; pasting reads the 20 levels back.
+const LEVELING_TAG = 'Dungeons by Bryce leveling';
+const levelingText = (chart: (number | string)[]) => LEVELING_TAG + ' - proficiency bonus by level: ' + chart.map((v, i) => (i + 1) + ':+' + (Number(v) || 0)).join(' ');
+function readLeveling(text: string): number[] | null {
+  const pairs = [...text.matchAll(/(\d+)\s*:\s*\+?(\d+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  if (pairs.length === 20 && pairs.every(([l], i) => l === i + 1)) return pairs.map(([, n]) => n);
+  const nums = (text.match(/\d+/g) ?? []).map(Number);
+  return nums.length === 20 ? nums : null;
+}
+
+function LevelingCopy({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  const chart: (number | string)[] = data.profChart ?? Array.from({ length: 20 }, (_, i) => profBonus(i + 1));
+  const [paste, setPaste] = useState('');
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [fallback, setFallback] = useState('');
+  const copy = async () => {
+    const text = levelingText(chart);
+    try { await navigator.clipboard.writeText(text); setFallback(''); setMsg({ ok: true, text: 'Copied. Open another class, go to its Leveling tab, and paste it in the box below.' }); }
+    catch { setFallback(text); setMsg({ ok: true, text: 'Your browser blocked copying. Select the text below and copy it with Ctrl+C.' }); }
+  };
+  const apply = () => {
+    const next = readLeveling(paste);
+    if (!next) { setMsg({ ok: false, text: 'That does not look like copied leveling. It needs all 20 levels.' }); return; }
+    onChange({ ...data, profChart: next });
+    setPaste('');
+    setMsg({ ok: true, text: 'Pasted into this class. Press Save to keep it.' });
+  };
+  return (
+    <div className="lvl-copy">
+      <p className="inline" style={{ alignItems: 'center' }}>
+        <button type="button" className="quiet small-btn" onClick={copy}>Copy this leveling</button>
+        <span className="dim">Copies the proficiency bonus chart above, to paste into another class.</span>
+      </p>
+      {fallback ? <textarea className="mono" rows={2} readOnly value={fallback} onFocus={(e) => e.target.select()} /> : null}
+      <label>Paste leveling from another class<textarea rows={2} value={paste} placeholder="Paste copied leveling here" onChange={(e) => setPaste(e.target.value)} /></label>
+      <p className="inline"><button type="button" className="quiet small-btn" disabled={!paste.trim()} onClick={apply}>Apply to this class</button></p>
+      {msg ? <p className={msg.ok ? 'good' : 'bad'} role="status">{msg.text}</p> : null}
+    </div>
+  );
+}
+
 export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells }: {
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
   srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[];
@@ -364,6 +406,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                   <p>At level 1: {data.hd || '?'} + Constitution modifier. Each level after: roll 1d{data.hd || '?'}, or take {data.hd ? Number(data.hd) / 2 + 1 : '?'}, + Constitution modifier.</p>
                   <h3>Proficiency bonus by level</h3>
                   <ProfChart data={data} onChange={setData} />
+                  <h3>Copy to another class</h3>
+                  <LevelingCopy data={data} onChange={setData} />
                   <h3>Milestones</h3>
                   <p>Ability Score Improvements at levels: {levelsOf(data, /ability score improvement/i) || 'none yet'}</p>
                   <p>Subclass features at levels: {levelsOf(data, /subclass/i) || 'none yet'}</p>
