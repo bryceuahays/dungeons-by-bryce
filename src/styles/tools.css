@@ -212,3 +212,13 @@
 .spell-row .spell-act{margin-left:auto;font-size:.85rem}
 .spell-read{padding:6px 0 12px 26px}
 @media (max-width:700px){.spell-tools{grid-template-columns:1fr}}
+.spell-row .spell-act{background:none;border:0;padding:0;min-height:0;font:inherit;font-size:.85rem;letter-spacing:0;text-transform:none;color:var(--h-accent,#4fd1c5);text-decoration:underline;cursor:pointer}
+.chosen-spells h4{margin:10px 0 4px;font-size:.95rem}
+.chosen-spells .chips{margin:0}
+dialog.popup{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;border:1px solid var(--h-line,rgba(255,255,255,.16));border-radius:14px;padding:20px 22px;background:var(--h-panel,#0f1a1e);color:var(--h-text,#e8e6e1)}
+dialog.popup::backdrop{background:rgba(0,0,0,.65)}
+.popup-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px}
+.popup-head h3{margin:0}
+.popup-body{display:grid;gap:12px}
+.popup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.popup-grid .wide{grid-column:1/-1}

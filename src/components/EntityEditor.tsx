@@ -8,7 +8,7 @@ import { ABILITIES, balanceHint, classTable, profBonus, spellSlots, type Effect,
 import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
-import { ClassSpells } from './ClassSpells';
+import { ChosenSpells, ClassSpells } from './ClassSpells';
 import type { SpellOption } from '@/lib/class-spells';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
 
@@ -232,6 +232,9 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const [data, setData] = useState<any>(initial.data ?? {});
   const [step, setStep] = useState(0);
   const [tab, setTab] = useState(CLASS_TABS[0]);
+  // spells made or changed in the pop-up during this visit, on top of what the page loaded
+  const [madeSpells, setMadeSpells] = useState<SpellOption[]>([]);
+  const allSpells = useMemo(() => { const made = new Set(madeSpells.map((m) => m.id)); return [...madeSpells, ...(spells ?? []).filter((x) => !made.has(x.id))]; }, [madeSpells, spells]);
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<BrewState>(null);
   const [links, setLinks] = useState(campaigns);
@@ -339,7 +342,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                       <p className="dim">How many spells a character can have ready at each class level, chosen from the class's spell list.</p>
                       <LevelNumbers label="Prepared" values={twenty(data.casting?.prepared)} onChange={(v) => setData({ ...data, casting: { ...data.casting, prepared: v } })} />
                       <h3>Spells available to this class</h3>
-                      <ClassSpells spells={spells ?? []} value={data.spellList ?? []} onChange={(v) => setData({ ...data, spellList: v })} />
+                      <ClassSpells spells={allSpells} value={data.spellList ?? []} pro={pro} onChange={(v) => setData((d: any) => ({ ...d, spellList: v }))} onSpellSaved={(sp) => setMadeSpells((m) => [sp, ...m.filter((x) => x.id !== sp.id)])} />
                     </>
                   ) : null}
                 </>
@@ -438,6 +441,12 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
           <h3>{onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : 'Class table') : 'What your players see'}</h3>
           {onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={rules24(data).casting} /> : <ClassTableView table={classTable({ data: rules24(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
         </div>
+        {onlyAdvanced && tab === 'Spells' && data.casting?.kind && data.casting.kind !== 'none' ? (
+          <div className="panel">
+            <h3>Spells on this list</h3>
+            <ChosenSpells spells={allSpells} value={data.spellList ?? []} onChange={(v) => setData((d: any) => ({ ...d, spellList: v }))} />
+          </div>
+        ) : null}
         <div className={'panel bal bal-' + balance.verdict.replace(' ', '-')}>
           <h3>Balance hint: {balance.verdict === 'no baseline' ? 'nothing to compare' : balance.verdict === 'in line' ? 'in line with the SRD' : balance.verdict + ' the SRD'}</h3>
           {balance.reasons.map((r, i) => <p key={i}>{r}</p>)}

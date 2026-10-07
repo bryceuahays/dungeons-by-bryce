@@ -1,31 +1,32 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { spellDetail } from '@/app/(hub)/homebrew/actions';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { saveEntity, spellDetail } from '@/app/(hub)/homebrew/actions';
+import { STATUS, TYPES, type Field } from '@/config/homebrew';
 import type { SpellOption } from '@/lib/class-spells';
 import { EntityCard } from './EntityCard';
 
 // The class's spell list (data.spellList: spell ids). Browse every SRD 5.2 spell and your own,
-// read any of them, tick what the class can learn, and make your own versions or new spells
-// in a new tab (so nothing typed here is lost); "Refresh spells" brings them in.
+// read any of them, tick what the class can learn, and make your own versions or new spells in
+// a pop-up, without leaving the class.
 
-const LEVELS = ['Cantrips', '1st level', '2nd level', '3rd level', '4th level', '5th level', '6th level', '7th level', '8th level', '9th level'];
+export const SPELL_LEVELS = ['Cantrips', '1st level', '2nd level', '3rd level', '4th level', '5th level', '6th level', '7th level', '8th level', '9th level'];
 
-export function ClassSpells({ spells, value, onChange }: { spells: SpellOption[]; value: string[]; onChange: (v: string[]) => void }) {
-  const router = useRouter();
+export function ClassSpells({ spells, value, onChange, onSpellSaved, pro }: {
+  spells: SpellOption[]; value: string[]; onChange: (v: string[]) => void; onSpellSaved: (s: SpellOption) => void; pro: boolean;
+}) {
   const [q, setQ] = useState('');
   const [level, setLevel] = useState('all');
   const [show, setShow] = useState('all');
   const [open, setOpen] = useState<Record<string, { name: string; source: string; data: any } | 'loading'>>({});
-  const [refreshing, refresh] = useTransition();
+  const [editing, setEditing] = useState<null | { id: string | null; from?: string }>(null);
   const on = useMemo(() => new Set(value), [value]);
 
   const shown = spells.filter((s) =>
     (level === 'all' || String(s.level) === level) &&
     (show === 'all' || (show === 'on') === on.has(s.id)) &&
     (!q.trim() || s.name.toLowerCase().includes(q.trim().toLowerCase())));
-  const counts = LEVELS.map((_, l) => spells.filter((s) => s.level === l && on.has(s.id)).length);
+  const counts = SPELL_LEVELS.map((_, l) => spells.filter((s) => s.level === l && on.has(s.id)).length);
 
   const read = async (id: string) => {
     if (open[id]) { const next = { ...open }; delete next[id]; setOpen(next); return; }
@@ -35,20 +36,25 @@ export function ClassSpells({ spells, value, onChange }: { spells: SpellOption[]
   };
   const toggle = (id: string, yes: boolean) => onChange(yes ? [...value, id] : value.filter((x) => x !== id));
 
+  // after the pop-up saves: the spell is on the list (a version of an SRD spell takes its place there)
+  const saved = (s: SpellOption, replaces?: string) => {
+    onSpellSaved(s);
+    const next = value.filter((x) => x !== replaces && x !== s.id);
+    onChange([...next, s.id]);
+    setOpen((o) => { const n = { ...o }; delete n[s.id]; return n; });
+    setEditing(null);
+  };
+
   return (
     <div className="spell-list">
-      <p>{value.length ? `${value.length} spells on this class's list: ` + counts.map((n, l) => (n ? `${n} ${l === 0 ? 'cantrips' : LEVELS[l].replace(' level', '')}` : '')).filter(Boolean).join(', ') + '.' : 'No spells on this class\'s list yet.'}</p>
+      <p>{value.length ? `${value.length} spells on this class's list: ` + counts.map((n, l) => (n ? `${n} ${l === 0 ? 'cantrips' : SPELL_LEVELS[l].replace(' level', '')}` : '')).filter(Boolean).join(', ') + '.' : 'No spells on this class\'s list yet.'}</p>
       <div className="spell-tools">
         <label>Search<input type="search" value={q} placeholder="Spell name" onChange={(e) => setQ(e.target.value)} /></label>
-        <label>Level<select value={level} onChange={(e) => setLevel(e.target.value)}><option value="all">All levels</option>{LEVELS.map((l, i) => <option key={l} value={String(i)}>{l}</option>)}</select></label>
+        <label>Level<select value={level} onChange={(e) => setLevel(e.target.value)}><option value="all">All levels</option>{SPELL_LEVELS.map((l, i) => <option key={l} value={String(i)}>{l}</option>)}</select></label>
         <label>Show<select value={show} onChange={(e) => setShow(e.target.value)}><option value="all">All spells</option><option value="on">On this class&apos;s list</option><option value="off">Not on the list</option></select></label>
       </div>
-      <p className="inline">
-        <a className="button quiet small-btn" href="/homebrew/new?type=spell" target="_blank" rel="noopener">Create a new spell</a>
-        <button type="button" className="quiet small-btn" disabled={refreshing} onClick={() => refresh(() => router.refresh())}>{refreshing ? 'Refreshing' : 'Refresh spells'}</button>
-        <span className="dim">New spells and your own versions open in a new tab. Save them there, then refresh here and tick them.</span>
-      </p>
-      {LEVELS.map((label, l) => {
+      <p className="inline"><button type="button" className="quiet small-btn" onClick={() => setEditing({ id: null })}>Create a new spell</button></p>
+      {SPELL_LEVELS.map((label, l) => {
         const rows = shown.filter((s) => s.level === l);
         if (!rows.length) return null;
         return (
@@ -64,7 +70,7 @@ export function ClassSpells({ spells, value, onChange }: { spells: SpellOption[]
                       <button type="button" className="spell-name" aria-expanded={!!d} onClick={() => read(s.id)}>{s.name}</button>
                       <span className="dim">{s.school}</span>
                       {s.mine ? <span className="chip">Your homebrew</span> : null}
-                      <a className="spell-act" href={'/homebrew/' + s.id} target="_blank" rel="noopener">{s.mine ? 'Edit' : 'Make my own version'}</a>
+                      <button type="button" className="spell-act" onClick={() => setEditing(s.mine ? { id: s.id } : { id: null, from: s.id })}>{s.mine ? 'Edit' : 'Make my own version'}</button>
                     </div>
                     {d ? <div className="spell-read">{d === 'loading' ? <p className="dim">Loading…</p> : <EntityCard type="spell" name={d.name} source={d.source} data={d.data} />}</div> : null}
                   </li>
@@ -75,6 +81,100 @@ export function ClassSpells({ spells, value, onChange }: { spells: SpellOption[]
         );
       })}
       {!shown.length ? <p className="dim">No spells match.</p> : null}
+      {editing ? <SpellPopup key={(editing.id ?? '') + (editing.from ?? '')} id={editing.id} from={editing.from} pro={pro} onClose={() => setEditing(null)} onSaved={saved} /> : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- the pop-up spell editor
+
+const SPELL_FIELDS: Field[] = TYPES.spell.fields.filter((f) => f.key !== 'classes'); // the class's list decides that now
+
+function SpellPopup({ id, from, pro, onClose, onSaved }: { id: string | null; from?: string; pro: boolean; onClose: () => void; onSaved: (s: SpellOption, replaces?: string) => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [name, setName] = useState('');
+  const [status, setStatus] = useState('draft');
+  const [data, setData] = useState<any>({ level: 1, school: 'Evocation' });
+  const [loading, setLoading] = useState(!!(id || from));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => { ref.current?.showModal(); }, []);
+  useEffect(() => {
+    const src = id || from;
+    if (!src) return;
+    spellDetail(src).then((d) => {
+      if (d) { setName(from ? d.name + ' (my version)' : d.name); setData(d.data ?? {}); if (id) setStatus(d.status || 'draft'); }
+      setLoading(false);
+    });
+  }, [id, from]);
+
+  const put = (k: string, v: any) => setData({ ...data, [k]: v });
+  const save = async () => {
+    setBusy(true); setError('');
+    const clean = { ...data }; delete clean.classes;
+    const r = await saveEntity(id, { type: 'spell', name, status, depth: pro ? 'advanced' : 'quick', source: 'homebrew', data: clean, cloned_from: from ?? null });
+    setBusy(false);
+    if (!r?.id) { setError(r?.error || 'That did not save.'); return; }
+    onSaved({ id: r.id, name: name.trim(), level: Number(clean.level) || 0, school: clean.school ?? '', mine: true, classes: [] }, from);
+  };
+
+  return (
+    <dialog ref={ref} className="popup" onClose={onClose} aria-label={id ? 'Edit spell' : from ? 'Make your own version' : 'New spell'}>
+      <div className="popup-head">
+        <h3>{id ? 'Edit spell' : from ? 'Your own version' : 'New spell'}</h3>
+        <button type="button" className="quiet small-btn" onClick={() => ref.current?.close()} aria-label="Close">✕</button>
+      </div>
+      {from ? <p className="dim">A copy of the SRD spell for you to change. Saving puts your version on this class&apos;s list in place of the original.</p> : null}
+      {loading ? <p className="dim">Loading…</p> : (
+        <div className="popup-body">
+          <label>Name<input value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Spell name" /></label>
+          <div className="popup-grid">
+            {SPELL_FIELDS.map((f) => <SpellField key={f.key} f={f} v={data[f.key] ?? f.def} onChange={(v) => put(f.key, v)} />)}
+          </div>
+          <label>What it does<textarea rows={7} value={data.desc ?? ''} onChange={(e) => put('desc', e.target.value)} placeholder="The spell's rules, the way you would read them at the table." /></label>
+          <label>Status<select value={status} onChange={(e) => setStatus(e.target.value)}>{STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
+          <p className="dim">{STATUS.find((s) => s.id === status)?.what}</p>
+          {error ? <p className="bad" role="alert">{error}</p> : null}
+          <p className="inline">
+            <button type="button" disabled={busy || !name.trim()} onClick={save}>{busy ? 'Saving' : id ? 'Save spell' : 'Create spell'}</button>
+            <button type="button" className="quiet" onClick={() => ref.current?.close()}>Cancel</button>
+          </p>
+        </div>
+      )}
+    </dialog>
+  );
+}
+
+function SpellField({ f, v, onChange }: { f: Field; v: any; onChange: (v: any) => void }) {
+  switch (f.kind) {
+    case 'number': return <label>{f.label}<input type="number" min={0} max={9} value={v ?? ''} onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))} /></label>;
+    case 'select': return <label>{f.label}<select value={String(v ?? '')} onChange={(e) => onChange(e.target.value)}>{(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}</select></label>;
+    case 'check': return <label className="ckrow"><input type="checkbox" checked={!!v} onChange={(e) => onChange(e.target.checked)} /> {f.label}</label>;
+    case 'long': return <label className="wide">{f.label}<textarea rows={3} value={v ?? ''} onChange={(e) => onChange(e.target.value)} /></label>;
+    default: return <label>{f.label}<input value={v ?? ''} onChange={(e) => onChange(e.target.value)} /></label>;
+  }
+}
+
+// ---------------------------------------------------------------- the side panel's list
+
+export function ChosenSpells({ spells, value, onChange }: { spells: SpellOption[]; value: string[]; onChange: (v: string[]) => void }) {
+  const byId = new Map(spells.map((s) => [s.id, s]));
+  const chosen = value.map((id) => byId.get(id)).filter(Boolean) as SpellOption[];
+  if (!chosen.length) return <p className="dim">No spells on the list yet. Tick them on the left.</p>;
+  return (
+    <div className="chosen-spells">
+      {SPELL_LEVELS.map((label, l) => {
+        const rows = chosen.filter((s) => s.level === l).sort((a, b) => a.name.localeCompare(b.name));
+        if (!rows.length) return null;
+        return (
+          <div key={label}>
+            <h4>{label} <span className="dim">({rows.length})</span></h4>
+            <p className="chips">{rows.map((s) => <span key={s.id} className="chip">{s.name}{s.mine ? ' ★' : ''}<button type="button" aria-label={'Remove ' + s.name} onClick={() => onChange(value.filter((x) => x !== s.id))}>✕</button></span>)}</p>
+          </div>
+        );
+      })}
+      <p className="dim">★ your homebrew</p>
     </div>
   );
 }

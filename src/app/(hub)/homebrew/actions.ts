@@ -176,8 +176,8 @@ export async function importPack(_: BrewState, form: FormData): Promise<BrewStat
 
 // One spell's full entry, for reading it inside the class editor's spell list.
 // Row-level security decides what the viewer may read (the SRD, and their own homebrew).
-export async function spellDetail(id: string): Promise<{ name: string; source: string; data: Record<string, any> } | null> {
+export async function spellDetail(id: string): Promise<{ name: string; source: string; status: string; data: Record<string, any> } | null> {
   const { supabase } = await requireViewer();
-  const { data } = await supabase.from('entities').select('name, source, data').eq('id', id).eq('type', 'spell').maybeSingle();
+  const { data } = await supabase.from('entities').select('name, source, status, data').eq('id', id).eq('type', 'spell').maybeSingle();
   return data ?? null;
 }
