@@ -263,3 +263,6 @@ fieldset.feat-uses .res-row{border:0;padding:0}
 .res-step input.grow-num{width:4.4em}
 .res-step select{width:auto;padding:4px 6px}
 @media (max-width:900px){.res-row{grid-template-columns:1fr 1fr}}
+/* class editor: the side panel follows you down the page instead of leaving an empty column */
+@media (min-width:901px){.brew-wide > .brew-side{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.brew-wide > .brew-side > .panel:first-child{margin-top:0}}
