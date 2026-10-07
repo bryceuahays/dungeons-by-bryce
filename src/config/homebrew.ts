@@ -38,7 +38,7 @@ export const TYPES: Record<string, TypeDef> = {
       { key: 'weapons', label: 'Weapon proficiencies', kind: 'text', def: 'Simple weapons' },
       { key: 'tools', label: 'Tool proficiencies', kind: 'text', def: 'None' },
       { key: 'skillCount', label: 'How many skills the player picks', kind: 'number', def: 2, guided: true },
-      { key: 'skillList', label: 'Base proficient skills', kind: 'multi', options: SKILL_NAMES, def: [], help: 'The skills a player of this class can choose to be proficient in, through the class alone. None ticked means any skill.' },
+      { key: 'skillList', label: 'Proficient skill options', kind: 'multi', options: SKILL_NAMES, def: [], help: 'The skills a player of this class can choose to be proficient in, through the class alone. None ticked means any skill.' },
     ],
   },
   subclass: {
