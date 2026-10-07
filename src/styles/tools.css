@@ -193,3 +193,8 @@
 .cls-row textarea{width:100%;min-height:150px}
 @media (max-width:900px){.brew-head{grid-template-columns:1fr}.cls-row.two,.cls-row.wide-right,.cls-row.three{grid-template-columns:1fr}}
 .brew-wide > *,.brew-wide fieldset{min-width:0}
+.brew .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 0}
+.brew .chip{display:inline-flex;align-items:center;gap:6px;padding:2px 4px 2px 10px;border:1px solid var(--h-line,rgba(255,255,255,.16));border-radius:999px;font-size:.85rem}
+.brew .chip button{background:none;border:0;padding:0 6px;min-height:0;font-size:.8rem;cursor:pointer;color:inherit;opacity:.7;letter-spacing:0}
+.brew .chip button:hover{opacity:1}
+.cls-row fieldset.col select{width:100%}

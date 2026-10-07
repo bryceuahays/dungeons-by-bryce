@@ -7,6 +7,7 @@ import { EFFECTS, STATUS, TYPES, type Field } from '@/config/homebrew';
 import { ABILITIES, balanceHint, classTable, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
 import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { ClassTableView, EntityCard } from './EntityCard';
+import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
 
 const get = (o: any, path: string) => path.split('.').reduce((v, k) => (v == null ? v : v[k]), o);
@@ -198,7 +199,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const balance = useMemo(() => balanceHint(initial.type as EntityType, data, srd), [initial.type, data, srd]);
 
   const save = (asVersion: boolean) => start(async () => {
-    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data, cloned_from: clonedFrom }, asVersion ? note : undefined);
+    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? syncSaves(data) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
     setMsg(r);
     if (r?.id && !id) router.replace('/homebrew/' + r.id);
     else if (r?.note) { setNote(''); router.refresh(); }
@@ -279,9 +280,9 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                     <SkillsBox data={data} onChange={setData} list={field('skillList')} />
                   </div>
                   <div className="cls-row three">
-                    <FieldInput f={field('armor')} data={data} onChange={setData} />
-                    <FieldInput f={field('weapons')} data={data} onChange={setData} />
-                    <FieldInput f={field('tools')} data={data} onChange={setData} />
+                    <ArmorBox data={data} onChange={setData} />
+                    <WeaponsBox data={data} onChange={setData} />
+                    <ToolsBox data={data} onChange={setData} />
                   </div>
                 </div>
               ) : null}
