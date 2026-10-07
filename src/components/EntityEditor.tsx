@@ -126,7 +126,9 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const def = TYPES[initial.type];
   const [name, setName] = useState(initial.name);
   const [status, setStatus] = useState(initial.status);
-  const [depth, setDepth] = useState(initial.depth);
+  // Classes are being reworked around the Advanced editor alone; Quick and Guided are hidden for them for now.
+  const onlyAdvanced = initial.type === 'class';
+  const [depth, setDepth] = useState(onlyAdvanced ? 'advanced' : initial.depth);
   const [source, setSource] = useState(initial.source);
   const [data, setData] = useState<any>(initial.data ?? {});
   const [step, setStep] = useState(0);
@@ -160,6 +162,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
     <div className="brew">
       <div className="brew-form">
         <div className="panel">
+          {!onlyAdvanced ? <>
           <div className="depth" role="tablist" aria-label="How much detail">
             {(['quick', 'guided', 'advanced'] as const).map((d) => (
               <button key={d} type="button" role="tab" aria-selected={depth === d} className={depth === d ? '' : 'quiet'} disabled={!pro && d !== 'quick' && initial.depth === 'quick'}
@@ -169,6 +172,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
             ))}
           </div>
           <p className="dim">{depth === 'quick' ? 'Quick: a name and a description. Enough to play with.' : depth === 'guided' ? 'Guided: one step at a time, with sensible defaults already filled in.' : 'Advanced: every field on one page.'} Switching keeps everything you have entered.</p>
+          </> : null}
 
           {depth === 'quick' ? basics : null}
 
