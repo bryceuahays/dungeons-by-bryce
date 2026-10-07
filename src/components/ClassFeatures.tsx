@@ -101,6 +101,59 @@ export function syncGrows(data: any) {
 }
 
 type Step = [number, string];
+
+// What kind of value grows. The value itself is kept as the text players read ("10 ft", "2d6",
+// "+2"), so the table and the sheet show it as is; the kind decides which boxes edit it.
+type Kind = 'distance' | 'dice' | 'bonus' | 'count' | 'duration' | 'other';
+const KINDS: [Kind, string][] = [['distance', 'Distance (ft)'], ['dice', 'Dice'], ['bonus', 'Bonus (+)'], ['count', 'Count'], ['duration', 'Duration'], ['other', 'Other (any text)']];
+const DIE = ['4', '6', '8', '10', '12', '20'];
+const UNITS = ['round', 'minute', 'hour'];
+const kindOf = (v: string): Kind | null => {
+  const t = v.trim().toLowerCase();
+  if (!t) return null;
+  if (/^\d+\s*(ft|feet)\.?$/.test(t)) return 'distance';
+  if (/^\d*d\d+$/.test(t)) return 'dice';
+  if (/^\+\d+$/.test(t)) return 'bonus';
+  if (/^\d+$/.test(t)) return 'count';
+  if (/^\d+\s*(round|minute|hour)s?$/.test(t)) return 'duration';
+  return 'other';
+};
+// values saved before kinds existed: the kind they all share, else "other"
+const guessKind = (steps: Step[]): Kind => {
+  const kinds = [...new Set(steps.map(([, v]) => kindOf(String(v ?? ''))).filter(Boolean))] as Kind[];
+  return kinds.length === 1 ? kinds[0] : kinds.length ? 'other' : 'distance';
+};
+const num = (v: string) => String(v ?? '').match(/\d+/)?.[0] ?? '';
+// a value in another kind: numbers carry over between distance, bonus, count and duration;
+// to or from dice there is no sensible number, so it starts blank
+const convert = (v: string, k: Kind) => {
+  const n = num(v);
+  if (k === 'other') return v;
+  if (!n || k === 'dice' || kindOf(v) === 'dice') return '';
+  return k === 'distance' ? n + ' ft' : k === 'bonus' ? '+' + n : k === 'duration' ? n + (n === '1' ? ' minute' : ' minutes') : n;
+};
+
+function ValueInput({ kind, v, onChange }: { kind: Kind; v: string; onChange: (v: string) => void }) {
+  const n = num(v);
+  switch (kind) {
+    case 'distance': return <><input className="grow-num" type="number" min={0} step={5} aria-label="Feet" value={n} onChange={(e) => onChange(e.target.value ? e.target.value + ' ft' : '')} /> ft</>;
+    case 'bonus': return <>+ <input className="grow-num" type="number" min={0} aria-label="Bonus" value={n} onChange={(e) => onChange(e.target.value ? '+' + e.target.value : '')} /></>;
+    case 'count': return <input className="grow-num" type="number" min={0} aria-label="Count" value={n} onChange={(e) => onChange(e.target.value)} />;
+    case 'dice': {
+      const [, c = '1', d = '6'] = String(v ?? '').match(/^(\d*)d(\d+)$/i) ?? [];
+      return <><input className="grow-num" type="number" min={1} aria-label="How many dice" value={c || '1'} onChange={(e) => onChange((e.target.value || '1') + 'd' + d)} /> ×{' '}
+        <select aria-label="Die" value={d} onChange={(e) => onChange((c || '1') + 'd' + e.target.value)}>{DIE.map((x) => <option key={x} value={x}>d{x}</option>)}</select></>;
+    }
+    case 'duration': {
+      const unit = UNITS.find((u) => String(v).includes(u)) ?? 'minute';
+      const out = (count: string, u: string) => (count ? count + ' ' + u + (count === '1' ? '' : 's') : '');
+      return <><input className="grow-num" type="number" min={1} aria-label="How long" value={n} onChange={(e) => onChange(out(e.target.value, unit))} />{' '}
+        <select aria-label="Unit" value={unit} onChange={(e) => onChange(out(n || '1', e.target.value))}>{UNITS.map((u) => <option key={u} value={u}>{u}s</option>)}</select></>;
+    }
+    default: return <input className="grow-val" aria-label="Value" value={v} placeholder="1/4" onChange={(e) => onChange(e.target.value)} />;
+  }
+}
+
 function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: any[]) => void }) {
   const fx = f.effects ?? [];
   const grows = fx.map((x, i) => [x, i] as const).filter(([x]) => x.t === 'scale');
@@ -110,26 +163,30 @@ function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: any[]) =
       <legend>Grows with level</legend>
       {grows.length ? grows.map(([g, i]) => {
         const steps: Step[] = g.steps ?? [];
-        const setSteps = (next: Step[]) => put(i, { ...g, steps: next });
+        const kind: Kind = g.kind ?? guessKind(steps);
+        const setSteps = (next: Step[]) => put(i, { ...g, kind, steps: next });
         return (
           <div key={i} className="grow-row">
-            <label>What grows<input value={g.name ?? ''} maxLength={60} placeholder="For example: Aura radius" onChange={(e) => put(i, { ...g, name: e.target.value })} /></label>
+            <div className="grow-what">
+              <label>What grows<input value={g.name ?? ''} maxLength={60} placeholder="For example: Aura radius" onChange={(e) => put(i, { ...g, kind, name: e.target.value })} /></label>
+              <label>Kind<select value={kind} onChange={(e) => { const k = e.target.value as Kind; put(i, { ...g, kind: k, steps: steps.map(([l, v]) => [l, convert(String(v ?? ''), k)]) }); }}>{KINDS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+            </div>
             <div className="res-steps">
               {steps.map(([l, v], k) => (
                 <span key={k} className="res-step">
                   from level <input type="number" min={1} max={20} aria-label="From level" value={l} onChange={(e) => setSteps(steps.map((s, j) => (j === k ? [Number(e.target.value) || 1, s[1]] : s)))} />
-                  : <input className="grow-val" aria-label="Value" value={v} placeholder="10 ft" onChange={(e) => setSteps(steps.map((s, j) => (j === k ? [s[0], e.target.value] : s)))} />
+                  : <ValueInput kind={kind} v={String(v ?? '')} onChange={(nv) => setSteps(steps.map((s, j) => (j === k ? [s[0], nv] : s)))} />
                   {steps.length > 1 ? <button type="button" className="quiet small-btn" aria-label="Remove this step" onClick={() => setSteps(steps.filter((_, j) => j !== k))}>✕</button> : null}
                 </span>
               ))}
-              <span className="dim hint" style={{ flexBasis: '100%' }}>From each level listed on, it is that value (until the next step). Write it how players read it: 10 ft, 1d8, +2.</span>
+              <span className="dim hint" style={{ flexBasis: '100%' }}>From each level listed on, it is that value (until the next step).</span>
               <button type="button" className="quiet small-btn" onClick={() => setSteps([...steps, [Math.min(20, (steps[steps.length - 1]?.[0] ?? 1) + 4), '']])}>+ step</button>
               <button type="button" className="quiet small-btn danger" onClick={() => onChange(fx.filter((_, j) => j !== i))}>Remove</button>
             </div>
           </div>
         );
       }) : <p className="dim">Nothing yet. For a number that gets bigger as the character levels up, like an aura's range or extra damage dice. Each one is a column in the table.</p>}
-      <p><button type="button" className="quiet small-btn" onClick={() => onChange([...fx, { t: 'scale', name: (f.name || 'Feature') + ' ', steps: [[Number(f.level) || 1, '']] }])}>+ Add a number that grows</button></p>
+      <p><button type="button" className="quiet small-btn" onClick={() => onChange([...fx, { t: 'scale', kind: 'distance', name: '', steps: [[Number(f.level) || 1, '']] }])}>+ Add a number that grows</button></p>
     </fieldset>
   );
 }
@@ -198,9 +255,9 @@ function ResourceFields({ r, onChange }: { r: Resource; onChange: (r: Resource) 
           {r.amount.mode === 'other' ? <option value="other">Formula (older entry)</option> : null}
         </select>
       </label>
-      <AmountInput a={r.amount} onChange={(a) => edit({ amount: a })} />
       <label>Comes back<select value={r.recharge} onChange={(e) => edit({ recharge: e.target.value as Resource['recharge'] })}>{RECHARGE.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
       <label>From level<input type="number" min={1} max={20} value={r.from} onChange={(e) => edit({ from: Math.min(20, Math.max(1, Number(e.target.value) || 1)) })} /></label>
+      <div className="res-amount"><AmountInput a={r.amount} onChange={(a) => edit({ amount: a })} /></div>
     </div>
   );
 }
