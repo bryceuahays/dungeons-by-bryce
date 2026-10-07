@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { EFFECTS, STATUS, TYPES, type Field } from '@/config/homebrew';
-import { ABILITIES, balanceHint, classTable, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
+import { ABILITIES, balanceHint, classTable, profBonus, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
 import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
@@ -165,14 +165,23 @@ function SkillsBox({ data, onChange, list }: { data: any; onChange: (d: any) => 
   );
 }
 
-// The same for every class in fifth edition, so it is shown, not edited.
-function ProfChart() {
-  const bands = [[1, 4], [5, 8], [9, 12], [13, 16], [17, 20]];
+// The proficiency bonus by level. Standard unless the DM changes it; the sheet and the class table follow it.
+function ProfChart({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  const chart: (number | string)[] = data.profChart ?? Array.from({ length: 20 }, (_, i) => profBonus(i + 1));
+  const custom = !!data.profChart && chart.some((v, i) => Number(v) !== profBonus(i + 1));
+  const put = (i: number, v: string) => { const next = [...chart]; next[i] = v === '' ? '' : Number(v); onChange({ ...data, profChart: next }); };
+  const { profChart: _gone, ...rest } = data;
   return (
     <>
-      <table className="ctable"><thead><tr><th>Levels</th>{bands.map(([a, b]) => <th key={a}>{a}–{b}</th>)}</tr></thead>
-        <tbody><tr><td>Bonus</td>{bands.map(([a], i) => <td key={a}>+{i + 2}</td>)}</tr></tbody></table>
-      <p className="dim">Every class uses this chart, so it cannot be changed here.</p>
+      {[0, 10].map((from) => (
+        <table key={from} className="ctable prof-edit"><thead><tr><th>Level</th>{chart.slice(from, from + 10).map((_, i) => <th key={i}>{from + i + 1}</th>)}</tr></thead>
+          <tbody><tr><td>Bonus</td>{chart.slice(from, from + 10).map((v, i) => <td key={i}><input type="number" min={0} max={20} aria-label={'Proficiency bonus at level ' + (from + i + 1)} value={v} onChange={(e) => put(from + i, e.target.value)} /></td>)}</tr></tbody></table>
+      ))}
+      <p className="inline" style={{ alignItems: 'center' }}>
+        <button type="button" className="quiet small-btn" disabled={!data.profChart} onClick={() => onChange(rest)}>Reset to standard</button>
+        <span className="dim">{custom ? 'This class uses its own chart.' : 'Standard chart (+2 to +6).'}</span>
+      </p>
+      <p className="dim">Recommended: if you change this chart, give every class in your game the same one. Characters level up at the same pace no matter their class, so mixed charts make some classes stronger than others.</p>
     </>
   );
 }
@@ -300,7 +309,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                   <h3>Hit points</h3>
                   <p>At level 1: {data.hd || '?'} + Constitution modifier. Each level after: roll 1d{data.hd || '?'}, or take {data.hd ? Number(data.hd) / 2 + 1 : '?'}, + Constitution modifier.</p>
                   <h3>Proficiency bonus by level</h3>
-                  <ProfChart />
+                  <ProfChart data={data} onChange={setData} />
                   <h3>Milestones</h3>
                   <p>Ability Score Improvements at levels: {levelsOf(data, /ability score improvement/i) || 'none yet'}</p>
                   <p>Subclass features at levels: {levelsOf(data, /subclass/i) || 'none yet'}</p>

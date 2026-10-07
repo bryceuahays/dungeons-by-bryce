@@ -198,3 +198,5 @@
 .brew .chip button{background:none;border:0;padding:0 6px;min-height:0;font-size:.8rem;cursor:pointer;color:inherit;opacity:.7;letter-spacing:0}
 .brew .chip button:hover{opacity:1}
 .cls-row fieldset.col select{width:100%}
+.brew-form table.prof-edit td input{width:3.2em;padding:4px;text-align:center}
+.brew-form table.prof-edit{margin-bottom:10px}

@@ -29,6 +29,11 @@ export type Entity = { id: string; type: EntityType; name: string; source: strin
 export const mod = (score: number) => Math.floor((Number(score) - 10) / 2);
 export const sgn = (n: number) => (n >= 0 ? '+' : '') + n;
 export const profBonus = (level: number) => 2 + Math.floor((Math.max(1, Math.min(20, level)) - 1) / 4);
+// A class may set its own proficiency bonus by level (data.profChart, 20 numbers); otherwise the standard one.
+export const classProf = (data: Record<string, any> | undefined, level: number) => {
+  const v = data?.profChart?.[Math.max(1, Math.min(20, level)) - 1];
+  return v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? profBonus(level) : Number(v);
+};
 
 // Spell slots by class level. Full casters use the table as is; half casters use it at
 // half their level (rounded down, none at level 1).
@@ -45,7 +50,7 @@ export function spellSlots(kind: string | undefined, level: number): number[] {
 
 // A resource's maximum: a number, or level, prof, an ability ("cha"), "level*5",
 // "cha+1", "half" (half level, rounded up), or steps like "step:1=2,3=3,6=4".
-export function evalMax(expr: string | number, ctx: { level: number; mods: Record<Ability, number> }): number {
+export function evalMax(expr: string | number, ctx: { level: number; mods: Record<Ability, number>; prof?: number }): number {
   const s = String(expr ?? '').trim().toLowerCase();
   if (!s) return 0;
   if (s.startsWith('step:')) {
@@ -57,7 +62,7 @@ export function evalMax(expr: string | number, ctx: { level: number; mods: Recor
     t = t.trim();
     if (/^\d+$/.test(t)) return Number(t);
     if (t === 'level') return ctx.level;
-    if (t === 'prof') return profBonus(ctx.level);
+    if (t === 'prof') return ctx.prof ?? profBonus(ctx.level);
     if (t === 'half') return Math.ceil(ctx.level / 2);
     if (t in ctx.mods) return Math.max(1, ctx.mods[t as Ability]);
     return 0;
@@ -107,7 +112,7 @@ export function derive(c: CharacterV2, entities: Entity[]) {
     if (target && target in scores) scores[target] = Number(scores[target]) + Number(x.n);
   }
   const mods = Object.fromEntries(ABILITIES.map(([k]) => [k, mod(scores[k])])) as Record<Ability, number>;
-  const prof = profBonus(level);
+  const prof = classProf(cls?.data, level);
 
   const profs = { skill: new Set<string>(c.skills ?? []), save: new Set<string>(), armor: new Set<string>(), weapon: new Set<string>(), tool: new Set<string>(), language: new Set<string>() };
   of('prof').forEach((x) => profs[x.kind]?.add(x.v));
@@ -121,10 +126,10 @@ export function derive(c: CharacterV2, entities: Entity[]) {
   const senses = of('sense').reduce<Record<string, number>>((m, x) => { m[x.v] = Math.max(m[x.v] ?? 0, Number(x.n)); return m; }, {});
   const resist = [...new Set(of('resist').filter((x) => !x.immune).map((x) => x.v))];
   const immune = [...new Set(of('resist').filter((x) => x.immune).map((x) => x.v))];
-  const resources = of('resource').map((x) => ({ name: x.name, recharge: x.recharge, max: evalMax(x.max, { level, mods }), from: x.from })).filter((r) => r.max > 0);
+  const resources = of('resource').map((x) => ({ name: x.name, recharge: x.recharge, max: evalMax(x.max, { level, mods, prof }), from: x.from })).filter((r) => r.max > 0);
   // a custom resource attached to the campaign (a Divinity pool, say) is a pool every character has
   entities.filter((e) => e.type === 'resource' && e.source !== 'srd').forEach((e) => {
-    const max = evalMax(e.data.max ?? '1', { level, mods });
+    const max = evalMax(e.data.max ?? '1', { level, mods, prof });
     if (max > 0 && !resources.some((r) => r.name === e.name)) resources.push({ name: e.name, recharge: e.data.recharge ?? 'long', max, from: 'This campaign' });
   });
   const scales = of('scale').map((x) => ({ name: x.name, value: scaleAt(x.steps, level), from: x.from })).filter((s) => s.value);
@@ -163,11 +168,11 @@ export function classTable(cls: { data: Record<string, any> }, sub?: { data: Rec
     const level = i + 1;
     const slots = kind && kind !== 'none' ? spellSlots(kind, level) : [];
     return {
-      level, prof: profBonus(level),
+      level, prof: classProf(d, level),
       features: feats.filter((f) => Number(f.level) === level).map((f) => f.name),
       cols: [
         ...scaleCols.map((s) => scaleAt(s.steps, level) || '-'),
-        ...resCols.map((r) => { if ((r.at ?? 1) > level) return '-'; const n = evalMax(r.max, { level, mods: zero }); return /[a-z]/.test(String(r.max)) && !/^(step:|level|half|prof)/.test(String(r.max)) ? String(r.max).replace(/^([a-z]{3})/, (m) => m.toUpperCase()) + ' mod' : n >= 99 ? 'Unlimited' : String(n); }),
+        ...resCols.map((r) => { if ((r.at ?? 1) > level) return '-'; const n = evalMax(r.max, { level, mods: zero, prof: classProf(d, level) }); return /[a-z]/.test(String(r.max)) && !/^(step:|level|half|prof)/.test(String(r.max)) ? String(r.max).replace(/^([a-z]{3})/, (m) => m.toUpperCase()) + ' mod' : n >= 99 ? 'Unlimited' : String(n); }),
       ],
       slots: Array.from({ length: maxSlot }, (_, s) => slots[s] || 0),
     };
