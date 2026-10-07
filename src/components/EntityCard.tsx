@@ -33,6 +33,18 @@ const ord = (n: number) => (n === 0 ? 'Cantrip' : `${n}${['th', 'st', 'nd', 'rd'
 
 // What a player sees for one entry: used for the live preview in the builder, the
 // campaign compendium, and stat blocks in the initiative tracker.
+// A class's level table: proficiency bonus, features, scaling numbers and spell slots by level.
+export function ClassTableView({ table }: { table: ReturnType<typeof classTable> }) {
+  return (
+    <div className="scroll">
+      <table className="ctable">
+        <thead><tr><th>Level</th><th>Prof.</th><th>Features</th>{table.headers.map((h) => <th key={h}>{h}</th>)}{Array.from({ length: table.maxSlot }, (_, i) => <th key={i}>{i + 1}</th>)}</tr></thead>
+        <tbody>{table.rows.map((r) => <tr key={r.level}><td>{r.level}</td><td>+{r.prof}</td><td>{r.features.join(', ') || '-'}</td>{r.cols.map((c, i) => <td key={i}>{c}</td>)}{r.slots.map((s, i) => <td key={i}>{s || '-'}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  );
+}
+
 export function EntityCard({ type, name, source, status, data, compact }: { type: string; name: string; source?: string; status?: string; data: Record<string, any>; compact?: boolean }) {
   const d = data || {};
   const effects: Effect[] = d.effects ?? [];
@@ -93,14 +105,7 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
               ))}
             </ul>
           ) : null}
-          {table && !compact ? (
-            <div className="scroll">
-              <table className="ctable">
-                <thead><tr><th>Level</th><th>Prof.</th><th>Features</th>{table.headers.map((h) => <th key={h}>{h}</th>)}{Array.from({ length: table.maxSlot }, (_, i) => <th key={i}>{i + 1}</th>)}</tr></thead>
-                <tbody>{table.rows.map((r) => <tr key={r.level}><td>{r.level}</td><td>+{r.prof}</td><td>{r.features.join(', ') || '-'}</td>{r.cols.map((c, i) => <td key={i}>{c}</td>)}{r.slots.map((s, i) => <td key={i}>{s || '-'}</td>)}</tr>)}</tbody>
-              </table>
-            </div>
-          ) : null}
+          {table && !compact ? <ClassTableView table={table} /> : null}
         </>
       )}
     </article>

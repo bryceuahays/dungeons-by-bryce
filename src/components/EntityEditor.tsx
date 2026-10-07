@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { EFFECTS, STATUS, TYPES, type Field } from '@/config/homebrew';
-import { ABILITIES, balanceHint, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
+import { ABILITIES, balanceHint, classTable, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
 import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
-import { EntityCard } from './EntityCard';
+import { ClassTableView, EntityCard } from './EntityCard';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
 
 const get = (o: any, path: string) => path.split('.').reduce((v, k) => (v == null ? v : v[k]), o);
@@ -287,7 +287,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       <aside className="brew-side">
         <div className="panel">
           <h3>What your players see</h3>
-          <EntityCard type={initial.type} name={name} status={status} data={data} />
+          {onlyAdvanced ? <div className="ecard"><ClassTableView table={classTable({ data })} /></div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
         </div>
         <div className={'panel bal bal-' + balance.verdict.replace(' ', '-')}>
           <h3>Balance hint: {balance.verdict === 'no baseline' ? 'nothing to compare' : balance.verdict === 'in line' ? 'in line with the SRD' : balance.verdict + ' the SRD'}</h3>
