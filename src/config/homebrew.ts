@@ -8,7 +8,7 @@
 //
 // No imports here: tests load this file directly.
 
-export type FieldKind = 'text' | 'long' | 'number' | 'select' | 'check' | 'multi' | 'abilities' | 'pairs';
+export type FieldKind = 'primary' | 'text' | 'long' | 'number' | 'select' | 'check' | 'multi' | 'abilities' | 'pairs';
 export type Field = { key: string; label: string; kind: FieldKind; options?: string[]; def?: unknown; guided?: boolean; help?: string };
 export type TypeDef = { label: string; plural: string; blurb: string; fields: Field[]; effects: boolean; features: boolean; featureLevels: boolean };
 
@@ -30,7 +30,7 @@ export const TYPES: Record<string, TypeDef> = {
     label: 'Class', plural: 'Classes', blurb: 'A calling with twenty levels of features.', effects: true, features: true, featureLevels: true,
     fields: [
       { key: 'hd', label: 'Hit die', kind: 'select', options: ['6', '8', '10', '12'], def: '8', guided: true },
-      { key: 'primary', label: 'Primary ability', kind: 'text', def: '', guided: true },
+      { key: 'primary', label: 'Primary ability', kind: 'primary', def: '', guided: true, help: 'Where a player of this class should put their best score. Also the score a character needs at 13 or more to multiclass into it.' },
       { key: 'saves', label: 'Saving throw proficiencies (pick two)', kind: 'multi', options: AB, def: [], guided: true },
       { key: 'casting.kind', label: 'Spellcasting', kind: 'select', options: ['none', 'full', 'half', 'pact'], def: 'none', guided: true, help: 'Full: spell slots like a wizard. Half: like a paladin. Pact: a few slots that return on a short rest.' },
       { key: 'casting.ability', label: 'Spellcasting ability', kind: 'select', options: ['', 'int', 'wis', 'cha'], def: '', guided: true },

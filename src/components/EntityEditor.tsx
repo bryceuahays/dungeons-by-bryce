@@ -18,11 +18,39 @@ const AB = Object.fromEntries(ABILITIES) as Record<string, string>;
 
 // ---------------------------------------------------------------- one field of the type's form
 
+// A class's primary ability as ticked abilities joined by "and" or "or". Stored as primaryAbs and
+// primaryJoin; `primary` keeps the readable text ("Strength or Dexterity") that the rest of the site shows.
+const primaryText = (abs: string[], join: string) => {
+  const names = ABILITIES.filter(([k]) => abs.includes(k)).map(([, l]) => l);
+  return names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' ' + join + ' ' + names[names.length - 1];
+};
+function PrimaryAbility({ data, onChange, label, help }: { data: any; onChange: (d: any) => void; label: string; help: React.ReactNode }) {
+  // entries saved before the checkboxes only have the text: read the abilities out of it
+  const text = String(data.primary ?? '');
+  const abs: string[] = data.primaryAbs ?? ABILITIES.filter(([, l]) => text.includes(l)).map(([k]) => k);
+  const join: string = data.primaryJoin ?? (/ and /.test(text) ? 'and' : 'or');
+  const put = (a: string[], j: string) => onChange({ ...data, primaryAbs: a, primaryJoin: j, primary: primaryText(a, j) });
+  return (
+    <fieldset className="multi"><legend>{label}</legend>
+      {help ? <p style={{ flexBasis: '100%', margin: '0 0 6px' }}>{help}</p> : null}
+      {ABILITIES.map(([k, l]) => <label key={k} className="ckrow"><input type="checkbox" checked={abs.includes(k)} onChange={(e) => put(e.target.checked ? [...abs, k] : abs.filter((x) => x !== k), join)} /> {l}</label>)}
+      {abs.length > 1 ? (
+        <p style={{ flexBasis: '100%', margin: '6px 0 0' }}>
+          <label className="ckrow"><input type="radio" checked={join === 'or'} onChange={() => put(abs, 'or')} /> Either one (or)</label>{' '}
+          <label className="ckrow"><input type="radio" checked={join === 'and'} onChange={() => put(abs, 'and')} /> All of them (and)</label>
+        </p>
+      ) : null}
+      {abs.length ? <p className="dim" style={{ flexBasis: '100%', margin: '6px 0 0' }}>Players see: {primaryText(abs, join)}</p> : null}
+    </fieldset>
+  );
+}
+
 function FieldInput({ f, data, onChange }: { f: Field; data: any; onChange: (d: any) => void }) {
   const v = get(data, f.key) ?? f.def;
   const put = (nv: any) => onChange(set(data, f.key, nv));
   const help = f.help ? <span className="dim hint">{f.help}</span> : null;
   switch (f.kind) {
+    case 'primary': return <PrimaryAbility data={data} onChange={onChange} label={f.label} help={help} />;
     case 'long': return <label>{f.label}<textarea rows={3} value={v ?? ''} onChange={(e) => put(e.target.value)} />{help}</label>;
     case 'number': return <label>{f.label}<input type="number" value={v ?? ''} onChange={(e) => put(e.target.value === '' ? '' : Number(e.target.value))} />{help}</label>;
     case 'select': return <label>{f.label}<select value={String(v ?? '')} onChange={(e) => put(/^\d+$/.test(e.target.value) && f.key === 'hd' ? Number(e.target.value) : e.target.value)}>{(f.options ?? []).map((o) => <option key={o} value={o}>{AB[o] ?? (o || 'None')}</option>)}</select>{help}</label>;
