@@ -202,3 +202,13 @@
 .brew-form table.prof-edit{margin-bottom:10px}
 .ecard table.ctable.slots td:nth-child(3){min-width:0}
 .ecard table.ctable.slots th,.ecard table.ctable.slots td{text-align:center}
+.spell-tools{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin:8px 0}
+.spell-list h4{margin:16px 0 4px;font-size:1rem}
+.spell-rows{list-style:none;margin:0;padding:0}
+.spell-rows li{border-bottom:1px solid var(--h-line,rgba(255,255,255,.12))}
+.spell-row{display:flex;align-items:center;gap:10px;padding:5px 0;flex-wrap:wrap}
+.spell-row input{width:auto}
+.spell-row .spell-name{background:none;border:0;padding:0;min-height:0;color:var(--h-text);font:inherit;letter-spacing:0;text-transform:none;cursor:pointer;text-align:left;text-decoration:underline dotted;text-underline-offset:3px}
+.spell-row .spell-act{margin-left:auto;font-size:.85rem}
+.spell-read{padding:6px 0 12px 26px}
+@media (max-width:700px){.spell-tools{grid-template-columns:1fr}}

@@ -61,7 +61,8 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
   };
   const subs = of('subclass').filter((s) => !d.cls || !s.data.parent || String(s.data.parent).toLowerCase() === d.cls.name.toLowerCase());
   const maxSpell = d.casting ? d.casting.slots.length : 0;
-  const classSpells = of('spell').filter((s) => Number(s.data.level) <= Math.max(maxSpell, 0) && (!d.cls || !(s.data.classes ?? []).length || (s.data.classes ?? []).map((x: string) => x.toLowerCase().trim()).includes(d.cls.name.toLowerCase())));
+  const list: string[] | undefined = Array.isArray(d.cls?.data.spellList) && d.cls.data.spellList.length ? d.cls.data.spellList : undefined;
+  const classSpells = of('spell').filter((s) => Number(s.data.level) <= Math.max(maxSpell, 0) && (list ? list.includes(s.id) : !d.cls || !(s.data.classes ?? []).length || (s.data.classes ?? []).map((x: string) => x.toLowerCase().trim()).includes(d.cls.name.toLowerCase())));
   const known = (c.spells ?? []).map((id) => entities.find((e) => e.id === id)).filter(Boolean) as Entity[];
   const grantedSpells = d.granted.map((g) => ({ ...g, entity: entities.find((e) => e.type === 'spell' && e.name.toLowerCase() === g.name.toLowerCase()) }));
   const hp = c.hp ?? d.hpMax;

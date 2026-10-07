@@ -7,6 +7,7 @@ import { TYPES } from '@/config/homebrew';
 import { EntityEditor } from '@/components/EntityEditor';
 import { EntityCard } from '@/components/EntityCard';
 import { CloneButton } from '@/components/BrewForms';
+import { loadSpellOptions } from '@/lib/class-spells';
 
 export const metadata = { title: 'Homebrew entry' };
 
@@ -27,12 +28,13 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
       </>
     );
   }
-  const [plan, { data: srd }, { data: versions }, { data: campaigns }, { data: attached }] = await Promise.all([
+  const [plan, { data: srd }, { data: versions }, { data: campaigns }, { data: attached }, spells] = await Promise.all([
     getPlan(),
     supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', e.type).order('srd_version').limit(700),
     supabase.from('entity_versions').select('version, note, name, data, created_at').eq('entity_id', id).order('version', { ascending: false }),
     supabase.from('campaigns').select('id, title, phases').eq('owner_id', user.id).order('created_at'),
     supabase.from('campaign_entities').select('campaign_id, vis, vis_players, vis_stage').eq('entity_id', id),
+    e.type === 'class' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
   ]);
   const [faces, members] = await Promise.all([
     supabase.from('campaign_faces').select('campaign_id, title').eq('phase', ''),
@@ -47,7 +49,7 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
     <>
       {e.type === 'class' ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
       <div className="inline" style={{ marginBottom: 12 }}><Link className="button quiet" href="/homebrew">All my homebrew</Link><CloneButton id={e.id} label="Make a copy" /></div>
-      <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from}
+      <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from} spells={spells}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data: e.data }} />
     </>
   );

@@ -8,6 +8,8 @@ import { ABILITIES, balanceHint, classTable, profBonus, spellSlots, type Effect,
 import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
+import { ClassSpells } from './ClassSpells';
+import type { SpellOption } from '@/lib/class-spells';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
 
 const get = (o: any, path: string) => path.split('.').reduce((v, k) => (v == null ? v : v[k]), o);
@@ -215,9 +217,9 @@ function ProfChart({ data, onChange }: { data: any; onChange: (d: any) => void }
   );
 }
 
-export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom }: {
+export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells }: {
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
-  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null;
+  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[];
 }) {
   const router = useRouter();
   const def = TYPES[initial.type];
@@ -336,6 +338,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                       <h3>Prepared spells</h3>
                       <p className="dim">How many spells a character can have ready at each class level, chosen from the class's spell list.</p>
                       <LevelNumbers label="Prepared" values={twenty(data.casting?.prepared)} onChange={(v) => setData({ ...data, casting: { ...data.casting, prepared: v } })} />
+                      <h3>Spells available to this class</h3>
+                      <ClassSpells spells={spells ?? []} value={data.spellList ?? []} onChange={(v) => setData({ ...data, spellList: v })} />
                     </>
                   ) : null}
                 </>
