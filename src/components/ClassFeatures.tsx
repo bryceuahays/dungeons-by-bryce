@@ -86,12 +86,61 @@ export function syncUses(data: any) {
   return { ...data, resources, features: data.features.map((f: Feature) => ({ ...f, uses: guessUses(f, resources) })) };
 }
 
+// ---------------------------------------------------------------- numbers that grow with level
+
+// A feature's growing numbers are its "scale" effects ({ t: 'scale', name, steps: [[level, value]] }),
+// which the class table shows as columns and the sheet as values. Older classes keep some on the
+// class itself (the Fighter's Weapon Mastery): those named like a feature move into it.
+export function syncGrows(data: any) {
+  if (!Array.isArray(data.features)) return data;
+  const top = (data.effects ?? []) as any[];
+  const named = (x: any) => data.features.findIndex((f: Feature) => x.t === 'scale' && (f.name ?? '').trim().toLowerCase() === String(x.name ?? '').trim().toLowerCase());
+  if (!top.some((x) => named(x) >= 0)) return data;
+  const features = data.features.map((f: Feature, i: number) => ({ ...f, effects: [...(f.effects ?? []), ...top.filter((x) => named(x) === i)] }));
+  return { ...data, effects: top.filter((x) => named(x) < 0), features };
+}
+
+type Step = [number, string];
+function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: any[]) => void }) {
+  const fx = f.effects ?? [];
+  const grows = fx.map((x, i) => [x, i] as const).filter(([x]) => x.t === 'scale');
+  const put = (i: number, x: any) => onChange(fx.map((y, j) => (j === i ? x : y)));
+  return (
+    <fieldset className="feat-uses">
+      <legend>Grows with level</legend>
+      {grows.length ? grows.map(([g, i]) => {
+        const steps: Step[] = g.steps ?? [];
+        const setSteps = (next: Step[]) => put(i, { ...g, steps: next });
+        return (
+          <div key={i} className="grow-row">
+            <label>What grows<input value={g.name ?? ''} maxLength={60} placeholder="For example: Aura radius" onChange={(e) => put(i, { ...g, name: e.target.value })} /></label>
+            <div className="res-steps">
+              {steps.map(([l, v], k) => (
+                <span key={k} className="res-step">
+                  from level <input type="number" min={1} max={20} aria-label="From level" value={l} onChange={(e) => setSteps(steps.map((s, j) => (j === k ? [Number(e.target.value) || 1, s[1]] : s)))} />
+                  : <input className="grow-val" aria-label="Value" value={v} placeholder="10 ft" onChange={(e) => setSteps(steps.map((s, j) => (j === k ? [s[0], e.target.value] : s)))} />
+                  {steps.length > 1 ? <button type="button" className="quiet small-btn" aria-label="Remove this step" onClick={() => setSteps(steps.filter((_, j) => j !== k))}>✕</button> : null}
+                </span>
+              ))}
+              <span className="dim hint" style={{ flexBasis: '100%' }}>From each level listed on, it is that value (until the next step). Write it how players read it: 10 ft, 1d8, +2.</span>
+              <button type="button" className="quiet small-btn" onClick={() => setSteps([...steps, [Math.min(20, (steps[steps.length - 1]?.[0] ?? 1) + 4), '']])}>+ step</button>
+              <button type="button" className="quiet small-btn danger" onClick={() => onChange(fx.filter((_, j) => j !== i))}>Remove</button>
+            </div>
+          </div>
+        );
+      }) : <p className="dim">Nothing yet. For a number that gets bigger as the character levels up, like an aura's range or extra damage dice. Each one is a column in the table.</p>}
+      <p><button type="button" className="quiet small-btn" onClick={() => onChange([...fx, { t: 'scale', name: (f.name || 'Feature') + ' ', steps: [[Number(f.level) || 1, '']] }])}>+ Add a number that grows</button></p>
+    </fieldset>
+  );
+}
+
 // ---------------------------------------------------------------- the Features tab
 
 type Feature = { level: number; name: string; text: string; effects?: any[]; uses?: Uses };
 
-export function FeaturesTab({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+export function FeaturesTab({ data: raw, onChange }: { data: any; onChange: (d: any) => void }) {
   const [open, setOpen] = useState<number | null>(null);
+  const data = syncGrows(raw);
   const resources = readResources(data);
   const feats: Feature[] = (data.features ?? []).map((f: Feature) => ({ ...f, uses: guessUses(f, resources) }));
   const sorted = (list: Feature[]) => list.map((f, i) => [f, i] as const).sort((a, b) => Number(a[0].level) - Number(b[0].level) || a[1] - b[1]).map(([f]) => f);
@@ -179,6 +228,7 @@ function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void
             {a.steps.length > 1 ? <button type="button" className="quiet small-btn" aria-label="Remove this step" onClick={() => onChange({ mode: 'steps', steps: a.steps.filter((_, j) => j !== i) })}>✕</button> : null}
           </span>
         ))}
+        <span className="dim hint" style={{ flexBasis: '100%' }}>From each level listed on, the character has that many (until the next step).</span>
         <button type="button" className="quiet small-btn" onClick={() => onChange({ mode: 'steps', steps: [...a.steps, [Math.min(20, (a.steps[a.steps.length - 1]?.[0] ?? 1) + 4), (a.steps[a.steps.length - 1]?.[1] ?? 1) + 1]] })}>+ step</button>
       </div>
     );
@@ -258,6 +308,7 @@ function FeatureTimeline({ feats, resources, open, setOpen, write }: {
                           </>
                         ) : null}
                       </fieldset>
+                      <GrowsEditor f={f} onChange={(effects) => edit(idx, { effects })} />
                       <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { write({ features: feats.filter((_, j) => j !== idx) }); setOpen(null); }}>Remove this feature</button></p>
                     </div>
                   ) : null}

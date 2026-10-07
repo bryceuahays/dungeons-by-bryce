@@ -254,3 +254,6 @@ fieldset.feat-uses{border:1px solid var(--h-line);border-radius:10px;padding:8px
 fieldset.feat-uses legend{padding:0 6px;font-size:.9rem;opacity:.85}
 .feat-uses-pick{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:6px}
 fieldset.feat-uses .res-row{border:0;padding:0}
+.grow-row{display:grid;grid-template-columns:1fr 2fr;gap:10px;align-items:start;border-bottom:1px solid var(--h-line);padding:6px 0 10px;margin-bottom:6px}
+.res-step input.grow-val{width:6em}
+@media (max-width:900px){.grow-row{grid-template-columns:1fr}}
