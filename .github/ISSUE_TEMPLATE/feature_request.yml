@@ -1,0 +1,29 @@
+name: Feature request
+description: An idea for something new, or a change to how something works.
+title: "Idea: "
+labels: ["feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is hard, slow or missing today? Describe the moment at the table where it hurts.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What you would like to happen instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who it helps
+      options:
+        - DM
+        - Player
+        - Both
+    validations:
+      required: true

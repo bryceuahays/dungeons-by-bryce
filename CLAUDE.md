@@ -44,3 +44,19 @@ On this Windows machine use `npx.cmd` / `npm.cmd` in PowerShell (scripts are blo
 - Store: `src/lib/store.ts` (publish campaign or pack, generate framework or publishable copy, deliver, upgrade). Prices and discount in `src/config/store.ts`. Listings are hidden from players of `products.spoiler_campaign`, and from signed-out visitors while that campaign has players.
 - A bought campaign: `campaign_feature` (use what came with it) is true; `campaign_can_create` (make new Pro-only things) follows the owner's plan. In pages: `campaignCan` vs `campaignCanMake`; in tools: `p.can` vs `p.make`.
 - Commissions: `src/config/commissions.ts`; statuses requested, accepted, declined, paid, in_progress, in_review, delivered; `deliver_commission()` transfers the campaign and sets `profiles.pro_until`.
+
+## Working in parallel
+
+Several people, each with their own Claude Code session, build features in this repo at the same time. Every session follows these rules. The board is https://github.com/users/bryceuahays/projects/1 and `docs/board-setup.md` explains it.
+
+- **Before editing anything, confirm the issue number and the branch.** Ask the person which issue this session is for. The branch is `feature/<issue-number>-short-name`, made from an up-to-date `main`. If the current branch is `main`, stop and make the branch first.
+- **Never commit to `main`, never push to `main`, never merge into `main`.** Only Bryce merges. Open a pull request and stop.
+- **Stay inside the folders listed in the issue's "Touches" section.** Read the issue (`gh issue view <number>`) before starting.
+- **Stop and ask before editing a shared file.** The shared files are listed in `docs/board-setup.md`. If the issue's "Touches" section does not name the file, do not change it; say which file and why, and let the person ask its owner. A change to a shared file goes in its own small pull request.
+- **Stop and ask before adding a database migration.** There is one live database and no test copy. Only one migration may be open at a time, and it is announced on the issue first. Never run `supabase db push` without the person saying so in this session.
+- **Do not deploy.** No `vercel --prod`. Preview deployments are fine when the person asks for one.
+- **Unfinished work is hidden behind a feature flag** (see the "Feature flags" issue). Until flags exist, only merge finished pieces.
+- **Pull `main` into the branch at the start of each working day,** and keep pull requests small enough to review in 15 minutes.
+- **Tests use the live database** with throwaway accounts. Run them only when the person asks, and never while someone else's migration is open.
+- New code for a feature goes in `src/features/<area>/<feature>/`. Files in `src/app` stay thin.
+- The first campaign's real title is hidden from its players. In issues, pull requests and commit messages call it "Bryce's first campaign".
