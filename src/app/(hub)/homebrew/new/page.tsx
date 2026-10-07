@@ -4,6 +4,7 @@ import { getPlan, remaining } from '@/lib/entitlements';
 import { TYPES } from '@/config/homebrew';
 import { EntityEditor } from '@/components/EntityEditor';
 import { UpgradeHint } from '@/components/UpgradeHint';
+import { CLASS_BLURBS } from '@/config/class-blurbs';
 
 export const metadata = { title: 'New homebrew entry' };
 
@@ -23,7 +24,13 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
     <>
       {type === 'class' ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
       <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null}
-        initial={{ type, name: start?.name ?? '', status: 'draft', depth: 'quick', source: 'homebrew', data: start?.data ?? {} }} />
+        initial={{ type, name: start?.name ?? '', status: 'draft', depth: 'quick', source: 'homebrew', data: startData(type, start) }} />
     </>
   );
+}
+
+// The SRD 5.2 classes have no description: start a class from the picker with its card's text.
+function startData(type: string, start: { name: string; data: any } | null) {
+  if (!start) return {};
+  return type === 'class' && !start.data?.desc && CLASS_BLURBS[start.name] ? { ...start.data, desc: CLASS_BLURBS[start.name] } : start.data;
 }
