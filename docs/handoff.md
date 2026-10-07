@@ -1,5 +1,7 @@
 # Handoff: the commercial build
 
+> **Update, 6 October 2026:** the commercial build and the follow-up build went live on this date, at your request. Where this file says "not live yet" or "say put it live", that has happened. The roadmap board and how the team works are in `docs/board-setup.md`.
+
 Everything in the brief (phases 0 to 13) is built, on the `commercial` branch. The live site at https://dungeons-by-bryce.vercel.app still shows the old version. Nothing goes live until you say so.
 
 - **Preview of the new version:** https://dungeons-by-bryce-bp2e9bvjd-bryceuahays.vercel.app (Vercel asks you to be signed in to Vercel to open a preview; you are the only one who can.)
