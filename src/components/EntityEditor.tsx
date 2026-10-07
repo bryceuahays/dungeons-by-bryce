@@ -165,17 +165,30 @@ function SkillsBox({ data, onChange, list }: { data: any; onChange: (d: any) => 
   );
 }
 
+function LevelNumbers({ label, values, onChange }: { label: string; values: (number | string)[]; onChange: (v: (number | string)[]) => void }) {
+  return (
+    <>
+      {[0, 10].map((from) => (
+        <table key={from} className="ctable prof-edit"><thead><tr><th>Level</th>{values.slice(from, from + 10).map((_, i) => <th key={i}>{from + i + 1}</th>)}</tr></thead>
+          <tbody><tr><td>{label}</td>{values.slice(from, from + 10).map((v, i) => <td key={i}><input type="number" min={0} max={99} aria-label={label + ' at level ' + (from + i + 1)} value={v} onChange={(e) => { const next = [...values]; next[from + i] = e.target.value === '' ? '' : Number(e.target.value); onChange(next); }} /></td>)}</tr></tbody></table>
+      ))}
+    </>
+  );
+}
+const twenty = (v: unknown) => (Array.isArray(v) && v.length === 20 ? v : Array(20).fill(0));
+
 // The Spells tab's side panel: spell slots by class level for the chosen kind of caster.
 function SlotTable({ casting }: { casting: any }) {
   const kind = casting?.kind;
   if (!kind || kind === 'none') return <p className="dim">No spellcasting. Pick a kind of caster to see its spell slots here.</p>;
   const top = spellSlots(kind, 20, casting.rules).length;
+  const counts = ([['Cantrips', casting.cantrips], ['Prepared', casting.prepared]] as [string, unknown][]).filter(([, v]) => Array.isArray(v) && v.some((n) => Number(n) > 0)) as [string, (number | string)[]][];
   return (
     <>
       <p className="dim">{kind === 'pact' ? 'Pact slots are all one level (the highest shown) and refill on a short rest.' : 'How many slots of each spell level a character has at each class level. Slots refill on a long rest.'}</p>
       <div className="scroll"><table className="ctable slots">
-        <thead><tr><th>Level</th>{Array.from({ length: top }, (_, i) => <th key={i}>{['1st', '2nd', '3rd'][i] ?? i + 1 + 'th'}</th>)}</tr></thead>
-        <tbody>{Array.from({ length: 20 }, (_, l) => { const row = spellSlots(kind, l + 1, casting.rules); return <tr key={l}><td>{l + 1}</td>{Array.from({ length: top }, (_, i) => <td key={i}>{row[i] || '-'}</td>)}</tr>; })}</tbody>
+        <thead><tr><th>Level</th>{counts.map(([h]) => <th key={h}>{h}</th>)}{Array.from({ length: top }, (_, i) => <th key={i}>{['1st', '2nd', '3rd'][i] ?? i + 1 + 'th'}</th>)}</tr></thead>
+        <tbody>{Array.from({ length: 20 }, (_, l) => { const row = spellSlots(kind, l + 1, casting.rules); return <tr key={l}><td>{l + 1}</td>{counts.map(([h, v]) => <td key={h}>{Number(v[l]) || '-'}</td>)}{Array.from({ length: top }, (_, i) => <td key={i}>{row[i] || '-'}</td>)}</tr>; })}</tbody>
       </table></div>
     </>
   );
@@ -312,7 +325,21 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                   </div>
                 </div>
               ) : null}
-              {tab === 'Spells' ? fieldList(pick(def.fields, CLASS_CASTING)) : null}
+              {tab === 'Spells' ? (
+                <>
+                  {fieldList(pick(def.fields, CLASS_CASTING))}
+                  {data.casting?.kind && data.casting.kind !== 'none' ? (
+                    <>
+                      <h3>Cantrips known</h3>
+                      <p className="dim">How many cantrips (spells that cost no slot) a character knows at each class level. All 0 means the class gets none.</p>
+                      <LevelNumbers label="Cantrips" values={twenty(data.casting?.cantrips)} onChange={(v) => setData({ ...data, casting: { ...data.casting, cantrips: v } })} />
+                      <h3>Prepared spells</h3>
+                      <p className="dim">How many spells a character can have ready at each class level, chosen from the class's spell list.</p>
+                      <LevelNumbers label="Prepared" values={twenty(data.casting?.prepared)} onChange={(v) => setData({ ...data, casting: { ...data.casting, prepared: v } })} />
+                    </>
+                  ) : null}
+                </>
+              ) : null}
               {tab === 'Features' ? (
                 <>
                   <p className="dim">The named things the class gives a character, and the level each arrives.</p>

@@ -74,6 +74,8 @@ const castKind = (levels, index) => {
   const top = Math.max(0, ...levels.flatMap((l) => Object.entries(l.spellcasting ?? {}).filter(([k, n]) => /^spell_slots_level_/.test(k) && n > 0).map(([k]) => Number(k.slice(18)))));
   return !top ? 'none' : index === 'warlock' ? 'pact' : top >= 9 ? 'full' : 'half';
 };
+// A spellcasting number for each of the 20 class levels (cantrips known, prepared spells).
+const perLevel = (levels, key) => Array.from({ length: 20 }, (_, i) => Number(levels.find((l) => l.level === i + 1)?.spellcasting?.[key] ?? 0));
 const CAST_ABILITY = { bard: 'cha', cleric: 'wis', druid: 'wis', paladin: 'cha', ranger: 'wis', sorcerer: 'cha', warlock: 'cha', wizard: 'int' };
 function classProfs(c) {
   const all = names(c.proficiencies).filter((n) => !/^Saving Throw/.test(n));
@@ -135,7 +137,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
     const derived = [...saves.map((s) => ({ t: 'prof', kind: 'save', v: s })), ...levelEffects(own)];
     add(v, 'class', c.name, {
       hd: c.hit_die, primary: c.primary_ability?.desc ?? guide?.data.primary ?? '', saves, ...classProfs(c),
-      casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024' }) },
+      casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024', cantrips: perLevel(own, 'cantrips_known'), prepared: perLevel(own, 'prepared_spells') }) },
       desc: guide?.data.desc ?? '', effects: guide?.data.effects ?? derived, features: feats,
     });
   }

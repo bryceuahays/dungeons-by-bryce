@@ -165,6 +165,8 @@ export function classTable(cls: { data: Record<string, any> }, sub?: { data: Rec
   const kind = d.casting?.kind;
   const maxSlot = kind && kind !== 'none' ? spellSlots(kind, 20, d.casting?.rules).length : 0;
   const zero = { str: 3, dex: 3, con: 3, int: 3, wis: 3, cha: 3 } as Record<Ability, number>;
+  // cantrips known and prepared spells by level, when the class sets them (2024 casters)
+  const counts = kind && kind !== 'none' ? ([['Cantrips', d.casting?.cantrips], ['Prepared spells', d.casting?.prepared]] as [string, unknown][]).filter(([, v]) => Array.isArray(v) && v.some((n) => Number(n) > 0)) as [string, (number | string)[]][] : [];
   const rows = Array.from({ length: 20 }, (_, i) => {
     const level = i + 1;
     const slots = kind && kind !== 'none' ? spellSlots(kind, level, d.casting?.rules) : [];
@@ -172,13 +174,14 @@ export function classTable(cls: { data: Record<string, any> }, sub?: { data: Rec
       level, prof: classProf(d, level),
       features: feats.filter((f) => Number(f.level) === level).map((f) => f.name),
       cols: [
+        ...counts.map(([, v]) => Number(v[i]) || '-'),
         ...scaleCols.map((s) => scaleAt(s.steps, level) || '-'),
         ...resCols.map((r) => { if ((r.at ?? 1) > level) return '-'; const n = evalMax(r.max, { level, mods: zero, prof: classProf(d, level) }); return /[a-z]/.test(String(r.max)) && !/^(step:|level|half|prof)/.test(String(r.max)) ? String(r.max).replace(/^([a-z]{3})/, (m) => m.toUpperCase()) + ' mod' : n >= 99 ? 'Unlimited' : String(n); }),
       ],
       slots: Array.from({ length: maxSlot }, (_, s) => slots[s] || 0),
     };
   });
-  return { headers: [...scaleCols.map((s) => s.name), ...resCols.map((r) => r.name)], maxSlot, rows };
+  return { headers: [...counts.map(([h]) => h), ...scaleCols.map((s) => s.name), ...resCols.map((r) => r.name)], maxSlot, rows };
 }
 
 // ---------------------------------------------------------------- balance hint (advisory)
