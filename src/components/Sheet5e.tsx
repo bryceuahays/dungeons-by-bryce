@@ -56,7 +56,10 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
   const anyCount = d.chosen.flatMap((e) => (e.data.effects ?? [])).filter((x: any) => x.t === 'ability' && x.ab === 'any').length;
   const rest = (kind: 'short' | 'long') => {
     const nu = { ...used };
-    d.resources.forEach((r) => { if (kind === 'long' ? r.recharge !== 'none' : r.recharge === 'short') delete nu[r.name]; });
+    d.resources.forEach((r) => {
+      if (kind === 'long' ? r.recharge !== 'none' : r.recharge === 'short') delete nu[r.name];
+      else if (kind === 'short' && r.recharge === 'short1' && nu[r.name]) nu[r.name] = Math.max(0, Number(nu[r.name]) - 1);
+    });
     up({ used: nu, ...(kind === 'long' || d.casting?.kind === 'pact' ? { slotsUsed: {} } : {}), ...(kind === 'long' ? { hp: d.hpMax, temp: 0 } : {}) });
   };
   const subs = of('subclass').filter((s) => !d.cls || !s.data.parent || String(s.data.parent).toLowerCase() === d.cls.name.toLowerCase());
@@ -94,8 +97,8 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
         const u = Math.min(r.max, used[r.name] ?? 0), big = r.max > 12;
         return (
           <div key={r.name + r.from} className="s5-res">
-            <span><b>{r.name}</b> <small>{r.from} · {r.recharge === 'none' ? 'does not recharge' : r.recharge + ' rest'}</small></span>
-            {r.max >= 99 ? <span>Unlimited</span> : big
+            <span><b>{r.name}</b> <small>{r.from} · {r.recharge === 'none' ? 'does not recharge' : r.recharge === 'short1' ? 'one back on a short rest, all on a long rest' : r.recharge + ' rest'}</small></span>
+            {r.unlimited ? <span>Unlimited</span> : big
               ? <span className="s5-hp"><button type="button" onClick={() => up({ used: { ...used, [r.name]: Math.min(r.max, u + 1) } })} aria-label={'Spend one ' + r.name}>−</button><b>{r.max - u} / {r.max}</b><button type="button" onClick={() => up({ used: { ...used, [r.name]: Math.max(0, u - 1) } })} aria-label={'Regain one ' + r.name}>+</button></span>
               : <span className="s5-pips">{Array.from({ length: r.max }, (_, i) => <button type="button" key={i} aria-pressed={i < u} aria-label={`${r.name} use ${i + 1}${i < u ? ', spent' : ''}`} onClick={() => up({ used: { ...used, [r.name]: i < u ? i : i + 1 } })} />)}</span>}
           </div>

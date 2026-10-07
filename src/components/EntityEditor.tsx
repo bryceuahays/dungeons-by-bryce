@@ -9,6 +9,7 @@ import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hu
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
+import { FeatureTable, FeatureTimeline, ResourcesEditor, syncResources } from './ClassFeatures';
 import type { SpellOption } from '@/lib/class-spells';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
 
@@ -243,7 +244,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const balance = useMemo(() => balanceHint(initial.type as EntityType, data, srd), [initial.type, data, srd]);
 
   const save = (asVersion: boolean) => start(async () => {
-    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? rules24(syncSaves(data)) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
+    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? classOut(data) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
     setMsg(r);
     if (r?.id && !id) router.replace('/homebrew/' + r.id);
     else if (r?.note) { setNote(''); router.refresh(); }
@@ -258,6 +259,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
     </>
   );
   const rules24 = (d: any) => (onlyAdvanced && d.casting?.kind && d.casting.kind !== 'none' ? { ...d, casting: { ...d.casting, rules: '2024' } } : d);
+  // what is saved, and what the side tables show: the tabs' choices written into the class's effects
+  const classOut = (d: any) => rules24(syncResources(syncSaves(d)));
   const field = (k: string) => def.fields.find((x) => x.key === k)!;
   const fieldList = (fields: Field[]) => <div className="fgrid">{fields.map((f) => <FieldInput key={f.key} f={f} data={data} onChange={setData} />)}</div>;
   const traits = <FeaturesEditor value={data.features ?? []} onChange={(v) => setData({ ...data, features: v })} levels={def.featureLevels} effects={def.effects} />;
@@ -350,9 +353,13 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               ) : null}
               {tab === 'Features' ? (
                 <>
-                  <p className="dim">The named things the class gives a character, and the level each arrives.</p>
-                  {traits}
-                  <details><summary>Sheet effects (the old editor, to be folded into the tabs)</summary>{fx}</details>
+                  <h3>Resources</h3>
+                  <p className="dim">Pools of uses or points the class's features spend. Each one is tracked on the character sheet and gets a column in the table.</p>
+                  <ResourcesEditor data={data} onChange={setData} />
+                  <h3>Features by level</h3>
+                  <p className="dim">What the class gives a character at each level. Click a feature to read or change it.</p>
+                  <FeatureTimeline data={data} onChange={setData} />
+                  <details><summary>Other sheet effects (the old editor, being replaced)</summary>{fx}</details>
                   <details><summary>The raw data</summary><textarea className="mono" rows={16} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /></details>
                 </>
               ) : null}
@@ -439,8 +446,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
       <aside className="brew-side">
         <div className="panel">
-          <h3>{onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : 'Class table') : 'What your players see'}</h3>
-          {onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={rules24(data).casting} /> : <ClassTableView table={classTable({ data: rules24(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
+          <h3>{onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
+          {onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
         </div>
         {onlyAdvanced && tab === 'Spells' && data.casting?.kind && data.casting.kind !== 'none' ? (
           <div className="panel">

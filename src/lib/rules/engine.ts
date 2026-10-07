@@ -16,7 +16,7 @@ export type Effect = { at?: number } & (
   | { t: 'resist'; v: string; immune?: boolean }
   | { t: 'speed'; mode: 'walk' | 'fly' | 'swim' | 'climb' | 'burrow'; n: number }
   | { t: 'sense'; v: string; n: number }
-  | { t: 'resource'; name: string; max: string; recharge: 'short' | 'long' | 'none' }
+  | { t: 'resource'; name: string; max: string; recharge: 'short' | 'short1' | 'long' | 'none' } // short1: one use back on a short rest, all on a long rest
   | { t: 'spell'; name: string }
   | { t: 'scale'; name: string; steps: [number, string][] }
   | { t: 'hp'; n: number }
@@ -48,6 +48,10 @@ export function spellSlots(kind: string | undefined, level: number, rules?: stri
   if (kind === 'pact') { const [n, at] = PACT[l]; const out = Array(at).fill(0); out[at - 1] = n; return out; }
   return [];
 }
+
+// 99 or more uses, written as a set number (like a Barbarian's rages at level 20), means unlimited.
+// A pool that grows with level (Lay on Hands, 5 x level) is just big.
+export const unlimited = (expr: string | number, n: number) => n >= 99 && /^(step:[\d=,]+|\d+)$/.test(String(expr ?? '').trim().toLowerCase());
 
 // A resource's maximum: a number, or level, prof, an ability ("cha"), "level*5",
 // "cha+1", "half" (half level, rounded up), or steps like "step:1=2,3=3,6=4".
@@ -127,11 +131,11 @@ export function derive(c: CharacterV2, entities: Entity[]) {
   const senses = of('sense').reduce<Record<string, number>>((m, x) => { m[x.v] = Math.max(m[x.v] ?? 0, Number(x.n)); return m; }, {});
   const resist = [...new Set(of('resist').filter((x) => !x.immune).map((x) => x.v))];
   const immune = [...new Set(of('resist').filter((x) => x.immune).map((x) => x.v))];
-  const resources = of('resource').map((x) => ({ name: x.name, recharge: x.recharge, max: evalMax(x.max, { level, mods, prof }), from: x.from })).filter((r) => r.max > 0);
+  const resources = of('resource').map((x) => { const max = evalMax(x.max, { level, mods, prof }); return { name: x.name, recharge: x.recharge, max, unlimited: unlimited(x.max, max), from: x.from }; }).filter((r) => r.max > 0);
   // a custom resource attached to the campaign (a Divinity pool, say) is a pool every character has
   entities.filter((e) => e.type === 'resource' && e.source !== 'srd').forEach((e) => {
     const max = evalMax(e.data.max ?? '1', { level, mods, prof });
-    if (max > 0 && !resources.some((r) => r.name === e.name)) resources.push({ name: e.name, recharge: e.data.recharge ?? 'long', max, from: 'This campaign' });
+    if (max > 0 && !resources.some((r) => r.name === e.name)) resources.push({ name: e.name, recharge: e.data.recharge ?? 'long', max, unlimited: max >= 99, from: 'This campaign' });
   });
   const scales = of('scale').map((x) => ({ name: x.name, value: scaleAt(x.steps, level), from: x.from })).filter((s) => s.value);
   const granted = of('spell').map((x) => ({ name: x.name, from: x.from }));
@@ -176,7 +180,7 @@ export function classTable(cls: { data: Record<string, any> }, sub?: { data: Rec
       cols: [
         ...counts.map(([, v]) => Number(v[i]) || '-'),
         ...scaleCols.map((s) => scaleAt(s.steps, level) || '-'),
-        ...resCols.map((r) => { if ((r.at ?? 1) > level) return '-'; const n = evalMax(r.max, { level, mods: zero, prof: classProf(d, level) }); return /[a-z]/.test(String(r.max)) && !/^(step:|level|half|prof)/.test(String(r.max)) ? String(r.max).replace(/^([a-z]{3})/, (m) => m.toUpperCase()) + ' mod' : n >= 99 ? 'Unlimited' : String(n); }),
+        ...resCols.map((r) => { if ((r.at ?? 1) > level) return '-'; const n = evalMax(r.max, { level, mods: zero, prof: classProf(d, level) }); return /[a-z]/.test(String(r.max)) && !/^(step:|level|half|prof)/.test(String(r.max)) ? String(r.max).replace(/^([a-z]{3})/, (m) => m.toUpperCase()) + ' mod' : unlimited(r.max, n) ? 'Unlimited' : String(n); }),
       ],
       slots: Array.from({ length: maxSlot }, (_, s) => slots[s] || 0),
     };

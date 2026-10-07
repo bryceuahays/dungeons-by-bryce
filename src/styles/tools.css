@@ -224,3 +224,23 @@ dialog.popup::backdrop{background:rgba(0,0,0,.65)}
 .popup-grid .wide{grid-column:1/-1}
 .popup-confirm{border:1px solid var(--h-bad,#e06c75);border-radius:10px;padding:10px 14px}
 .popup-confirm p{margin:0 0 8px}
+.res-list{display:grid;gap:10px}
+.res-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;border:1px solid var(--h-line);border-radius:10px;padding:10px 12px}
+.res-steps{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.9rem}
+.res-step input{width:3.4em;padding:4px}
+.feat-quick{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:end;margin:6px 0}
+.feat-level{border-top:1px solid var(--h-line);padding:8px 0}
+.feat-level h4{margin:0 0 6px;font-size:.95rem}
+.feat-card{border:1px solid var(--h-line);border-radius:10px;margin:0 0 6px}
+.feat-card .feat-head{display:flex;justify-content:space-between;width:100%;background:none;border:0;padding:8px 12px;min-height:0;font:inherit;letter-spacing:0;text-transform:none;color:var(--h-text);cursor:pointer;text-align:left}
+.feat-card.open{border-color:var(--h-accent)}
+.feat-body{padding:0 12px 10px;display:grid;gap:10px}
+.feat-meta{display:grid;grid-template-columns:3fr 1fr;gap:10px}
+.feat-none{margin:0 0 4px}
+.feat-add{font-size:.75rem}
+@media (max-width:900px){.res-row{grid-template-columns:1fr 1fr}}
+.ecard table.ctable.feats td:nth-child(2){white-space:normal;min-width:170px}
+.ecard table.ctable.feats td:nth-child(3){min-width:0}
+.res-row > button{justify-self:end}
+.res-steps{grid-column:span 1}
+.res-step{display:inline-flex;align-items:center;gap:4px}

@@ -76,6 +76,11 @@ const castKind = (levels, index) => {
 };
 // A spellcasting number for each of the 20 class levels (cantrips known, prepared spells).
 const perLevel = (levels, key) => Array.from({ length: 20 }, (_, i) => Number(levels.find((l) => l.level === i + 1)?.spellcasting?.[key] ?? 0));
+// Pools the 2024 level tables do not list as a column.
+const EXTRA_2024 = {
+  paladin: [{ t: 'resource', name: 'Lay on Hands', max: 'level*5', recharge: 'long' }],
+  fighter: [{ t: 'resource', name: 'Action Surge', max: 'step:2=1,17=2', recharge: 'short', at: 2 }, { t: 'resource', name: 'Indomitable', max: 'step:9=1,13=2,17=3', recharge: 'long', at: 9 }],
+};
 const CAST_ABILITY = { bard: 'cha', cleric: 'wis', druid: 'wis', paladin: 'cha', ranger: 'wis', sorcerer: 'cha', warlock: 'cha', wizard: 'int' };
 function classProfs(c) {
   const all = names(c.proficiencies).filter((n) => !/^Saving Throw/.test(n));
@@ -131,10 +136,18 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
       const options = kids.filter((k) => k.parent.index === f.index);
       return { level: featLevel(f), name: f.name, text: [featText(f), ...options.map((k) => `${k.name}: ${featText(k)}`)].filter(Boolean).join('\n\n') };
     }).sort((a, b) => a.level - b.level);
+    // The level table lists a feature at every level it comes up (Ability Score Improvement at
+    // 4, 8, 12, 16; the subclass at 3, 7, ...), but the feature list has each one once: repeat it.
+    for (const l of own) for (const ref of l.features ?? []) {
+      if (feats.some((f) => f.level === l.level && f.name === ref.name)) continue;
+      const first = feats.find((f) => f.name === ref.name);
+      if (first) feats.push({ level: l.level, name: first.name, text: first.text });
+    }
+    feats.sort((p, q) => p.level - q.level);
     const guide = is51 ? core('class', c.name) : null;
     const kind = castKind(own, c.index);
     const saves = names(c.saving_throws).map((s) => s.toLowerCase());
-    const derived = [...saves.map((s) => ({ t: 'prof', kind: 'save', v: s })), ...levelEffects(own)];
+    const derived = [...saves.map((s) => ({ t: 'prof', kind: 'save', v: s })), ...levelEffects(own), ...(is51 ? [] : EXTRA_2024[c.index] ?? [])];
     add(v, 'class', c.name, {
       hd: c.hit_die, primary: c.primary_ability?.desc ?? guide?.data.primary ?? '', saves, ...classProfs(c),
       casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024', cantrips: perLevel(own, 'cantrips_known'), prepared: perLevel(own, 'prepared_spells') }) },
