@@ -36,7 +36,7 @@ async function prepare(file: File): Promise<Blob> {
   throw new Error('That image could not be made small enough. Try a smaller one.');
 }
 
-export function ClassBanner({ data, name, onChange }: { data: any; name: string; onChange: (d: any) => void }) {
+export function ClassBanner({ data, name, onChange, noun = 'class' }: { data: any; name: string; onChange: (d: any) => void; noun?: string }) {
   const banner: { path: string; pos?: string } | undefined = data.banner?.path ? data.banner : undefined;
   const fallback = defaultFor(data, name);
   const [url, setUrl] = useState('');
@@ -84,8 +84,8 @@ export function ClassBanner({ data, name, onChange }: { data: any; name: string;
     <div className={'cls-banner' + (!banner && !fallback ? ' empty' : '')}>
       {banner && url ? <img src={url} alt="" style={{ objectPosition: 'center ' + (banner.pos ?? 'center') }} /> : null}
       {!banner && fallback ? <img src={fallback.src} alt="" style={{ objectPosition: fallback.focus }} /> : null}
-      {!banner && fallback ? <p className="cls-banner-note">Default banner. Add your own and players will see it at the top of this class.</p> : null}
-      {!banner && !fallback ? <p className="cls-banner-hint">Add a banner picture for this class. Players will see it at the top of the class.</p> : null}
+      {!banner && fallback ? <p className="cls-banner-note">Default banner. Add your own and players will see it at the top of this {noun}.</p> : null}
+      {!banner && !fallback ? <p className="cls-banner-hint">Add a banner picture for this {noun}. Players will see it at the top of the {noun}.</p> : null}
       <div className="cls-banner-tools">
         <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => choose(e.target.files?.[0])} />
         <button type="button" className="small-btn" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Working…' : banner ? 'Change image' : fallback ? 'Add your own image' : 'Add a banner image'}</button>

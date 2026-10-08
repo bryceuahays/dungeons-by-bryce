@@ -446,7 +446,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   return (
     <SpellTools.Provider value={{ spells: allSpells, pro, onSpellSaved: (sp) => setMadeSpells((m) => [sp, ...m.filter((x) => x.id !== sp.id)]) }}>
     <div className={'brew' + (wide ? ' brew-wide' : '') + (onlyAdvanced && tab === 'Player' ? ' brew-full' : '')}>
-      {onlyAdvanced ? <ClassBanner data={data} name={name} onChange={setData} /> : null}
+      {wide ? <ClassBanner data={data} name={name} onChange={setData} noun={isSub ? 'subclass' : isSpell ? 'spell' : isFeat ? 'feat' : isRace ? 'race' : isBg ? 'background' : isItem ? 'item' : 'class'} /> : null}
       {wide ? (
         <div className="brew-head">
           <div className="depth" role="tablist" aria-label="How much detail">
