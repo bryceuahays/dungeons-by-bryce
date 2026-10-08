@@ -41,8 +41,7 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
 
   return (
     <>
-      <p className="dim">A subclass is a path within the class, like a Paladin&apos;s oath. Players pick one at the class&apos;s first subclass level, and it gives them features at each of the class&apos;s subclass levels{markers.length ? <> (for this class: <b>{markers.join(', ')}</b>)</> : null}.</p>
-      {!markers.length ? <p className="bad">This class has no subclass levels yet. Add a &quot;subclass feature&quot; marker on the Features tab at the levels subclasses should give features.</p> : null}
+      <p className="dim">A subclass is a path within the class, like a Paladin&apos;s oath. Its features can arrive at any level{markers.length ? <>; this class usually gives subclass features at <b>{markers.join(', ')}</b></> : null}.</p>
       <div className="sub-list">
         {list.map((s) => (
           <div key={s.id} className={'feat-card' + (open === s.id ? ' open' : '')}>
@@ -72,7 +71,7 @@ function SrdSubclass({ sub, markers, onCopy }: { sub: SubclassOption; markers: n
       {sub.data?.desc ? <p>{sub.data.desc}</p> : null}
       {feats.map((f, i) => (
         <div key={i} className="sub-read">
-          <b>Level {f.level}: {f.name}</b>{!markers.includes(Number(f.level)) && markers.length ? <span className="bad"> (this class has no subclass feature at level {f.level})</span> : null}
+          <b>Level {f.level}: {f.name}</b>
           <p>{f.text}</p>
         </div>
       ))}
@@ -95,7 +94,6 @@ function SubclassEditor({ sub, markers, resources, feats, spellNames, pro, class
   const sorted = (l: SubFeature[]) => l.map((f, i) => [f, i] as const).sort((a, b) => Number(a[0].level) - Number(b[0].level) || a[1] - b[1]).map(([f]) => f);
   const edit = (i: number, f: Partial<SubFeature>) => setData({ features: sorted(features.map((x, j) => (j === i ? { ...x, ...f } : x))) });
   const add = () => { const level = markers[0] ?? 3; setData({ features: sorted([...features, { level, name: 'New feature', text: '' }]) }); setOpenF(features.filter((f) => Number(f.level) <= level).length); };
-  const off = [...new Set(features.map((f) => Number(f.level)).filter((l) => markers.length && !markers.includes(l)))];
 
   const save = async () => {
     setBusy(true); setMsg(null);
@@ -120,7 +118,6 @@ function SubclassEditor({ sub, markers, resources, feats, spellNames, pro, class
         <label>Subclass name<input value={sub.name} maxLength={120} onChange={(e) => { onChange({ ...sub, name: e.target.value }); setMsg(null); }} /></label>
       </div>
       <label>Description<textarea rows={3} value={sub.data?.desc ?? ''} onChange={(e) => setData({ desc: e.target.value })} /></label>
-      {off.length ? <p className="bad">The class has no subclass features at level {off.join(', ')}. Add a marker there on the Features tab, or move these features to {markers.join(', ')}.</p> : null}
       <h4>Features</h4>
       {features.map((f, i) => (
         <div key={i} className={'feat-card' + (openF === i ? ' open' : '')}>
@@ -133,7 +130,7 @@ function SubclassEditor({ sub, markers, resources, feats, spellNames, pro, class
               <div className="feat-meta">
                 <label>Name<input value={f.name} maxLength={120} onChange={(e) => edit(i, { name: e.target.value })} /></label>
                 <label>Level<select value={Number(f.level)} onChange={(e) => { edit(i, { level: Number(e.target.value) }); setOpenF(null); }}>
-                  {Array.from({ length: 20 }, (_, l) => l + 1).map((l) => <option key={l} value={l}>{l}{markers.includes(l) ? '' : ' (no subclass feature)'}</option>)}
+                  {Array.from({ length: 20 }, (_, l) => l + 1).map((l) => <option key={l} value={l}>{l}</option>)}
                 </select></label>
               </div>
               <label>What it does<textarea rows={6} value={f.text ?? ''} onChange={(e) => edit(i, { text: e.target.value })} /></label>

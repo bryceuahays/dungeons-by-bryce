@@ -36,7 +36,14 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
 // The SRD 5.2 classes have no description: start a class from the picker with its card's text.
 // Its spell list starts as the SRD's list for that class.
 function startData(type: string, start: { name: string; data: any } | null, spells?: SpellOption[]) {
-  if (!start) return {};
+  if (!start) return type === 'class' ? { features: MILESTONES } : {};
   if (type !== 'class') return start.data;
   return { ...start.data, baseClass: start.name, desc: start.data?.desc || CLASS_BLURBS[start.name] || '', spellList: start.data?.spellList ?? srdListFor(spells ?? [], start.name) };
 }
+
+// What every class has, so a blank class starts with them already in place.
+const MILESTONES = [
+  ...[3, 7, 11, 15].map((level) => ({ level, name: 'Subclass feature', text: 'You gain a feature from your subclass.' })),
+  ...[4, 8, 12, 16].map((level) => ({ level, name: 'Ability Score Improvement', text: 'Increase one ability score by 2, or two ability scores by 1 each (to a maximum of 20), or take a feat you qualify for.' })),
+  { level: 19, name: 'Epic Boon', text: 'You gain an Epic Boon feat or another feat of your choice for which you qualify.' },
+].sort((a, b) => a.level - b.level);

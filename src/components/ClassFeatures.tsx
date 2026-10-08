@@ -336,12 +336,6 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
   return (
     <div className="feat-timeline">
       <div className="feat-quick">
-        <span className="dim">Add the usual milestones:</span>
-        <button type="button" className="quiet small-btn" onClick={() => addAt('Ability Score Improvement', [4, 8, 12, 16], 'Increase one ability score by 2, or two ability scores by 1 each (to a maximum of 20), or take a feat you qualify for.')}>Ability Score Improvements (4, 8, 12, 16)</button>
-        <button type="button" className="quiet small-btn" onClick={() => addAt('Epic Boon', [19], 'You gain an Epic Boon feat or another feat of your choice for which you qualify.')}>Epic Boon (19)</button>
-        <button type="button" className="quiet small-btn" onClick={() => addAt('Subclass feature', [3, 7, 11, 15], 'You gain a feature from your subclass.')}>Subclass features (3, 7, 11, 15)</button>
-      </div>
-      <div className="feat-quick">
         <label>Same feature at several levels<input value={many.name} placeholder="For example: Subclass feature" onChange={(e) => setMany({ ...many, name: e.target.value })} /></label>
         <label>Levels<input value={many.levels} placeholder="3, 7, 11, 15" onChange={(e) => setMany({ ...many, levels: e.target.value })} /></label>
         <button type="button" className="quiet small-btn" disabled={!many.name.trim() || !levelsIn(many.levels).length} onClick={() => { addAt(many.name.trim(), levelsIn(many.levels)); setMany({ name: '', levels: '' }); }}>Add</button>
@@ -403,7 +397,11 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
                   ) : null}
                 </div>
               );
-            }) : <p className="dim feat-none">–</p>}
+            }) : null}
+            {!here.some(([f]) => isMarker(f)) && subFeatures.some((x) => x.level === level) ? (
+              <p className="feat-from-sub">From subclasses: {subFeatures.filter((x) => x.level === level).map((x) => x.sub + ': ' + x.name).join('; ')} <button type="button" className="quiet small-btn" onClick={onOpenSubclasses}>Subclasses tab</button></p>
+            ) : null}
+            {!here.length && !subFeatures.some((x) => x.level === level) ? <p className="dim feat-none">–</p> : null}
             <button type="button" className="quiet small-btn feat-add" onClick={() => add(level)}>+ Add a feature at level {level}</button>
           </section>
         );
