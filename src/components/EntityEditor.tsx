@@ -10,7 +10,8 @@ import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
 import { ClassBanner } from './ClassBanner';
-import { SubclassesTab, subSpells, subclassesFor, type SubclassOption } from './ClassSubclasses';
+import { SubclassesTab, featureSpells, subclassesFor, type SubclassOption } from './ClassSubclasses';
+import { SpellTools } from './ClassGives';
 import { readResources } from './ClassFeatures';
 import { FeatureTable, FeaturesTab, syncGrows, syncResources, syncUses } from './ClassFeatures';
 import type { SpellOption } from '@/lib/class-spells';
@@ -317,6 +318,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const fillDefaults = () => { let d = data; guidedFields.forEach((f) => { if (get(d, f.key) === undefined) d = set(d, f.key, f.def); }); setData(d); };
 
   return (
+    <SpellTools.Provider value={{ spells: allSpells, pro, onSpellSaved: (sp) => setMadeSpells((m) => [sp, ...m.filter((x) => x.id !== sp.id)]) }}>
     <div className={'brew' + (onlyAdvanced ? ' brew-wide' : '') + (onlyAdvanced && tab === 'Player' ? ' brew-full' : '')}>
       {onlyAdvanced ? <ClassBanner data={data} name={name} onChange={setData} /> : null}
       {onlyAdvanced ? (
@@ -395,12 +397,12 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                       <h3>Prepared spells</h3>
                       <p className="dim">How many spells a character can have ready at each class level, chosen from the class's spell list.</p>
                       <LevelNumbers label="Prepared" values={twenty(data.casting?.prepared)} onChange={(v) => setData({ ...data, casting: { ...data.casting, prepared: v } })} />
-                      {subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).some((s) => subSpells(s.data).spells.length) ? (
+                      {[{ id: 'class', name: (name || 'This class') + ' features', data }, ...subclassesFor(subclasses, { id, name, baseClass: data.baseClass })].some((s) => featureSpells(s.data).length) ? (
                         <>
-                          <h3>Always prepared from subclasses</h3>
-                          <p className="dim">Each subclass&apos;s own spells, on top of the class list below. Change them on the Subclasses tab.</p>
-                          {subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).filter((s) => subSpells(s.data).spells.length).map((s) => (
-                            <p key={s.id} className="sub-spells-line"><b>{s.name}:</b> {subSpells(s.data).spells.map((x) => `${x.name} (${x.level})`).join(', ')}</p>
+                          <h3>Always prepared</h3>
+                          <p className="dim">Spells that features give as always prepared (each feature&apos;s Gives), on top of the class list below. Change them in the feature, on the Features or Subclasses tab.</p>
+                          {[{ id: 'class', name: (name || 'This class') + ' features', data }, ...subclassesFor(subclasses, { id, name, baseClass: data.baseClass })].filter((s) => featureSpells(s.data).length).map((s) => (
+                            <p key={s.id} className="sub-spells-line"><b>{s.name}:</b> {featureSpells(s.data).map((x) => `${x.name} (${x.level})`).join(', ')}</p>
                           ))}
                         </>
                       ) : null}
@@ -419,8 +421,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               ) : null}
               {tab === 'Subclasses' ? (
                 <SubclassesTab classId={id} className={name} baseClass={data.baseClass} classFeatures={data.features ?? []} resources={readResources(data)}
-                  subclasses={subclasses} setSubclasses={setSubclasses} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} pro={pro} focus={subFocus}
-                  spells={allSpells} onSpellSaved={(sp) => setMadeSpells((m) => [sp, ...m.filter((x) => x.id !== sp.id)])} />
+                  subclasses={subclasses} setSubclasses={setSubclasses} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} pro={pro} focus={subFocus} />
               ) : null}
               {tab === 'Leveling' ? (
                 <>
@@ -523,5 +524,6 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
         </div>
       </aside>
     </div>
+    </SpellTools.Provider>
   );
 }

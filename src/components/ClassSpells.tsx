@@ -96,9 +96,9 @@ export function ClassSpells({ spells, value, onChange, onSpellSaved, onSpellDele
 
 const SPELL_FIELDS: Field[] = TYPES.spell.fields.filter((f) => f.key !== 'classes'); // the class's list decides that now
 
-export function SpellPopup({ id, from, pro, onClose, onSaved, onDeleted }: { id: string | null; from?: string; pro: boolean; onClose: () => void; onSaved: (s: SpellOption, replaces?: string) => void; onDeleted: (id: string) => void }) {
+export function SpellPopup({ id, from, startName, pro, onClose, onSaved, onDeleted }: { id: string | null; from?: string; startName?: string; pro: boolean; onClose: () => void; onSaved: (s: SpellOption, replaces?: string) => void; onDeleted: (id: string) => void }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(startName ?? '');
   const [status, setStatus] = useState('draft');
   const [data, setData] = useState<any>({ level: 1, school: 'Evocation' });
   const [loading, setLoading] = useState(!!(id || from));

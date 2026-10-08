@@ -313,3 +313,5 @@ h1 .beta-tag{font-size:.8rem}
 .sub-spell-add{display:grid;grid-template-columns:110px 1fr auto auto;gap:8px;align-items:end}
 .sub-spells-line{margin:2px 0}
 @media (max-width:900px){.sub-spell-add{grid-template-columns:1fr 1fr}}
+.give-spell{display:grid;gap:6px}
+.give-spell-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}

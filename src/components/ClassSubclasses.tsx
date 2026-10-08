@@ -3,10 +3,7 @@
 import { useState } from 'react';
 import { deleteSubclass, saveEntity } from '@/app/(hub)/homebrew/actions';
 import { ChoiceEditor, GivesEditor, UseEditor, guessUse, useLine, type FeatOption } from './ClassGives';
-import { SpellPopup } from './ClassSpells';
-import { spellDetail } from '@/app/(hub)/homebrew/actions';
-import type { SpellOption } from '@/lib/class-spells';
-import { EntityCard } from './EntityCard';
+
 import { GrowsEditor, guessUses, isMarker, type Resource } from './ClassFeatures';
 
 // The class editor's Subclasses tab. A subclass stays its own entry (so a DM can add a new oath
@@ -27,10 +24,10 @@ export function subclassesFor(all: SubclassOption[], cls: { id: string | null; n
   return [...mine, ...srd];
 }
 
-export function SubclassesTab({ classId, className, baseClass, classFeatures, resources, subclasses, setSubclasses, feats, spellNames, pro, focus, spells, onSpellSaved }: {
+export function SubclassesTab({ classId, className, baseClass, classFeatures, resources, subclasses, setSubclasses, feats, spellNames, pro, focus }: {
   classId: string | null; className: string; baseClass?: string; classFeatures: any[]; resources: Resource[];
   subclasses: SubclassOption[]; setSubclasses: (s: SubclassOption[]) => void; feats: FeatOption[]; spellNames: string[]; pro: boolean;
-  focus?: { subId: string; idx: number } | null; spells: SpellOption[]; onSpellSaved: (s: SpellOption) => void;
+  focus?: { subId: string; idx: number } | null;
 }) {
   const [open, setOpen] = useState<string | null>(focus?.subId ?? null);
   // the feature to open when a subclass is (re)opened, e.g. after an SRD subclass becomes your copy
@@ -57,7 +54,7 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
               <span className="dim">{(s.data?.features ?? []).length} features · {open === s.id ? 'Close' : 'Open'}</span>
             </button>
             {open === s.id ? (
-              <SubclassEditor key={s.id} sub={s} srd={!s.mine} startOpen={startF} spells={spells} onSpellSaved={onSpellSaved} markers={markers} resources={resources} feats={feats} spellNames={spellNames} pro={pro} className={className} classId={classId}
+              <SubclassEditor key={s.id} sub={s} srd={!s.mine} startOpen={startF} markers={markers} resources={resources} feats={feats} spellNames={spellNames} pro={pro} className={className} classId={classId}
                 onSaved={(n, was) => { put(n, was); setOpen(n.id); }} onDeleted={() => { setSubclasses(subclasses.filter((x) => x.id !== s.id)); setOpen(null); }}
                 onChange={(n, openF) => {
                   if (s.mine) { put(n); return; }
@@ -77,8 +74,8 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
   );
 }
 
-function SubclassEditor({ sub, srd, startOpen, markers, resources, feats, spellNames, pro, className, classId, onChange, onSaved, onDeleted, spells, onSpellSaved }: {
-  sub: SubclassOption; srd: boolean; startOpen: number | null; spells: SpellOption[]; onSpellSaved: (s: SpellOption) => void; markers: number[]; resources: Resource[]; feats: FeatOption[]; spellNames: string[]; pro: boolean; className: string; classId: string | null;
+function SubclassEditor({ sub, srd, startOpen, markers, resources, feats, spellNames, pro, className, classId, onChange, onSaved, onDeleted }: {
+  sub: SubclassOption; srd: boolean; startOpen: number | null; markers: number[]; resources: Resource[]; feats: FeatOption[]; spellNames: string[]; pro: boolean; className: string; classId: string | null;
   onChange: (s: SubclassOption, openF: number | null) => void; onSaved: (s: SubclassOption, was: string) => void; onDeleted: () => void;
 }) {
   const [openF, setOpenF] = useState<number | null>(startOpen);
@@ -87,16 +84,15 @@ function SubclassEditor({ sub, srd, startOpen, markers, resources, feats, spellN
   const [sure, setSure] = useState(false);
   const fresh = sub.id.startsWith('new:');
   // features saved before links existed get the same guesses as class features ("expend one use of your Channel Divinity")
-  const moved = subSpells(sub.data);
-  const features: SubFeature[] = moved.features.map((f: SubFeature) => ({ ...f, uses: guessUses(f as any, resources), use: guessUse(f) }));
-  const setData = (d: any) => { onChange({ ...sub, data: { ...sub.data, features, spells: moved.spells, ...d } }, openF); setMsg(null); };
+  const features: SubFeature[] = (sub.data?.features ?? []).map((f: SubFeature) => ({ ...f, uses: guessUses(f as any, resources), use: guessUse(f) }));
+  const setData = (d: any) => { onChange({ ...sub, data: { ...sub.data, features, ...d } }, openF); setMsg(null); };
   const sorted = (l: SubFeature[]) => l.map((f, i) => [f, i] as const).sort((a, b) => Number(a[0].level) - Number(b[0].level) || a[1] - b[1]).map(([f]) => f);
   const edit = (i: number, f: Partial<SubFeature>) => setData({ features: sorted(features.map((x, j) => (j === i ? { ...x, ...f } : x))) });
   const add = () => { const level = markers[0] ?? 3; setData({ features: sorted([...features, { level, name: 'New feature', text: '' }]) }); setOpenF(features.filter((f) => Number(f.level) <= level).length); };
 
   const save = async () => {
     setBusy(true); setMsg(null);
-    const r = await saveEntity(fresh ? null : sub.id, { type: 'subclass', name: sub.name, status: 'draft', depth: pro ? 'advanced' : 'quick', source: 'homebrew', data: syncSubSpells({ ...sub.data, features, spells: moved.spells, parent: className, parentClassId: classId }), cloned_from: sub.cloned_from ?? null });
+    const r = await saveEntity(fresh ? null : sub.id, { type: 'subclass', name: sub.name, status: 'draft', depth: pro ? 'advanced' : 'quick', source: 'homebrew', data: { ...sub.data, features, parent: className, parentClassId: classId }, cloned_from: sub.cloned_from ?? null });
     setBusy(false);
     if (!r?.id) { setMsg({ ok: false, text: r?.error || 'That did not save.' }); return; }
     onSaved({ ...sub, id: r.id }, sub.id);
@@ -115,11 +111,9 @@ function SubclassEditor({ sub, srd, startOpen, markers, resources, feats, spellN
     <div className="feat-body">
       {srd ? <p className="sub-srd-note">This is the SRD subclass. Change anything and your changes go into your own copy for this class (shown as &quot;not saved yet&quot; until you save it); the SRD original stays as it is.</p> : null}
       <div className="feat-meta">
-        <label>Subclass name<input value={sub.name} maxLength={120} onChange={(e) => { onChange({ ...sub, name: e.target.value, data: { ...sub.data, features, spells: moved.spells } }, openF); setMsg(null); }} /></label>
+        <label>Subclass name<input value={sub.name} maxLength={120} onChange={(e) => { onChange({ ...sub, name: e.target.value, data: { ...sub.data, features } }, openF); setMsg(null); }} /></label>
       </div>
       <label>Description<textarea rows={3} value={sub.data?.desc ?? ''} onChange={(e) => setData({ desc: e.target.value })} /></label>
-      <h4>Subclass spells</h4>
-      <SubclassSpells list={moved.spells} spells={spells} pro={pro} onSpellSaved={onSpellSaved} onChange={(next) => setData({ spells: next })} />
       <h4>Features</h4>
       {features.map((f, i) => (
         <div key={i} className={'feat-card' + (openF === i ? ' open' : '')}>
@@ -168,66 +162,11 @@ function SubclassEditor({ sub, srd, startOpen, markers, resources, feats, spellN
   );
 }
 
-// ---------------------------------------------------------------- subclass spells
+// ---------------------------------------------------------------- always-prepared spells
 
-// data.spells: [{ level, name }] - spells a subclass always has prepared from a class level on
-// (an oath's or domain's spells). Older subclasses kept them as "always prepared" effects on a
-// feature; they are read from there once. On save they are written into the subclass's effects,
-// which is what the character sheet reads.
-type SubSpell = { level: number; name: string };
-export function subSpells(data: any): { spells: SubSpell[]; features: SubFeature[] } {
-  const features: SubFeature[] = data?.features ?? [];
-  if (Array.isArray(data?.spells)) return { spells: data.spells, features };
-  const spells: SubSpell[] = [];
-  const left = features.map((f) => {
-    const fx = f.effects ?? [];
-    const sp = fx.filter((x: any) => x.t === 'spell' && x.name);
-    sp.forEach((x: any) => spells.push({ level: Number(x.at) || Number(f.level) || 1, name: x.name }));
-    return sp.length ? { ...f, effects: fx.filter((x: any) => !(x.t === 'spell' && x.name)) } : f;
-  });
-  return { spells, features: left };
-}
-function syncSubSpells(data: any) {
-  const others = (data.effects ?? []).filter((x: any) => x.t !== 'spell');
-  return { ...data, effects: [...others, ...(data.spells ?? []).map((s: SubSpell) => ({ t: 'spell', name: s.name, ...(s.level > 1 ? { at: s.level } : {}) }))] };
-}
-
-function SubclassSpells({ list, spells, pro, onChange, onSpellSaved }: { list: SubSpell[]; spells: SpellOption[]; pro: boolean; onChange: (l: SubSpell[]) => void; onSpellSaved: (s: SpellOption) => void }) {
-  const [level, setLevel] = useState(3);
-  const [pick, setPick] = useState('');
-  const [reading, setReading] = useState<{ name: string; d: any } | null>(null);
-  const [making, setMaking] = useState(false);
-  const levels = [...new Set(list.map((s) => s.level))].sort((a, b) => a - b);
-  const add = (name: string, at = level) => { if (!name.trim() || list.some((s) => s.level === at && s.name.toLowerCase() === name.trim().toLowerCase())) return; onChange([...list, { level: at, name: name.trim() }].sort((a, b) => a.level - b.level)); setPick(''); };
-  const read = async (name: string) => {
-    if (reading?.name === name) { setReading(null); return; }
-    const o = spells.find((s) => s.name.toLowerCase() === name.toLowerCase());
-    setReading({ name, d: o ? await spellDetail(o.id) : { name, source: '', data: { desc: 'This spell is not in the SRD or your homebrew yet. Create it with "Create a new spell".' } } });
-  };
-  return (
-    <div className="sub-spells">
-      <p className="dim">Spells this subclass always has prepared, from the class level shown. They come on top of the class&apos;s own prepared spells.</p>
-      {levels.map((l) => (
-        <div key={l} className="sub-spell-level">
-          <b>Level {l}</b>
-          <p className="chips">{list.filter((s) => s.level === l).map((s) => (
-            <span key={s.name} className={'chip' + (spells.some((o) => o.name.toLowerCase() === s.name.toLowerCase()) ? '' : ' missing')}>
-              <button type="button" className="chip-read" onClick={() => read(s.name)}>{s.name}</button>
-              <button type="button" aria-label={'Remove ' + s.name} onClick={() => onChange(list.filter((x) => x !== s))}>✕</button>
-            </span>
-          ))}</p>
-        </div>
-      ))}
-      {!list.length ? <p className="dim">No subclass spells.</p> : null}
-      {reading ? <div className="spell-read">{reading.d ? <EntityCard type="spell" name={reading.d.name} source={reading.d.source} data={reading.d.data} /> : null}</div> : null}
-      <div className="sub-spell-add">
-        <label>From level<input type="number" min={1} max={20} value={level} onChange={(e) => setLevel(Math.min(20, Math.max(1, Number(e.target.value) || 1)))} /></label>
-        <label>Spell<input list="sub-spell-names" value={pick} placeholder="Start typing a spell name" onChange={(e) => setPick(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(pick); } }} /></label>
-        <button type="button" className="quiet small-btn" disabled={!pick.trim()} onClick={() => add(pick)}>Add</button>
-        <button type="button" className="quiet small-btn" onClick={() => setMaking(true)}>Create a new spell</button>
-      </div>
-      <datalist id="sub-spell-names">{spells.map((s) => <option key={s.id} value={s.name} />)}</datalist>
-      {making ? <SpellPopup id={null} pro={pro} onClose={() => setMaking(false)} onDeleted={() => setMaking(false)} onSaved={(s) => { onSpellSaved(s); add(s.name); setMaking(false); }} /> : null}
-    </div>
-  );
+// The spells a class's or subclass's features give as "always prepared" (Gives), with the level each
+// starts at: the feature's level, or the row's own "from level". For the Spells tab's summary.
+export function featureSpells(data: any): { level: number; name: string }[] {
+  return (data?.features ?? []).flatMap((f: any) => (f.effects ?? []).filter((x: any) => x.t === 'spell' && x.name).map((x: any) => ({ level: Number(x.at) || Number(f.level) || 1, name: x.name })))
+    .sort((a: any, b: any) => a.level - b.level);
 }

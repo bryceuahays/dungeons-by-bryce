@@ -1,6 +1,11 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { createContext, useContext, useState } from 'react';
 import { DAMAGE_TYPES, SKILL_NAMES } from '@/config/homebrew';
+import { spellDetail } from '@/app/(hub)/homebrew/actions';
+import type { SpellOption } from '@/lib/class-spells';
+import { SpellPopup } from './ClassSpells';
+import { EntityCard } from './EntityCard';
 import { TOOL_GROUPS, WEAPONS } from '@/config/proficiencies';
 import { ABILITIES } from '@/lib/rules/engine';
 
@@ -10,6 +15,10 @@ import { ABILITIES } from '@/lib/rules/engine';
 //   Chooses - what the player picks when they get the feature (feature.choice).
 
 // ---------------------------------------------------------------- gives
+
+// The class editor's spells (SRD and your own) and a way to add one made in a pop-up, for the
+// "a spell always prepared" row: suggest names, read the spell, or create a new one in place.
+export const SpellTools = createContext<{ spells: SpellOption[]; onSpellSaved: (s: SpellOption) => void; pro: boolean }>({ spells: [], onSpellSaved: () => {}, pro: false });
 
 const KINDS: [string, string][] = [
   ['prof', 'A proficiency'], ['ac', 'Armor class bonus'], ['speed', 'Speed'], ['resist', 'Resistance or immunity'],
@@ -67,7 +76,7 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
     case 'sense': return <><label>Sense<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'].map((s) => <option key={s}>{s}</option>)}</select></label>{num('Feet', 'n', { min: 0, step: 5 })}</>;
     case 'hp': return num('Hit points per level', 'n', { min: 0 });
     case 'ability': return <><label>Ability<select value={g.ab} onChange={(e) => set({ ab: e.target.value })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="any">Player&apos;s choice</option></select></label>{num('Increase', 'n', { min: 1 })}</>;
-    case 'spell': return <label className="give-wide">Spell<input list="give-spells" value={g.name ?? ''} placeholder="Start typing a spell name" onChange={(e) => set({ name: e.target.value })} /><datalist id="give-spells">{spellNames.map((s) => <option key={s} value={s} />)}</datalist></label>;
+    case 'spell': return <GiveSpell name={g.name ?? ''} onChange={(name) => set({ name })} spellNames={spellNames} />;
     default: return <label className="give-wide">Note<input value={g.text ?? ''} placeholder="For example: advantage on saves against being frightened" onChange={(e) => set({ text: e.target.value })} /></label>;
   }
 }
@@ -181,4 +190,29 @@ export function UseEditor({ f, onChange }: { f: any; onChange: (use: Use | null)
 export function useLine(u: Use | null) {
   if (!u) return '';
   return [ACTIVATIONS.find(([k]) => k === u.activation)?.[1].replace(' (passive)', '').replace(' (see description)', ''), u.duration, u.range].filter(Boolean).join(' · ');
+}
+
+function GiveSpell({ name, onChange, spellNames }: { name: string; onChange: (name: string) => void; spellNames: string[] }) {
+  const tools = useContext(SpellTools);
+  const [read, setRead] = useState<any>(null);
+  const [making, setMaking] = useState(false);
+  const known = tools.spells.find((s) => s.name.toLowerCase() === name.trim().toLowerCase());
+  const names = tools.spells.length ? tools.spells.map((s) => s.name) : spellNames;
+  const toggleRead = async () => {
+    if (read) { setRead(null); return; }
+    setRead(known ? (await spellDetail(known.id)) ?? 'missing' : 'missing');
+  };
+  return (
+    <div className="give-wide give-spell">
+      <label>Spell<input list="give-spells" value={name} placeholder="Start typing a spell name" onChange={(e) => { onChange(e.target.value); setRead(null); }} /></label>
+      <datalist id="give-spells">{names.map((s) => <option key={s} value={s} />)}</datalist>
+      <span className="give-spell-tools">
+        {name.trim() ? <button type="button" className="quiet small-btn" onClick={toggleRead}>{read ? 'Hide' : 'Read'}</button> : null}
+        {!known ? <button type="button" className="quiet small-btn" onClick={() => setMaking(true)}>{name.trim() ? 'Create this spell' : 'Create a new spell'}</button> : null}
+        {name.trim() && !known ? <span className="bad hint">Not in the SRD or your homebrew yet.</span> : null}
+      </span>
+      {read ? <div className="spell-read">{read === 'missing' ? <p className="dim">This spell does not exist yet. Use &quot;Create a new spell&quot; to make it.</p> : <EntityCard type="spell" name={read.name} source={read.source} data={read.data} />}</div> : null}
+      {making ? <SpellPopup id={null} startName={name.trim()} pro={tools.pro} onClose={() => setMaking(false)} onDeleted={() => setMaking(false)} onSaved={(s) => { tools.onSpellSaved(s); onChange(s.name); setMaking(false); }} /> : null}
+    </div>
+  );
 }
