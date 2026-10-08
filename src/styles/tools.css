@@ -283,3 +283,5 @@ h1 .beta-tag{font-size:.8rem}
 .cls-banner-tools select{width:auto;padding:4px 6px}
 .cls-banner-error{position:absolute;left:12px;bottom:12px;margin:0;background:rgba(5,10,12,.8);padding:4px 10px;border-radius:8px}
 @media (max-width:900px){.cls-banner{height:150px}}
+.cls-banner-note{position:absolute;left:12px;bottom:12px;margin:0;max-width:60%;font-size:.8rem;background:rgba(5,10,12,.72);padding:6px 10px;border-radius:10px;color:var(--h-dim)}
+@media (max-width:700px){.cls-banner-note{display:none}}

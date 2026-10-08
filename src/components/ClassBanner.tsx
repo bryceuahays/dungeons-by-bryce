@@ -10,6 +10,10 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 
 const MAX_UPLOAD = 3 * 1024 * 1024;
 const POSITIONS: [string, string][] = [['top', 'Top'], ['center', 'Middle'], ['bottom', 'Bottom']];
+// Shown on classes without their own banner. The knight stands left of centre with the helmet
+// near the top, so the crop favours that spot on every screen shape.
+const DEFAULT_BANNER = '/class-banners/default.webp';
+const DEFAULT_FOCUS = '30% 20%';
 
 // Shrink and compress in the browser, so a phone photo or large art works without fuss.
 async function prepare(file: File): Promise<Blob> {
@@ -74,12 +78,13 @@ export function ClassBanner({ data, onChange }: { data: any; onChange: (d: any) 
   };
 
   return (
-    <div className={'cls-banner' + (banner ? '' : ' empty')}>
+    <div className="cls-banner">
       {banner && url ? <img src={url} alt="" style={{ objectPosition: 'center ' + (banner.pos ?? 'center') }} /> : null}
-      {!banner ? <p className="cls-banner-hint">Add a banner picture for this class. Players will see it at the top of the class.</p> : null}
+      {!banner ? <img src={DEFAULT_BANNER} alt="" style={{ objectPosition: DEFAULT_FOCUS }} /> : null}
+      {!banner ? <p className="cls-banner-note">Default banner. Add your own and players will see it at the top of this class.</p> : null}
       <div className="cls-banner-tools">
         <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => choose(e.target.files?.[0])} />
-        <button type="button" className="small-btn" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Working…' : banner ? 'Change image' : 'Add a banner image'}</button>
+        <button type="button" className="small-btn" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Working…' : banner ? 'Change image' : 'Add your own image'}</button>
         {banner ? (
           <>
             <label className="ckrow">Focus<select value={banner.pos ?? 'center'} onChange={(e) => onChange({ ...data, banner: { ...banner, pos: e.target.value } })}>{POSITIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
