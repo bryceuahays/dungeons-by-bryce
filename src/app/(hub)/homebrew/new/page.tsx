@@ -29,7 +29,7 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>New {def.label.toLowerCase()}</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>
-      {type === 'class' || type === 'subclass' ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
+      {type === 'class' || type === 'subclass' || type === 'spell' ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
       <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type, name: start?.name ?? '', status: 'draft', depth: 'quick', source: 'homebrew', data: startData(type, start, spells) }} />
     </>
@@ -39,7 +39,7 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
 // The SRD 5.2 classes have no description: start a class from the picker with its card's text.
 // Its spell list starts as the SRD's list for that class.
 function startData(type: string, start: { name: string; data: any } | null, spells?: SpellOption[]) {
-  if (!start) return type === 'class' ? { features: MILESTONES } : {};
+  if (!start) return type === 'class' ? { features: MILESTONES } : type === 'spell' ? { level: 1, school: 'Evocation' } : {};
   if (type !== 'class') return start.data;
   const c = start.data?.casting;
   return { ...start.data, ...(c?.kind && c.kind !== 'none' && !c.focus && SRD_FOCUS[start.name] ? { casting: { ...c, focus: SRD_FOCUS[start.name] } } : {}), baseClass: start.name, desc: start.data?.desc || CLASS_BLURBS[start.name] || '', spellList: start.data?.spellList ?? srdListFor(spells ?? [], start.name) };

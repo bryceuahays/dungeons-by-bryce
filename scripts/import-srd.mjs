@@ -18,6 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { admin, ROOT } from '../tests/helpers.mjs';
 import { SRD_CORE, slugify } from '../seed/srd/core.mjs';
+import { parseSpell } from '../src/lib/spell-rules.mjs';
 
 const dir = path.join(ROOT, 'seed', 'srd', 'full');
 if (!fs.existsSync(path.join(dir, '2014'))) { console.log('No data yet. Run:  node scripts/fetch-srd.mjs'); process.exit(0); }
@@ -316,6 +317,8 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
       comp: [names(s.components).join(', '), s.material ? `(${s.material})` : ''].filter(Boolean).join(' '),
       duration: (s.concentration && !/^concentration/i.test(String(s.duration)) ? 'Concentration, ' : '') + String(s.duration ?? '').replace(/^Up to/, 'up to'),
       conc: !!s.concentration, ritual: !!s.ritual, classes: names(s.classes), desc: text(s.desc ?? s.description), higher: text(s.higher_level),
+      // the 2024 rules as fields the site can track (src/lib/spell-rules.mjs); the text above stays the official wording
+      ...(is51 ? {} : { rules: parseSpell(s) }),
     });
   }
 

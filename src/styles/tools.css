@@ -358,3 +358,12 @@ h1 .beta-tag{font-size:.8rem}
 .give-fields > .ckrow{flex:0 1 auto}
 @media (max-width:900px){.give-row{grid-template-columns:1fr}}
 .choice-nested{border-left:2px solid var(--h-line);padding-left:10px}
+/* the spell editor (src/components/SpellRules.tsx) */
+.spell-rules{display:grid;gap:10px}
+.sr-grid{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end;margin:4px 0}
+.sr-grid > label{flex:1 1 130px;min-width:0;margin:0}
+.sr-grid > .ckrow{flex:0 1 auto}
+.sr-grid > .sr-wide{flex-basis:100%}
+.sr-label{display:block;font-size:.85rem;opacity:.8;margin-top:6px}
+.sr-grid > .sr-label{flex-basis:100%;margin:0}
+.sr-conds{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:2px 10px}

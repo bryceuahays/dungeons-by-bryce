@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ABILITIES, classTable, mod, sgn, type Effect, type Feature } from '@/lib/rules/engine';
+import { areaText, saveText, spellText } from '@/lib/spell-rules.mjs';
 import { equipLine, multiclassLine } from '@/lib/class-equip';
 import { TYPES } from '@/config/homebrew';
 
@@ -90,7 +91,8 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
         <>
           {type === 'spell' ? <><Fact k="Casting time" v={d.time} /><Fact k="Range" v={d.range} /><Fact k="Components" v={d.comp} /><Fact k="Duration" v={d.duration} /></> : null}
           {d.desc ? String(d.desc).split(/\n{2,}/).map((p: string, i: number) => <p key={i} style={{ whiteSpace: 'pre-wrap' }}>{p}</p>) : null}
-          {type === 'spell' ? <><Fact k="Damage or healing" v={d.damage} /><Fact k="At higher levels" v={d.higher} /><Fact k="Classes" v={d.classes} /></> : null}
+          {type === 'spell' && d.rules ? <><Fact k="Area" v={areaText(d.rules.area)} /><Fact k="Targets" v={d.rules.targets?.n ? `${d.rules.targets.n} ${d.rules.targets.what || 'target'}${Number(d.rules.targets.n) > 1 ? 's' : ''}` : ''} /><Fact k="Attack" v={d.rules.attack ? (d.rules.attack === 'melee' ? 'Melee' : 'Ranged') + ' spell attack' : ''} /><Fact k="Saving throw" v={saveText(d.rules.save)} /><Fact k="Conditions" v={(d.rules.conditions ?? []).join(', ')} /></> : null}
+          {type === 'spell' ? <><Fact k="Damage or healing" v={d.damage || (d.rules ? spellText(d.rules, d.level).damage : '')} /><Fact k="At higher levels" v={d.higher} /><Fact k="Classes" v={d.classes} /></> : null}
           {type === 'race' ? <><Fact k="Size" v={d.size} /><Fact k="Speed" v={d.speed ? d.speed + ' feet' : ''} /><Fact k="Languages" v={d.languages} /></> : null}
           {type === 'class' ? <><Fact k="Hit die" v={d.hd ? 'd' + d.hd : ''} /><Fact k="Primary ability" v={d.primary} /><Fact k="Saving throws" v={(d.saves ?? []).map((s: string) => Object.fromEntries(ABILITIES)[s] ?? s)} /><Fact k="Armor" v={d.armor} /><Fact k="Weapons" v={d.weapons} /><Fact k="Tools" v={d.tools} /><Fact k="Skills" v={d.skillCount ? `Choose ${d.skillCount}${(d.skillList ?? []).length ? ' from ' + d.skillList.join(', ') : ' of any'}` : ''} /><Fact k="Spellcasting" v={d.casting?.kind && d.casting.kind !== 'none' ? `${d.casting.kind === 'custom' ? 'own slot table' : d.casting.kind}${d.casting.ability ? ', using ' + (Object.fromEntries(ABILITIES)[d.casting.ability] ?? d.casting.ability) : ''}` : ''} /><Fact k="Spellcasting focus" v={d.casting?.kind && d.casting.kind !== 'none' ? d.casting.focus : ''} /><Fact k="Starting equipment" v={equipLine(d.startEquip)} /><Fact k="Multiclassing" v={multiclassLine(d.multiclass)} /></> : null}
           {type === 'background' ? <><Fact k="Skills" v={d.skills} /><Fact k="Tools" v={d.toolProfs} /><Fact k="Languages" v={d.languages} /><Fact k="Equipment" v={d.equipment} /></> : null}

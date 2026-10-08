@@ -1,8 +1,9 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { SpellRulesEditor, spellOut } from './SpellRules';
 import { deleteSpell, saveEntity, spellDetail } from '@/app/(hub)/homebrew/actions';
-import { STATUS, TYPES, type Field } from '@/config/homebrew';
+import { STATUS } from '@/config/homebrew';
 import type { SpellOption } from '@/lib/class-spells';
 import { EntityCard } from './EntityCard';
 
@@ -94,7 +95,6 @@ export function ClassSpells({ spells, value, onChange, onSpellSaved, onSpellDele
 
 // ---------------------------------------------------------------- the pop-up spell editor
 
-const SPELL_FIELDS: Field[] = TYPES.spell.fields.filter((f) => f.key !== 'classes'); // the class's list decides that now
 
 export function SpellPopup({ id, from, startName, pro, onClose, onSaved, onDeleted }: { id: string | null; from?: string; startName?: string; pro: boolean; onClose: () => void; onSaved: (s: SpellOption, replaces?: string) => void; onDeleted: (id: string) => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -116,10 +116,9 @@ export function SpellPopup({ id, from, startName, pro, onClose, onSaved, onDelet
     });
   }, [id, from]);
 
-  const put = (k: string, v: any) => setData({ ...data, [k]: v });
   const save = async () => {
     setBusy(true); setError('');
-    const clean = { ...data }; delete clean.classes;
+    const clean = spellOut({ ...data }); delete clean.classes;
     const r = await saveEntity(id, { type: 'spell', name, status, depth: pro ? 'advanced' : 'quick', source: 'homebrew', data: clean, cloned_from: from ?? null });
     setBusy(false);
     if (!r?.id) { setError(r?.error || 'That did not save.'); return; }
@@ -145,10 +144,7 @@ export function SpellPopup({ id, from, startName, pro, onClose, onSaved, onDelet
       {loading ? <p className="dim">Loading…</p> : (
         <div className="popup-body">
           <label>Name<input value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Spell name" /></label>
-          <div className="popup-grid">
-            {SPELL_FIELDS.map((f) => <SpellField key={f.key} f={f} v={data[f.key] ?? f.def} onChange={(v) => put(f.key, v)} />)}
-          </div>
-          <label>What it does<textarea rows={7} value={data.desc ?? ''} onChange={(e) => put('desc', e.target.value)} placeholder="The spell's rules, the way you would read them at the table." /></label>
+          <SpellRulesEditor data={data} onChange={setData} />
           <label>Status<select value={status} onChange={(e) => setStatus(e.target.value)}>{STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
           <p className="dim">{STATUS.find((s) => s.id === status)?.what}</p>
           {error ? <p className="bad" role="alert">{error}</p> : null}
@@ -167,16 +163,6 @@ export function SpellPopup({ id, from, startName, pro, onClose, onSaved, onDelet
       )}
     </dialog>
   );
-}
-
-function SpellField({ f, v, onChange }: { f: Field; v: any; onChange: (v: any) => void }) {
-  switch (f.kind) {
-    case 'number': return <label>{f.label}<input type="number" min={0} max={9} value={v ?? ''} onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))} /></label>;
-    case 'select': return <label>{f.label}<select value={String(v ?? '')} onChange={(e) => onChange(e.target.value)}>{(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}</select></label>;
-    case 'check': return <label className="ckrow"><input type="checkbox" checked={!!v} onChange={(e) => onChange(e.target.checked)} /> {f.label}</label>;
-    case 'long': return <label className="wide">{f.label}<textarea rows={3} value={v ?? ''} onChange={(e) => onChange(e.target.value)} /></label>;
-    default: return <label>{f.label}<input value={v ?? ''} onChange={(e) => onChange(e.target.value)} /></label>;
-  }
 }
 
 // ---------------------------------------------------------------- the side panel's list
