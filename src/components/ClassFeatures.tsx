@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { ABILITIES, classTable } from '@/lib/rules/engine';
+import { ChoiceEditor, GIVEN, GivesEditor, guessChoice, type FeatOption } from './ClassGives';
 
 // The class editor's Features tab: the class's resources (pools like Channel Divinity or
 // Lay on Hands) and its features as a level-by-level timeline.
@@ -83,7 +84,7 @@ function guessUses(f: Feature, resources: Resource[]): Uses {
 export function syncUses(data: any) {
   if (!Array.isArray(data.features)) return data;
   const resources = readResources(data);
-  return { ...data, resources, features: data.features.map((f: Feature) => ({ ...f, uses: guessUses(f, resources) })) };
+  return { ...data, resources, features: data.features.map((f: Feature) => ({ ...f, uses: guessUses(f, resources), choice: guessChoice(f) })) };
 }
 
 // ---------------------------------------------------------------- numbers that grow with level
@@ -193,9 +194,9 @@ function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: any[]) =
 
 // ---------------------------------------------------------------- the Features tab
 
-type Feature = { level: number; name: string; text: string; effects?: any[]; uses?: Uses };
+type Feature = { level: number; name: string; text: string; effects?: any[]; uses?: Uses; choice?: any };
 
-export function FeaturesTab({ data: raw, onChange }: { data: any; onChange: (d: any) => void }) {
+export function FeaturesTab({ data: raw, onChange, feats: featOptions, spellNames }: { data: any; onChange: (d: any) => void; feats: FeatOption[]; spellNames: string[] }) {
   const [open, setOpen] = useState<number | null>(null);
   const data = syncGrows(raw);
   const resources = readResources(data);
@@ -209,6 +210,10 @@ export function FeaturesTab({ data: raw, onChange }: { data: any; onChange: (d: 
     write({ features: [...feats, { level: r.from, name: 'New feature', text: '', uses: { res: r.id, cost: 1 } }] });
     setOpen(feats.filter((f) => Number(f.level) <= r.from).length);
   };
+  // class-wide sheet effects other than saves (set on Main), resources and growing numbers
+  const top: any[] = data.effects ?? [];
+  const isLoose = (x: any) => GIVEN.includes(x.t) && !(x.t === 'prof' && x.kind === 'save');
+  const loose = top.filter(isLoose), kept = top.filter((x) => !isLoose(x));
   const removeResource = (id: string) => write({ resources: resources.filter((r) => r.id !== id), features: feats.map((f) => (f.uses?.res === id ? { ...f, uses: null } : f)) });
 
   return (
@@ -236,7 +241,14 @@ export function FeaturesTab({ data: raw, onChange }: { data: any; onChange: (d: 
 
       <h3>Features by level</h3>
       <p className="dim">What the class gives a character at each level. Click a feature to read or change it.</p>
-      <FeatureTimeline feats={feats} resources={resources} open={open} setOpen={setOpen} write={write} />
+      <FeatureTimeline feats={feats} resources={resources} open={open} setOpen={setOpen} write={write} featOptions={featOptions} spellNames={spellNames} />
+      {loose.length ? (
+        <>
+          <h3>Also given by the class</h3>
+          <p className="dim">Things this class gives that are not tied to one feature (from an older version of the class). They work the same as a feature's Gives.</p>
+          <GivesEditor effects={loose} spellNames={spellNames} onChange={(fx) => onChange({ ...data, effects: [...kept, ...fx] })} />
+        </>
+      ) : null}
     </>
   );
 }
@@ -295,8 +307,8 @@ function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void
 
 // ---------------------------------------------------------------- features by level
 
-function FeatureTimeline({ feats, resources, open, setOpen, write }: {
-  feats: Feature[]; resources: Resource[]; open: number | null; setOpen: (i: number | null) => void;
+function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, spellNames }: {
+  feats: Feature[]; resources: Resource[]; open: number | null; setOpen: (i: number | null) => void; featOptions: FeatOption[]; spellNames: string[];
   write: (next: { resources?: Resource[]; features?: Feature[] }) => void;
 }) {
   const [many, setMany] = useState({ name: '', levels: '' });
@@ -365,6 +377,8 @@ function FeatureTimeline({ feats, resources, open, setOpen, write }: {
                           </>
                         ) : null}
                       </fieldset>
+                      <ChoiceEditor f={f} feats={featOptions} onChange={(choice) => edit(idx, { choice })} />
+                      <GivesEditor effects={f.effects ?? []} spellNames={spellNames} onChange={(effects) => edit(idx, { effects })} />
                       <GrowsEditor f={f} onChange={(effects) => edit(idx, { effects })} />
                       <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { write({ features: feats.filter((_, j) => j !== idx) }); setOpen(null); }}>Remove this feature</button></p>
                     </div>

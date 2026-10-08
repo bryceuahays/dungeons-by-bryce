@@ -20,3 +20,9 @@ export async function loadSpellOptions(supabase: any, userId: string): Promise<S
 // The SRD's own list for a class, by class name: where a class from the picker starts.
 export const srdListFor = (spells: SpellOption[], className: string) =>
   spells.filter((s) => !s.mine && s.classes.some((c) => c.toLowerCase() === className.toLowerCase())).map((s) => s.id);
+
+// The SRD 5.2 feats, for features where the player chooses one (Fighting Style, Epic Boon, ...).
+export async function loadFeatOptions(supabase: any): Promise<{ name: string; category: string; desc: string }[]> {
+  const { data } = await supabase.from('entities').select('name, category:data->>category, desc:data->>desc').eq('source', 'srd').eq('srd_version', '5.2').eq('type', 'feat').order('name');
+  return (data ?? []).map((f: any) => ({ name: f.name, category: f.category ?? '', desc: f.desc ?? '' }));
+}

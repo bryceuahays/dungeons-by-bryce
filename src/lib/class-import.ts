@@ -61,6 +61,22 @@ Format (every key is optional except "format"):
       "grows": [                                // numbers that get bigger with level
         { "name": "Aura range", "kind": "distance" | "dice" | "bonus" | "count" | "duration" | "other",
           "values": [[6, "10 ft"], [18, "30 ft"]] }   // [from class level, value as players read it]
+      ],
+      "chooses": {                              // only if the player picks something when they get this feature
+        "count": 1,
+        "from": "Fighting Styles" | "Epic Boons" | "Origin feats" | "General feats" | "Weapons" | "Skills" | "Custom",
+        "options": [{ "name": "option name", "description": "what it does" }]   // only for "Custom"
+      },
+      "gives": [                                // what the feature adds to the character by itself
+        { "type": "proficiency", "in": "skill" | "save" | "armor" | "weapon" | "tool" | "language", "what": "Perception" }
+        | { "type": "armorClass", "bonus": 1 }
+        | { "type": "speed", "kind": "walk" | "fly" | "swim" | "climb" | "burrow", "feet": 10 }
+        | { "type": "resistance", "damage": "fire", "immune": false }
+        | { "type": "sense", "sense": "Darkvision" | "Blindsight" | "Tremorsense" | "Truesight", "feet": 60 }
+        | { "type": "hitPointsPerLevel", "amount": 1 }
+        | { "type": "abilityIncrease", "ability": "str", "amount": 1 }
+        | { "type": "spell", "name": "spell always prepared" }
+        | { "type": "note", "text": "anything else, like advantage on certain saves" }
       ]
     }
   ],
@@ -180,7 +196,9 @@ export function parseClassImport(text: string, spells: SpellOption[]): ImportRes
       t: 'scale', name: str(g.name, 60), kind: KINDS.includes(g.kind) ? g.kind : 'other',
       steps: g.values.map((v: any) => [int(v?.[0], 1, 20) ?? 1, str(v?.[1], 40)]).filter((v: any) => v[1]),
     }));
-    features.push({ level: int(f.level, 1, 20) ?? 1, name: fname, text: str(f.description), uses: res ? { res: res.id, cost: f.cost === undefined || f.cost === null || f.cost === '' ? '' : int(f.cost, 0, 999) ?? '' } : null, ...(grows.length ? { effects: grows } : {}) });
+    const gives = (Array.isArray(f.gives) ? f.gives : []).map((g: any) => giveOf(g, fname, notes)).filter(Boolean);
+    const effects = [...grows, ...gives];
+    features.push({ level: int(f.level, 1, 20) ?? 1, name: fname, text: str(f.description), uses: res ? { res: res.id, cost: f.cost === undefined || f.cost === null || f.cost === '' ? '' : int(f.cost, 0, 999) ?? '' } : null, choice: choiceOf(f.chooses), ...(effects.length ? { effects } : {}) });
   }
   if (features.length) data.features = features.sort((a, b) => a.level - b.level);
 
@@ -189,4 +207,40 @@ export function parseClassImport(text: string, spells: SpellOption[]): ImportRes
 
   if (!name && !Object.keys(data).length) return { ok: false, error: 'The answer did not contain anything about the class. Check that your AI received your notes after the prompt.' };
   return { ok: true, name, data, notes };
+}
+
+// "chooses": the lists the editor knows by name, or the DM's own options
+const CHOICE_FROM: Record<string, string> = { 'fighting styles': 'feat:Fighting style', 'fighting style': 'feat:Fighting style', 'epic boons': 'feat:Epic boon', 'epic boon': 'feat:Epic boon', 'origin feats': 'feat:Origin', 'general feats': 'feat:General', weapons: 'weapons', skills: 'skills' };
+function choiceOf(c: any) {
+  if (!c || typeof c !== 'object') return null;
+  const count = int(c.count, 1, 20) ?? 1;
+  const from = CHOICE_FROM[str(c.from).toLowerCase()];
+  if (from) return { count, from };
+  const options = (Array.isArray(c.options) ? c.options : []).map((o: any) => ({ name: str(o?.name, 80), text: str(o?.description) })).filter((o: any) => o.name);
+  return options.length ? { count, from: 'custom', options } : null;
+}
+
+// "gives": into the sheet effects the editor's Gives box edits
+const DAMAGE = ['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder'];
+const SENSES = ['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'];
+function giveOf(g: any, feature: string, notes: string[]): any {
+  switch (g?.type) {
+    case 'proficiency': {
+      const kind = ['skill', 'save', 'armor', 'weapon', 'tool', 'language'].includes(g.in) ? g.in : '';
+      if (kind === 'skill') { const m = pickName(g.what, SKILL_NAMES); if (m) return { t: 'prof', kind, v: m }; break; }
+      if (kind === 'save') { const a = ab(g.what); if (a) return { t: 'prof', kind, v: a }; break; }
+      if (kind && str(g.what)) return { t: 'prof', kind, v: str(g.what, 60) };
+      break;
+    }
+    case 'armorClass': { const n = int(g.bonus, 1, 10); if (n) return { t: 'ac', n }; break; }
+    case 'speed': { const n = int(g.feet, 0, 200); if (n !== null) return { t: 'speed', mode: ['walk', 'fly', 'swim', 'climb', 'burrow'].includes(g.kind) ? g.kind : 'walk', n }; break; }
+    case 'resistance': { const v = str(g.damage).toLowerCase(); if (DAMAGE.includes(v)) return { t: 'resist', v, immune: !!g.immune }; break; }
+    case 'sense': { const v = SENSES.find((x) => x.toLowerCase() === str(g.sense).toLowerCase()); if (v) return { t: 'sense', v, n: int(g.feet, 5, 500) ?? 60 }; break; }
+    case 'hitPointsPerLevel': { const n = int(g.amount, 1, 10); if (n) return { t: 'hp', n }; break; }
+    case 'abilityIncrease': { const a = ab(g.ability) || (str(g.ability).toLowerCase() === 'any' ? 'any' : ''); const n = int(g.amount, 1, 4); if (a && n) return { t: 'ability', ab: a, n }; break; }
+    case 'spell': if (str(g.name)) return { t: 'spell', name: str(g.name, 80) }; break;
+    case 'note': if (str(g.text)) return { t: 'text', text: str(g.text, 300) }; break;
+  }
+  notes.push(`Something "${feature}" gives could not be read (${str(JSON.stringify(g), 80)}), so it was left out.`);
+  return null;
 }

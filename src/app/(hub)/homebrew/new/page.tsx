@@ -5,7 +5,7 @@ import { TYPES } from '@/config/homebrew';
 import { EntityEditor } from '@/components/EntityEditor';
 import { UpgradeHint } from '@/components/UpgradeHint';
 import { CLASS_BLURBS } from '@/config/class-blurbs';
-import { loadSpellOptions, srdListFor, type SpellOption } from '@/lib/class-spells';
+import { loadFeatOptions, loadSpellOptions, srdListFor, type SpellOption } from '@/lib/class-spells';
 
 export const metadata = { title: 'New homebrew entry' };
 
@@ -14,18 +14,19 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
   const def = TYPES[type];
   if (!def) notFound();
   const { supabase, user } = await requireViewer();
-  const [plan, { data: srd }, { data: start }, spells] = await Promise.all([
+  const [plan, { data: srd }, { data: start }, spells, feats] = await Promise.all([
     getPlan(),
     supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', type).order('srd_version').limit(700),
     // from the class picker: open already filled in with that SRD entry (saved only on Save)
     from ? supabase.from('entities').select('id, name, data').eq('id', from).eq('source', 'srd').eq('type', type).maybeSingle() : Promise.resolve({ data: null }),
     type === 'class' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
+    type === 'class' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
   ]);
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>New {def.label.toLowerCase()}</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>
       {type === 'class' ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
-      <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null} spells={spells}
+      <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null} spells={spells} feats={feats}
         initial={{ type, name: start?.name ?? '', status: 'draft', depth: 'quick', source: 'homebrew', data: startData(type, start, spells) }} />
     </>
   );

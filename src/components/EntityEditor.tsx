@@ -12,6 +12,7 @@ import { ChosenSpells, ClassSpells } from './ClassSpells';
 import { ClassBanner } from './ClassBanner';
 import { FeatureTable, FeaturesTab, syncGrows, syncResources, syncUses } from './ClassFeatures';
 import type { SpellOption } from '@/lib/class-spells';
+import type { FeatOption } from './ClassGives';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
 
 const get = (o: any, path: string) => path.split('.').reduce((v, k) => (v == null ? v : v[k]), o);
@@ -261,9 +262,9 @@ function LevelingCopy({ data, onChange }: { data: any; onChange: (d: any) => voi
   );
 }
 
-export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells }: {
+export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells, feats }: {
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
-  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[];
+  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[];
 }) {
   const router = useRouter();
   const def = TYPES[initial.type];
@@ -397,8 +398,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               ) : null}
               {tab === 'Features' ? (
                 <>
-                  <FeaturesTab data={data} onChange={setData} />
-                  <details><summary>Other sheet effects (the old editor, being replaced)</summary>{fx}</details>
+                  <FeaturesTab data={data} onChange={setData} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} />
                   <details><summary>The raw data</summary><textarea className="mono" rows={16} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /></details>
                 </>
               ) : null}
