@@ -85,7 +85,7 @@ export function ClassBanner({ data, name, onChange, noun = 'class' }: { data: an
       {banner && url ? <img src={url} alt="" style={{ objectPosition: 'center ' + (banner.pos ?? 'center') }} /> : null}
       {!banner && fallback ? <img src={fallback.src} alt="" style={{ objectPosition: fallback.focus }} /> : null}
       {!banner && fallback ? <p className="cls-banner-note">Default banner. Add your own and players will see it at the top of this {noun}.</p> : null}
-      {!banner && !fallback ? <p className="cls-banner-hint">Add a banner picture for this {noun}. Players will see it at the top of the {noun}.</p> : null}
+      {!banner && !fallback ? <p className="cls-banner-hint">Add a banner picture for this {noun}. {noun === 'world' ? 'It shows at the top of this page.' : `Players will see it at the top of the ${noun}.`}</p> : null}
       <div className="cls-banner-tools">
         <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => choose(e.target.files?.[0])} />
         <button type="button" className="small-btn" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Working…' : banner ? 'Change image' : fallback ? 'Add your own image' : 'Add a banner image'}</button>

@@ -26,6 +26,7 @@ export default async function HubLayout({ children }: { children: React.ReactNod
         <div className="in">
           <Link className="hub-name" href="/campaigns">Dungeons by Bryce</Link>
           <nav aria-label="Hub">
+            <Link href="/worlds">My worlds</Link>
             <Link href="/campaigns">My campaigns</Link>
             <Link href="/characters">My characters</Link>
             <Link href="/new-campaign">New campaign</Link>

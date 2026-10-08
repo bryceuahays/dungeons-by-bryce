@@ -46,7 +46,7 @@ export function PasswordForm() {
   );
 }
 
-export function NewCampaignForm({ campaigns, pro, packs = [] }: { campaigns: { id: string; title: string }[]; pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[] }) {
+export function NewCampaignForm({ campaigns, pro, packs = [], worlds = [], world = '' }: { campaigns: { id: string; title: string }[]; pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[]; worlds?: { id: string; name: string }[]; world?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
   return (
     <form action={action}>
@@ -54,6 +54,7 @@ export function NewCampaignForm({ campaigns, pro, packs = [] }: { campaigns: { i
         <label>Title<input name="title" maxLength={80} placeholder="Leave empty if your pasted text starts with # Title" /></label>
         <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the title.<input name="slug" pattern="[a-z0-9][a-z0-9\-]{1,60}" placeholder="my-next-campaign" /></label>
         <label>Tagline<textarea name="tagline" rows={2} maxLength={300} /></label>
+        {worlds.length ? <label>World<select name="world" defaultValue={world}><option value="">None (a campaign of its own)</option>{worlds.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label> : null}
       </div>
       <h2>Paste your campaign (optional)</h2>
       <div className="panel">

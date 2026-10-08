@@ -10,6 +10,7 @@ import { cleanTheme, presetOf } from '@/lib/theme';
 import { NEW_CAMPAIGN_RULES } from '@/config/rules';
 import { COMMISSION_STATUS, COMMISSION_TIERS } from '@/config/commissions';
 import { billingIsOn, createCheckout } from '@/lib/stripe';
+import { attachWorldEntries } from '@/lib/worlds';
 
 export type FormState = { error?: string; note?: string } | null;
 
@@ -82,7 +83,10 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
   const theme = presetOf(chosen)?.theme ?? cleanTheme(chosen ?? { preset: 'slate' });
 
   const rules = form.get('rules') === '2014' || form.get('rules') === 'both' ? String(form.get('rules')) : NEW_CAMPAIGN_RULES;
-  const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme, settings: { rules } }).select('id').single();
+  // started from a world's page: the campaign goes in that world (the database checks it is yours)
+  const world = String(form.get('world') || '');
+  const worldId = /^[0-9a-f-]{36}$/.test(world) ? world : null;
+  const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme, settings: { rules }, ...(worldId ? { world_id: worldId } : {}) }).select('id').single();
   if (error || !campaign) {
     if (/upgrade:/i.test(error?.message || '')) return { error: 'The free plan runs one campaign, and you already have one. Pro runs as many as you like: see Plans in the bar above. Nothing you have made is affected.' };
     return { error: /duplicate|unique/i.test(error?.message || '') ? 'Another campaign already uses that web address. Choose a different one.' : 'The campaign could not be created.' };
@@ -110,6 +114,8 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
     const r = await insertImported(supabase, id, imported, 20);
     note = `?imported=${r.tabs}-${r.blocks}`;
   }
+
+  if (worldId) await attachWorldEntries(supabase, worldId, [id]);
 
   // packs ticked on the form (the database checks the account may use each one)
   for (const p of form.getAll('pack').map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x)).slice(0, 10)) await supabase.rpc('attach_pack', { p, c: id });
