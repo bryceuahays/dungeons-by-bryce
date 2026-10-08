@@ -44,3 +44,9 @@ export async function loadClassOptions(supabase: any, userId: string) {
   ]);
   return [...(mine.data ?? []), ...(srd.data ?? [])].map((c: any) => ({ id: c.id as string, name: c.name as string, mine: c.owner_id === userId, data: c.data ?? {} }));
 }
+
+// Item names for a class's starting equipment (SRD 2024 weapons, armor and gear; not magic items).
+export async function loadItemNames(supabase: any): Promise<string[]> {
+  const { data } = await supabase.from('entities').select('name').eq('source', 'srd').eq('srd_version', '5.2').eq('type', 'item').neq('data->>kind', 'Magic item').order('name');
+  return [...new Set<string>((data ?? []).map((i: any) => i.name))];
+}

@@ -321,3 +321,23 @@ h1 .beta-tag{font-size:.8rem}
 .brew-form .slot-refill{max-width:420px;margin-top:4px}
 .brew-form .focus-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 16px;margin:8px 0 4px}
 .brew-form .focus-pick .dim{grid-column:1/-1;margin:0}
+/* the Main tab: starting equipment and multiclassing */
+.brew-form .equip-pkg{border:1px solid var(--line, #2a3a3a);border-radius:8px;padding:8px 10px;margin:6px 0}
+.brew-form .equip-pkg-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.brew-form .equip-item{display:grid;grid-template-columns:4.2em minmax(0,1fr) auto;gap:6px;align-items:center;margin:4px 0}
+.brew-form .equip-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+.brew-form .equip-gp{display:flex;align-items:center;gap:6px}
+.brew-form .equip-gp input{width:6em}
+.brew-form .mc-req{display:flex;align-items:center;gap:8px;margin:4px 0}
+.brew-form .mc-req input{width:4.5em}
+.brew-form .mc-join{display:flex;align-items:center;gap:6px}
+.brew-form .mc-gives{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:2px 12px}
+.brew-form .mc-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:4px 16px;margin-top:8px}
+.brew-form label.equip-gp{display:flex;flex-direction:row;align-items:center;gap:6px;margin:0}
+.brew-form label.equip-gp input{width:6.5em}
+.brew-form .mc-req select{flex:1 1 auto;width:auto}
+.brew-form .mc-req input{width:5em;flex:0 0 5em}
+.brew-form .mc-req span{white-space:nowrap}
+.brew-form label.mc-join{display:flex;flex-direction:row;align-items:center;gap:6px;margin:0}
+.brew-form label.mc-join select{width:auto}
+.brew-form .equip-item input[type=number]{padding-left:4px;padding-right:4px}

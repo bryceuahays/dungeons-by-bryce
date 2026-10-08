@@ -8,6 +8,7 @@ import { ABILITIES, SRD_FOCUS, balanceHint, classTable, profBonus, slotTop, slot
 import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
+import { MulticlassBox, StartEquipBox } from './ClassEquip';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
 import { ClassBanner } from './ClassBanner';
 import { SubclassPage, SubclassesTab, featureSpells, parentOf, saveSubclass, subclassFeatures, subclassesFor, withSubclass, type ClassOption, type SubclassOption } from './ClassSubclasses';
@@ -309,9 +310,9 @@ function LevelingCopy({ data, onChange }: { data: any; onChange: (d: any) => voi
   );
 }
 
-export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells, feats, subclasses: subclassOptions, classes }: {
+export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells, feats, subclasses: subclassOptions, classes, items }: {
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
-  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[]; subclasses?: SubclassOption[]; classes?: ClassOption[];
+  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[]; subclasses?: SubclassOption[]; classes?: ClassOption[]; items?: string[];
 }) {
   const router = useRouter();
   const def = TYPES[initial.type];
@@ -448,6 +449,10 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                     <ArmorBox data={data} onChange={setData} />
                     <WeaponsBox data={data} onChange={setData} />
                     <ToolsBox data={data} onChange={setData} />
+                  </div>
+                  <div className="cls-row two">
+                    <StartEquipBox data={data} onChange={setData} items={items ?? []} />
+                    <MulticlassBox data={data} onChange={setData} />
                   </div>
                 </div>
               ) : null}

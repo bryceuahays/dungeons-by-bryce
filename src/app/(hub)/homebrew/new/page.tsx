@@ -6,7 +6,7 @@ import { EntityEditor } from '@/components/EntityEditor';
 import { UpgradeHint } from '@/components/UpgradeHint';
 import { CLASS_BLURBS } from '@/config/class-blurbs';
 import { SRD_FOCUS } from '@/lib/rules/engine';
-import { loadClassOptions, loadFeatOptions, loadSpellOptions, loadSubclassOptions, srdListFor, type SpellOption } from '@/lib/class-spells';
+import { loadClassOptions, loadFeatOptions, loadItemNames, loadSpellOptions, loadSubclassOptions, srdListFor, type SpellOption } from '@/lib/class-spells';
 
 export const metadata = { title: 'New homebrew entry' };
 
@@ -15,7 +15,7 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
   const def = TYPES[type];
   if (!def) notFound();
   const { supabase, user } = await requireViewer();
-  const [plan, { data: srd }, { data: start }, spells, feats, subclasses, classes] = await Promise.all([
+  const [plan, { data: srd }, { data: start }, spells, feats, subclasses, classes, items] = await Promise.all([
     getPlan(),
     supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', type).order('srd_version').limit(700),
     // from the class picker: open already filled in with that SRD entry (saved only on Save)
@@ -24,12 +24,13 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
     type === 'class' || type === 'subclass' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
     type === 'class' ? loadSubclassOptions(supabase, user.id) : Promise.resolve(undefined),
     type === 'subclass' ? loadClassOptions(supabase, user.id) : Promise.resolve(undefined),
+    type === 'class' ? loadItemNames(supabase) : Promise.resolve(undefined),
   ]);
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>New {def.label.toLowerCase()}</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>
       {type === 'class' || type === 'subclass' ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
-      <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null} spells={spells} feats={feats} subclasses={subclasses} classes={classes}
+      <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type, name: start?.name ?? '', status: 'draft', depth: 'quick', source: 'homebrew', data: startData(type, start, spells) }} />
     </>
   );

@@ -114,6 +114,43 @@ const SUBCLASS_2024 = {
 };
 // each 2024 caster's usual spellcasting focus (the same list as SRD_FOCUS in src/lib/rules/engine.ts)
 const SRD_FOCUS = { Bard: 'Musical Instrument', Cleric: 'Holy Symbol', Druid: 'Druidic Focus', Paladin: 'Holy Symbol', Ranger: 'Druidic Focus', Sorcerer: 'Arcane Focus', Warlock: 'Arcane Focus', Wizard: 'Arcane Focus' };
+// 2024 starting equipment: packages the player picks one of. Read from the official wording
+// ("(a) Spear, 2 Daggers, Arcane Focus (crystal), ... and 28 GP; or (b) 50 GP"): the data's item
+// lists have mistakes (the Bard's instrument is missing, the Sorcerer gets Leather Armor for a Spear).
+function startEquip(c) {
+  const desc = String(c.starting_equipment_options?.[0]?.desc ?? '').replace(/[‘’]/g, "'");
+  return desc.split(/;?\s*(?:or\s+)?\([a-z]\)\s*/i).map((p) => p.trim().replace(/[.;]$/, '')).filter(Boolean).map((p) => {
+    const pkg = { items: [], gp: 0 };
+    for (let part of p.split(/,\s*(?:and\s+)?|\s+and\s+(?=\d+ GP$)/)) {
+      part = part.trim();
+      const gp = part.match(/^(\d+)\s*GP$/i);
+      if (gp) { pkg.gp += Number(gp[1]); continue; }
+      const n = part.match(/^(\d+)\s+(.+)$/);
+      if (part) pkg.items.push(n ? { name: n[2], count: Number(n[1]) } : { name: part, count: 1 });
+    }
+    return pkg;
+  });
+}
+// 2024 multiclassing: the scores needed (all of them, or any one), and what joining the class gives
+const MC_ARMOR = { 'Light Armor': 'light', 'Medium Armor': 'medium', 'Heavy Armor': 'heavy', Shields: 'shields' };
+const MC_WEAPONS = { 'Simple Weapons': 'simple', 'Martial Weapons': 'martial' };
+function multiclass(c) {
+  const m = c.multi_classing;
+  if (!m) return undefined;
+  const any = m.prerequisite_options?.from?.options;
+  const req = (any ?? m.prerequisites ?? []).map((p) => ({ ab: p.ability_score.index, min: p.minimum_score }));
+  const profs = names(m.proficiencies);
+  const choices = m.proficiency_choices ?? [];
+  const count = (re) => choices.filter((p) => re.test(p.from?.options?.[0]?.item?.name ?? '')).reduce((n, p) => n + (p.choose ?? 1), 0);
+  return {
+    req, join: any ? 'or' : 'and',
+    armor: profs.map((p) => MC_ARMOR[p]).filter(Boolean),
+    weaponCats: profs.map((p) => MC_WEAPONS[p]).filter(Boolean),
+    toolItems: profs.filter((p) => /^Tool: /.test(p)).map((p) => p.slice(6)),
+    skills: count(/^Skill: /),
+    tools: count(/^(?!Skill: )/),
+  };
+}
 const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
 function fix2024(index, fx) {
   return fx.flatMap((x) => {
@@ -193,6 +230,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
       hd: c.hit_die, primary: c.primary_ability?.desc ?? guide?.data.primary ?? '', saves, ...classProfs(c),
       casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024', ...(SRD_FOCUS[c.name] ? { focus: SRD_FOCUS[c.name] } : {}), cantrips: perLevel(own, 'cantrips_known'), prepared: perLevel(own, 'prepared_spells') }) },
       desc: guide?.data.desc ?? '', effects: guide?.data.effects ?? derived, features: feats,
+      ...(is51 ? {} : { startEquip: startEquip(c), multiclass: multiclass(c) }),
     });
   }
   for (const s of load(year, 'Subclasses')) {
