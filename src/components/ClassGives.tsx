@@ -348,7 +348,7 @@ export function useLine(u: Use | null) {
   return [ACTIVATIONS.find(([k]) => k === u.activation)?.[1].replace(' (passive)', '').replace(' (see description)', ''), u.duration, u.range].filter(Boolean).join(' · ');
 }
 
-function GiveSpell({ name, onChange, spellNames }: { name: string; onChange: (name: string) => void; spellNames: string[] }) {
+export function GiveSpell({ name, onChange, spellNames }: { name: string; onChange: (name: string) => void; spellNames: string[] }) {
   const tools = useContext(SpellTools);
   const [read, setRead] = useState<any>(null);
   const [making, setMaking] = useState(false);

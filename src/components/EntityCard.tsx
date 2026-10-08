@@ -69,7 +69,7 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
         <p className="who">
           {type === 'spell' ? `${ord(Number(d.level) || 0)} ${String(d.school ?? '').toLowerCase()}${Number(d.level) === 0 ? ' cantrip' : ''}${d.ritual ? ' (ritual)' : ''}`
             : type === 'monster' ? `${d.size ?? ''} ${String(d.mtype ?? '').toLowerCase()}${d.align ? ', ' + d.align : ''}`
-            : type === 'item' ? `${d.kind ?? 'Item'}${d.rarity && d.rarity !== 'Standard' ? ', ' + String(d.rarity).toLowerCase() : ''}${d.attune ? ' (requires attunement)' : ''}`
+            : type === 'item' ? `${d.kind === 'Magic item' && d.magic?.type ? d.magic.type + (d.magic.base ? ` (${d.magic.base})` : '') : d.kind ?? 'Item'}${d.rarity && d.rarity !== 'Standard' ? ', ' + String(d.rarity).toLowerCase() : ''}${d.attune ? ` (requires attunement${d.magic?.attuneBy ? ' by ' + d.magic.attuneBy : ''})` : ''}`
             : type === 'subclass' ? `${def?.label}${d.parent ? ' of the ' + d.parent : ''}`
             : def?.label ?? (type === 'condition' ? 'Condition' : type === 'rule' ? 'Rules reference' : type)}
           {source === 'srd' ? <span className="etag">SRD</span> : null}
@@ -104,6 +104,12 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
           {type === 'feat' ? <Fact k="Prerequisite" v={d.prereq} /> : null}
           {type === 'feat' && d.repeatable ? <Fact k="Repeatable" v={d.repeatNote ? 'Yes. ' + d.repeatNote : 'Yes'} /> : null}
           {type === 'feat' && Array.isArray(d.benefits) ? d.benefits.map((b: any, i: number) => <Fact key={i} k={b.name || 'Benefit'} v={[limitText(b.limit), b.text].filter(Boolean).join('. ')} />) : null}
+          {type === 'item' && d.magic ? <>
+            <Fact k="Bonus" v={Number(d.magic.bonus?.n) ? `+${d.magic.bonus.n} to ${({ weapon: 'attack and damage rolls made with it', ac: 'Armor Class', acsave: 'Armor Class and saving throws', spell: 'spell attack rolls and saving throw DC' } as Record<string, string>)[d.magic.bonus.to] ?? d.magic.bonus.to}` : ''} />
+            <Fact k="Charges" v={Number(d.magic.charges?.n) ? `${d.magic.charges.n}${d.magic.charges.when === 'never' ? '' : `, regains ${d.magic.charges.regain || 'all'} ${({ dawn: 'daily at dawn', long: 'on a long rest', short: 'on a short or long rest' } as Record<string, string>)[d.magic.charges.when] ?? ''}`}` : ''} />
+            <Fact k="Spells" v={(d.magic.spells ?? []).filter((s: any) => s.name).map((s: any) => `${s.name} (${s.cost || 1} charge${String(s.cost) === '1' || !s.cost ? '' : 's'})`).join(', ')} />
+            {(d.magic.props ?? []).map((p: any, i: number) => <Fact key={i} k={p.name || 'Property'} v={[limitText(p.limit), p.text].filter(Boolean).join('. ')} />)}
+          </> : null}
           {type === 'item' ? <><Fact k="Damage" v={d.damage} /><Fact k="Armor class" v={d.ac} /><Fact k="Properties" v={d.props} /><Fact k="Cost" v={d.cost} /><Fact k="Weight" v={d.weight} /></> : null}
           {type === 'rule' && d.section ? <Fact k="Section" v={d.section} /> : null}
           {type === 'feat' && d.category ? <Fact k="Category" v={d.category} /> : null}

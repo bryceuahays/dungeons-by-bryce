@@ -353,6 +353,62 @@ function background2024(b) {
     features: [],
   };
 }
+// 2024 items as fields (see src/components/ItemPage.tsx). Equipment comes structured in the data;
+// magic items are read from their wording: type and base from the first line, bonus, charges and
+// the spells in their tables. The text fields stay as before for the rest of the site.
+const WORD_N = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twenty: 20 };
+const GEAR_CAT = [['Equipment Packs', 'Equipment pack'], ['Ammunition', 'Ammunition'], ['Arcane Foci', 'Arcane focus'], ['Druidic Foci', 'Druidic focus'], ['Holy Symbols', 'Holy symbol'], ["Artisan's Tools", "Artisan's tools"], ['Musical Instruments', 'Musical instrument'], ['Gaming Sets', 'Gaming set'], ['Other Tools', 'Other tool']];
+function item2024(e, cats) {
+  const out = { costN: e.cost?.quantity ?? '', costUnit: e.cost?.unit ?? 'gp', lb: e.weight ?? '' };
+  if (e.damage) {
+    out.weapon = {
+      cat: cats.some((c) => /martial/i.test(c)) ? 'martial' : 'simple', type: cats.some((c) => /ranged/i.test(c)) ? 'ranged' : 'melee',
+      dice: e.damage.damage_dice, dtype: String(e.damage.damage_type?.name ?? '').toLowerCase(), props: names(e.properties),
+      ...(e.mastery ? { mastery: e.mastery.name } : {}), ...(e.two_handed_damage ? { versatile: e.two_handed_damage.damage_dice } : {}),
+      ...(e.range?.long ? { range: { normal: e.range.normal, long: e.range.long } } : e.throw_range ? { range: { normal: e.throw_range.normal, long: e.throw_range.long } } : {}),
+      ...(e.ammunition ? { ammo: e.ammunition.name } : {}),
+    };
+  } else if (e.armor_class) {
+    const type = cats.includes('Shields') ? 'shield' : cats.includes('Heavy Armor') ? 'heavy' : cats.includes('Medium Armor') ? 'medium' : 'light';
+    out.armor = { type, base: e.armor_class.base, dex: !e.armor_class.dex_bonus ? 'none' : e.armor_class.max_bonus ? 'max2' : 'full', strMin: e.str_minimum || '', stealth: !!e.stealth_disadvantage, ...(e.don_time ? { don: e.don_time, doff: e.doff_time } : {}) };
+  } else {
+    const uses = String(e.description ?? '').match(/has (\w+) uses/i)?.[1];
+    out.gear = {
+      cat: GEAR_CAT.find(([c]) => cats.includes(c))?.[1] ?? 'Adventuring gear',
+      ...(uses ? { uses: WORD_N[uses.toLowerCase()] ?? Number(uses) } : {}), ...(e.quantity > 1 ? { qty: e.quantity } : {}),
+      ...(e.contents ? { contents: e.contents.map((c) => ({ name: c.item.name, count: c.quantity })) } : {}),
+    };
+  }
+  return out;
+}
+function magic2024(m) {
+  const [first, ...rest] = (m.desc ?? []).map(String);
+  const all = rest.join('\n');
+  const type = first.replace(/\s*\(.*$/, '').trim();
+  const base = first.match(/\(([^)]*)\)/)?.[1] ?? '';
+  const rarityName = String(m.rarity?.name ?? 'Varies');
+  const rarity = /varies|,|\bor\b/i.test(rarityName) ? 'Varies' : rarityName.replace(/\s*\(.*$/, '');
+  const bonusN = Number(all.match(/\+(\d) bonus/)?.[1]) || Number(rarityName.match(/\(\+(\d)\)/)?.[1]) || 0;
+  const to = /\+\d bonus to Armor Class and saving throws/i.test(all) ? 'acsave' : /\+\d bonus to Armor Class/i.test(all) ? 'ac' : /\+\d bonus to spell attack/i.test(all) ? 'spell' : /\+\d bonus to attack (rolls )?and damage/i.test(all) ? 'weapon' : null;
+  const charges = Number(all.match(/has (\d+) charges/i)?.[1]) || 0;
+  const regain = all.match(/regains? (all|\d+d\d+(?:\s*\+\s*\d+)?|\d+) expended charges(?: daily at dawn)?/i);
+  const spells = [...all.matchAll(/^\|\s*([A-Z][^|]+?)\s*\|\s*([^|]+?)\s*\|$/gm)].map((x) => ({ name: x[1].trim(), cost: x[2].trim().replace(/ charges?/i, '') })).filter((x) => !/^(Spell|Charge Cost|---)/i.test(x.name) && /\d/.test(x.cost));
+  // the rarity line some variant items repeat ("Uncommon (+1)") is dropped from the description
+  // and the spell table, now the spells' own fields; the bold-italic markers become plain text
+  const desc = text(rest.filter((l) => !/^(Common|Uncommon|Rare|Very Rare|Legendary)\s*\(\+\d\)$/i.test(l.trim()))
+    .filter((l) => !(spells.length && /^\|/.test(l.trim()) && (/\|\s*(Spell|---)/i.test(l) || spells.some((sp) => l.includes(sp.name)))))
+    .map((l) => l.replace(/\*\*_?([^*_]+?)_?\*\*/g, '$1').replace(/(^|\s)_([^_]+)_(?=\s|[.,]|$)/g, '$1$2')));
+  return {
+    kind: 'Magic item', desc,
+    magic: {
+      type, ...(base ? { base } : {}), rarity, attune: !!m.attunement,
+      ...(bonusN && to ? { bonus: { n: bonusN, to } } : {}),
+      ...(charges ? { charges: { n: charges, regain: regain ? regain[1] : '', when: /daily at dawn/i.test(regain?.[0] ?? '') ? 'dawn' : 'never' } } : {}),
+      ...(spells.length ? { spells } : {}),
+      effects: [], props: [],
+    },
+  };
+}
 const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
 function fix2024(index, fx) {
   return fx.flatMap((x) => {
@@ -488,10 +544,12 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
       damage: e.damage ? `${e.damage.damage_dice} ${String(e.damage.damage_type?.name ?? '').toLowerCase()}`.trim() : '', ac,
       props: [cats.filter((c) => !/^(Weapons?|Armor|Adventuring Gear|Equipment)$/i.test(c)).slice(0, 2).join(', '), names(e.properties).join(', '), e.mastery ? `Mastery: ${e.mastery.name}` : '', e.two_handed_damage ? `Versatile (${e.two_handed_damage.damage_dice})` : '', e.str_minimum ? `Strength ${e.str_minimum}` : '', e.stealth_disadvantage ? 'Disadvantage on Stealth' : '', e.range?.long ? `Range ${e.range.normal}/${e.range.long}` : ''].filter(Boolean).join('. '),
       desc: text(e.desc ?? e.description),
+      ...(is51 ? {} : item2024(e, cats)),
     });
   }
   for (const m of load(year, 'Magic-Items')) {
     const desc = text(m.desc ?? m.description);
+    if (!is51) { const x = magic2024(m); add(v, 'item', m.name, { ...x, rarity: x.magic.rarity, attune: x.magic.attune }); continue; }
     add(v, 'item', m.name, { kind: 'Magic item', rarity: m.rarity?.name ?? 'Varies', attune: m.attunement ?? /requires attunement/i.test(desc), desc });
   }
   for (const p of load(year, 'Poisons')) add(v, 'item', p.name, { kind: 'Gear', rarity: 'Standard', cost: p.cost ? `${p.cost} gp` : '', props: `Poison (${p.type})`, desc: text(p.description ?? p.desc) });

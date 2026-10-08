@@ -20,16 +20,16 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
     supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', type).order('srd_version').limit(700),
     // from the class picker: open already filled in with that SRD entry (saved only on Save)
     from ? supabase.from('entities').select('id, name, data').eq('id', from).eq('source', 'srd').eq('type', type).maybeSingle() : Promise.resolve({ data: null }),
-    type === 'class' || type === 'subclass' || type === 'feat' || type === 'race' || type === 'background' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
-    type === 'class' || type === 'subclass' || type === 'feat' || type === 'race' || type === 'background' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
+    type === 'class' || type === 'subclass' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
+    type === 'class' || type === 'subclass' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
     type === 'class' ? loadSubclassOptions(supabase, user.id) : Promise.resolve(undefined),
     type === 'subclass' ? loadClassOptions(supabase, user.id) : Promise.resolve(undefined),
-    type === 'class' || type === 'background' ? loadItemNames(supabase) : Promise.resolve(undefined),
+    type === 'class' || type === 'background' || type === 'item' ? loadItemNames(supabase) : Promise.resolve(undefined),
   ]);
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>New {def.label.toLowerCase()}</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>
-      {type === 'class' || type === 'subclass' || type === 'spell' || type === 'feat' || type === 'race' || type === 'background' ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
+      {type === 'class' || type === 'subclass' || type === 'spell' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
       <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type, name: start?.name ?? '', status: 'draft', depth: 'quick', source: 'homebrew', data: startData(type, start, spells) }} />
     </>
