@@ -10,6 +10,8 @@ import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
 import { ClassBanner } from './ClassBanner';
+import { SubclassesTab, subclassesFor, type SubclassOption } from './ClassSubclasses';
+import { readResources } from './ClassFeatures';
 import { FeatureTable, FeaturesTab, syncGrows, syncResources, syncUses } from './ClassFeatures';
 import type { SpellOption } from '@/lib/class-spells';
 import type { FeatOption } from './ClassGives';
@@ -154,7 +156,7 @@ type Version = { version: number; note: string; name: string; data: any; created
 type CampaignLink = { id: string; title: string; stages: Stage[]; members: Member[]; attached: Vis | null };
 
 // The class editor's tabs, and which fields from TYPES.class each one shows.
-const CLASS_TABS = ['Main', 'Spells', 'Features', 'Leveling', 'Player'];
+const CLASS_TABS = ['Main', 'Spells', 'Features', 'Subclasses', 'Leveling', 'Player'];
 const CLASS_CASTING = ['casting.kind', 'casting.ability'];
 const levelsOf = (data: any, re: RegExp) => [...new Set((data.features ?? []).filter((x: any) => re.test(x.name ?? '')).map((x: any) => Number(x.level)))].sort((p: any, q: any) => p - q).join(', ');
 const pick = (fields: Field[], keys: string[]) => keys.map((k) => fields.find((f) => f.key === k)).filter((f): f is Field => !!f);
@@ -262,9 +264,9 @@ function LevelingCopy({ data, onChange }: { data: any; onChange: (d: any) => voi
   );
 }
 
-export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells, feats }: {
+export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells, feats, subclasses: subclassOptions }: {
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
-  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[];
+  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[]; subclasses?: SubclassOption[];
 }) {
   const router = useRouter();
   const def = TYPES[initial.type];
@@ -280,6 +282,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   // spells made or changed in the pop-up during this visit, on top of what the page loaded
   const [madeSpells, setMadeSpells] = useState<SpellOption[]>([]);
   const [goneSpells, setGoneSpells] = useState<string[]>([]);
+  const [subclasses, setSubclasses] = useState<SubclassOption[]>(subclassOptions ?? []);
   const allSpells = useMemo(() => { const made = new Set(madeSpells.map((m) => m.id)); return [...madeSpells, ...(spells ?? []).filter((x) => !made.has(x.id))].filter((x) => !goneSpells.includes(x.id)); }, [madeSpells, spells, goneSpells]);
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<BrewState>(null);
@@ -398,9 +401,14 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               ) : null}
               {tab === 'Features' ? (
                 <>
-                  <FeaturesTab data={data} onChange={setData} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} />
+                  <FeaturesTab data={data} onChange={setData} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} onOpenSubclasses={() => setTab('Subclasses')}
+                    subFeatures={subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).flatMap((s) => (s.data?.features ?? []).map((f: any) => ({ sub: s.name, level: Number(f.level), name: f.name })))} />
                   <details><summary>The raw data</summary><textarea className="mono" rows={16} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /></details>
                 </>
+              ) : null}
+              {tab === 'Subclasses' ? (
+                <SubclassesTab classId={id} className={name} baseClass={data.baseClass} classFeatures={data.features ?? []} resources={readResources(data)}
+                  subclasses={subclasses} setSubclasses={setSubclasses} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} pro={pro} />
               ) : null}
               {tab === 'Leveling' ? (
                 <>
@@ -487,8 +495,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
       <aside className="brew-side" hidden={onlyAdvanced && tab === 'Player'}>
         <div className="panel">
-          <h3>{onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
-          {onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
+          <h3>{onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' || tab === 'Subclasses' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
+          {onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
         </div>
         {onlyAdvanced && tab === 'Spells' && data.casting?.kind && data.casting.kind !== 'none' ? (
           <div className="panel">

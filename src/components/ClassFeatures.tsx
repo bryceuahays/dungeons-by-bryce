@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { ABILITIES, classTable } from '@/lib/rules/engine';
 import { ChoiceEditor, GIVEN, GivesEditor, guessChoice, type FeatOption } from './ClassGives';
 
+// A "subclass feature" marker: the class's own placeholder ("Paladin Subclass") saying that at this
+// level the character gets whatever their subclass gives. The subclasses fill these levels.
+export const isMarker = (f: { name?: string; choice?: unknown }) => /\bsubclass\b/i.test(f.name ?? '') && !f.choice;
+
 // The class editor's Features tab: the class's resources (pools like Channel Divinity or
 // Lay on Hands) and its features as a level-by-level timeline.
 
@@ -155,7 +159,7 @@ function ValueInput({ kind, v, onChange }: { kind: Kind; v: string; onChange: (v
   }
 }
 
-function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: any[]) => void }) {
+export function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: any[]) => void }) {
   const fx = f.effects ?? [];
   const grows = fx.map((x, i) => [x, i] as const).filter(([x]) => x.t === 'scale');
   const put = (i: number, x: any) => onChange(fx.map((y, j) => (j === i ? x : y)));
@@ -196,7 +200,7 @@ function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: any[]) =
 
 type Feature = { level: number; name: string; text: string; effects?: any[]; uses?: Uses; choice?: any };
 
-export function FeaturesTab({ data: raw, onChange, feats: featOptions, spellNames }: { data: any; onChange: (d: any) => void; feats: FeatOption[]; spellNames: string[] }) {
+export function FeaturesTab({ data: raw, onChange, feats: featOptions, spellNames, subFeatures, onOpenSubclasses }: { data: any; onChange: (d: any) => void; feats: FeatOption[]; spellNames: string[]; subFeatures: { sub: string; level: number; name: string }[]; onOpenSubclasses: () => void }) {
   const [open, setOpen] = useState<number | null>(null);
   const data = syncGrows(raw);
   const resources = readResources(data);
@@ -241,7 +245,7 @@ export function FeaturesTab({ data: raw, onChange, feats: featOptions, spellName
 
       <h3>Features by level</h3>
       <p className="dim">What the class gives a character at each level. Click a feature to read or change it.</p>
-      <FeatureTimeline feats={feats} resources={resources} open={open} setOpen={setOpen} write={write} featOptions={featOptions} spellNames={spellNames} />
+      <FeatureTimeline feats={feats} resources={resources} open={open} setOpen={setOpen} write={write} featOptions={featOptions} spellNames={spellNames} subFeatures={subFeatures} onOpenSubclasses={onOpenSubclasses} />
       {loose.length ? (
         <>
           <h3>Also given by the class</h3>
@@ -307,8 +311,9 @@ function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void
 
 // ---------------------------------------------------------------- features by level
 
-function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, spellNames }: {
+function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, spellNames, subFeatures, onOpenSubclasses }: {
   feats: Feature[]; resources: Resource[]; open: number | null; setOpen: (i: number | null) => void; featOptions: FeatOption[]; spellNames: string[];
+  subFeatures: { sub: string; level: number; name: string }[]; onOpenSubclasses: () => void;
   write: (next: { resources?: Resource[]; features?: Feature[] }) => void;
 }) {
   const [many, setMany] = useState({ name: '', levels: '' });
@@ -334,6 +339,7 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
         <span className="dim">Add the usual milestones:</span>
         <button type="button" className="quiet small-btn" onClick={() => addAt('Ability Score Improvement', [4, 8, 12, 16], 'Increase one ability score by 2, or two ability scores by 1 each (to a maximum of 20), or take a feat you qualify for.')}>Ability Score Improvements (4, 8, 12, 16)</button>
         <button type="button" className="quiet small-btn" onClick={() => addAt('Epic Boon', [19], 'You gain an Epic Boon feat or another feat of your choice for which you qualify.')}>Epic Boon (19)</button>
+        <button type="button" className="quiet small-btn" onClick={() => addAt('Subclass feature', [3, 7, 11, 15], 'You gain a feature from your subclass.')}>Subclass features (3, 7, 11, 15)</button>
       </div>
       <div className="feat-quick">
         <label>Same feature at several levels<input value={many.name} placeholder="For example: Subclass feature" onChange={(e) => setMany({ ...many, name: e.target.value })} /></label>
@@ -351,9 +357,21 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
               return (
                 <div key={idx} className={'feat-card' + (open === idx ? ' open' : '')}>
                   <button type="button" className="feat-head" aria-expanded={open === idx} onClick={() => setOpen(open === idx ? null : idx)}>
-                    <span>{f.name || 'Untitled feature'}{linked ? <span className="chip feat-uses-tag">uses {resName(f.uses?.res)}</span> : null}</span><span className="dim">{open === idx ? 'Close' : 'Open'}</span>
+                    <span>{f.name || 'Untitled feature'}{isMarker(f) ? <span className="chip feat-uses-tag">subclass feature</span> : null}{linked ? <span className="chip feat-uses-tag">uses {resName(f.uses?.res)}</span> : null}</span><span className="dim">{open === idx ? 'Close' : 'Open'}</span>
                   </button>
-                  {open === idx ? (
+                  {open === idx && isMarker(f) ? (
+                    <div className="feat-body">
+                      <p>At level {f.level} the character gets whatever their subclass gives at this level. The subclasses fill it in on the Subclasses tab.</p>
+                      {subFeatures.filter((x) => x.level === Number(f.level)).length
+                        ? <ul>{subFeatures.filter((x) => x.level === Number(f.level)).map((x, k) => <li key={k}><b>{x.sub}:</b> {x.name}</li>)}</ul>
+                        : <p className="dim">No subclass gives a feature at this level yet.</p>}
+                      <div className="feat-meta">
+                        <label>Shown as<input value={f.name} maxLength={120} onChange={(e) => edit(idx, { name: e.target.value })} /></label>
+                        <label>Level<select value={Number(f.level)} onChange={(e) => { edit(idx, { level: Number(e.target.value) }); setOpen(null); }}>{Array.from({ length: 20 }, (_, l) => <option key={l} value={l + 1}>{l + 1}</option>)}</select></label>
+                      </div>
+                      <p className="inline"><button type="button" className="quiet small-btn" onClick={onOpenSubclasses}>Go to the Subclasses tab</button><button type="button" className="quiet small-btn danger" onClick={() => { write({ features: feats.filter((_, j) => j !== idx) }); setOpen(null); }}>Remove this marker</button></p>
+                    </div>
+                  ) : open === idx ? (
                     <div className="feat-body">
                       <div className="feat-meta">
                         <label>Name<input value={f.name} maxLength={120} onChange={(e) => edit(idx, { name: e.target.value })} /></label>

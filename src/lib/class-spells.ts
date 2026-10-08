@@ -26,3 +26,12 @@ export async function loadFeatOptions(supabase: any): Promise<{ name: string; ca
   const { data } = await supabase.from('entities').select('name, category:data->>category, desc:data->>desc').eq('source', 'srd').eq('srd_version', '5.2').eq('type', 'feat').order('name');
   return (data ?? []).map((f: any) => ({ name: f.name, category: f.category ?? '', desc: f.desc ?? '' }));
 }
+
+// Subclasses for the class editor's Subclasses tab: the SRD 5.2 ones and your own.
+export async function loadSubclassOptions(supabase: any, userId: string) {
+  const [srd, mine] = await Promise.all([
+    supabase.from('entities').select('id, name, owner_id, data, cloned_from').eq('source', 'srd').eq('srd_version', '5.2').eq('type', 'subclass').order('name'),
+    supabase.from('entities').select('id, name, owner_id, data, cloned_from').eq('owner_id', userId).eq('type', 'subclass').order('name'),
+  ]);
+  return [...(mine.data ?? []), ...(srd.data ?? [])].map((s: any) => ({ id: s.id as string, name: s.name as string, mine: s.owner_id === userId, data: s.data ?? {}, cloned_from: s.cloned_from ?? null }));
+}

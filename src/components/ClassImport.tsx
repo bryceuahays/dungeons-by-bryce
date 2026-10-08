@@ -5,11 +5,12 @@ import { IMPORT_PROMPT, parseClassImport } from '@/lib/class-import';
 import type { SpellOption } from '@/lib/class-spells';
 import { EntityEditor } from './EntityEditor';
 import type { FeatOption } from './ClassGives';
+import type { SubclassOption } from './ClassSubclasses';
 
 // The "Import class" page: a guide, the prompt to give your own AI, and a box for its answer.
 // The answer opens in the class editor right here; nothing is saved until Create.
 
-export function ClassImport({ pro, srd, spells, feats }: { pro: boolean; srd: { type: string; name: string; data: any }[]; spells: SpellOption[]; feats: FeatOption[] }) {
+export function ClassImport({ pro, srd, spells, feats, subclasses }: { pro: boolean; srd: { type: string; name: string; data: any }[]; spells: SpellOption[]; feats: FeatOption[]; subclasses: SubclassOption[] }) {
   const [answer, setAnswer] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState<'yes' | 'blocked' | ''>('');
@@ -34,7 +35,7 @@ export function ClassImport({ pro, srd, spells, feats }: { pro: boolean; srd: { 
           {made.notes.length ? <><p>A few things could not be filled in:</p><ul>{made.notes.map((n, i) => <li key={i}>{n}</li>)}</ul></> : null}
           <p className="inline"><button type="button" className="quiet small-btn" onClick={() => setMade(null)}>Back to the import</button></p>
         </div>
-        <EntityEditor id={null} pro={pro} srd={srd} versions={[]} campaigns={[]} version={1} changeNote="" spells={spells} feats={feats}
+        <EntityEditor id={null} pro={pro} srd={srd} versions={[]} campaigns={[]} version={1} changeNote="" spells={spells} feats={feats} subclasses={subclasses}
           initial={{ type: 'class', name: made.name, status: 'draft', depth: 'advanced', source: 'homebrew', data: made.data }} />
       </>
     );

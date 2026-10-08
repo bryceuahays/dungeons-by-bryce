@@ -190,3 +190,12 @@ export async function deleteSpell(id: string): Promise<BrewState> {
   revalidatePath('/homebrew');
   return { note: 'Deleted.' };
 }
+
+// Delete one of your own subclasses from the class editor's Subclasses tab (no page change).
+export async function deleteSubclass(id: string): Promise<BrewState> {
+  const { supabase, user } = await requireViewer();
+  const { data, error } = await supabase.from('entities').delete().eq('id', id).eq('type', 'subclass').eq('owner_id', user.id).select('id');
+  if (error || !data?.length) return { error: 'That subclass could not be deleted.' };
+  revalidatePath('/homebrew');
+  return { note: 'Deleted.' };
+}
