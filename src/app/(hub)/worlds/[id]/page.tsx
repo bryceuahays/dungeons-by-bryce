@@ -60,7 +60,7 @@ async function ReadyMade({ world, campaigns }: { world: any; campaigns: { id: st
       <h1>{world.name}</h1>
       <div className="panel">
         <p><b>{world.tagline}</b></p>
-        <p className="kv"><b>Game:</b> Dungeons &amp; Dragons 5th edition</p>
+        <p className="kv"><b>Game:</b> 5th edition (SRD)</p>
         <p className="kv"><b>Rules:</b> {RULES[rules].label}</p>
         {String(world.data?.desc ?? '').split(/\n{2,}/).filter(Boolean).map((p: string, i: number) => <p key={i} className="dim">{p}</p>)}
         <p className="inline">

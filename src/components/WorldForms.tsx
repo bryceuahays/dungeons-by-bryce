@@ -53,7 +53,7 @@ export function WorldEditor({ world, campaigns, others, entries, mine }: {
       <div className="panel">
         <label>Tagline<input value={tagline} maxLength={300} placeholder="One line about it." onChange={(e) => setTagline(e.target.value)} /></label>
         <div className="sr-grid">
-          <label>Game<select value="dnd5e" disabled><option value="dnd5e">Dungeons &amp; Dragons 5th edition</option></select></label>
+          <label>Game<select value="dnd5e" disabled><option value="dnd5e">5th edition (SRD)</option></select></label>
           <label>Rules<select value={rules} onChange={(e) => setRules(e.target.value)}>{Object.entries(RULES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
         </div>
         <p className="dim">Campaigns in this world play by these rules: the SRD races, classes, spells and the rest come with them, next to the world&apos;s own homebrew.</p>
