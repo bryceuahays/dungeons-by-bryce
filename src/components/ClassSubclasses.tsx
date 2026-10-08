@@ -11,7 +11,8 @@ import { GrowsEditor, guessUses, isMarker, type Resource } from './ClassFeatures
 // is listed and edited next to the class. The class decides WHEN subclass features arrive (its
 // "subclass feature" markers on the Features tab); each subclass decides WHAT arrives.
 
-export type SubclassOption = { id: string; name: string; mine: boolean; data: any; cloned_from?: string | null };
+// dirty: changed since it was last saved (the class's Save saves these too)
+export type SubclassOption = { id: string; name: string; mine: boolean; data: any; cloned_from?: string | null; dirty?: boolean };
 type SubFeature = { level: number; name: string; text: string; effects?: any[]; choice?: any; use?: any; uses?: { res: string; cost: number | '' } | null };
 
 const same = (a?: string, b?: string) => (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase();
@@ -19,7 +20,8 @@ const same = (a?: string, b?: string) => (a ?? '').trim().toLowerCase() === (b ?
 // the subclasses that belong to this class: your own (linked by id, or by the class's name), and
 // the SRD's own subclass for the class it started from
 export function subclassesFor(all: SubclassOption[], cls: { id: string | null; name: string; baseClass?: string }) {
-  const mine = all.filter((s) => s.mine && ((cls.id && s.data?.parentClassId === cls.id) || same(s.data?.parent, cls.name)));
+  // an unsaved copy only exists in this editor, so it is this class's even if the class was renamed since
+  const mine = all.filter((s) => s.mine && (s.id.startsWith('new:') || (cls.id && s.data?.parentClassId === cls.id) || same(s.data?.parent, cls.name)));
   const srd = all.filter((s) => !s.mine && (same(s.data?.parent, cls.baseClass) || same(s.data?.parent, cls.name)));
   return [...mine, ...srd];
 }
@@ -50,14 +52,14 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
         {list.map((s) => (
           <div key={s.id} className={'feat-card' + (open === s.id ? ' open' : '')}>
             <button type="button" className="feat-head" aria-expanded={open === s.id} onClick={() => { setStartF(null); setOpen(open === s.id ? null : s.id); }}>
-              <span>{s.name}<span className="chip feat-uses-tag">{s.mine ? (s.id.startsWith('new:') ? 'not saved yet' : 'yours') : 'SRD'}</span></span>
+              <span>{s.name}<span className="chip feat-uses-tag">{s.mine ? (s.id.startsWith('new:') ? 'not saved yet' : s.dirty ? 'unsaved changes' : 'yours') : 'SRD'}</span></span>
               <span className="dim">{(s.data?.features ?? []).length} features · {open === s.id ? 'Close' : 'Open'}</span>
             </button>
             {open === s.id ? (
               <SubclassEditor key={s.id} sub={s} srd={!s.mine} startOpen={startF} markers={markers} resources={resources} feats={feats} spellNames={spellNames} pro={pro} className={className} classId={classId}
                 onSaved={(n, was) => { put(n, was); setOpen(n.id); }} onDeleted={() => { setSubclasses(subclasses.filter((x) => x.id !== s.id)); setOpen(null); }}
                 onChange={(n, openF) => {
-                  if (s.mine) { put(n); return; }
+                  if (s.mine) { put({ ...n, dirty: true }); return; }
                   // changing the SRD subclass: it stays as it is, and your changes go into a new copy
                   const id = 'new:' + Math.random().toString(36).slice(2);
                   setSubclasses([{ ...n, id, mine: true, cloned_from: s.id, data: { ...n.data, parent: className, parentClassId: classId } }, ...subclasses]);
@@ -95,7 +97,7 @@ function SubclassEditor({ sub, srd, startOpen, markers, resources, feats, spellN
     const r = await saveEntity(fresh ? null : sub.id, { type: 'subclass', name: sub.name, status: 'draft', depth: pro ? 'advanced' : 'quick', source: 'homebrew', data: { ...sub.data, features, parent: className, parentClassId: classId }, cloned_from: sub.cloned_from ?? null });
     setBusy(false);
     if (!r?.id) { setMsg({ ok: false, text: r?.error || 'That did not save.' }); return; }
-    onSaved({ ...sub, id: r.id }, sub.id);
+    onSaved({ ...sub, id: r.id, dirty: false }, sub.id);
     setMsg({ ok: true, text: 'Subclass saved.' });
   };
   const remove = async () => {
@@ -169,4 +171,9 @@ function SubclassEditor({ sub, srd, startOpen, markers, resources, feats, spellN
 export function featureSpells(data: any): { level: number; name: string }[] {
   return (data?.features ?? []).flatMap((f: any) => (f.effects ?? []).filter((x: any) => x.t === 'spell' && x.name).map((x: any) => ({ level: Number(x.at) || Number(f.level) || 1, name: x.name })))
     .sort((a: any, b: any) => a.level - b.level);
+}
+
+// Save a subclass from outside its own editor (the class's Save, after a feature was moved into it).
+export async function saveSubclass(s: SubclassOption, cls: { name: string; id: string | null }, pro: boolean) {
+  return saveEntity(s.id.startsWith('new:') ? null : s.id, { type: 'subclass', name: s.name, status: 'draft', depth: pro ? 'advanced' : 'quick', source: 'homebrew', data: { ...s.data, parent: cls.name, parentClassId: cls.id }, cloned_from: s.cloned_from ?? null });
 }

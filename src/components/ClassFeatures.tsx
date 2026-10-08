@@ -202,7 +202,7 @@ export function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: a
 
 type Feature = { level: number; name: string; text: string; effects?: any[]; uses?: Uses; choice?: any; use?: any };
 
-export function FeaturesTab({ data: raw, onChange, feats: featOptions, spellNames, subFeatures, onOpenSubclasses }: { data: any; onChange: (d: any) => void; feats: FeatOption[]; spellNames: string[]; subFeatures: SubFeatureRef[]; onOpenSubclasses: (at?: { subId: string; idx: number }) => void }) {
+export function FeaturesTab({ data: raw, onChange, feats: featOptions, spellNames, subFeatures, onOpenSubclasses, subclassChoices, onMoveToSubclass }: { data: any; onChange: (d: any) => void; feats: FeatOption[]; spellNames: string[]; subFeatures: SubFeatureRef[]; onOpenSubclasses: (at?: { subId: string; idx: number }) => void; subclassChoices: { id: string; name: string; srd: boolean }[]; onMoveToSubclass: (feature: any, subId: string, rest: any[]) => void }) {
   const [open, setOpen] = useState<number | null>(null);
   const data = syncGrows(raw);
   const resources = readResources(data);
@@ -247,7 +247,8 @@ export function FeaturesTab({ data: raw, onChange, feats: featOptions, spellName
 
       <h3>Features by level</h3>
       <p className="dim">What the class gives a character at each level. Click a feature to read or change it.</p>
-      <FeatureTimeline feats={feats} resources={resources} open={open} setOpen={setOpen} write={write} featOptions={featOptions} spellNames={spellNames} subFeatures={subFeatures} onOpenSubclasses={onOpenSubclasses} />
+      <FeatureTimeline feats={feats} resources={resources} open={open} setOpen={setOpen} write={write} featOptions={featOptions} spellNames={spellNames} subFeatures={subFeatures} onOpenSubclasses={onOpenSubclasses}
+        subclassChoices={subclassChoices} moveToSubclass={(i, subId) => { setOpen(null); onMoveToSubclass(feats[i], subId, feats.filter((_, j) => j !== i)); }} />
       {loose.length ? (
         <>
           <h3>Also given by the class</h3>
@@ -313,9 +314,10 @@ function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void
 
 // ---------------------------------------------------------------- features by level
 
-function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, spellNames, subFeatures, onOpenSubclasses }: {
+function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, spellNames, subFeatures, onOpenSubclasses, subclassChoices, moveToSubclass }: {
   feats: Feature[]; resources: Resource[]; open: number | null; setOpen: (i: number | null) => void; featOptions: FeatOption[]; spellNames: string[];
   subFeatures: SubFeatureRef[]; onOpenSubclasses: (at?: { subId: string; idx: number }) => void;
+  subclassChoices: { id: string; name: string; srd: boolean }[]; moveToSubclass: (i: number, subId: string) => void;
   write: (next: { resources?: Resource[]; features?: Feature[] }) => void;
 }) {
   const [many, setMany] = useState({ name: '', levels: '' });
@@ -369,6 +371,10 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
                     </div>
                   ) : open === idx ? (
                     <div className="feat-body">
+                      <label className="feat-owner">Belongs to<select value="class" onChange={(e) => e.target.value !== 'class' && moveToSubclass(idx, e.target.value)}>
+                        <option value="class">The class (every character of this class)</option>
+                        {subclassChoices.map((s) => <option key={s.id} value={s.id}>Subclass: {s.name}{s.srd ? ' (makes your own copy)' : ''}</option>)}
+                      </select></label>
                       <div className="feat-meta">
                         <label>Name<input value={f.name} maxLength={120} onChange={(e) => edit(idx, { name: e.target.value })} /></label>
                         <label>Level<select value={Number(f.level)} onChange={(e) => { edit(idx, { level: Number(e.target.value) }); setOpen(null); }}>{Array.from({ length: 20 }, (_, l) => <option key={l} value={l + 1}>{l + 1}</option>)}</select></label>

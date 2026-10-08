@@ -315,3 +315,4 @@ h1 .beta-tag{font-size:.8rem}
 @media (max-width:900px){.sub-spell-add{grid-template-columns:1fr 1fr}}
 .give-spell{display:grid;gap:6px}
 .give-spell-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.feat-owner select{max-width:420px}

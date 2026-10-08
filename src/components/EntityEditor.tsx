@@ -10,7 +10,7 @@ import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
 import { ClassBanner } from './ClassBanner';
-import { SubclassesTab, featureSpells, subclassesFor, type SubclassOption } from './ClassSubclasses';
+import { SubclassesTab, featureSpells, saveSubclass, subclassesFor, type SubclassOption } from './ClassSubclasses';
 import { SpellTools } from './ClassGives';
 import { readResources } from './ClassFeatures';
 import { FeatureTable, FeaturesTab, syncGrows, syncResources, syncUses } from './ClassFeatures';
@@ -295,6 +295,20 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
   const save = (asVersion: boolean) => start(async () => {
     const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? classOut(data) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
+    // and this class's subclasses that changed (e.g. a feature moved into one from the Features tab)
+    if (r?.id && onlyAdvanced) {
+      const changed = subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).filter((s) => s.mine && (s.dirty || s.id.startsWith('new:')));
+      let next = subclasses, failed = 0;
+      for (const s of changed) {
+        const sr = await saveSubclass(s, { name, id: r.id }, pro);
+        if (sr?.id) next = next.map((x) => (x.id === s.id ? { ...s, id: sr.id!, dirty: false } : x)); else failed++;
+      }
+      if (changed.length) {
+        setSubclasses(next);
+        if (failed) r.error = `The class saved, but ${failed} subclass${failed > 1 ? 'es' : ''} did not. Open the Subclasses tab and save ${failed > 1 ? 'them' : 'it'} there.`;
+        else r.note = `${r.note ?? 'Saved.'} ${changed.length} subclass${changed.length > 1 ? 'es' : ''} saved too.`;
+      }
+    }
     setMsg(r);
     if (r?.id && !id) router.replace('/homebrew/' + r.id);
     else if (r?.note) { setNote(''); router.refresh(); }
@@ -414,7 +428,19 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               ) : null}
               {tab === 'Features' ? (
                 <>
-                  <FeaturesTab data={data} onChange={setData} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} onOpenSubclasses={(at) => { setSubFocus(at ?? null); setTab('Subclasses'); }}
+                  <FeaturesTab data={data} onChange={setData}
+                    subclassChoices={subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).map((s) => ({ id: s.id, name: s.name, srd: !s.mine }))}
+                    onMoveToSubclass={(feature, subId, rest) => {
+                      const s = subclasses.find((x) => x.id === subId);
+                      if (!s) return;
+                      const { uses: _u, ...f } = feature;
+                      const features = [...(s.data?.features ?? []), { ...f, uses: feature.uses ?? null }].sort((a: any, b: any) => Number(a.level) - Number(b.level));
+                      // the SRD subclass stays as it is: the feature goes into your own copy of it
+                      const moved: SubclassOption = s.mine ? { ...s, dirty: true, data: { ...s.data, features } }
+                        : { id: 'new:' + Math.random().toString(36).slice(2), name: s.name, mine: true, cloned_from: s.id, data: { ...s.data, features, parent: name, parentClassId: id } };
+                      setSubclasses(s.mine ? subclasses.map((x) => (x.id === s.id ? moved : x)) : [moved, ...subclasses]);
+                      setData({ ...data, features: rest });
+                    }} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} onOpenSubclasses={(at) => { setSubFocus(at ?? null); setTab('Subclasses'); }}
                     subFeatures={subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).flatMap((s) => (s.data?.features ?? []).map((f: any, idx: number) => ({ sub: s.name, subId: s.id, idx, level: Number(f.level), name: f.name, text: f.text ?? '', srd: !s.mine })))} />
                   <details><summary>The raw data</summary><textarea className="mono" rows={16} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /></details>
                 </>
