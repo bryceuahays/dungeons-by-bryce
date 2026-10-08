@@ -6,7 +6,7 @@ import { spellDetail } from '@/app/(hub)/homebrew/actions';
 import type { SpellOption } from '@/lib/class-spells';
 import { SpellPopup } from './ClassSpells';
 import { EntityCard } from './EntityCard';
-import { TOOL_GROUPS, WEAPONS } from '@/config/proficiencies';
+import { ALL_LANGUAGES, LANGUAGE_GROUPS, TOOL_GROUPS, WEAPONS } from '@/config/proficiencies';
 import { ABILITIES } from '@/lib/rules/engine';
 import { GrowsEditor } from './ClassFeatures';
 
@@ -37,7 +37,7 @@ const SENSES = ['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'];
 const ROLLS: [string, string][] = [['save', 'Saving throws'], ['check', 'Ability checks'], ['attack', 'Attack rolls'], ['initiative', 'Initiative']];
 const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious'];
 const PROF_KINDS: [string, string][] = [['skill', 'Skill'], ['save', 'Saving throw'], ['armor', 'Armor'], ['weapon', 'Weapon'], ['tool', 'Tool'], ['language', 'Language']];
-const PROF_DEFAULT: Record<string, string> = { skill: 'Perception', save: 'wis', armor: 'Heavy armor', weapon: 'Martial weapons', tool: "Thieves' Tools", language: '' };
+const PROF_DEFAULT: Record<string, string> = { skill: 'Perception', save: 'wis', armor: 'Heavy armor', weapon: 'Martial weapons', tool: "Thieves' Tools", language: 'Common' };
 
 export function GivesEditor({ effects, onChange, spellNames }: { effects: any[]; onChange: (fx: any[]) => void; spellNames: string[] }) {
   const gives = effects.map((x, i) => [x, i] as const).filter(([x]) => GIVEN.includes(x.t));
@@ -71,7 +71,13 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
           : g.kind === 'armor' ? <label>Armor<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{['Light armor', 'Medium armor', 'Heavy armor', 'Shields'].map((s) => <option key={s}>{s}</option>)}</select></label>
           : g.kind === 'weapon' ? <label>Weapon<select value={g.v} onChange={(e) => set({ v: e.target.value })}><option>Simple weapons</option><option>Martial weapons</option>{[...WEAPONS.simple, ...WEAPONS.martial].map((s) => <option key={s}>{s}</option>)}</select></label>
           : g.kind === 'tool' ? <label>Tool<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{Object.entries(TOOL_GROUPS).map(([grp, list]) => <optgroup key={grp} label={grp}>{list.map((s) => <option key={s}>{s}</option>)}</optgroup>)}</select></label>
-          : <label>Language<input value={g.v ?? ''} placeholder="For example: Celestial" onChange={(e) => set({ v: e.target.value })} /></label>}
+          : <>
+            <label>Language<select value={ALL_LANGUAGES.includes(g.v) ? g.v : 'other'} onChange={(e) => set({ v: e.target.value === 'other' ? '' : e.target.value })}>
+              {Object.entries(LANGUAGE_GROUPS).map(([grp, list]) => <optgroup key={grp} label={grp}>{list.map((s) => <option key={s}>{s}</option>)}</optgroup>)}
+              <option value="other">Something else</option>
+            </select></label>
+            {ALL_LANGUAGES.includes(g.v) ? null : <label>Called<input value={g.v ?? ''} maxLength={40} placeholder="For example: Old Imperial" onChange={(e) => set({ v: e.target.value })} /></label>}
+          </>}
       </>
     );
     case 'ac': return <>{num('Bonus (+)', 'n', { min: 0 })}<label className="give-wide">Only while<input value={g.when ?? ''} maxLength={120} placeholder="For example: wearing Light, Medium or Heavy armor (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;

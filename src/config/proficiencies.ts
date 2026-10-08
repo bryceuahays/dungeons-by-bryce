@@ -21,3 +21,11 @@ export const TOOL_GROUPS: Record<string, string[]> = {
 
 // What "the player chooses N" can choose from.
 export const TOOL_CHOICES = ["Artisan's tools", 'Musical instruments', 'Gaming sets', "Artisan's tools or musical instruments", 'Any tool'];
+
+// The SRD 5.2 languages. Druidic and Thieves' Cant come from a class, so they are listed apart.
+export const LANGUAGE_GROUPS: Record<string, string[]> = {
+  Standard: ['Common', 'Common Sign Language', 'Draconic', 'Dwarvish', 'Elvish', 'Giant', 'Gnomish', 'Goblin', 'Halfling', 'Orc'],
+  Rare: ['Abyssal', 'Celestial', 'Deep Speech', 'Infernal', 'Primordial', 'Sylvan', 'Undercommon'],
+  Secret: ['Druidic', "Thieves' Cant"],
+};
+export const ALL_LANGUAGES = Object.values(LANGUAGE_GROUPS).flat();

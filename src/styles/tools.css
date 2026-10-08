@@ -368,3 +368,9 @@ h1 .beta-tag{font-size:.8rem}
 .sr-grid > .sr-label{flex-basis:100%;margin:0}
 .sr-conds{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:2px 10px}
 .give-abs{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+/* languages: checkboxes by group, your own, and how many more the player picks */
+.lang-pick{display:grid;gap:8px}
+.lang-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:2px 12px;align-items:center}
+.lang-add{display:flex;gap:6px;align-items:center;grid-column:span 2}
+.lang-add input{min-width:0}
+.lang-choose{max-width:320px}

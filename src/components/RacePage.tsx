@@ -3,6 +3,8 @@
 import type { FeatOption } from './ClassGives';
 import { GivesEditor } from './ClassGives';
 import { TraitCards, type Trait } from './TraitCards';
+import { LanguagePicker } from './LanguagePicker';
+import { ALL_LANGUAGES } from '@/config/proficiencies';
 
 // A race's (species') own page, built like a class: what it is (creature type, size, speed, languages),
 // then its traits as cards with the same parts as a class feature. A lineage, legacy or ancestry is
@@ -17,7 +19,9 @@ const SIZES = ['Tiny', 'Small', 'Medium', 'Large'];
 // "Common and 2 more of your choice"
 export function langText(l: any) {
   if (!l) return '';
-  const known: string[] = (l.known ?? []).filter(Boolean);
+  // the SRD's in their usual order (Common first), then your own
+  const rank = (x: string) => (ALL_LANGUAGES.includes(x) ? ALL_LANGUAGES.indexOf(x) : 99);
+  const known: string[] = (l.known ?? []).filter(Boolean).sort((a: string, b: string) => rank(a) - rank(b));
   const n = Number(l.choose) || 0;
   const more = n ? `${n} ${known.length ? 'more' : 'language' + (n > 1 ? 's' : '')} of your choice` : '';
   return [known.join(', '), more].filter(Boolean).join(' and ');
@@ -49,10 +53,7 @@ export function RacePage({ data, setData, feats, spellNames }: { data: any; setD
         </div>
       </div>
       <fieldset className="multi col"><legend>Languages (optional)</legend>
-        <div className="sr-grid">
-          <label className="sr-wide">Known<input value={(langs.known ?? []).join(', ')} placeholder="For example: Common, Elvish" onChange={(e) => setData({ ...data, langs: { ...langs, known: e.target.value.split(/\s*,\s*/) } })} /></label>
-          <label>Plus this many of the player&apos;s choice<input type="number" min={0} max={9} value={langs.choose ?? 0} onChange={(e) => setData({ ...data, langs: { ...langs, choose: Number(e.target.value) || 0 } })} /></label>
-        </div>
+        <LanguagePicker value={langs} onChange={(l) => setData({ ...data, langs: l })} />
         <p className="dim">In the 2024 rules a character&apos;s languages come from character creation, so species leave this empty. {langText(langs) ? `Players see: ${langText(langs)}.` : ''}</p>
       </fieldset>
       <h3>Traits</h3>
