@@ -409,6 +409,54 @@ function magic2024(m) {
     },
   };
 }
+// 2024 monsters as fields (see src/components/MonsterPage.tsx), next to the stat block's text.
+const SENSE_KEYS = ['darkvision', 'blindsight', 'tremorsense', 'truesight'];
+const feet = (v) => Number(String(v ?? '').match(/\d+/)?.[0]) || '';
+function monsterAction(a) {
+  const d = String(a.desc ?? a.description ?? '');
+  const out = { name: a.name, text: text(d), kind: 'other' };
+  if (a.multiattack_type || /^Multiattack$/i.test(a.name)) out.kind = 'multi';
+  const dmg = (a.damage ?? []).filter((x) => x.damage_dice).map((x) => ({ dice: x.damage_dice, type: String(x.damage_type?.name ?? '').toLowerCase() }));
+  if (a.attack_bonus !== undefined) {
+    const type = /Melee or Ranged Attack/i.test(d) ? 'both' : /Ranged Attack/i.test(d) ? 'ranged' : 'melee';
+    const range = d.match(/range (\d+)(?:\/(\d+))? ft/i);
+    out.kind = 'attack';
+    out.atk = { type, bonus: a.attack_bonus, ...(type !== 'ranged' ? { reach: Number(d.match(/reach (\d+) ft/i)?.[1]) || 5 } : {}), ...(range ? { range: { normal: Number(range[1]), ...(range[2] ? { long: Number(range[2]) } : {}) } } : {}) };
+    out.damage = dmg;
+  } else if (a.dc) {
+    out.kind = 'save';
+    out.save = { ab: a.dc.dc_type?.index ?? 'dex', dc: a.dc.dc_value, success: a.dc.success_type === 'half' ? 'half' : a.dc.success_type === 'none' ? 'none' : 'other' };
+    out.damage = dmg;
+  }
+  const u = a.usage;
+  if (u?.type === 'recharge on roll') out.limit = { type: 'recharge', min: u.min_value ?? 5 };
+  else if (u?.type === 'per day') out.limit = { type: 'day', n: u.times ?? 1 };
+  return out;
+}
+function monster2024(m) {
+  const pb = m.proficiency_bonus ?? 2;
+  const profs = m.proficiencies ?? [];
+  const saveB = Object.fromEntries(profs.filter((p) => /^Saving Throw: /.test(p.proficiency?.name ?? '')).map((p) => [p.proficiency.name.slice(14).toLowerCase(), p.value]));
+  const skillB = Object.fromEntries(profs.filter((p) => /^Skill: /.test(p.proficiency?.name ?? '')).map((p) => [p.proficiency.name.slice(7), p.value]));
+  const ac = Array.isArray(m.armor_class) ? m.armor_class[0] : { value: m.armor_class };
+  const langs = String(m.languages ?? '');
+  const tele = langs.match(/telepathy (\d+) ft\.?/i);
+  const legendary = (m.legendary_actions ?? []).map(monsterAction);
+  return {
+    ctype: cap(m.type ?? 'humanoid'), tags: m.subtype ? cap(m.subtype) : '',
+    acNote: ac?.armor ? names(ac.armor).join(', ') : ac?.type && ac.type !== 'dex' && ac.type !== 'armor' ? ac.type : '',
+    speeds: Object.fromEntries(Object.entries(m.speed ?? {}).filter(([k]) => k !== 'hover').map(([k, v]) => [k, feet(v)])), hover: !!m.speed?.hover,
+    saveB, skillB,
+    vulnL: names(m.damage_vulnerabilities).map((x) => x.toLowerCase()), resistL: names(m.damage_resistances).map((x) => x.toLowerCase()), immuneL: names(m.damage_immunities).map((x) => x.toLowerCase()),
+    condImm: names(m.condition_immunities),
+    sensesN: Object.fromEntries(SENSE_KEYS.filter((k) => m.senses?.[k]).map((k) => [k, feet(m.senses[k])])),
+    langsText: langs.replace(/[;,]?\s*telepathy \d+ ft\.?/i, '').trim(), ...(tele ? { telepathy: Number(tele[1]) } : {}),
+    traits: (m.special_abilities ?? []).map(monsterAction), actions: (m.actions ?? []).map(monsterAction),
+    bonus: (m.bonus_actions ?? []).map(monsterAction), reactions: (m.reactions ?? []).map(monsterAction),
+    legendary, ...(legendary.length ? { legendaryN: 3 } : {}),
+    gear: m.gear ?? '', pb,
+  };
+}
 const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
 function fix2024(index, fx) {
   return fx.flatMap((x) => {
@@ -568,6 +616,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
       senses: Object.entries(m.senses ?? {}).map(([k, val]) => `${cap(k.replace(/_/g, ' '))} ${val}`).join(', '), langs: m.languages ?? '', cr: crText(m.challenge_rating),
       vuln: names(m.damage_vulnerabilities).join(', '), resist: names(m.damage_resistances).join(', '), immune: [names(m.damage_immunities).join(', '), names(m.condition_immunities).join(', ')].filter(Boolean).join('; '),
       traits: act(m.special_abilities), actions: [...act(m.actions), ...act(m.bonus_actions, 'Bonus action'), ...act(m.reactions, 'Reaction'), ...act(m.legendary_actions, 'Legendary')],
+      ...(is51 ? {} : monster2024(m)),
     });
   }
 

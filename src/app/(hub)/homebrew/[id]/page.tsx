@@ -60,8 +60,8 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
   });
   return (
     <>
-      {e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
-      <div className="inline" style={{ marginBottom: 12 }}>{e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
+      {e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
+      <div className="inline" style={{ marginBottom: 12 }}>{e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
       <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data }} />
     </>

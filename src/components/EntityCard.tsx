@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ABILITIES, classTable, mod, sgn, type Effect, type Feature } from '@/lib/rules/engine';
+import { actionText, limitLabel, pbFor, xpFor } from '@/lib/monster-rules';
 import { limitText } from '@/lib/feat-text';
 import { areaText, saveText, spellText } from '@/lib/spell-rules.mjs';
 import { equipLine, multiclassLine } from '@/lib/class-equip';
@@ -80,16 +81,22 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
 
       {type === 'monster' ? (
         <>
-          <Fact k="Armor Class" v={d.acv} />
+          <Fact k="Armor Class" v={d.acv ? `${d.acv}${d.acNote ? ` (${d.acNote})` : ''}` : ''} />
           <Fact k="Hit Points" v={d.hpv ? `${d.hpv}${d.hdv ? ` (${d.hdv})` : ''}` : ''} />
           <Fact k="Speed" v={d.mspeed} />
           {d.ab ? <div className="abrow">{ABILITIES.map(([k]) => <span key={k}><b>{AB3[k]}</b>{d.ab[k] ?? 10} ({sgn(mod(d.ab[k] ?? 10))})</span>)}</div> : null}
           <Fact k="Saving Throws" v={d.msaves} /><Fact k="Skills" v={d.mskills} />
           <Fact k="Damage Vulnerabilities" v={d.vuln} /><Fact k="Damage Resistances" v={d.resist} /><Fact k="Damage Immunities" v={d.immune} />
-          <Fact k="Senses" v={d.senses} /><Fact k="Languages" v={d.langs} /><Fact k="Challenge" v={d.cr} />
-          {(d.traits ?? []).map((t: any, i: number) => <p key={'t' + i}><b><i>{t.name}.</i></b> {t.text}</p>)}
-          {(d.actions ?? []).length ? <h4>Actions</h4> : null}
-          {(d.actions ?? []).map((t: any, i: number) => <p key={'a' + i}><b><i>{t.name}.</i></b> {t.text}</p>)}
+          <Fact k="Senses" v={d.senses} /><Fact k="Languages" v={d.langs} /><Fact k="Challenge" v={d.cr !== undefined && d.cr !== '' ? `${d.cr} (${xpFor(String(d.cr)).toLocaleString('en-US')} XP; PB +${pbFor(String(d.cr))})` : ''} />
+          {(d.traits ?? []).map((t: any, i: number) => <p key={'t' + i}><b><i>{t.name}{limitLabel(t.limit) ? ` (${limitLabel(t.limit)})` : ''}.</i></b> {t.text || actionText(t)}</p>)}
+          {([['actions', 'Actions'], ['bonus', 'Bonus Actions'], ['reactions', 'Reactions'], ['legendary', 'Legendary Actions']] as const).map(([k, title]) => (d[k] ?? []).length ? (
+            <div key={k}>
+              <h4>{title}</h4>
+              {k === 'legendary' ? <p className="dim">{d.legendaryN ?? 3} legendary actions per round, used right after another creature&apos;s turn.</p> : null}
+              {(d[k] ?? []).map((t: any, i: number) => <p key={k + i}><b><i>{t.name}{limitLabel(t.limit) ? ` (${limitLabel(t.limit)})` : ''}.</i></b> {t.text || actionText(t)}</p>)}
+            </div>
+          ) : null)}
+          {d.gear ? <Fact k="Gear" v={d.gear} /> : null}
           {d.desc ? <p className="who">{d.desc}</p> : null}
         </>
       ) : (

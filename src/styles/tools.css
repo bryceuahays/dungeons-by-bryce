@@ -390,3 +390,9 @@ h1 .beta-tag{font-size:.8rem}
 .item-search input{flex:1 1 280px;min-width:0}
 .item-list li{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .item-list li .dim{flex:1 1 auto}
+/* the monster page: ability table, skills with their bonuses */
+.brew-form table.mon-abs td input[type=number]{width:3.6em;padding:4px;text-align:center}
+.brew-form table.mon-abs td{white-space:nowrap}
+.brew-form .mon-prof input[type=number]{width:3.4em;padding:2px 4px}
+.mon-skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:2px 12px}
+.mon-skills .ckrow input[type=number]{width:3.4em;padding:2px 4px;margin-left:auto}
