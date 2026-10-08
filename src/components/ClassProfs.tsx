@@ -6,7 +6,7 @@ import { ARMOR, TOOL_CHOICES, TOOL_GROUPS, WEAPONS, WEAPON_CATS } from '@/config
 // weaponItems, toolItems and toolChoice; the readable `armor`, `weapons` and `tools` text that
 // the character sheet and the rest of the site show is written from them on every change.
 
-type Profs = { armorTraining: string[]; weaponCats: string[]; weaponItems: string[]; toolItems: string[]; toolChoice: { n: number; from: string } };
+export type Profs = { armorTraining: string[]; weaponCats: string[]; weaponItems: string[]; toolItems: string[]; toolChoice: { n: number; from: string } };
 
 const ALL_WEAPONS = [...WEAPONS.simple, ...WEAPONS.martial];
 const ALL_TOOLS = Object.values(TOOL_GROUPS).flat();
@@ -26,7 +26,7 @@ export function readProfs(data: any): Profs {
 }
 
 const list = (items: string[]) => (items.length ? items.join(', ') : 'None');
-function writeProfs(data: any, p: Profs) {
+export function writeProfs(data: any, p: Profs) {
   const body = ['light', 'medium', 'heavy'].every((k) => p.armorTraining.includes(k)) ? ['All armor'] : ARMOR.filter(([k]) => k !== 'shields' && p.armorTraining.includes(k)).map(([, l]) => l);
   const armor = [...body, ...(p.armorTraining.includes('shields') ? ['Shields'] : [])];
   const weapons = [...WEAPON_CATS.filter(([k]) => p.weaponCats.includes(k)).map(([, l]) => l), ...p.weaponItems];
