@@ -52,7 +52,7 @@ export function RacePage({ data, setData, feats, spellNames }: { data: any; setD
           <label>Walking speed (feet)<input type="number" min={0} max={120} step={5} value={data.speed ?? 30} onChange={(e) => setData({ ...data, speed: e.target.value === '' ? '' : Number(e.target.value) })} /></label>
         </div>
       </div>
-      <fieldset className="multi col"><legend>Languages (optional)</legend>
+      <fieldset className="multi col lang-box"><legend>Languages (optional)</legend>
         <LanguagePicker value={langs} onChange={(l) => setData({ ...data, langs: l })} />
         <p className="dim">In the 2024 rules a character&apos;s languages come from character creation, so species leave this empty. {langText(langs) ? `Players see: ${langText(langs)}.` : ''}</p>
       </fieldset>

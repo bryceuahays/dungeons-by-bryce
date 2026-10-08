@@ -374,3 +374,14 @@ h1 .beta-tag{font-size:.8rem}
 .lang-add{display:flex;gap:6px;align-items:center;grid-column:span 2}
 .lang-add input{min-width:0}
 .lang-choose{max-width:320px}
+/* languages, tighter: rows pack to the top instead of stretching, smaller gaps, the count on one line */
+.lang-pick{gap:6px;align-content:start}
+.lang-pick .sr-label{margin:0 0 2px}
+.lang-list{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0 12px}
+.lang-list .ckrow{min-height:24px;font-size:.92rem;gap:6px}
+.lang-add{grid-column:span 2;max-width:340px}
+.lang-add input{padding:4px 8px}
+.brew-form label.lang-choose{display:flex;flex-direction:row;align-items:center;gap:8px;max-width:none;margin:2px 0 0}
+.brew-form label.lang-choose input{width:4.5em;padding:4px 6px}
+.brew fieldset.lang-box{display:block}
+.brew fieldset.lang-box > p.dim{margin:6px 0 0}
