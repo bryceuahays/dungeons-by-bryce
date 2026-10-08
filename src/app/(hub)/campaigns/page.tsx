@@ -16,7 +16,7 @@ export default async function Campaigns() {
   const [{ data }, { data: faces }, { data: worlds }] = await Promise.all([
     supabase.from('campaigns').select('*').order('created_at'),
     supabase.from('campaign_faces').select('campaign_id, title, tagline').eq('phase', ''),
-    supabase.from('worlds').select('id, name').eq('owner_id', user.id),
+    supabase.from('worlds').select('id, name'),
   ]);
   const worldName = new Map((worlds ?? []).map((w) => [w.id, w.name]));
   const campaigns = (data ?? []) as Campaign[];

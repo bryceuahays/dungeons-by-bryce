@@ -55,6 +55,7 @@ export function NewCampaignForm({ campaigns, pro, packs = [], worlds = [], world
         <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the title.<input name="slug" pattern="[a-z0-9][a-z0-9\-]{1,60}" placeholder="my-next-campaign" /></label>
         <label>Tagline<textarea name="tagline" rows={2} maxLength={300} /></label>
         {worlds.length ? <label>World<select name="world" defaultValue={world}><option value="">None (a campaign of its own)</option>{worlds.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label> : null}
+        {worlds.length ? <p className="dim">A campaign in a world plays by that world&apos;s rules and gets its homebrew (the rules version below is then ignored).</p> : null}
       </div>
       <h2>Paste your campaign (optional)</h2>
       <div className="panel">

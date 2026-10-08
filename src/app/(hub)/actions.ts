@@ -82,10 +82,12 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
   try { chosen = JSON.parse(String(form.get('theme') || 'null')); } catch { chosen = null; }
   const theme = presetOf(chosen)?.theme ?? cleanTheme(chosen ?? { preset: 'slate' });
 
-  const rules = form.get('rules') === '2014' || form.get('rules') === 'both' ? String(form.get('rules')) : NEW_CAMPAIGN_RULES;
+  let rules = form.get('rules') === '2014' || form.get('rules') === 'both' ? String(form.get('rules')) : NEW_CAMPAIGN_RULES;
   // started from a world's page: the campaign goes in that world (the database checks it is yours)
   const world = String(form.get('world') || '');
   const worldId = /^[0-9a-f-]{36}$/.test(world) ? world : null;
+  // and plays by the world's rules
+  if (worldId) { const { data: w } = await supabase.from('worlds').select('rules').eq('id', worldId).maybeSingle(); if (w?.rules) rules = w.rules; }
   const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme, settings: { rules }, ...(worldId ? { world_id: worldId } : {}) }).select('id').single();
   if (error || !campaign) {
     if (/upgrade:/i.test(error?.message || '')) return { error: 'The free plan runs one campaign, and you already have one. Pro runs as many as you like: see Plans in the bar above. Nothing you have made is affected.' };

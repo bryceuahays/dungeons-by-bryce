@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useActionState, useState, useTransition } from 'react';
 import { TYPES } from '@/config/homebrew';
+import { RULES } from '@/config/rules';
 import { ClassBanner } from './ClassBanner';
 import { addWorldEntity, createWorld, deleteWorld, removeWorldEntity, saveWorld, setCampaignWorld } from '@/app/(hub)/worlds/actions';
 
@@ -26,18 +27,19 @@ type Camp = { id: string; slug: string; title: string; tagline?: string };
 type Ent = { id: string; name: string; type: string };
 
 export function WorldEditor({ world, campaigns, others, entries, mine }: {
-  world: { id: string; name: string; tagline: string; data: any }; campaigns: Camp[]; others: (Camp & { world?: string })[]; entries: Ent[]; mine: Ent[];
+  world: { id: string; name: string; tagline: string; rules: string; data: any }; campaigns: Camp[]; others: (Camp & { world?: string })[]; entries: Ent[]; mine: Ent[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(world.name);
   const [tagline, setTagline] = useState(world.tagline);
+  const [rules, setRules] = useState(world.rules || '2024');
   const [data, setData] = useState<any>(world.data ?? {});
   const [msg, setMsg] = useState('');
   const [busy, start] = useTransition();
   const [addCamp, setAddCamp] = useState('');
   const [addEnt, setAddEnt] = useState('');
   const run = (fn: () => Promise<any>) => start(async () => { const r = await fn(); setMsg(r?.error ?? r?.note ?? ''); router.refresh(); });
-  const save = (d = data) => run(() => saveWorld(world.id, { name, tagline, data: d }));
+  const save = (d = data) => run(() => saveWorld(world.id, { name, tagline, rules, data: d }));
   // the banner saves as soon as it is picked, so an upload is never left unsaved
   const setBanner = (d: any) => { setData(d); save(d); };
   const types = Object.keys(TYPES).filter((t) => entries.some((e) => e.type === t));
@@ -50,6 +52,11 @@ export function WorldEditor({ world, campaigns, others, entries, mine }: {
       </div>
       <div className="panel">
         <label>Tagline<input value={tagline} maxLength={300} placeholder="One line about it." onChange={(e) => setTagline(e.target.value)} /></label>
+        <div className="sr-grid">
+          <label>Game<select value="dnd5e" disabled><option value="dnd5e">Dungeons &amp; Dragons 5th edition</option></select></label>
+          <label>Rules<select value={rules} onChange={(e) => setRules(e.target.value)}>{Object.entries(RULES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
+        </div>
+        <p className="dim">Campaigns in this world play by these rules: the SRD races, classes, spells and the rest come with them, next to the world&apos;s own homebrew.</p>
         <label>About this world<textarea rows={6} value={data.desc ?? ''} placeholder="Its history, gods, regions, the tone you are going for. Only you see this page." onChange={(e) => setData({ ...data, desc: e.target.value })} /></label>
         <p className="inline"><button type="button" disabled={busy} onClick={() => save()}>{busy ? 'Saving…' : 'Save'}</button>{msg ? <span className="dim">{msg}</span> : null}</p>
       </div>
