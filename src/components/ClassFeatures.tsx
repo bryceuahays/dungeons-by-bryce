@@ -16,32 +16,38 @@ export const isMarker = (f: { name?: string; choice?: unknown }) => /\bsubclass\
 // ---------------------------------------------------------------- resources
 
 // How much of a resource a character has, in plain choices rather than formulas.
-type Amount =
+export type Amount =
   | { mode: 'fixed'; n: number }
   | { mode: 'steps'; steps: [number, number][] }   // [from level, amount]
   | { mode: 'level'; n: number }                    // class level x n
   | { mode: 'ability'; ab: string }                 // an ability modifier (at least 1)
+  | { mode: 'prof' }                                // the proficiency bonus
+  | { mode: 'half' }                                // half the level, rounded up
   | { mode: 'other'; raw: string };                 // anything older the choices cannot show
 export type Resource = { id: string; name: string; amount: Amount; recharge: 'long' | 'short' | 'short1' | 'none'; from: number };
 
 const AB_KEYS = ABILITIES.map(([k]) => k as string);
-const RECHARGE: [Resource['recharge'], string][] = [['long', 'All back on a long rest'], ['short', 'All back on a short or long rest'], ['short1', 'One back on a short rest, all on a long rest'], ['none', 'Never comes back']];
+export const RECHARGE: [Resource['recharge'], string][] = [['long', 'All back on a long rest'], ['short', 'All back on a short or long rest'], ['short1', 'One back on a short rest, all on a long rest'], ['none', 'Never comes back']];
 
-const amountOf = (max: string): Amount => {
+export const amountOf = (max: string): Amount => {
   const s = String(max ?? '').trim().toLowerCase();
   if (/^\d+$/.test(s)) return { mode: 'fixed', n: Number(s) };
   if (s.startsWith('step:')) return { mode: 'steps', steps: s.slice(5).split(',').map((p) => p.split('=').map(Number) as [number, number]).filter(([a, b]) => a > 0 && !Number.isNaN(b)) };
   if (s === 'level') return { mode: 'level', n: 1 };
+  if (s === 'prof') return { mode: 'prof' };
+  if (s === 'half') return { mode: 'half' };
   const m = s.match(/^level\*(\d+)$/); if (m) return { mode: 'level', n: Number(m[1]) };
   if (AB_KEYS.includes(s)) return { mode: 'ability', ab: s };
   return { mode: 'other', raw: String(max ?? '') };
 };
-const maxOf = (a: Amount): string => {
+export const maxOf = (a: Amount): string => {
   switch (a.mode) {
     case 'fixed': return String(a.n || 0);
     case 'steps': return 'step:' + [...a.steps].sort((p, q) => p[0] - q[0]).map(([l, n]) => `${l}=${n}`).join(',');
     case 'level': return a.n === 1 ? 'level' : `level*${a.n || 1}`;
     case 'ability': return a.ab;
+    case 'prof': return 'prof';
+    case 'half': return 'half';
     default: return a.raw;
   }
 };
@@ -284,6 +290,8 @@ function ResourceFields({ r, onChange }: { r: Resource; onChange: (r: Resource) 
           <option value="steps">A number that changes at certain levels</option>
           <option value="level">Class level × a number</option>
           <option value="ability">An ability modifier (at least 1)</option>
+          <option value="prof">Proficiency Bonus</option>
+          <option value="half">Half class level (rounded up)</option>
           {r.amount.mode === 'other' ? <option value="other">Formula (older entry)</option> : null}
         </select>
       </label>
@@ -294,16 +302,17 @@ function ResourceFields({ r, onChange }: { r: Resource; onChange: (r: Resource) 
   );
 }
 
-function blankAmount(mode: Amount['mode'], was: Amount): Amount {
+export function blankAmount(mode: Amount['mode'], was: Amount): Amount {
   if (mode === was.mode) return was;
   if (mode === 'fixed') return { mode, n: 1 };
   if (mode === 'steps') return { mode, steps: [[1, 2]] };
   if (mode === 'level') return { mode, n: 1 };
   if (mode === 'ability') return { mode, ab: 'cha' };
+  if (mode === 'prof' || mode === 'half') return { mode };
   return was;
 }
 
-function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void }) {
+export function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void }) {
   switch (a.mode) {
     case 'fixed': return <label>Number<input type="number" min={0} value={a.n} onChange={(e) => onChange({ mode: 'fixed', n: Number(e.target.value) || 0 })} /></label>;
     case 'level': return <label>× level<input type="number" min={1} value={a.n} onChange={(e) => onChange({ mode: 'level', n: Number(e.target.value) || 1 })} /></label>;
@@ -321,6 +330,7 @@ function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void
         <button type="button" className="quiet small-btn" onClick={() => onChange({ mode: 'steps', steps: [...a.steps, [Math.min(20, (a.steps[a.steps.length - 1]?.[0] ?? 1) + 4), (a.steps[a.steps.length - 1]?.[1] ?? 1) + 1]] })}>+ step</button>
       </div>
     );
+    case 'prof': case 'half': return null;
     default: return <label>Formula<input value={a.raw} onChange={(e) => onChange({ mode: 'other', raw: e.target.value })} /></label>;
   }
 }

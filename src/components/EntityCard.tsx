@@ -120,7 +120,8 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
           {type === 'item' ? <><Fact k="Damage" v={d.damage} /><Fact k="Armor class" v={d.ac} /><Fact k="Properties" v={d.props} /><Fact k="Cost" v={d.cost} /><Fact k="Weight" v={d.weight} /></> : null}
           {type === 'rule' && d.section ? <Fact k="Section" v={d.section} /> : null}
           {type === 'feat' && d.category ? <Fact k="Category" v={d.category} /> : null}
-          {type === 'resource' ? <><Fact k="Each character has" v={d.max ? describeMax(String(d.max)) + ' ' + (d.unit || 'point') + 's' : ''} /><Fact k="Comes back on" v={d.recharge === 'none' ? 'Does not recharge by itself' : d.recharge ? `a ${d.recharge} rest` : ''} /></> : null}
+          {type === 'resource' ? <><Fact k={((u: string) => u[0].toUpperCase() + u.slice(1))(d.units || (d.unit || 'point') + 's') + ' each character has'} v={d.max ? describeMax(String(d.max)) + (Number(d.from) > 1 && !String(d.max).startsWith('step:') ? ` (from level ${d.from})` : '') : ''} /><Fact k="Comes back" v={({ long: 'All on a long rest', short: 'All on a short or long rest', short1: 'One on a short rest, all on a long rest', none: 'Does not recharge by itself' } as Record<string, string>)[d.recharge] ?? ''} />
+            {(d.spend ?? []).map((b: any, i: number) => <Fact key={i} k={b.name || 'Use'} v={[b.cost === '' || b.cost === undefined ? 'Cost varies' : `Costs ${b.cost} ${Number(b.cost) === 1 ? d.unit || 'point' : d.units || (d.unit || 'point') + 's'}`, Number(b.level) > 1 ? `from level ${b.level}` : '', limitText(b.limit), b.text].filter(Boolean).join('. ')} />)}</> : null}
           {effectLines.length ? <ul className="traits">{effectLines.map(([line, n]) => <li key={line}>{line}{n > 1 ? ` (×${n})` : ''}</li>)}</ul> : null}
           {features.length && !compact ? (
             <ul className="traits">

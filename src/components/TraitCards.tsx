@@ -8,10 +8,12 @@ import { LIMIT_PER, limitText } from '@/lib/feat-text';
 // Named parts of a feat (benefits) or a race (traits), as cards with the same parts as a class feature:
 // limited uses, how it's used, what the player picks, what it gives, and what grows with level.
 //   { name, text, level?, limit: { n: number | 'prof', per }, use, choice, effects }
-export type Trait = { name: string; text: string; level?: number; use?: any; limit?: { n: number | 'prof' | ''; per: string } | null; effects?: any[]; choice?: any };
+export type Trait = { name: string; text: string; level?: number; cost?: number | ''; use?: any; limit?: { n: number | 'prof' | ''; per: string } | null; effects?: any[]; choice?: any };
 
-export function TraitCards({ list, onChange, levels, noun, feats, spellNames }: {
-  list: Trait[]; onChange: (l: Trait[]) => void; levels: boolean; noun: string; feats: FeatOption[]; spellNames: string[];
+// unit: what a resource's one is called ("point"): each card then has a cost in it.
+export const costText = (cost: any, unit: string) => (cost === '' || cost === undefined ? 'varies' : `${cost} ${unit}${Number(cost) === 1 ? '' : 's'}`);
+export function TraitCards({ list, onChange, levels, noun, feats, spellNames, unit }: {
+  list: Trait[]; onChange: (l: Trait[]) => void; levels: boolean; noun: string; feats: FeatOption[]; spellNames: string[]; unit?: string;
 }) {
   const [open, setOpen] = useState<number | null>(null);
   const put = (i: number, p: Partial<Trait>) => onChange(list.map((b, j) => (j === i ? { ...b, ...p } : b)));
@@ -21,13 +23,14 @@ export function TraitCards({ list, onChange, levels, noun, feats, spellNames }: 
       {list.map((b, i) => (
         <div key={i} className={'feat-card' + (open === i ? ' open' : '')}>
           <button type="button" className="feat-head" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
-            <span>{levels && Number(b.level) > 1 ? `Level ${b.level}: ` : ''}{b.name || `Untitled ${noun}`}{useLine(guessUse(b)) ? <span className="feat-use-line">{useLine(guessUse(b))}</span> : null}{limitText(b.limit) ? <span className="chip feat-uses-tag">{limitText(b.limit)}</span> : null}{b.choice ? <span className="chip feat-uses-tag">player chooses</span> : null}</span>
+            <span>{levels && Number(b.level) > 1 ? `Level ${b.level}: ` : ''}{b.name || `Untitled ${noun}`}{useLine(guessUse(b)) ? <span className="feat-use-line">{useLine(guessUse(b))}</span> : null}{limitText(b.limit) ? <span className="chip feat-uses-tag">{limitText(b.limit)}</span> : null}{unit ? <span className="chip feat-uses-tag">{costText(b.cost, unit)}</span> : null}{b.choice ? <span className="chip feat-uses-tag">player chooses</span> : null}</span>
             <span className="dim">{open === i ? 'Close' : 'Open'}</span>
           </button>
           {open === i ? (
             <div className="feat-body">
               <div className="feat-meta">
                 <label>Name<input value={b.name} maxLength={120} onChange={(e) => put(i, { name: e.target.value })} /></label>
+                {unit ? <label>Costs ({unit}s)<input type="number" min={0} max={99} placeholder="varies" value={b.cost ?? ''} onChange={(e) => put(i, { cost: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0) })} /></label> : null}
                 {levels ? <label>From character level<select value={Number(b.level) || 1} onChange={(e) => { onChange(sorted(list.map((x, j) => (j === i ? { ...x, level: Number(e.target.value) } : x)))); setOpen(null); }}>{Array.from({ length: 20 }, (_, l) => <option key={l} value={l + 1}>{l + 1}</option>)}</select></label> : null}
               </div>
               <label>What it does<textarea rows={5} value={b.text ?? ''} onChange={(e) => put(i, { text: e.target.value })} /></label>
@@ -51,7 +54,7 @@ export function TraitCards({ list, onChange, levels, noun, feats, spellNames }: 
           ) : null}
         </div>
       ))}
-      <p><button type="button" className="quiet small-btn" onClick={() => { onChange(sorted([...list, { name: `New ${noun}`, text: '', ...(levels ? { level: 1 } : {}) }])); setOpen(levels ? list.filter((t) => (Number(t.level) || 1) <= 1).length : list.length); }}>+ Add a {noun}</button></p>
+      <p><button type="button" className="quiet small-btn" onClick={() => { onChange(sorted([...list, { name: `New ${noun}`, text: '', ...(levels ? { level: 1 } : {}), ...(unit ? { cost: 1 } : {}) }])); setOpen(levels ? list.filter((t) => (Number(t.level) || 1) <= 1).length : list.length); }}>+ Add a {noun}</button></p>
     </>
   );
 }
