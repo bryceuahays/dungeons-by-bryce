@@ -240,6 +240,95 @@ function feat2024(f) {
     benefits, effects: benefits.flatMap((b) => b.effects ?? []),
   };
 }
+// 2024 species: each trait's parts (limited uses, gives, choices), from its SRD wording. A lineage,
+// legacy or ancestry is a choice on its trait; each option's Gives are listed here, its text comes from
+// the data's subspecies.
+const pb = (per) => ({ n: 'prof', per });
+const once = (per) => ({ n: 1, per });
+const known = (name) => ({ t: 'spell', name });
+const later = (name, at) => ({ t: 'spell', name, cast: 'perRest', n: 1, recharge: 'long', at });
+const advSave = (when, ab = '') => ({ t: 'adv', roll: 'save', ab, when });
+const skillOpt = (v) => ({ name: v, text: `You have proficiency in the ${v} skill.`, effects: [{ t: 'prof', kind: 'skill', v }] });
+const SPECIES_RULES = {
+  Dragonborn: {
+    'Breath Weapon': { limit: pb('long'), effects: [{ t: 'scale', name: 'Breath Weapon damage', kind: 'dice', steps: [[1, '1d10'], [5, '2d10'], [11, '3d10'], [17, '4d10']] }] },
+    'Draconic Flight': { level: 5, limit: once('long') },
+  },
+  Dwarf: {
+    'Dwarven Resilience': { effects: [{ t: 'resist', v: 'poison' }, advSave('to avoid or end the Poisoned condition')] },
+    'Dwarven Toughness': { effects: [{ t: 'hp', n: 1 }] },
+    Stonecunning: { limit: pb('long') },
+  },
+  Elf: {
+    'Fey Ancestry': { effects: [advSave('to avoid or end the Charmed condition')] },
+    'Keen Senses': { choice: { count: 1, from: 'custom', options: ['Insight', 'Perception', 'Survival'].map(skillOpt) } },
+  },
+  Gnome: { 'Gnomish Cunning': { effects: ['int', 'wis', 'cha'].map((ab) => advSave('', ab)) } },
+  Goliath: { 'Giant Ancestry': { limit: pb('long') }, 'Large Form': { level: 5, limit: once('long') }, 'Powerful Build': { effects: [{ t: 'adv', roll: 'check', ab: '', when: 'to end the Grappled condition' }] } },
+  Halfling: { Brave: { effects: [advSave('to avoid or end the Frightened condition')] } },
+  Human: { Skillful: { choice: { count: 1, from: 'anyskill' } }, Versatile: { choice: { count: 1, from: 'feat:Origin' } } },
+  Orc: { 'Adrenaline Rush': { limit: pb('short') }, 'Relentless Endurance': { limit: once('long') } },
+  Tiefling: { 'Otherworldly Presence': { effects: [known('Thaumaturgy')] } },
+};
+// the lineage-like traits: which trait holds the choice, and each option's Gives (keyed by the part after "Lineage: ")
+const LINEAGE_GIVES = {
+  'Elven Lineage': {
+    Drow: [{ t: 'sense', v: 'Darkvision', n: 120 }, known('Dancing Lights'), later('Faerie Fire', 3), later('Darkness', 5)],
+    'High Elf': [known('Prestidigitation'), later('Detect Magic', 3), later('Misty Step', 5)],
+    'Wood Elf': [{ t: 'speed', mode: 'walk', n: 5 }, known('Druidcraft'), later('Longstrider', 3), later('Pass without Trace', 5)],
+  },
+  'Gnomish Lineage': {
+    'Forest Gnome': [known('Minor Illusion'), { t: 'spell', name: 'Speak with Animals', cast: 'perRest', n: 'prof', recharge: 'long' }],
+    'Rock Gnome': [known('Mending'), known('Prestidigitation')],
+  },
+  'Fiendish Legacy': {
+    Abyssal: [{ t: 'resist', v: 'poison' }, known('Poison Spray'), later('Ray of Sickness', 3), later('Hold Person', 5)],
+    Chthonic: [{ t: 'resist', v: 'necrotic' }, known('Chill Touch'), later('False Life', 3), later('Ray of Enfeeblement', 5)],
+    Infernal: [{ t: 'resist', v: 'fire' }, known('Fire Bolt'), later('Hellish Rebuke', 3), later('Darkness', 5)],
+  },
+  'Giant Ancestry': {
+    "Fire's Burn": [{ t: 'damage', amount: '1d10', type: 'fire', when: 'when you hit a target with an attack roll and deal damage to it' }],
+    "Frost's Chill": [{ t: 'damage', amount: '1d6', type: 'cold', when: 'when you hit a target with an attack roll and deal damage to it (and its Speed drops by 10 feet)' }],
+    "Storm's Thunder": [{ t: 'damage', amount: '1d8', type: 'thunder', when: 'as a Reaction when a creature within 60 feet of you damages you' }],
+  },
+  'Draconic Ancestry': {},
+};
+// the Dragonborn's ancestry, breath and resistance are only in the data's subspecies: one trait each
+const DRAGON_TYPES = { Black: 'acid', Blue: 'lightning', Brass: 'fire', Bronze: 'lightning', Copper: 'acid', Gold: 'fire', Green: 'poison', Red: 'fire', Silver: 'cold', White: 'cold' };
+function species2024(r, subs, traitOf) {
+  const mine = subs.filter((x) => x.species?.index === r.index);
+  let traits = (r.traits ?? []).map(traitOf);
+  if (r.index === 'dragonborn') {
+    const breath = traitOf({ index: 'draconic-breath-weapon-acid' });
+    traits = [
+      traitOf({ index: 'draconic-ancestry' }),
+      { name: 'Breath Weapon', level: 1, text: breath.text.replace('1d10 acid damage', '1d10 damage of the type determined by your Draconic Ancestry trait') },
+      { name: 'Damage Resistance', level: 1, text: 'You have Resistance to the damage type determined by your Draconic Ancestry trait.' },
+      ...traits,
+    ];
+  }
+  const out = traits.map((t) => {
+    const rules = SPECIES_RULES[r.name]?.[t.name] ?? {};
+    const dark = t.name.match(/^Darkvision \((\d+) ft\.?\)$/);
+    const base = { ...t, name: dark ? 'Darkvision' : t.name, ...rules, ...(dark ? { effects: [{ t: 'sense', v: 'Darkvision', n: Number(dark[1]) }] } : {}) };
+    if (!(t.name in LINEAGE_GIVES)) return base;
+    // the lineage-like trait: its options are the subspecies, each with its levels' text and its Gives
+    const options = t.name === 'Draconic Ancestry'
+      ? Object.entries(DRAGON_TYPES).map(([dragon, type]) => ({ name: dragon, text: `${type[0].toUpperCase() + type.slice(1)} damage: your Breath Weapon deals it, and you have Resistance to it.`, effects: [{ t: 'resist', v: type }] }))
+      : mine.map((sub) => {
+        const name = sub.name.split(': ').pop();
+        const parts = (sub.traits ?? []).map((ref) => { const x = traitOf(ref); return `Level ${ref.level ?? 1}. ${x.text}`; });
+        return { name, text: parts.join('\n'), effects: LINEAGE_GIVES[t.name][name] ?? [] };
+      });
+    // the trait's own text without the table of options (each option has it now), keeping the spellcasting-ability line
+    const lines = base.text.split('\n');
+    const cut = lines.findIndex((l) => /^(Elven Lineages|Fiendish Legacies|Draconic Ancestors)$/.test(l.trim()) || options.some((o) => l.replace(/^[-\s]+/, '').startsWith(o.name)));
+    const ability = cut < 0 ? null : lines.slice(cut).find((l) => /is your spell-?casting ability/i.test(l));
+    const text = cut < 0 ? base.text : [...lines.slice(0, cut), ...(ability ? [ability] : [])].join('\n');
+    return { ...base, text, choice: { count: 1, from: 'custom', options } };
+  });
+  return out.map((t) => ({ level: t.level ?? 1, ...t }));
+}
 const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
 function fix2024(index, fx) {
   return fx.flatMap((x) => {
@@ -281,12 +370,12 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
   } else {
     const subs = load(year, 'Subspecies');
     for (const r of load(year, 'Species')) {
-      const feats = (r.traits ?? []).map(traitOf);
-      const options = subs.filter((s) => s.species?.index === r.index).flatMap((s) => (s.traits ?? []).map((t) => { const x = traitOf(t); return { level: x.level, name: `${s.name}: ${x.name}`, text: x.text }; }));
+      // sizes: the ones a player picks from (the Tiefling: Small or Medium)
+      const sizes = r.size_options ? r.size_options.from.options.map((o) => o.size) : [r.size ?? 'Medium'];
       add(v, 'race', r.name, {
-        size: r.size, speed: r.speed, languages: 'Common and two more of your choice', desc: `${r.type ?? 'Humanoid'}.${options.length ? ' The options listed under its traits are choices: pick one lineage, legacy or ancestry.' : ''}`,
-        effects: feats.flatMap((f) => traitEffects(f.name, f.text)),
-        features: [...feats.map((f) => ({ level: f.level, name: f.name, text: f.text })), ...options],
+        type: r.type ?? 'Humanoid', sizes, size: sizes.join(' or '), speed: r.speed, desc: '',
+        // the traits' own effects are what the sheet reads; nothing is given apart from a trait
+        effects: [], features: species2024(r, subs, traitOf),
       });
     }
   }

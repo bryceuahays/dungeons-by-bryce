@@ -18,7 +18,7 @@ export type Effect = { at?: number } & (
   | { t: 'speed'; mode: 'walk' | 'fly' | 'swim' | 'climb' | 'burrow'; n: number | 'walk' } // 'walk': equal to the walking speed
   | { t: 'sense'; v: string; n: number; what?: string }
   | { t: 'resource'; name: string; max: string; recharge: 'short' | 'short1' | 'long' | 'none' } // short1: one use back on a short rest, all on a long rest
-  | { t: 'spell'; name: string; cast?: 'free' | 'perRest'; n?: number; recharge?: 'long' | 'short'; self?: boolean } // no cast: always prepared
+  | { t: 'spell'; name: string; cast?: 'free' | 'perRest'; n?: number | 'prof'; recharge?: 'long' | 'short'; self?: boolean } // no cast: always prepared
   | { t: 'adv'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // advantage on a roll
   | { t: 'attacks'; n: number; with?: string } // attacks per Attack action
   | { t: 'damage'; amount: string; type?: string; when?: string } // extra damage: dice ("1d8") or an ability modifier ("cha")

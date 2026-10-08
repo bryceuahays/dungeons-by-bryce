@@ -11,6 +11,7 @@ import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { MulticlassBox, StartEquipBox } from './ClassEquip';
 import { SpellRulesEditor, spellOut } from './SpellRules';
 import { FeatPage, featOut } from './FeatPage';
+import { RacePage, raceOut } from './RacePage';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
 import { ClassBanner } from './ClassBanner';
 import { SubclassPage, SubclassesTab, featureSpells, parentOf, saveSubclass, subclassFeatures, subclassesFor, withSubclass, type ClassOption, type SubclassOption } from './ClassSubclasses';
@@ -372,7 +373,10 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const isSpell = initial.type === 'spell';
   // a feat: its benefits as cards, built like a class's features
   const isFeat = initial.type === 'feat';
-  const wide = onlyAdvanced || isSub || isSpell || isFeat;
+  // a race (species): its traits as cards, built like a class's features
+  const isRace = initial.type === 'race';
+  const wide = onlyAdvanced || isSub || isSpell || isFeat || isRace;
+  const nameLabel = isSub ? 'Subclass name' : isSpell ? 'Spell name' : isFeat ? 'Feat name' : isRace ? 'Race or species name' : 'Class name';
   const [depth, setDepth] = useState(wide ? 'advanced' : initial.depth);
   const [source, setSource] = useState(initial.source);
   const [data, setData] = useState<any>(initial.data ?? {});
@@ -392,7 +396,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const balance = useMemo(() => balanceHint(initial.type as EntityType, data, srd), [initial.type, data, srd]);
 
   const save = (asVersion: boolean) => start(async () => {
-    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? classOut(data) : isSub ? subOut(data) : isSpell ? spellOut(data) : isFeat ? featOut(data) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
+    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? classOut(data) : isSub ? subOut(data) : isSpell ? spellOut(data) : isFeat ? featOut(data) : isRace ? raceOut(data) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
     // and this class's subclasses that changed (e.g. a feature moved into one from the Features tab)
     if (r?.id && onlyAdvanced) {
       const changed = subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).filter((s) => s.mine && (s.dirty || s.id.startsWith('new:')));
@@ -443,7 +447,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
             <button type="button" role="tab" aria-selected={false} className="quiet" disabled title="Coming later">Quick</button>
             <button type="button" role="tab" aria-selected>Advanced</button>
           </div>
-          <input className="cls-name" aria-label={isSub ? 'Subclass name' : isSpell ? 'Spell name' : isFeat ? 'Feat name' : 'Class name'} value={name} maxLength={120} placeholder={isSub ? 'Subclass name' : isSpell ? 'Spell name' : isFeat ? 'Feat name' : 'Class name'} onChange={(e) => setName(e.target.value)} />
+          <input className="cls-name" aria-label={nameLabel} value={name} maxLength={120} placeholder={nameLabel} onChange={(e) => setName(e.target.value)} />
         </div>
       ) : null}
       <div className="brew-form">
@@ -590,6 +594,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
             </>
           ) : isSpell ? (
             <SpellRulesEditor data={data} onChange={setData} />
+          ) : isRace ? (
+            <RacePage data={data} setData={setData} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} />
           ) : isFeat ? (
             <FeatPage data={data} setData={setData} name={name} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} />
           ) : isSub ? (
@@ -659,7 +665,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       <aside className="brew-side" hidden={onlyAdvanced && tab === 'Player'}>
         <div className="panel">
           <h3>{isSub && parent ? 'Features by level' : onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' || tab === 'Subclasses' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
-          {isSub && parent ? <div className="ecard"><FeatureTable data={withSubclass(parent.data, subOut(data).features)} /></div> : onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={isSpell ? spellOut(data) : isFeat ? featOut(data) : data} />}
+          {isSub && parent ? <div className="ecard"><FeatureTable data={withSubclass(parent.data, subOut(data).features)} /></div> : onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={isSpell ? spellOut(data) : isFeat ? featOut(data) : isRace ? raceOut(data) : data} />}
         </div>
         {onlyAdvanced && tab === 'Spells' && data.casting?.kind && data.casting.kind !== 'none' ? (
           <div className="panel">

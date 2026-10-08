@@ -1,10 +1,8 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from 'react';
 import { ABILITIES } from '@/lib/rules/engine';
-import { ChoiceEditor, GivesEditor, UseEditor, guessUse, useLine, type FeatOption } from './ClassGives';
-import { GrowsEditor } from './ClassFeatures';
-import { limitText } from '@/lib/feat-text';
+import type { FeatOption } from './ClassGives';
+import { TraitCards, type Trait } from './TraitCards';
 
 // A feat's own page (Homebrew, a feat entry), built like a class's features: the feat's category,
 // prerequisites and whether it repeats, then its benefits as cards with the same parts as a feature.
@@ -15,9 +13,8 @@ import { limitText } from '@/lib/feat-text';
 //   effects:  every benefit's effects together, which the character sheet reads (written on save)
 
 export const FEAT_CATEGORIES = ['Origin', 'General', 'Fighting style', 'Epic boon'];
-const PER: [string, string][] = [['turn', 'turn'], ['round', 'round'], ['short', 'short or long rest'], ['long', 'long rest'], ['initiative', 'Initiative roll or rest']];
 const AB = Object.fromEntries(ABILITIES) as Record<string, string>;
-type Benefit = { name: string; text: string; use?: any; limit?: { n: number | ''; per: string } | null; effects?: any[]; choice?: any };
+type Benefit = Trait;
 
 // "Level 4+, Fighting Style feature, Strength or Dexterity 13+"
 export function reqText(r: any) {
@@ -36,11 +33,9 @@ export function featOut(d: any) {
 const benefitsOf = (d: any, name: string): Benefit[] => (Array.isArray(d.benefits) ? d.benefits : [{ name: name || 'Benefit', text: d.desc ?? '', effects: d.effects ?? [] }]);
 
 export function FeatPage({ data, setData, name, feats, spellNames }: { data: any; setData: (d: any) => void; name: string; feats: FeatOption[]; spellNames: string[] }) {
-  const [open, setOpen] = useState<number | null>(null);
   const r = data.req ?? (data.prereq ? { other: data.prereq } : {});
   const benefits = benefitsOf(data, name);
   const putReq = (p: any) => setData({ ...data, benefits, req: { ...r, ...p } });
-  const putB = (i: number, p: Partial<Benefit>) => setData({ ...data, benefits: benefits.map((b, j) => (j === i ? { ...b, ...p } : b)) });
   const abilities: { ab: string; min: number | '' }[] = r.abilities ?? [];
 
   return (
@@ -79,34 +74,7 @@ export function FeatPage({ data, setData, name, feats, spellNames }: { data: any
 
       <h3>Benefits</h3>
       <p className="dim">What the feat gives, one card per benefit. Click one to read or change it.</p>
-      {benefits.map((b, i) => (
-        <div key={i} className={'feat-card' + (open === i ? ' open' : '')}>
-          <button type="button" className="feat-head" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
-            <span>{b.name || 'Untitled benefit'}{useLine(guessUse(b)) ? <span className="feat-use-line">{useLine(guessUse(b))}</span> : null}{limitText(b.limit) ? <span className="chip feat-uses-tag">{limitText(b.limit)}</span> : null}</span>
-            <span className="dim">{open === i ? 'Close' : 'Open'}</span>
-          </button>
-          {open === i ? (
-            <div className="feat-body">
-              <label>Name<input value={b.name} maxLength={120} onChange={(e) => putB(i, { name: e.target.value })} /></label>
-              <label>What it does<textarea rows={5} value={b.text ?? ''} onChange={(e) => putB(i, { text: e.target.value })} /></label>
-              <fieldset className="feat-uses">
-                <legend>Limited uses</legend>
-                <div className="feat-uses-pick">
-                  <label>Times<input type="number" min={0} max={20} placeholder="no limit" value={b.limit?.n ?? ''} onChange={(e) => putB(i, { limit: e.target.value === '' || e.target.value === '0' ? null : { n: Number(e.target.value), per: b.limit?.per ?? 'long' } })} /></label>
-                  {b.limit ? <label>Per<select value={b.limit.per} onChange={(e) => putB(i, { limit: { ...b.limit!, per: e.target.value } })}>{PER.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label> : null}
-                </div>
-                <p className="dim">For benefits like &quot;once per turn&quot; or &quot;you can&apos;t use it again until you finish a Long Rest&quot;. The sheet tracks them.</p>
-              </fieldset>
-              <UseEditor f={b} onChange={(use) => putB(i, { use })} />
-              <ChoiceEditor nested f={b} feats={feats} spellNames={spellNames} onChange={(choice) => putB(i, { choice })} />
-              <GivesEditor effects={b.effects ?? []} spellNames={spellNames} onChange={(effects) => putB(i, { effects })} />
-              <GrowsEditor f={b as any} onChange={(effects) => putB(i, { effects })} />
-              <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { setData({ ...data, benefits: benefits.filter((_, j) => j !== i) }); setOpen(null); }}>Remove this benefit</button></p>
-            </div>
-          ) : null}
-        </div>
-      ))}
-      <p><button type="button" className="quiet small-btn" onClick={() => { setData({ ...data, benefits: [...benefits, { name: 'New benefit', text: '' }] }); setOpen(benefits.length); }}>+ Add a benefit</button></p>
+      <TraitCards list={benefits} onChange={(l) => setData({ ...data, benefits: l })} levels={false} noun="benefit" feats={feats} spellNames={spellNames} />
     </div>
   );
 }
