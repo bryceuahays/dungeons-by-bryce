@@ -369,7 +369,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       <label>Description<textarea rows={depth === 'quick' ? 8 : 4} value={data.desc ?? ''} onChange={(e) => setData({ ...data, desc: e.target.value })} placeholder={depth === 'quick' ? 'Write it the way you would explain it at the table. Free text is always allowed.' : ''} /></label>
     </>
   );
-  const rules24 = (d: any) => (onlyAdvanced && d.casting?.kind && d.casting.kind !== 'none' ? { ...d, casting: { ...d.casting, rules: '2024' } } : d);
+  // a class saved before the focus existed keeps the SRD focus it shows (from the class it started as)
+  const rules24 = (d: any) => (onlyAdvanced && d.casting?.kind && d.casting.kind !== 'none' ? { ...d, casting: { ...d.casting, rules: '2024', ...(d.casting.focus === undefined && SRD_FOCUS[d.baseClass] ? { focus: SRD_FOCUS[d.baseClass] } : {}) } } : d);
   // what is saved, and what the side tables show: the tabs' choices written into the class's effects
   const classOut = (d: any) => rules24(syncResources(syncUses(syncGrows(syncSaves(d)))));
   // a subclass: its parent class, and its features with the same guesses the page shows (resource spent, how it's used)
