@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { deleteSubclass, saveEntity } from '@/app/(hub)/homebrew/actions';
 import { ChoiceEditor, GivesEditor, UseEditor, guessUse, useLine, type FeatOption } from './ClassGives';
 
-import { GrowsEditor, guessUses, isMarker, readResources, type Resource } from './ClassFeatures';
+import { GrowsEditor, guessUses, isMarker, readResources, retext, type Resource } from './ClassFeatures';
 
 // The class editor's Subclasses tab. A subclass stays its own entry (so a DM can add a new oath
 // to the SRD Paladin without copying the class, and attach or share it on its own), but here it
@@ -151,7 +151,7 @@ export function SubclassFeatureList({ features, setFeatures, markers, resources,
                 {Array.from({ length: 20 }, (_, l) => l + 1).map((l) => <option key={l} value={l}>{l}</option>)}
               </select></label>
             </div>
-            <label>What it does<textarea rows={6} value={f.text ?? ''} onChange={(e) => edit(i, { text: e.target.value })} /></label>
+            <label>What it does<textarea rows={6} value={f.text ?? ''} onChange={(e) => edit(i, retext(f as any, e.target.value, resources) as Partial<SubFeature>)} /></label>
             <fieldset className="feat-uses">
               <legend>Uses a resource</legend>
               <div className="feat-uses-pick">

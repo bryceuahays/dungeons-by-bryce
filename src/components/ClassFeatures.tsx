@@ -94,6 +94,12 @@ export function guessUses(f: Feature, resources: Resource[]): Uses {
   return null;
 }
 // Saved with the class so the links are kept (and the guesses are only made once).
+// Typing a feature's text: guess again what it spends and how it's used, unless those were already set
+// (a new feature starts with nothing, so "expend one use of your Channel Divinity" links it as you type).
+export function retext(f: Feature, text: string, resources: Resource[]): Partial<Feature> {
+  return { text, ...(f.uses?.res ? {} : { uses: guessUses({ ...f, text, uses: undefined } as Feature, resources) }), ...((f as any).use ? {} : { use: guessUse({ text }) }) } as Partial<Feature>;
+}
+
 export function syncUses(data: any) {
   if (!Array.isArray(data.features)) return data;
   const resources = readResources(data);
@@ -386,7 +392,7 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
                         <label>Name<input value={f.name} maxLength={120} onChange={(e) => edit(idx, { name: e.target.value })} /></label>
                         <label>Level<select value={Number(f.level)} onChange={(e) => { edit(idx, { level: Number(e.target.value) }); setOpen(null); }}>{Array.from({ length: 20 }, (_, l) => <option key={l} value={l + 1}>{l + 1}</option>)}</select></label>
                       </div>
-                      <label>What it does<textarea rows={8} value={f.text ?? ''} onChange={(e) => edit(idx, { text: e.target.value })} /></label>
+                      <label>What it does<textarea rows={8} value={f.text ?? ''} onChange={(e) => edit(idx, retext(f, e.target.value, resources))} /></label>
                       <fieldset className="feat-uses">
                         <legend>Uses a resource</legend>
                         <div className="feat-uses-pick">
