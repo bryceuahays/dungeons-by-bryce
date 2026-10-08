@@ -385,3 +385,8 @@ h1 .beta-tag{font-size:.8rem}
 .brew-form label.lang-choose input{width:4.5em;padding:4px 6px}
 .brew fieldset.lang-box{display:block}
 .brew fieldset.lang-box > p.dim{margin:6px 0 0}
+/* the item picker */
+.item-search{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.item-search input{flex:1 1 280px;min-width:0}
+.item-list li{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.item-list li .dim{flex:1 1 auto}

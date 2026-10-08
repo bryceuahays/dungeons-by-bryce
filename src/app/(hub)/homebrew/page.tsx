@@ -37,7 +37,7 @@ export default async function Homebrew() {
       <h2>Make something new</h2>
       <div className="cards brewtypes">
         {Object.entries(TYPES).map(([id, t]) => (
-          <Link key={id} className="ccard" href={id === 'class' ? '/homebrew/classes' : id === 'race' ? '/homebrew/races' : id === 'background' ? '/homebrew/backgrounds' : '/homebrew/new?type=' + id}><b>{t.label}</b><span>{t.blurb}</span></Link>
+          <Link key={id} className="ccard" href={id === 'class' ? '/homebrew/classes' : id === 'race' ? '/homebrew/races' : id === 'background' ? '/homebrew/backgrounds' : id === 'item' ? '/homebrew/items' : '/homebrew/new?type=' + id}><b>{t.label}</b><span>{t.blurb}</span></Link>
         ))}
       </div>
 
