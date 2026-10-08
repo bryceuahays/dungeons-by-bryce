@@ -13,14 +13,15 @@ import { ABILITIES } from '@/lib/rules/engine';
 
 const KINDS: [string, string][] = [
   ['prof', 'A proficiency'], ['ac', 'Armor class bonus'], ['speed', 'Speed'], ['resist', 'Resistance or immunity'],
-  ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score increase'],
+  ['condition', 'Immunity to a condition'], ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score increase'],
   ['spell', 'A spell always prepared'], ['text', 'A note on the sheet'],
 ];
 export const GIVEN = KINDS.map(([k]) => k);
 const blank = (t: string): any => ({
   prof: { t, kind: 'skill', v: 'Perception' }, ac: { t, n: 1 }, speed: { t, mode: 'walk', n: 10 }, resist: { t, v: 'fire', immune: false },
-  sense: { t, v: 'Darkvision', n: 60 }, hp: { t, n: 1 }, ability: { t, ab: 'str', n: 1 }, spell: { t, name: '' }, text: { t, text: '' },
+  sense: { t, v: 'Darkvision', n: 60 }, condition: { t, v: 'Charmed' }, hp: { t, n: 1 }, ability: { t, ab: 'str', n: 1 }, spell: { t, name: '' }, text: { t, text: '' },
 }[t]);
+const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious'];
 const PROF_KINDS: [string, string][] = [['skill', 'Skill'], ['save', 'Saving throw'], ['armor', 'Armor'], ['weapon', 'Weapon'], ['tool', 'Tool'], ['language', 'Language']];
 const PROF_DEFAULT: Record<string, string> = { skill: 'Perception', save: 'wis', armor: 'Heavy armor', weapon: 'Martial weapons', tool: "Thieves' Tools", language: '' };
 
@@ -34,9 +35,11 @@ export function GivesEditor({ effects, onChange, spellNames }: { effects: any[];
         <div key={i} className="give-row">
           <label>What<select value={g.t} onChange={(e) => put(i, blank(e.target.value))}>{KINDS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
           <GiveFields g={g} onChange={(x) => put(i, x)} spellNames={spellNames} />
+          <label className="give-at">From level<input type="number" min={1} max={20} placeholder="—" title="Leave blank to give it as soon as the feature arrives" value={g.at ?? ''} onChange={(e) => { const { at: _old, ...rest } = g; put(i, e.target.value ? { ...rest, at: Math.min(20, Math.max(1, Number(e.target.value))) } : rest); }} /></label>
           <button type="button" className="quiet small-btn danger" onClick={() => onChange(effects.filter((_, j) => j !== i))}>Remove</button>
         </div>
       )) : <p className="dim">Nothing yet. For things the feature adds to the character sheet by itself, like a proficiency, +1 armor class, more speed or darkvision.</p>}
+      {gives.length ? <p className="dim hint">&quot;From level&quot; is for things that come later than the feature itself, like an oath&apos;s spells at levels 5, 9, 13 and 17. Leave it blank otherwise.</p> : null}
       <p><button type="button" className="quiet small-btn" onClick={() => onChange([...effects, blank('prof')])}>+ Add something it gives</button></p>
     </fieldset>
   );
@@ -60,6 +63,7 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
     case 'ac': return num('Bonus (+)', 'n', { min: 0 });
     case 'speed': return <><label>Kind<select value={g.mode} onChange={(e) => set({ mode: e.target.value })}>{[['walk', 'Walking (added)'], ['fly', 'Flying'], ['swim', 'Swimming'], ['climb', 'Climbing'], ['burrow', 'Burrowing']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>{num('Feet', 'n', { min: 0, step: 5 })}</>;
     case 'resist': return <><label>Damage type<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}</select></label><label className="ckrow"><input type="checkbox" checked={!!g.immune} onChange={(e) => set({ immune: e.target.checked })} /> Immune, not just resistant</label></>;
+    case 'condition': return <label>Condition<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{CONDITIONS.map((s) => <option key={s}>{s}</option>)}</select></label>;
     case 'sense': return <><label>Sense<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'].map((s) => <option key={s}>{s}</option>)}</select></label>{num('Feet', 'n', { min: 0, step: 5 })}</>;
     case 'hp': return num('Hit points per level', 'n', { min: 0 });
     case 'ability': return <><label>Ability<select value={g.ab} onChange={(e) => set({ ab: e.target.value })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="any">Player&apos;s choice</option></select></label>{num('Increase', 'n', { min: 1 })}</>;

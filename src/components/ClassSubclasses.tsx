@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { deleteSubclass, saveEntity } from '@/app/(hub)/homebrew/actions';
 import { ChoiceEditor, GivesEditor, type FeatOption } from './ClassGives';
-import { GrowsEditor, isMarker, type Resource } from './ClassFeatures';
+import { GrowsEditor, guessUses, isMarker, type Resource } from './ClassFeatures';
 
 // The class editor's Subclasses tab. A subclass stays its own entry (so a DM can add a new oath
 // to the SRD Paladin without copying the class, and attach or share it on its own), but here it
@@ -29,6 +29,8 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
   focus?: { subId: string; idx: number } | null;
 }) {
   const [open, setOpen] = useState<string | null>(focus?.subId ?? null);
+  // the feature to open when a subclass is (re)opened, e.g. after an SRD subclass becomes your copy
+  const [startF, setStartF] = useState<number | null>(focus?.idx ?? null);
   const markers = [...new Set(classFeatures.filter(isMarker).map((f) => Number(f.level)))].sort((a, b) => a - b);
   const list = subclassesFor(subclasses, { id: classId, name: className, baseClass });
   const put = (s: SubclassOption, was?: string) => setSubclasses([s, ...subclasses.filter((x) => x.id !== s.id && x.id !== was)]);
@@ -46,14 +48,21 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
       <div className="sub-list">
         {list.map((s) => (
           <div key={s.id} className={'feat-card' + (open === s.id ? ' open' : '')}>
-            <button type="button" className="feat-head" aria-expanded={open === s.id} onClick={() => setOpen(open === s.id ? null : s.id)}>
+            <button type="button" className="feat-head" aria-expanded={open === s.id} onClick={() => { setStartF(null); setOpen(open === s.id ? null : s.id); }}>
               <span>{s.name}<span className="chip feat-uses-tag">{s.mine ? (s.id.startsWith('new:') ? 'not saved yet' : 'yours') : 'SRD'}</span></span>
               <span className="dim">{(s.data?.features ?? []).length} features · {open === s.id ? 'Close' : 'Open'}</span>
             </button>
-            {open === s.id ? (s.mine
-              ? <SubclassEditor sub={s} startOpen={focus?.subId === s.id ? focus.idx : null} markers={markers} resources={resources} feats={feats} spellNames={spellNames} pro={pro} className={className} classId={classId}
-                  onSaved={(n, was) => { put(n, was); setOpen(n.id); }} onDeleted={() => { setSubclasses(subclasses.filter((x) => x.id !== s.id)); setOpen(null); }} onChange={(n) => put(n)} />
-              : <SrdSubclass sub={s} markers={markers} onCopy={() => draft(s)} focusIdx={focus?.subId === s.id ? focus.idx : null} />) : null}
+            {open === s.id ? (
+              <SubclassEditor key={s.id} sub={s} srd={!s.mine} startOpen={startF} markers={markers} resources={resources} feats={feats} spellNames={spellNames} pro={pro} className={className} classId={classId}
+                onSaved={(n, was) => { put(n, was); setOpen(n.id); }} onDeleted={() => { setSubclasses(subclasses.filter((x) => x.id !== s.id)); setOpen(null); }}
+                onChange={(n, openF) => {
+                  if (s.mine) { put(n); return; }
+                  // changing the SRD subclass: it stays as it is, and your changes go into a new copy
+                  const id = 'new:' + Math.random().toString(36).slice(2);
+                  setSubclasses([{ ...n, id, mine: true, cloned_from: s.id, data: { ...n.data, parent: className, parentClassId: classId } }, ...subclasses]);
+                  setStartF(openF); setOpen(id);
+                }} />
+            ) : null}
           </div>
         ))}
         {!list.length ? <p className="dim">No subclasses for this class yet.</p> : null}
@@ -64,34 +73,18 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
   );
 }
 
-// the SRD subclass: read it, and copy it to change it
-function SrdSubclass({ sub, markers, onCopy, focusIdx }: { sub: SubclassOption; markers: number[]; onCopy: () => void; focusIdx: number | null }) {
-  const feats: SubFeature[] = sub.data?.features ?? [];
-  return (
-    <div className="feat-body">
-      {sub.data?.desc ? <p>{sub.data.desc}</p> : null}
-      {feats.map((f, i) => (
-        <div key={i} className={'sub-read' + (focusIdx === i ? ' focus' : '')}>
-          <b>Level {f.level}: {f.name}</b>
-          <p>{f.text}</p>
-        </div>
-      ))}
-      <p className="inline"><button type="button" className="quiet small-btn" onClick={onCopy}>Make my own version</button><span className="dim">The SRD subclass cannot be changed; your copy can.</span></p>
-    </div>
-  );
-}
-
-function SubclassEditor({ sub, startOpen, markers, resources, feats, spellNames, pro, className, classId, onChange, onSaved, onDeleted }: {
-  sub: SubclassOption; startOpen: number | null; markers: number[]; resources: Resource[]; feats: FeatOption[]; spellNames: string[]; pro: boolean; className: string; classId: string | null;
-  onChange: (s: SubclassOption) => void; onSaved: (s: SubclassOption, was: string) => void; onDeleted: () => void;
+function SubclassEditor({ sub, srd, startOpen, markers, resources, feats, spellNames, pro, className, classId, onChange, onSaved, onDeleted }: {
+  sub: SubclassOption; srd: boolean; startOpen: number | null; markers: number[]; resources: Resource[]; feats: FeatOption[]; spellNames: string[]; pro: boolean; className: string; classId: string | null;
+  onChange: (s: SubclassOption, openF: number | null) => void; onSaved: (s: SubclassOption, was: string) => void; onDeleted: () => void;
 }) {
   const [openF, setOpenF] = useState<number | null>(startOpen);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [sure, setSure] = useState(false);
   const fresh = sub.id.startsWith('new:');
-  const features: SubFeature[] = sub.data?.features ?? [];
-  const setData = (d: any) => { onChange({ ...sub, data: { ...sub.data, ...d } }); setMsg(null); };
+  // features saved before links existed get the same guesses as class features ("expend one use of your Channel Divinity")
+  const features: SubFeature[] = (sub.data?.features ?? []).map((f: SubFeature) => ({ ...f, uses: guessUses(f as any, resources) }));
+  const setData = (d: any) => { onChange({ ...sub, data: { ...sub.data, features, ...d } }, openF); setMsg(null); };
   const sorted = (l: SubFeature[]) => l.map((f, i) => [f, i] as const).sort((a, b) => Number(a[0].level) - Number(b[0].level) || a[1] - b[1]).map(([f]) => f);
   const edit = (i: number, f: Partial<SubFeature>) => setData({ features: sorted(features.map((x, j) => (j === i ? { ...x, ...f } : x))) });
   const add = () => { const level = markers[0] ?? 3; setData({ features: sorted([...features, { level, name: 'New feature', text: '' }]) }); setOpenF(features.filter((f) => Number(f.level) <= level).length); };
@@ -115,8 +108,9 @@ function SubclassEditor({ sub, startOpen, markers, resources, feats, spellNames,
 
   return (
     <div className="feat-body">
+      {srd ? <p className="sub-srd-note">This is the SRD subclass. Change anything and your changes go into your own copy for this class (shown as &quot;not saved yet&quot; until you save it); the SRD original stays as it is.</p> : null}
       <div className="feat-meta">
-        <label>Subclass name<input value={sub.name} maxLength={120} onChange={(e) => { onChange({ ...sub, name: e.target.value }); setMsg(null); }} /></label>
+        <label>Subclass name<input value={sub.name} maxLength={120} onChange={(e) => { onChange({ ...sub, name: e.target.value, data: { ...sub.data, features } }, openF); setMsg(null); }} /></label>
       </div>
       <label>Description<textarea rows={3} value={sub.data?.desc ?? ''} onChange={(e) => setData({ desc: e.target.value })} /></label>
       <h4>Features</h4>
@@ -155,13 +149,13 @@ function SubclassEditor({ sub, startOpen, markers, resources, feats, spellNames,
         </div>
       ))}
       <p><button type="button" className="quiet small-btn" onClick={add}>+ Add a feature</button></p>
-      <div className="sub-save">
+      {!srd ? <div className="sub-save">
         <button type="button" disabled={busy || !sub.name.trim()} onClick={save}>{busy ? 'Saving' : fresh ? 'Save subclass' : 'Save changes'}</button>
         {!sure ? <button type="button" className="quiet small-btn danger" disabled={busy} onClick={() => setSure(true)}>{fresh ? 'Discard' : 'Delete subclass'}</button> : (
           <span className="inline"><span>{fresh ? 'Discard this unsaved subclass?' : `Delete ${sub.name} for good?`}</span><button type="button" className="danger small-btn" disabled={busy} onClick={remove}>Yes</button><button type="button" className="quiet small-btn" onClick={() => setSure(false)}>Keep it</button></span>
         )}
         {msg ? <span className={msg.ok ? 'good' : 'bad'} role="status">{msg.text}</span> : null}
-      </div>
+      </div> : null}
     </div>
   );
 }

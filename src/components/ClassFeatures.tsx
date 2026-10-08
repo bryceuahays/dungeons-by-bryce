@@ -76,7 +76,7 @@ type Uses = { res: string; cost: number | '' } | null;
 
 // Features saved before links existed: a feature named like a resource is that resource's feature,
 // and one whose text says it expends or spends a resource uses one of it.
-function guessUses(f: Feature, resources: Resource[]): Uses {
+export function guessUses(f: Feature, resources: Resource[]): Uses {
   if (f.uses !== undefined) return f.uses;
   const same = resources.find((r) => r.name.trim().toLowerCase() === (f.name ?? '').trim().toLowerCase());
   if (same) return { res: same.id, cost: '' };

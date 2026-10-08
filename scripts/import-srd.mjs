@@ -81,6 +81,19 @@ const EXTRA_2024 = {
   paladin: [{ t: 'resource', name: 'Lay on Hands', max: 'level*5', recharge: 'long' }],
   fighter: [{ t: 'resource', name: 'Action Surge', max: 'step:2=1,17=2', recharge: 'short', at: 2 }, { t: 'resource', name: 'Indomitable', max: 'step:9=1,13=2,17=3', recharge: 'long', at: 9 }],
 };
+// The 2024 data set flattens some subclass tables into the text (and mixes them up). The SRD 5.2
+// itself gives these: an oath's always-prepared spells by Paladin level, what spends Channel Divinity.
+const OATH_SPELLS = [[3, ['Protection from Evil and Good', 'Shield of Faith']], [5, ['Aid', 'Zone of Truth']], [9, ['Beacon of Hope', 'Dispel Magic']], [13, ['Freedom of Movement', 'Guardian of Faith']], [17, ['Commune', 'Flame Strike']]];
+const SUBCLASS_2024 = {
+  'Oath of Devotion': {
+    'Oath of Devotion Spells': {
+      text: 'The magic of your oath ensures you always have certain spells ready; when you reach a Paladin level listed below, you thereafter always have the listed spells prepared.\n' + OATH_SPELLS.map(([l, sp]) => `Paladin level ${l}: ${sp.join(', ')}`).join('\n'),
+      effects: OATH_SPELLS.flatMap(([l, sp]) => sp.map((name) => ({ t: 'spell', name, ...(l > 3 ? { at: l } : {}) }))),
+    },
+    'Sacred Weapon': { uses: { res: 'r:channel divinity', cost: 1 } },
+    'Aura of Devotion': { effects: [{ t: 'condition', v: 'Charmed' }] },
+  },
+};
 const CAST_ABILITY = { bard: 'cha', cleric: 'wis', druid: 'wis', paladin: 'cha', ranger: 'wis', sorcerer: 'cha', warlock: 'cha', wizard: 'int' };
 function classProfs(c) {
   const all = names(c.proficiencies).filter((n) => !/^Saving Throw/.test(n));
@@ -160,6 +173,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
       ? features.filter((f) => f.subclass?.index === s.index && !f.parent).map((f) => ({ level: featLevel(f), name: f.name, text: [featText(f), ...features.filter((k) => k.parent?.index === f.index).map((k) => `${k.name}: ${featText(k)}`)].join('\n\n') }))
       : (s.features ?? []).map((f) => ({ level: Number(f.level) || 3, name: f.name, text: text(f.description ?? f.desc) }));
     const guide = is51 ? SRD_CORE.find((e) => e.type === 'subclass' && e.data.parent === parent) : null;
+    if (!is51 && SUBCLASS_2024[s.name]) for (const f of feats) Object.assign(f, SUBCLASS_2024[s.name][f.name] ?? {});
     add(v, 'subclass', s.name, {
       parent, desc: [s.subclass_flavor ? `${s.subclass_flavor}.` : '', s.summary ?? '', text(s.desc ?? s.description)].filter(Boolean).join(' '),
       features: feats.sort((a, b) => a.level - b.level).map((f) => { const g = guide?.data.features.find((x) => x.name.toLowerCase().replace(/^channel divinity: /, '') === f.name.toLowerCase().replace(/^channel divinity: /, '')); return g?.effects ? { ...f, effects: g.effects } : f; }),

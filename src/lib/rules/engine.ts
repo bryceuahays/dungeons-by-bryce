@@ -14,6 +14,7 @@ export type Effect = { at?: number } & (
   | { t: 'ability'; ab: Ability | 'any'; n: number }
   | { t: 'prof'; kind: 'skill' | 'save' | 'armor' | 'weapon' | 'tool' | 'language'; v: string }
   | { t: 'resist'; v: string; immune?: boolean }
+  | { t: 'condition'; v: string } // immunity to a condition, like Charmed
   | { t: 'speed'; mode: 'walk' | 'fly' | 'swim' | 'climb' | 'burrow'; n: number }
   | { t: 'sense'; v: string; n: number }
   | { t: 'resource'; name: string; max: string; recharge: 'short' | 'short1' | 'long' | 'none' } // short1: one use back on a short rest, all on a long rest
@@ -130,7 +131,7 @@ export function derive(c: CharacterV2, entities: Entity[]) {
   of('speed').forEach((x) => { speed[x.mode] = x.mode === 'walk' ? speed.walk + Number(x.n) : Math.max(speed[x.mode] ?? 0, Number(x.n)); });
   const senses = of('sense').reduce<Record<string, number>>((m, x) => { m[x.v] = Math.max(m[x.v] ?? 0, Number(x.n)); return m; }, {});
   const resist = [...new Set(of('resist').filter((x) => !x.immune).map((x) => x.v))];
-  const immune = [...new Set(of('resist').filter((x) => x.immune).map((x) => x.v))];
+  const immune = [...new Set([...of('resist').filter((x) => x.immune).map((x) => x.v), ...of('condition').map((x) => x.v)])];
   const resources = of('resource').map((x) => { const max = evalMax(x.max, { level, mods, prof }); return { name: x.name, recharge: x.recharge, max, unlimited: unlimited(x.max, max), from: x.from }; }).filter((r) => r.max > 0);
   // a custom resource attached to the campaign (a Divinity pool, say) is a pool every character has
   entities.filter((e) => e.type === 'resource' && e.source !== 'srd').forEach((e) => {
@@ -199,6 +200,7 @@ export function effectPoints(x: Effect): number {
     case 'ability': return Number(x.n) * (x.ab === 'any' ? 1.2 : 1);
     case 'prof': return x.kind === 'save' ? 2 : x.kind === 'skill' ? 0.75 : 0.25;
     case 'resist': return x.immune ? 3 : 1.5;
+    case 'condition': return 1;
     case 'speed': return x.mode === 'fly' ? 3 : x.mode === 'walk' ? Number(x.n) / 10 : 1;
     case 'sense': return Number(x.n) >= 120 ? 1 : 0.5;
     case 'resource': return 1.25;

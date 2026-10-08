@@ -10,6 +10,7 @@ export function describeEffect(x: Effect): string {
     case 'ability': return `${x.ab === 'any' ? 'One ability score of your choice' : AB[x.ab] ?? x.ab} ${sgn(Number(x.n))}${at}`;
     case 'prof': return `Proficiency: ${x.kind === 'save' ? (AB[x.v] ?? x.v) + ' saving throws' : x.v}${x.kind === 'skill' || x.kind === 'save' ? '' : ' (' + x.kind + ')'}${at}`;
     case 'resist': return `${x.immune ? 'Immunity' : 'Resistance'} to ${x.v} damage${at}`;
+    case 'condition': return `Immunity to the ${x.v} condition${at}`;
     case 'speed': return x.mode === 'walk' ? `Walking speed ${sgn(Number(x.n))} feet${at}` : `${x.mode[0].toUpperCase() + x.mode.slice(1)} speed ${x.n} feet${at}`;
     case 'sense': return `${x.v} ${x.n} feet${at}`;
     case 'resource': return `${x.name}: ${/^\d+$/.test(String(x.max)) ? x.max : describeMax(String(x.max))} per ${x.recharge === 'none' ? 'day (does not recharge by itself)' : x.recharge + ' rest'}${at}`;
