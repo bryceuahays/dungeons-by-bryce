@@ -283,6 +283,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const [madeSpells, setMadeSpells] = useState<SpellOption[]>([]);
   const [goneSpells, setGoneSpells] = useState<string[]>([]);
   const [subclasses, setSubclasses] = useState<SubclassOption[]>(subclassOptions ?? []);
+  // which subclass (and feature in it) to open when jumping to the Subclasses tab
+  const [subFocus, setSubFocus] = useState<{ subId: string; idx: number } | null>(null);
   const allSpells = useMemo(() => { const made = new Set(madeSpells.map((m) => m.id)); return [...madeSpells, ...(spells ?? []).filter((x) => !made.has(x.id))].filter((x) => !goneSpells.includes(x.id)); }, [madeSpells, spells, goneSpells]);
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<BrewState>(null);
@@ -360,7 +362,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
           {onlyAdvanced ? (
             <>
               <div className="depth" role="tablist" aria-label="Parts of the class">
-                {CLASS_TABS.map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? '' : 'quiet'} onClick={() => setTab(t)}>{t}</button>)}
+                {CLASS_TABS.map((t) => <button key={t} type="button" role="tab" aria-selected={tab === t} className={tab === t ? '' : 'quiet'} onClick={() => { setSubFocus(null); setTab(t); }}>{t}</button>)}
               </div>
               {tab === 'Main' ? (
                 <div className="cls-main">
@@ -401,14 +403,14 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               ) : null}
               {tab === 'Features' ? (
                 <>
-                  <FeaturesTab data={data} onChange={setData} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} onOpenSubclasses={() => setTab('Subclasses')}
-                    subFeatures={subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).flatMap((s) => (s.data?.features ?? []).map((f: any) => ({ sub: s.name, level: Number(f.level), name: f.name })))} />
+                  <FeaturesTab data={data} onChange={setData} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} onOpenSubclasses={(at) => { setSubFocus(at ?? null); setTab('Subclasses'); }}
+                    subFeatures={subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).flatMap((s) => (s.data?.features ?? []).map((f: any, idx: number) => ({ sub: s.name, subId: s.id, idx, level: Number(f.level), name: f.name, text: f.text ?? '', srd: !s.mine })))} />
                   <details><summary>The raw data</summary><textarea className="mono" rows={16} spellCheck={false} defaultValue={JSON.stringify(data, null, 2)} key={JSON.stringify(data).length} onBlur={(e) => { try { setData(JSON.parse(e.target.value)); } catch { /* left as typed until it is valid */ } }} /></details>
                 </>
               ) : null}
               {tab === 'Subclasses' ? (
                 <SubclassesTab classId={id} className={name} baseClass={data.baseClass} classFeatures={data.features ?? []} resources={readResources(data)}
-                  subclasses={subclasses} setSubclasses={setSubclasses} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} pro={pro} />
+                  subclasses={subclasses} setSubclasses={setSubclasses} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} pro={pro} focus={subFocus} />
               ) : null}
               {tab === 'Leveling' ? (
                 <>

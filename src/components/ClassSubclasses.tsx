@@ -23,11 +23,12 @@ export function subclassesFor(all: SubclassOption[], cls: { id: string | null; n
   return [...mine, ...srd];
 }
 
-export function SubclassesTab({ classId, className, baseClass, classFeatures, resources, subclasses, setSubclasses, feats, spellNames, pro }: {
+export function SubclassesTab({ classId, className, baseClass, classFeatures, resources, subclasses, setSubclasses, feats, spellNames, pro, focus }: {
   classId: string | null; className: string; baseClass?: string; classFeatures: any[]; resources: Resource[];
   subclasses: SubclassOption[]; setSubclasses: (s: SubclassOption[]) => void; feats: FeatOption[]; spellNames: string[]; pro: boolean;
+  focus?: { subId: string; idx: number } | null;
 }) {
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(focus?.subId ?? null);
   const markers = [...new Set(classFeatures.filter(isMarker).map((f) => Number(f.level)))].sort((a, b) => a - b);
   const list = subclassesFor(subclasses, { id: classId, name: className, baseClass });
   const put = (s: SubclassOption, was?: string) => setSubclasses([s, ...subclasses.filter((x) => x.id !== s.id && x.id !== was)]);
@@ -50,9 +51,9 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
               <span className="dim">{(s.data?.features ?? []).length} features · {open === s.id ? 'Close' : 'Open'}</span>
             </button>
             {open === s.id ? (s.mine
-              ? <SubclassEditor sub={s} markers={markers} resources={resources} feats={feats} spellNames={spellNames} pro={pro} className={className} classId={classId}
+              ? <SubclassEditor sub={s} startOpen={focus?.subId === s.id ? focus.idx : null} markers={markers} resources={resources} feats={feats} spellNames={spellNames} pro={pro} className={className} classId={classId}
                   onSaved={(n, was) => { put(n, was); setOpen(n.id); }} onDeleted={() => { setSubclasses(subclasses.filter((x) => x.id !== s.id)); setOpen(null); }} onChange={(n) => put(n)} />
-              : <SrdSubclass sub={s} markers={markers} onCopy={() => draft(s)} />) : null}
+              : <SrdSubclass sub={s} markers={markers} onCopy={() => draft(s)} focusIdx={focus?.subId === s.id ? focus.idx : null} />) : null}
           </div>
         ))}
         {!list.length ? <p className="dim">No subclasses for this class yet.</p> : null}
@@ -64,13 +65,13 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
 }
 
 // the SRD subclass: read it, and copy it to change it
-function SrdSubclass({ sub, markers, onCopy }: { sub: SubclassOption; markers: number[]; onCopy: () => void }) {
+function SrdSubclass({ sub, markers, onCopy, focusIdx }: { sub: SubclassOption; markers: number[]; onCopy: () => void; focusIdx: number | null }) {
   const feats: SubFeature[] = sub.data?.features ?? [];
   return (
     <div className="feat-body">
       {sub.data?.desc ? <p>{sub.data.desc}</p> : null}
       {feats.map((f, i) => (
-        <div key={i} className="sub-read">
+        <div key={i} className={'sub-read' + (focusIdx === i ? ' focus' : '')}>
           <b>Level {f.level}: {f.name}</b>
           <p>{f.text}</p>
         </div>
@@ -80,11 +81,11 @@ function SrdSubclass({ sub, markers, onCopy }: { sub: SubclassOption; markers: n
   );
 }
 
-function SubclassEditor({ sub, markers, resources, feats, spellNames, pro, className, classId, onChange, onSaved, onDeleted }: {
-  sub: SubclassOption; markers: number[]; resources: Resource[]; feats: FeatOption[]; spellNames: string[]; pro: boolean; className: string; classId: string | null;
+function SubclassEditor({ sub, startOpen, markers, resources, feats, spellNames, pro, className, classId, onChange, onSaved, onDeleted }: {
+  sub: SubclassOption; startOpen: number | null; markers: number[]; resources: Resource[]; feats: FeatOption[]; spellNames: string[]; pro: boolean; className: string; classId: string | null;
   onChange: (s: SubclassOption) => void; onSaved: (s: SubclassOption, was: string) => void; onDeleted: () => void;
 }) {
-  const [openF, setOpenF] = useState<number | null>(null);
+  const [openF, setOpenF] = useState<number | null>(startOpen);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [sure, setSure] = useState(false);

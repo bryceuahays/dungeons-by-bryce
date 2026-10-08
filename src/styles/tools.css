@@ -296,3 +296,6 @@ h1 .beta-tag{font-size:.8rem}
 .sub-save{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--h-line);padding-top:10px}
 .sub-save .inline{display:inline-flex;gap:8px;align-items:center}
 .feat-from-sub{margin:0 0 6px;padding:6px 10px;border:1px dashed var(--h-line);border-radius:10px;font-size:.9rem}
+.feat-card.sub-feat{border-style:dashed}
+.sub-text{white-space:pre-line;margin:0}
+.sub-read.focus{border-left:3px solid var(--h-accent);padding-left:10px}
