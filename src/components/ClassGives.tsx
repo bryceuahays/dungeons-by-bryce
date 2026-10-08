@@ -84,11 +84,25 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
 // ---------------------------------------------------------------- player chooses
 
 export type FeatOption = { name: string; category: string; desc: string };
-// feature.choice: { count, from, options? } - from is a list the site knows, or "custom" with the DM's own options
-type Choice = { count: number; from: string; options?: { name: string; text: string }[] } | null;
+// One of the DM's own options (Metamagic, Eldritch Invocations, or homebrew): what it does, what each
+// use spends, and what a character needs before taking it.
+export type ChoiceOption = {
+  name: string; text: string;
+  cost?: number | ''; res?: string | null;      // each use spends this many of a class resource
+  minLevel?: number | '';                       // class level the character needs
+  requires?: string;                            // another option from this list they need first
+  other?: string;                               // any other requirement, in words
+  repeatable?: boolean;                         // can be taken more than once
+};
+// feature.choice: { count, from, options?, byGrows? }
+//   from: a list the site knows, "custom" with the DM's own options, or "same" for more picks from the
+//   list of an earlier feature with the same name (the Sorcerer's Metamagic at levels 10 and 17)
+//   byGrows: how many follows the feature's growing number (Eldritch Invocations: 1, then 3, 5, ...)
+export type Choice = { count: number; from: string; options?: ChoiceOption[]; byGrows?: boolean } | null;
 const FROM: [string, string][] = [
   ['feat:Fighting style', 'Fighting Styles'], ['feat:Epic boon', 'Epic Boons'], ['feat:Origin', 'Origin feats'], ['feat:General', 'General feats'],
   ['weapons', 'Weapons (for Weapon Mastery)'], ['skills', 'Skills they are proficient in (for Expertise)'], ['custom', 'My own list of options'],
+  ['same', 'More from an earlier feature\'s list (same name)'],
 ];
 const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
 
@@ -106,44 +120,86 @@ export function guessChoice(f: { name?: string; text?: string; choice?: Choice; 
   if (name === 'expertise' || name.endsWith(' expertise')) return { count: n(/(\w+) of your skill proficiencies/, 2), from: 'skills' };
   // "Choose one of your skill proficiencies ... You gain Expertise" (the Ranger's Deft Explorer)
   if (/choose (\w+) of your skill proficiencies[^.]*expertise|gain expertise in (\w+) of your skill/.test(text)) return { count: n(/choose (\w+) of your skill proficiencies/, 1), from: 'skills' };
-  // the SRD data set does not include these options, so the DM lists them (custom)
+  // the SRD import fills these in from the SRD document; a class saved before then lists them itself
   if (name === 'metamagic') return { count: n(/you gain (\w+) metamagic options/, 2), from: 'custom', options: [] };
   if (name === 'eldritch invocations') {
     const grows = (f.effects ?? []).find((x) => x.t === 'scale');
-    return { count: grows ? Number(grows.steps?.[0]?.[1]) || 1 : 1, from: 'custom', options: [] };
+    return { count: grows ? Number(grows.steps?.[0]?.[1]) || 1 : 1, from: 'custom', options: [], ...(grows ? { byGrows: true } : {}) };
   }
   return null;
 }
 
-export function ChoiceEditor({ f, onChange, feats }: { f: any; onChange: (choice: Choice) => void; feats: FeatOption[] }) {
+// "Cost: 2 Sorcery Points · Level 5+ · Needs Pact of the Blade · Can be taken more than once"
+export function optionLine(o: ChoiceOption, resources: { id: string; name: string }[] = []) {
+  const res = o.res ? resources.find((r) => r.id === o.res)?.name ?? o.res.replace(/^r:/, '') : '';
+  return [
+    Number(o.cost) > 0 ? `Cost: ${o.cost}${res ? ' ' + (Number(o.cost) === 1 ? res.replace(/s$/, '') : res) : ''}` : '',
+    Number(o.minLevel) > 1 ? `Level ${o.minLevel}+` : '',
+    o.requires ? `Needs ${o.requires}` : '',
+    o.other ? `Needs ${o.other}` : '',
+    o.repeatable ? 'Can be taken more than once' : '',
+  ].filter(Boolean).join(' · ');
+}
+
+export function ChoiceEditor({ f, onChange, feats, resources = [] }: { f: any; onChange: (choice: Choice) => void; feats: FeatOption[]; resources?: { id: string; name: string }[] }) {
   const c = guessChoice(f);
+  const [open, setOpen] = useState<number | null>(null);
   const growing = (f.effects ?? []).find((x: any) => x.t === 'scale');
   const fromFeats = c?.from.startsWith('feat:') ? feats.filter((x) => x.category.toLowerCase() === c.from.slice(5).toLowerCase()) : [];
-  const preview = !c ? [] : c.from === 'weapons' ? ['any Simple or Martial weapon with a mastery property'] : c.from === 'skills' ? ['any skill the character is proficient in'] : c.from === 'custom' ? (c.options ?? []).map((o) => o.name || 'Unnamed option') : fromFeats.map((x) => x.name);
+  const preview = !c ? [] : c.from === 'weapons' ? ['any Simple or Martial weapon with a mastery property'] : c.from === 'skills' ? ['any skill the character is proficient in'] : fromFeats.map((x) => x.name);
   const opts = c?.options ?? [];
-  const setOpts = (next: { name: string; text: string }[]) => onChange({ ...c!, options: next });
+  const setOpts = (next: ChoiceOption[]) => onChange({ ...c!, options: next });
+  const setOpt = (i: number, p: Partial<ChoiceOption>) => setOpts(opts.map((x, j) => (j === i ? { ...x, ...p } : x)));
+  const num = (v: string) => (v === '' ? '' : Math.max(0, Number(v) || 0));
   return (
     <fieldset className="feat-uses">
       <legend>Player chooses</legend>
       <div className="feat-uses-pick">
-        <label>Choose from<select value={c?.from ?? ''} onChange={(e) => onChange(e.target.value ? { count: c?.count ?? 1, from: e.target.value, ...(e.target.value === 'custom' ? { options: opts.length ? opts : [{ name: '', text: '' }] } : {}) } : null)}>
+        <label>Choose from<select value={c?.from ?? ''} onChange={(e) => onChange(e.target.value ? { count: c?.count ?? 1, from: e.target.value, ...(e.target.value === 'custom' ? { options: opts.length ? opts : [{ name: '', text: '' }] } : {}), ...(c?.byGrows ? { byGrows: true } : {}) } : null)}>
           <option value="">Nothing to choose</option>
           {FROM.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select></label>
-        {c ? <label>How many<input type="number" min={1} max={20} value={c.count} onChange={(e) => onChange({ ...c, count: Math.max(1, Number(e.target.value) || 1) })} /></label> : null}
+        {c ? <label>How many<input type="number" min={1} max={20} value={c.count} disabled={!!c.byGrows && !!growing} onChange={(e) => onChange({ ...c, count: Math.max(1, Number(e.target.value) || 1) })} /></label> : null}
       </div>
-      {c && c.from === 'weapons' && growing ? <p className="dim">This feature also has a growing number ({growing.name}); the player can choose more as it grows.</p> : null}
-      {c && c.from !== 'custom' ? <p className="dim">Players pick {c.count} from: {preview.length ? preview.join(', ') : 'nothing yet - there are no options of that kind'}.</p> : null}
+      {c && growing ? (
+        <label className="ckrow"><input type="checkbox" checked={!!c.byGrows} onChange={(e) => onChange({ ...c, byGrows: e.target.checked || undefined })} /> How many follows this feature&apos;s growing number ({growing.name}: {(growing.steps ?? []).map(([l, v]: [number, string]) => `${v} at level ${l}`).join(', ')})</label>
+      ) : null}
+      {c && c.from === 'same' ? <p className="dim">Players pick {c.count} more from the list in the earlier &quot;{f.name}&quot; feature. Edit the options there.</p> : null}
+      {c && c.from !== 'custom' && c.from !== 'same' ? <p className="dim">Players pick {c.count} from: {preview.length ? preview.join(', ') : 'nothing yet - there are no options of that kind'}.</p> : null}
       {c && c.from === 'custom' ? (
         <div className="choice-opts">
+          <p className="dim">{opts.length} option{opts.length === 1 ? '' : 's'}. Open one to change it.</p>
           {opts.map((o, i) => (
-            <div key={i} className="choice-opt">
-              <label>Option<input value={o.name} maxLength={80} placeholder="For example: Way of the Sun" onChange={(e) => setOpts(opts.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} /></label>
-              <label>What it does<textarea rows={2} value={o.text} onChange={(e) => setOpts(opts.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} /></label>
-              <button type="button" className="quiet small-btn danger" onClick={() => setOpts(opts.filter((_, j) => j !== i))}>Remove</button>
+            <div key={i} className={'feat-card choice-card' + (open === i ? ' open' : '')}>
+              <button type="button" className="feat-head" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
+                <span>{o.name || 'Unnamed option'}{optionLine(o, resources) ? <span className="feat-use-line">{optionLine(o, resources)}</span> : null}</span>
+                <span className="dim">{open === i ? 'Close' : 'Open'}</span>
+              </button>
+              {open === i ? (
+                <div className="feat-body choice-body">
+                  <label>Option<input value={o.name} maxLength={80} placeholder="For example: Quickened Spell" onChange={(e) => setOpt(i, { name: e.target.value })} /></label>
+                  <label>What it does<textarea rows={4} value={o.text} onChange={(e) => setOpt(i, { text: e.target.value })} /></label>
+                  <div className="choice-rules">
+                    <label>Each use spends<input type="number" min={0} max={99} placeholder="nothing" value={o.cost ?? ''} onChange={(e) => setOpt(i, { cost: num(e.target.value) })} /></label>
+                    <label>Of<select value={o.res ?? ''} onChange={(e) => setOpt(i, { res: e.target.value || null })}>
+                      <option value="">(no resource)</option>
+                      {resources.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      {o.res && !resources.some((r) => r.id === o.res) ? <option value={o.res}>{o.res.replace(/^r:/, '')} (not on this class)</option> : null}
+                    </select></label>
+                    <label>From class level<input type="number" min={1} max={20} placeholder="any" value={o.minLevel ?? ''} onChange={(e) => setOpt(i, { minLevel: num(e.target.value) })} /></label>
+                    <label>Needs this option first<select value={o.requires ?? ''} onChange={(e) => setOpt(i, { requires: e.target.value || undefined })}>
+                      <option value="">Nothing</option>
+                      {opts.filter((x, j) => j !== i && x.name.trim()).map((x) => <option key={x.name} value={x.name}>{x.name}</option>)}
+                    </select></label>
+                    <label className="choice-other">Other requirement<input value={o.other ?? ''} maxLength={120} placeholder="For example: a Warlock cantrip that deals damage" onChange={(e) => setOpt(i, { other: e.target.value || undefined })} /></label>
+                    <label className="ckrow"><input type="checkbox" checked={!!o.repeatable} onChange={(e) => setOpt(i, { repeatable: e.target.checked || undefined })} /> Can be taken more than once</label>
+                  </div>
+                  <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { setOpts(opts.filter((_, j) => j !== i)); setOpen(null); }}>Remove this option</button></p>
+                </div>
+              ) : null}
             </div>
           ))}
-          <p><button type="button" className="quiet small-btn" onClick={() => setOpts([...opts, { name: '', text: '' }])}>+ Add an option</button></p>
+          <p><button type="button" className="quiet small-btn" onClick={() => { setOpts([...opts, { name: '', text: '' }]); setOpen(opts.length); }}>+ Add an option</button></p>
         </div>
       ) : null}
       {!c ? <p className="dim">For features where the player picks something, like a Fighting Style or weapons to master.</p> : null}

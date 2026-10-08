@@ -411,7 +411,7 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
                         ) : null}
                       </fieldset>
                       <UseEditor f={f} onChange={(use) => edit(idx, { use })} />
-                      <ChoiceEditor f={f} feats={featOptions} onChange={(choice) => edit(idx, { choice })} />
+                      <ChoiceEditor f={f} feats={featOptions} resources={resources} onChange={(choice) => edit(idx, { choice })} />
                       <GivesEditor effects={f.effects ?? []} spellNames={spellNames} onChange={(effects) => edit(idx, { effects })} />
                       <GrowsEditor f={f} onChange={(effects) => edit(idx, { effects })} />
                       <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { write({ features: feats.filter((_, j) => j !== idx) }); setOpen(null); }}>Remove this feature</button></p>

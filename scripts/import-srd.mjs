@@ -151,6 +151,21 @@ function multiclass(c) {
     tools: count(/^(?!Skill: )/),
   };
 }
+// Options the data set leaves out, from the SRD 5.2.1 document itself (seed/srd/class-options-5.2.json):
+// the first feature with that name lists them; later ones (Metamagic at 10 and 17) pick more from it.
+const CLASS_OPTIONS = JSON.parse(fs.readFileSync(path.join(ROOT, 'seed', 'srd', 'class-options-5.2.json'), 'utf8'));
+const CHOICE_COUNT = { Metamagic: 2, 'Eldritch Invocations': 1 };
+function withOptions(feats) {
+  const seen = new Set();
+  return feats.map((f) => {
+    const options = CLASS_OPTIONS[f.name];
+    if (!Array.isArray(options)) return f;
+    const first = !seen.has(f.name);
+    seen.add(f.name);
+    const choice = first ? { count: CHOICE_COUNT[f.name] ?? 1, from: 'custom', options, ...(f.name === 'Eldritch Invocations' ? { byGrows: true } : {}) } : { count: CHOICE_COUNT[f.name] ?? 1, from: 'same' };
+    return { ...f, choice };
+  });
+}
 const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
 function fix2024(index, fx) {
   return fx.flatMap((x) => {
@@ -229,7 +244,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
     add(v, 'class', c.name, {
       hd: c.hit_die, primary: c.primary_ability?.desc ?? guide?.data.primary ?? '', saves, ...classProfs(c),
       casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024', ...(SRD_FOCUS[c.name] ? { focus: SRD_FOCUS[c.name] } : {}), cantrips: perLevel(own, 'cantrips_known'), prepared: perLevel(own, 'prepared_spells') }) },
-      desc: guide?.data.desc ?? '', effects: guide?.data.effects ?? derived, features: feats,
+      desc: guide?.data.desc ?? '', effects: guide?.data.effects ?? derived, features: is51 ? feats : withOptions(feats),
       ...(is51 ? {} : { startEquip: startEquip(c), multiclass: multiclass(c) }),
     });
   }

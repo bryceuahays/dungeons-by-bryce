@@ -46,7 +46,13 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
   ]);
   // a class saved before starting equipment and multiclassing existed: start them from its SRD class (2024, listed last)
   const base = e.type === 'class' && e.data?.baseClass ? [...(srd ?? [])].reverse().find((s) => s.name === e.data.baseClass)?.data : null;
-  const data = base ? { ...e.data, startEquip: e.data.startEquip ?? base.startEquip, multiclass: e.data.multiclass ?? base.multiclass } : e.data;
+  // and a choice the SRD now lists the options for (Metamagic, Eldritch Invocations) that is still empty
+  const filled = (f: any) => {
+    if (f.choice?.from !== 'custom' || f.choice.options?.length) return f;
+    const srdF = (base?.features ?? []).find((x: any) => x.name === f.name && Number(x.level) === Number(f.level) && x.choice?.options?.length);
+    return srdF ? { ...f, choice: { ...srdF.choice, count: f.choice.count ?? srdF.choice.count } } : f;
+  };
+  const data = base ? { ...e.data, startEquip: e.data.startEquip ?? base.startEquip, multiclass: e.data.multiclass ?? base.multiclass, features: (e.data.features ?? []).map(filled) } : e.data;
   const real = new Map((faces.data ?? []).map((f) => [f.campaign_id, f.title]));
   const links = (campaigns ?? []).map((c, i) => {
     const a = (attached ?? []).find((x) => x.campaign_id === c.id);

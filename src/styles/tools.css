@@ -345,3 +345,8 @@ h1 .beta-tag{font-size:.8rem}
 .brew-form table.milestones td{text-align:center}
 .brew-form table.milestones td:first-child{text-align:left;white-space:nowrap}
 .brew-form table.milestones input[type=checkbox]{width:18px;height:18px}
+/* "Player chooses": the DM's own options, each opening like a feature */
+.choice-opts .choice-card{margin:0}
+.choice-body{display:grid;gap:8px}
+.choice-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 12px;align-items:end}
+.choice-rules .choice-other{grid-column:1/-1}
