@@ -412,6 +412,8 @@ function magic2024(m) {
 // 2024 monsters as fields (see src/components/MonsterPage.tsx), next to the stat block's text.
 const SENSE_KEYS = ['darkvision', 'blindsight', 'tremorsense', 'truesight'];
 const feet = (v) => Number(String(v ?? '').match(/\d+/)?.[0]) || '';
+// a monster's spell is noted "level N version" only when cast above its own level
+const SPELL_LEVEL_2024 = new Map(JSON.parse(fs.readFileSync(path.join(ROOT, 'seed', 'srd', 'full', '2024', '5e-SRD-Spells.json'), 'utf8')).map((sp) => [sp.index, sp.level]));
 function monsterAction(a) {
   const d = String(a.desc ?? a.description ?? '');
   const out = { name: a.name, text: text(d), kind: 'other' };
@@ -427,6 +429,15 @@ function monsterAction(a) {
     out.kind = 'save';
     out.save = { ab: a.dc.dc_type?.index ?? 'dex', dc: a.dc.dc_value, success: a.dc.success_type === 'half' ? 'half' : a.dc.success_type === 'none' ? 'none' : 'other' };
     out.damage = dmg;
+  }
+  if (a.spellcasting) {
+    const sc = a.spellcasting, comps = sc.components_required ?? [];
+    out.kind = 'cast';
+    out.cast = {
+      ab: sc.ability?.index ?? 'cha', ...(sc.dc ? { dc: sc.dc } : {}), ...(sc.modifier !== undefined ? { atk: sc.modifier } : {}),
+      comps: { v: comps.includes('V'), s: comps.includes('S'), m: comps.includes('M') },
+      spells: (sc.spells ?? []).map((sp) => ({ name: sp.name, ...(sp.level && sp.level > (SPELL_LEVEL_2024.get(sp.index) ?? 0) ? { level: sp.level } : {}), use: sp.usage?.type === 'at will' ? 'will' : sp.usage?.type === 'per day' ? 'day' : 'action', ...(sp.usage?.times ? { n: sp.usage.times } : {}) })),
+    };
   }
   const u = a.usage;
   if (u?.type === 'recharge on roll') out.limit = { type: 'recharge', min: u.min_value ?? 5 };

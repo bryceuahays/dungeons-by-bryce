@@ -34,7 +34,7 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
     supabase.from('entity_versions').select('version, note, name, data, created_at').eq('entity_id', id).order('version', { ascending: false }),
     supabase.from('campaigns').select('id, title, phases').eq('owner_id', user.id).order('created_at'),
     supabase.from('campaign_entities').select('campaign_id, vis, vis_players, vis_stage').eq('entity_id', id),
-    e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
+    e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
     e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
     e.type === 'class' ? loadSubclassOptions(supabase, user.id) : Promise.resolve(undefined),
     e.type === 'subclass' ? loadClassOptions(supabase, user.id) : Promise.resolve(undefined),

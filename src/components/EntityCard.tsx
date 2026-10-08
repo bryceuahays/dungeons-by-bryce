@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ABILITIES, classTable, mod, sgn, type Effect, type Feature } from '@/lib/rules/engine';
-import { actionText, limitLabel, pbFor, xpFor } from '@/lib/monster-rules';
+import { actionText, castIntro, castList, limitLabel, pbFor, xpFor } from '@/lib/monster-rules';
 import { limitText } from '@/lib/feat-text';
 import { areaText, saveText, spellText } from '@/lib/spell-rules.mjs';
 import { equipLine, multiclassLine } from '@/lib/class-equip';
@@ -88,12 +88,12 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
           <Fact k="Saving Throws" v={d.msaves} /><Fact k="Skills" v={d.mskills} />
           <Fact k="Damage Vulnerabilities" v={d.vuln} /><Fact k="Damage Resistances" v={d.resist} /><Fact k="Damage Immunities" v={d.immune} />
           <Fact k="Senses" v={d.senses} /><Fact k="Languages" v={d.langs} /><Fact k="Challenge" v={d.cr !== undefined && d.cr !== '' ? `${d.cr} (${xpFor(String(d.cr)).toLocaleString('en-US')} XP; PB +${pbFor(String(d.cr))})` : ''} />
-          {(d.traits ?? []).map((t: any, i: number) => <p key={'t' + i}><b><i>{t.name}{limitLabel(t.limit) ? ` (${limitLabel(t.limit)})` : ''}.</i></b> {t.text || actionText(t)}</p>)}
+          {(d.traits ?? []).map((t: any, i: number) => <p key={'t' + i}><b><i>{t.name}{limitLabel(t.limit) ? ` (${limitLabel(t.limit)})` : ''}.</i></b> {t.text || (t.kind === 'cast' ? castIntro(t.cast, d.ab, pbFor(String(d.cr ?? '1')), 'The ' + String(name ?? 'monster').toLowerCase()) : actionText(t))}{t.kind === 'cast' && castList(t.cast) ? <><br />{castList(t.cast)}</> : null}</p>)}
           {([['actions', 'Actions'], ['bonus', 'Bonus Actions'], ['reactions', 'Reactions'], ['legendary', 'Legendary Actions']] as const).map(([k, title]) => (d[k] ?? []).length ? (
             <div key={k}>
               <h4>{title}</h4>
               {k === 'legendary' ? <p className="dim">{d.legendaryN ?? 3} legendary actions per round, used right after another creature&apos;s turn.</p> : null}
-              {(d[k] ?? []).map((t: any, i: number) => <p key={k + i}><b><i>{t.name}{limitLabel(t.limit) ? ` (${limitLabel(t.limit)})` : ''}.</i></b> {t.text || actionText(t)}</p>)}
+              {(d[k] ?? []).map((t: any, i: number) => <p key={k + i}><b><i>{t.name}{limitLabel(t.limit) ? ` (${limitLabel(t.limit)})` : ''}.</i></b> {t.text || (t.kind === 'cast' ? castIntro(t.cast, d.ab, pbFor(String(d.cr ?? '1')), 'The ' + String(name ?? 'monster').toLowerCase()) : actionText(t))}{t.kind === 'cast' && castList(t.cast) ? <><br />{castList(t.cast)}</> : null}</p>)}
             </div>
           ) : null)}
           {d.gear ? <Fact k="Gear" v={d.gear} /> : null}

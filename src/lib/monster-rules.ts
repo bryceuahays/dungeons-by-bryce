@@ -32,3 +32,26 @@ export function actionText(a: any) {
   if (a.kind === 'save' && a.save?.ab) return `${AB_NAME[a.save.ab]} Saving Throw: DC ${a.save.dc || 10}. Failure: ${dmgText(a.damage) || 'see below'}.${a.save.success === 'half' ? ' Success: Half damage.' : ''}`;
   return '';
 }
+
+// Spellcasting as an action (kind 'cast'): a.cast = { ab, dc, atk, comps: { v, s, m }, spells: [{ name, level, use: will | day | action, n }] }
+// dc and atk left blank follow the monster's scores: 8 + PB + modifier, and PB + modifier.
+export const castNumbers = (c: any, ab: Record<string, number>, pb: number) => {
+  const m = modOf(ab?.[c?.ab ?? 'cha'] ?? 10);
+  return { dc: c?.dc !== undefined && c.dc !== '' ? Number(c.dc) : 8 + pb + m, atk: c?.atk !== undefined && c.atk !== '' ? Number(c.atk) : pb + m };
+};
+// "At will: Detect Magic, Mage Hand. 1/Day each: Fireball (level 4 version)."
+export function castList(c: any) {
+  const spells = (c?.spells ?? []).filter((s: any) => s.name);
+  const nameOf = (s: any) => s.name + (Number(s.level) ? ` (level ${s.level} version)` : '');
+  const groups: [string, any[]][] = [['At will', spells.filter((s: any) => s.use === 'will')],
+    ...[1, 2, 3].map((n): [string, any[]] => [`${n}/Day${spells.filter((s: any) => s.use === 'day' && Number(s.n || 1) === n).length > 1 ? ' each' : ''}`, spells.filter((s: any) => s.use === 'day' && Number(s.n || 1) === n)]),
+    ['', spells.filter((s: any) => s.use === 'action' || !s.use)]];
+  return groups.filter(([, l]) => l.length).map(([label, l]) => (label ? `${label}: ` : '') + l.map(nameOf).join(', ')).join('. ') + (spells.length ? '.' : '');
+}
+// The line a stat block prints before the list, when the action's own text is empty.
+export function castIntro(c: any, ab: Record<string, number>, pb: number, name: string) {
+  const { dc, atk } = castNumbers(c, ab, pb);
+  const comps = c?.comps ?? { v: true, s: true, m: false };
+  const needs = !comps.v && !comps.s && !comps.m ? 'requiring no spell components' : !comps.m ? 'requiring no Material components' : '';
+  return `${name || 'It'} casts one of the following spells${needs ? ', ' + needs + ' and' : ','} using ${AB_NAME[c?.ab ?? 'cha']} as the spellcasting ability (spell save DC ${dc}, ${sgn(atk)} to hit with spell attacks):`;
+}

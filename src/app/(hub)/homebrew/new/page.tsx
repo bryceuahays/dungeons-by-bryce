@@ -20,7 +20,7 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
     supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', type).order('srd_version').limit(700),
     // from the class picker: open already filled in with that SRD entry (saved only on Save)
     from ? supabase.from('entities').select('id, name, data').eq('id', from).eq('source', 'srd').eq('type', type).maybeSingle() : Promise.resolve({ data: null }),
-    type === 'class' || type === 'subclass' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
+    type === 'class' || type === 'subclass' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' || type === 'monster' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
     type === 'class' || type === 'subclass' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
     type === 'class' ? loadSubclassOptions(supabase, user.id) : Promise.resolve(undefined),
     type === 'subclass' ? loadClassOptions(supabase, user.id) : Promise.resolve(undefined),

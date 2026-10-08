@@ -604,7 +604,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
           ) : isSpell ? (
             <SpellRulesEditor data={data} onChange={setData} />
           ) : isMonster ? (
-            <MonsterPage data={data} setData={setData} />
+            <MonsterPage data={data} setData={setData} spellNames={allSpells.map((s) => s.name)} />
           ) : isItem ? (
             <ItemPage data={data} setData={setData} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} items={items ?? []} />
           ) : isBg ? (

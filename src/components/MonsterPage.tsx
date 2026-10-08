@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { ABILITIES } from '@/lib/rules/engine';
 import { DAMAGE_TYPES, SKILL_NAMES } from '@/config/homebrew';
 import { CONDITIONS } from '@/lib/spell-rules.mjs';
-import { CRS, SENSES, SPEEDS, actionText, limitLabel, modOf, pbFor, sgn, xpFor } from '@/lib/monster-rules';
+import { CRS, SENSES, SPEEDS, actionText, castIntro, castList, castNumbers, limitLabel, modOf, pbFor, sgn, xpFor } from '@/lib/monster-rules';
+import { GiveSpell } from './ClassGives';
 import { CREATURE_TYPES } from './RacePage';
 
 // A monster's own page: its stat block as fields.
@@ -39,7 +40,7 @@ export function monsterOut(d: any) {
   };
 }
 
-function ActionCards({ list, onChange, noun }: { list: any[]; onChange: (l: any[]) => void; noun: string }) {
+function ActionCards({ list, onChange, noun, ab, pb, spellNames }: { list: any[]; onChange: (l: any[]) => void; noun: string; ab: Record<string, number>; pb: number; spellNames: string[] }) {
   const [open, setOpen] = useState<number | null>(null);
   const put = (i: number, p: any) => onChange(list.map((a, j) => (j === i ? { ...a, ...p } : a)));
   const num = (v: string) => (v === '' ? '' : Number(v));
@@ -48,15 +49,15 @@ function ActionCards({ list, onChange, noun }: { list: any[]; onChange: (l: any[
       {list.map((a, i) => (
         <div key={i} className={'feat-card' + (open === i ? ' open' : '')}>
           <button type="button" className="feat-head" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
-            <span>{a.name || `Untitled ${noun}`}{limitLabel(a.limit) ? <span className="chip feat-uses-tag">{limitLabel(a.limit)}</span> : null}{a.kind === 'attack' && a.atk ? <span className="feat-use-line">{sgn(Number(a.atk.bonus) || 0)} to hit</span> : a.kind === 'save' && a.save?.ab ? <span className="feat-use-line">DC {a.save.dc} {AB3[a.save.ab]}</span> : null}</span>
+            <span>{a.name || `Untitled ${noun}`}{limitLabel(a.limit) ? <span className="chip feat-uses-tag">{limitLabel(a.limit)}</span> : null}{a.kind === 'attack' && a.atk ? <span className="feat-use-line">{sgn(Number(a.atk.bonus) || 0)} to hit</span> : a.kind === 'save' && a.save?.ab ? <span className="feat-use-line">DC {a.save.dc} {AB3[a.save.ab]}</span> : a.kind === 'cast' ? <span className="feat-use-line">{(a.cast?.spells ?? []).filter((s: any) => s.name).length} spells · DC {castNumbers(a.cast, ab, pb).dc}</span> : null}</span>
             <span className="dim">{open === i ? 'Close' : 'Open'}</span>
           </button>
           {open === i ? (
             <div className="feat-body">
               <div className="feat-meta">
                 <label>Name<input value={a.name ?? ''} maxLength={120} onChange={(e) => put(i, { name: e.target.value })} /></label>
-                <label>Kind<select value={a.kind ?? 'other'} onChange={(e) => put(i, { kind: e.target.value, ...(e.target.value === 'attack' && !a.atk ? { atk: { type: 'melee', bonus: 4, reach: 5 }, damage: a.damage?.length ? a.damage : [{ dice: '1d6+2', type: 'slashing' }] } : {}), ...(e.target.value === 'save' && !a.save ? { save: { ab: 'dex', dc: 12, success: 'half' } } : {}) })}>
-                  <option value="other">Description only</option><option value="attack">Attack roll</option><option value="save">Saving throw</option><option value="multi">Multiattack</option>
+                <label>Kind<select value={a.kind ?? 'other'} onChange={(e) => put(i, { kind: e.target.value, ...(e.target.value === 'attack' && !a.atk ? { atk: { type: 'melee', bonus: 4, reach: 5 }, damage: a.damage?.length ? a.damage : [{ dice: '1d6+2', type: 'slashing' }] } : {}), ...(e.target.value === 'save' && !a.save ? { save: { ab: 'dex', dc: 12, success: 'half' } } : {}), ...(e.target.value === 'cast' && !a.cast ? { cast: { ab: 'cha', comps: { v: true, s: true, m: false }, spells: [{ name: '', use: 'will' }] } } : {}) })}>
+                  <option value="other">Description only</option><option value="attack">Attack roll</option><option value="save">Saving throw</option><option value="multi">Multiattack</option><option value="cast">Spellcasting</option>
                 </select></label>
               </div>
               {a.kind === 'attack' ? (
@@ -77,6 +78,7 @@ function ActionCards({ list, onChange, noun }: { list: any[]; onChange: (l: any[
                   <label>On a success<select value={a.save?.success ?? 'half'} onChange={(e) => put(i, { save: { ...a.save, success: e.target.value } })}><option value="half">Half damage</option><option value="none">No effect</option><option value="other">See description</option></select></label>
                 </div>
               ) : null}
+              {a.kind === 'cast' ? <CastFields c={a.cast ?? {}} ab={ab} pb={pb} spellNames={spellNames} onChange={(cast) => put(i, { cast })} /> : null}
               {a.kind === 'attack' || a.kind === 'save' ? (
                 <>
                   <span className="sr-label">Damage</span>
@@ -95,7 +97,7 @@ function ActionCards({ list, onChange, noun }: { list: any[]; onChange: (l: any[
                 {a.limit?.type === 'recharge' ? <label>Recharges on<select value={a.limit.min ?? 5} onChange={(e) => put(i, { limit: { ...a.limit, min: Number(e.target.value) } })}><option value={6}>6</option><option value={5}>5–6</option><option value={4}>4–6</option></select></label> : null}
                 {a.limit?.type === 'day' ? <label>Times per day<input type="number" min={1} max={9} value={a.limit.n ?? 1} onChange={(e) => put(i, { limit: { ...a.limit, n: Number(e.target.value) || 1 } })} /></label> : null}
               </div>
-              <label>What it does<textarea rows={4} value={a.text ?? ''} placeholder={actionText(a) || 'The rules, the way the stat block reads them.'} onChange={(e) => put(i, { text: e.target.value })} /></label>
+              <label>What it does<textarea rows={4} value={a.text ?? ''} placeholder={(a.kind === 'cast' ? castIntro(a.cast, ab, pb, 'The monster') : actionText(a)) || 'The rules, the way the stat block reads them.'} onChange={(e) => put(i, { text: e.target.value })} /></label>
               {actionText(a) && !a.text ? <p className="dim">Left empty, the stat block reads: {actionText(a)}</p> : null}
               <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { onChange(list.filter((_, j) => j !== i)); setOpen(null); }}>Remove this {noun}</button></p>
             </div>
@@ -107,7 +109,45 @@ function ActionCards({ list, onChange, noun }: { list: any[]; onChange: (l: any[
   );
 }
 
-export function MonsterPage({ data, setData }: { data: any; setData: (d: any) => void }) {
+// A spellcasting action's fields: the ability, DC and to-hit (from the scores unless changed), the components
+// it still needs, and its spells, each picked like a class's (suggest, read, or create one) with how often.
+function CastFields({ c, ab, pb, spellNames, onChange }: { c: any; ab: Record<string, number>; pb: number; spellNames: string[]; onChange: (c: any) => void }) {
+  const auto = castNumbers({ ...c, dc: '', atk: '' }, ab, pb);
+  const comps = c.comps ?? { v: true, s: true, m: false };
+  const spells: any[] = c.spells ?? [];
+  const putS = (i: number, p: any) => onChange({ ...c, spells: spells.map((s, j) => (j === i ? { ...s, ...p } : s)) });
+  const num = (v: string) => (v === '' ? '' : Number(v));
+  return (
+    <fieldset className="feat-uses"><legend>Spellcasting</legend>
+      <div className="sr-grid">
+        <label>Ability<select value={c.ab ?? 'cha'} onChange={(e) => onChange({ ...c, ab: e.target.value })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        <label>Spell save DC<input type="number" min={1} max={40} placeholder={String(auto.dc)} value={c.dc ?? ''} onChange={(e) => onChange({ ...c, dc: num(e.target.value) })} /></label>
+        <label>Spell attack (+)<input type="number" min={-5} max={30} placeholder={String(auto.atk)} value={c.atk ?? ''} onChange={(e) => onChange({ ...c, atk: num(e.target.value) })} /></label>
+      </div>
+      <p className="dim">Left blank, the DC is {auto.dc} and the attack {sgn(auto.atk)}: from its {AB3[c.ab ?? 'cha']} and proficiency bonus.</p>
+      <div className="sr-grid">
+        <span className="sr-label">Components it still needs</span>
+        {(['v', 's', 'm'] as const).map((k) => <label key={k} className="ckrow"><input type="checkbox" checked={!!comps[k]} onChange={(e) => onChange({ ...c, comps: { ...comps, [k]: e.target.checked } })} /> {{ v: 'Verbal', s: 'Somatic', m: 'Material' }[k]}</label>)}
+      </div>
+      <span className="sr-label">Spells</span>
+      {spells.map((s, i) => (
+        <div key={i} className="give-row cast-row">
+          <GiveSpell name={s.name ?? ''} onChange={(name) => putS(i, { name })} spellNames={spellNames} />
+          <div className="give-fields">
+            <label>How often<select value={s.use ?? 'will'} onChange={(e) => putS(i, { use: e.target.value, ...(e.target.value === 'day' ? { n: s.n || 1 } : {}) })}><option value="will">At will</option><option value="day">Times per day</option><option value="action">When this action is used</option></select></label>
+            {s.use === 'day' ? <label>Per day<select value={s.n ?? 1} onChange={(e) => putS(i, { n: Number(e.target.value) })}><option value={1}>1</option><option value={2}>2</option><option value={3}>3</option></select></label> : null}
+            <label>Cast at level<input type="number" min={1} max={9} placeholder="its own" value={s.level ?? ''} onChange={(e) => putS(i, { level: num(e.target.value) })} /></label>
+          </div>
+          <button type="button" className="quiet small-btn danger" onClick={() => onChange({ ...c, spells: spells.filter((_, j) => j !== i) })}>Remove</button>
+        </div>
+      ))}
+      <p><button type="button" className="quiet small-btn" onClick={() => onChange({ ...c, spells: [...spells, { name: '', use: 'will' }] })}>+ Add a spell</button></p>
+      {castList(c) ? <p className="dim">The stat block lists: {castList(c)}</p> : null}
+    </fieldset>
+  );
+}
+
+export function MonsterPage({ data, setData, spellNames }: { data: any; setData: (d: any) => void; spellNames: string[] }) {
   const ab = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...(data.ab ?? {}) };
   const cr = String(data.cr ?? '1');
   const pb = pbFor(cr);
@@ -187,7 +227,7 @@ export function MonsterPage({ data, setData }: { data: any; setData: (d: any) =>
         <div key={key}>
           <h3>{title}</h3>
           {key === 'legendary' && (data.legendary ?? []).length ? <label className="lang-choose">Legendary actions per round<input type="number" min={1} max={5} value={data.legendaryN ?? 3} onChange={(e) => put({ legendaryN: Number(e.target.value) || 3 })} /></label> : null}
-          <ActionCards list={data[key] ?? []} onChange={(l) => put({ [key]: l })} noun={noun} />
+          <ActionCards list={data[key] ?? []} onChange={(l) => put({ [key]: l })} noun={noun} ab={ab} pb={pb} spellNames={spellNames} />
         </div>
       ))}
 

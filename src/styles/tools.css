@@ -396,3 +396,5 @@ h1 .beta-tag{font-size:.8rem}
 .brew-form .mon-prof input[type=number]{width:3.4em;padding:2px 4px}
 .mon-skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:2px 12px}
 .mon-skills .ckrow input[type=number]{width:3.4em;padding:2px 4px;margin-left:auto}
+.cast-row{grid-template-columns:1.6fr 2fr auto}
+@media (max-width:900px){.cast-row{grid-template-columns:1fr}}
