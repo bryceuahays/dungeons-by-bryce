@@ -7,7 +7,7 @@ import { TYPES } from '@/config/homebrew';
 import { EntityEditor } from '@/components/EntityEditor';
 import { EntityCard } from '@/components/EntityCard';
 import { CloneButton } from '@/components/BrewForms';
-import { loadFeatOptions, loadSpellOptions, loadSubclassOptions } from '@/lib/class-spells';
+import { loadClassOptions, loadFeatOptions, loadSpellOptions, loadSubclassOptions } from '@/lib/class-spells';
 
 export const metadata = { title: 'Homebrew entry' };
 
@@ -28,15 +28,16 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
       </>
     );
   }
-  const [plan, { data: srd }, { data: versions }, { data: campaigns }, { data: attached }, spells, feats, subclasses] = await Promise.all([
+  const [plan, { data: srd }, { data: versions }, { data: campaigns }, { data: attached }, spells, feats, subclasses, classes] = await Promise.all([
     getPlan(),
     supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', e.type).order('srd_version').limit(700),
     supabase.from('entity_versions').select('version, note, name, data, created_at').eq('entity_id', id).order('version', { ascending: false }),
     supabase.from('campaigns').select('id, title, phases').eq('owner_id', user.id).order('created_at'),
     supabase.from('campaign_entities').select('campaign_id, vis, vis_players, vis_stage').eq('entity_id', id),
-    e.type === 'class' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
-    e.type === 'class' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
+    e.type === 'class' || e.type === 'subclass' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
+    e.type === 'class' || e.type === 'subclass' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
     e.type === 'class' ? loadSubclassOptions(supabase, user.id) : Promise.resolve(undefined),
+    e.type === 'subclass' ? loadClassOptions(supabase, user.id) : Promise.resolve(undefined),
   ]);
   const [faces, members] = await Promise.all([
     supabase.from('campaign_faces').select('campaign_id, title').eq('phase', ''),
@@ -49,9 +50,9 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
   });
   return (
     <>
-      {e.type === 'class' ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
-      <div className="inline" style={{ marginBottom: 12 }}>{e.type === 'class' ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
-      <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from} spells={spells} feats={feats} subclasses={subclasses}
+      {e.type === 'class' || e.type === 'subclass' ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
+      <div className="inline" style={{ marginBottom: 12 }}>{e.type === 'class' || e.type === 'subclass' ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
+      <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from} spells={spells} feats={feats} subclasses={subclasses} classes={classes}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data: e.data }} />
     </>
   );

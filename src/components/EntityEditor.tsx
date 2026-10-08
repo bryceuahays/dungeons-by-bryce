@@ -10,7 +10,7 @@ import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
 import { ClassBanner } from './ClassBanner';
-import { SubclassesTab, featureSpells, saveSubclass, subclassesFor, type SubclassOption } from './ClassSubclasses';
+import { SubclassPage, SubclassesTab, featureSpells, parentOf, saveSubclass, subclassFeatures, subclassesFor, withSubclass, type ClassOption, type SubclassOption } from './ClassSubclasses';
 import { SpellTools } from './ClassGives';
 import { readResources } from './ClassFeatures';
 import { FeatureTable, FeaturesTab, syncGrows, syncResources, syncUses } from './ClassFeatures';
@@ -265,9 +265,9 @@ function LevelingCopy({ data, onChange }: { data: any; onChange: (d: any) => voi
   );
 }
 
-export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells, feats, subclasses: subclassOptions }: {
+export function EntityEditor({ id, initial, pro, srd, versions, campaigns, version, changeNote, clonedFrom, spells, feats, subclasses: subclassOptions, classes }: {
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
-  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[]; subclasses?: SubclassOption[];
+  srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[]; subclasses?: SubclassOption[]; classes?: ClassOption[];
 }) {
   const router = useRouter();
   const def = TYPES[initial.type];
@@ -275,7 +275,10 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const [status, setStatus] = useState(initial.status);
   // Classes are being reworked around the Advanced editor alone; Quick and Guided are hidden for them for now.
   const onlyAdvanced = initial.type === 'class';
-  const [depth, setDepth] = useState(onlyAdvanced ? 'advanced' : initial.depth);
+  // a subclass gets the same editor as on its class's Subclasses tab (Advanced only too)
+  const isSub = initial.type === 'subclass';
+  const wide = onlyAdvanced || isSub;
+  const [depth, setDepth] = useState(wide ? 'advanced' : initial.depth);
   const [source, setSource] = useState(initial.source);
   const [data, setData] = useState<any>(initial.data ?? {});
   const [step, setStep] = useState(0);
@@ -294,7 +297,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const balance = useMemo(() => balanceHint(initial.type as EntityType, data, srd), [initial.type, data, srd]);
 
   const save = (asVersion: boolean) => start(async () => {
-    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? classOut(data) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
+    const r = await saveEntity(id, { type: initial.type, name, status, depth, source, data: onlyAdvanced ? classOut(data) : isSub ? subOut(data) : data, cloned_from: clonedFrom }, asVersion ? note : undefined);
     // and this class's subclasses that changed (e.g. a feature moved into one from the Features tab)
     if (r?.id && onlyAdvanced) {
       const changed = subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).filter((s) => s.mine && (s.dirty || s.id.startsWith('new:')));
@@ -325,6 +328,9 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const rules24 = (d: any) => (onlyAdvanced && d.casting?.kind && d.casting.kind !== 'none' ? { ...d, casting: { ...d.casting, rules: '2024' } } : d);
   // what is saved, and what the side tables show: the tabs' choices written into the class's effects
   const classOut = (d: any) => rules24(syncResources(syncUses(syncGrows(syncSaves(d)))));
+  // a subclass: its parent class, and its features with the same guesses the page shows (resource spent, how it's used)
+  const parent = isSub ? parentOf(data, classes ?? []) : undefined;
+  const subOut = (d: any) => ({ ...d, features: subclassFeatures(d, parent ? readResources(parent.data) : []) });
   const field = (k: string) => def.fields.find((x) => x.key === k)!;
   const fieldList = (fields: Field[]) => <div className="fgrid">{fields.map((f) => <FieldInput key={f.key} f={f} data={data} onChange={setData} />)}</div>;
   const traits = <FeaturesEditor value={data.features ?? []} onChange={(v) => setData({ ...data, features: v })} levels={def.featureLevels} effects={def.effects} />;
@@ -333,20 +339,20 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
   return (
     <SpellTools.Provider value={{ spells: allSpells, pro, onSpellSaved: (sp) => setMadeSpells((m) => [sp, ...m.filter((x) => x.id !== sp.id)]) }}>
-    <div className={'brew' + (onlyAdvanced ? ' brew-wide' : '') + (onlyAdvanced && tab === 'Player' ? ' brew-full' : '')}>
+    <div className={'brew' + (wide ? ' brew-wide' : '') + (onlyAdvanced && tab === 'Player' ? ' brew-full' : '')}>
       {onlyAdvanced ? <ClassBanner data={data} name={name} onChange={setData} /> : null}
-      {onlyAdvanced ? (
+      {wide ? (
         <div className="brew-head">
           <div className="depth" role="tablist" aria-label="How much detail">
             <button type="button" role="tab" aria-selected={false} className="quiet" disabled title="Coming later">Quick</button>
             <button type="button" role="tab" aria-selected>Advanced</button>
           </div>
-          <input className="cls-name" aria-label="Class name" value={name} maxLength={120} placeholder="Class name" onChange={(e) => setName(e.target.value)} />
+          <input className="cls-name" aria-label={isSub ? 'Subclass name' : 'Class name'} value={name} maxLength={120} placeholder={isSub ? 'Subclass name' : 'Class name'} onChange={(e) => setName(e.target.value)} />
         </div>
       ) : null}
       <div className="brew-form">
         <div className="panel">
-          {!onlyAdvanced ? <>
+          {!wide ? <>
           <div className="depth" role="tablist" aria-label="How much detail">
             {(['quick', 'guided', 'advanced'] as const).map((d) => (
               <button key={d} type="button" role="tab" aria-selected={depth === d} className={depth === d ? '' : 'quiet'} disabled={!pro && d !== 'quick' && initial.depth === 'quick'}
@@ -470,6 +476,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                 </>
               ) : null}
             </>
+          ) : isSub ? (
+            <SubclassPage data={data} setData={setData} classes={classes ?? []} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} />
           ) : depth === 'advanced' ? (
             <>
               {basics}
@@ -534,8 +542,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
       <aside className="brew-side" hidden={onlyAdvanced && tab === 'Player'}>
         <div className="panel">
-          <h3>{onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' || tab === 'Subclasses' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
-          {onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
+          <h3>{isSub && parent ? 'Features by level' : onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' || tab === 'Subclasses' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
+          {isSub && parent ? <div className="ecard"><FeatureTable data={withSubclass(parent.data, subOut(data).features)} /></div> : onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={data} />}
         </div>
         {onlyAdvanced && tab === 'Spells' && data.casting?.kind && data.casting.kind !== 'none' ? (
           <div className="panel">

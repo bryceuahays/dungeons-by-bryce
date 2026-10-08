@@ -35,3 +35,12 @@ export async function loadSubclassOptions(supabase: any, userId: string) {
   ]);
   return [...(mine.data ?? []), ...(srd.data ?? [])].map((s: any) => ({ id: s.id as string, name: s.name as string, mine: s.owner_id === userId, data: s.data ?? {}, cloned_from: s.cloned_from ?? null }));
 }
+
+// The classes a subclass can belong to (its own page's "Belongs to class"): your own, then the SRD's 2024 ones.
+export async function loadClassOptions(supabase: any, userId: string) {
+  const [srd, mine] = await Promise.all([
+    supabase.from('entities').select('id, name, owner_id, data').eq('source', 'srd').eq('srd_version', '5.2').eq('type', 'class').order('name'),
+    supabase.from('entities').select('id, name, owner_id, data').eq('owner_id', userId).eq('type', 'class').order('name'),
+  ]);
+  return [...(mine.data ?? []), ...(srd.data ?? [])].map((c: any) => ({ id: c.id as string, name: c.name as string, mine: c.owner_id === userId, data: c.data ?? {} }));
+}
