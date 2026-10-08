@@ -133,3 +133,52 @@ export function ChoiceEditor({ f, onChange, feats }: { f: any; onChange: (choice
     </fieldset>
   );
 }
+
+// ---------------------------------------------------------------- how it's used
+
+// feature.use: { activation, duration, range } - how the feature is used at the table, so it reads
+// at a glance like a spell. What it does while active stays in the description.
+export type Use = { activation: string; duration: string; range: string };
+export const ACTIVATIONS: [string, string][] = [
+  ['always', 'Always on (passive)'], ['action', 'Action'], ['bonus', 'Bonus Action'], ['reaction', 'Reaction'],
+  ['attack', 'As part of the Attack action'], ['free', 'No action needed'], ['other', 'Other (see description)'],
+];
+const DURATIONS = ['Instantaneous', 'Until the end of your turn', 'Until the start of your next turn', '1 round', '1 minute', '10 minutes', '1 hour', '8 hours', 'Until you finish a Long Rest', 'Until you end it'];
+const RANGES = ['Self', 'Touch', '5 feet', '10 feet', '30 feet', '60 feet', '120 feet', '10-foot Emanation', '30-foot Emanation', '15-foot Cone', '30-foot Line'];
+
+// Features saved before this: read what the rules text says ("As a Bonus Action", "for 10 minutes").
+export function guessUse(f: { text?: string; use?: Use | null }): Use | null {
+  if (f.use !== undefined) return f.use;
+  const t = (f.text ?? '').toLowerCase();
+  const activation = /as a bonus action|bonus action/.test(t) ? 'bonus' : /\breaction\b/.test(t) ? 'reaction' : /when you take the attack action|as part of the attack action/.test(t) ? 'attack' : /\b(as an?|take the) (magic )?action\b/.test(t) ? 'action' : '';
+  const dm = t.match(/\bfor (1|10|one|ten) (minute|minutes|hour|hours|round|rounds)\b/);
+  const duration = dm ? `${{ one: '1', ten: '10' }[dm[1]] ?? dm[1]} ${dm[2].replace(/s$/, '')}${['1', 'one'].includes(dm[1]) ? '' : 's'}` : /until the start of your next turn/.test(t) ? 'Until the start of your next turn' : '';
+  const rm = t.match(/(\d+)-foot emanation/) ?? t.match(/within (\d+) feet/);
+  const range = rm ? (rm[0].includes('emanation') ? `${rm[1]}-foot Emanation` : `${rm[1]} feet`) : '';
+  // an aura with no action to start it is always on
+  const fallback = /aura|emanation/.test(t) ? 'always' : 'other';
+  return activation || duration || range ? { activation: activation || fallback, duration, range } : null;
+}
+
+export function UseEditor({ f, onChange }: { f: any; onChange: (use: Use | null) => void }) {
+  const u = guessUse(f) ?? { activation: 'always', duration: '', range: '' };
+  const put = (p: Partial<Use>) => onChange({ ...u, ...p });
+  return (
+    <fieldset className="feat-uses">
+      <legend>How it&apos;s used</legend>
+      <div className="use-row">
+        <label>Activation<select value={u.activation} onChange={(e) => put({ activation: e.target.value })}>{ACTIVATIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        <label>Lasts<input list="use-durations" value={u.duration} placeholder={u.activation === 'always' ? 'Always' : 'For example: 10 minutes'} onChange={(e) => put({ duration: e.target.value })} /></label>
+        <label>Range or area<input list="use-ranges" value={u.range} placeholder="For example: Self" onChange={(e) => put({ range: e.target.value })} /></label>
+      </div>
+      <datalist id="use-durations">{DURATIONS.map((d) => <option key={d} value={d} />)}</datalist>
+      <datalist id="use-ranges">{RANGES.map((d) => <option key={d} value={d} />)}</datalist>
+    </fieldset>
+  );
+}
+
+// "Bonus Action · 10 minutes · Self", for the closed card
+export function useLine(u: Use | null) {
+  if (!u) return '';
+  return [ACTIVATIONS.find(([k]) => k === u.activation)?.[1].replace(' (passive)', '').replace(' (see description)', ''), u.duration, u.range].filter(Boolean).join(' · ');
+}

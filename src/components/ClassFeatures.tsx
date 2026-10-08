@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import { ABILITIES, classTable } from '@/lib/rules/engine';
-import { ChoiceEditor, GIVEN, GivesEditor, guessChoice, type FeatOption } from './ClassGives';
+import { ChoiceEditor, GIVEN, GivesEditor, UseEditor, guessChoice, guessUse, useLine, type FeatOption } from './ClassGives';
 
 // A "subclass feature" marker: the class's own placeholder ("Paladin Subclass") saying that at this
 // level the character gets whatever their subclass gives. The subclasses fill these levels.
@@ -90,7 +90,7 @@ export function guessUses(f: Feature, resources: Resource[]): Uses {
 export function syncUses(data: any) {
   if (!Array.isArray(data.features)) return data;
   const resources = readResources(data);
-  return { ...data, resources, features: data.features.map((f: Feature) => ({ ...f, uses: guessUses(f, resources), choice: guessChoice(f) })) };
+  return { ...data, resources, features: data.features.map((f: Feature) => ({ ...f, uses: guessUses(f, resources), choice: guessChoice(f), use: guessUse(f) })) };
 }
 
 // ---------------------------------------------------------------- numbers that grow with level
@@ -200,7 +200,7 @@ export function GrowsEditor({ f, onChange }: { f: Feature; onChange: (effects: a
 
 // ---------------------------------------------------------------- the Features tab
 
-type Feature = { level: number; name: string; text: string; effects?: any[]; uses?: Uses; choice?: any };
+type Feature = { level: number; name: string; text: string; effects?: any[]; uses?: Uses; choice?: any; use?: any };
 
 export function FeaturesTab({ data: raw, onChange, feats: featOptions, spellNames, subFeatures, onOpenSubclasses }: { data: any; onChange: (d: any) => void; feats: FeatOption[]; spellNames: string[]; subFeatures: SubFeatureRef[]; onOpenSubclasses: (at?: { subId: string; idx: number }) => void }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -353,7 +353,7 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
               return (
                 <div key={idx} className={'feat-card' + (open === idx ? ' open' : '')}>
                   <button type="button" className="feat-head" aria-expanded={open === idx} onClick={() => setOpen(open === idx ? null : idx)}>
-                    <span>{f.name || 'Untitled feature'}{isMarker(f) ? <span className="chip feat-uses-tag">subclass feature</span> : null}{linked ? <span className="chip feat-uses-tag">uses {resName(f.uses?.res)}</span> : null}</span><span className="dim">{open === idx ? 'Close' : 'Open'}</span>
+                    <span>{f.name || 'Untitled feature'}{!isMarker(f) && useLine(guessUse(f)) ? <span className="feat-use-line">{useLine(guessUse(f))}</span> : null}{isMarker(f) ? <span className="chip feat-uses-tag">subclass feature</span> : null}{linked ? <span className="chip feat-uses-tag">uses {resName(f.uses?.res)}</span> : null}</span><span className="dim">{open === idx ? 'Close' : 'Open'}</span>
                   </button>
                   {open === idx && isMarker(f) ? (
                     <div className="feat-body">
@@ -391,6 +391,7 @@ function FeatureTimeline({ feats, resources, open, setOpen, write, featOptions, 
                           </>
                         ) : null}
                       </fieldset>
+                      <UseEditor f={f} onChange={(use) => edit(idx, { use })} />
                       <ChoiceEditor f={f} feats={featOptions} onChange={(choice) => edit(idx, { choice })} />
                       <GivesEditor effects={f.effects ?? []} spellNames={spellNames} onChange={(effects) => edit(idx, { effects })} />
                       <GrowsEditor f={f} onChange={(effects) => edit(idx, { effects })} />

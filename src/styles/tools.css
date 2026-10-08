@@ -302,3 +302,14 @@ h1 .beta-tag{font-size:.8rem}
 .give-row{grid-template-columns:1.2fr 1fr 1fr .6fr auto}
 .give-at input{width:4.5em}
 .sub-srd-note{margin:0;padding:8px 12px;border:1px solid var(--h-amber,#e0b05c);border-radius:10px;font-size:.9rem}
+.use-row{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px}
+.feat-use-line{margin-left:10px;font-size:.8rem;color:var(--h-dim)}
+@media (max-width:900px){.use-row{grid-template-columns:1fr}}
+.sub-spells{display:grid;gap:6px;margin-bottom:10px}
+.sub-spell-level{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:8px}
+.sub-spell-level .chips{margin:0}
+.chip .chip-read{background:none;border:0;padding:0;min-height:0;font:inherit;letter-spacing:0;text-transform:none;color:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;opacity:1}
+.chip.missing{border-color:var(--h-amber,#e0b05c)}
+.sub-spell-add{display:grid;grid-template-columns:110px 1fr auto auto;gap:8px;align-items:end}
+.sub-spells-line{margin:2px 0}
+@media (max-width:900px){.sub-spell-add{grid-template-columns:1fr 1fr}}
