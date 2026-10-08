@@ -17,7 +17,8 @@ export default async function ImportClass() {
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>Import a class</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>
-      <h1>Import a class</h1>
+      <h1>Import a class <span className="beta-tag">Beta</span></h1>
+      <p className="dim">This is new and still being tested with different AIs. If something comes through wrong, fill it in by hand in the editor, and let us know through Feedback.</p>
       <ClassImport pro={plan.pro} srd={srd ?? []} spells={spells} />
     </>
   );
