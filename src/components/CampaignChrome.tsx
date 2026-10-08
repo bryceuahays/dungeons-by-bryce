@@ -53,6 +53,7 @@ export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, a
               <form action={setViewAsPlayer.bind(null, slug, true)} style={{ display: 'inline' }}><button type="submit">View as player</button></form>
             </>
           ) : null}
+          {realDm && asPlayer ? <form action={setViewAsPlayer.bind(null, slug, false)} style={{ display: 'inline' }}><button type="submit">View as DM</button></form> : null}
           <Link href={`${base}/tools`} aria-current={rest[0] === 'tools' ? 'page' : undefined}>Table tools</Link>
           {!realDm ? <Link href="/account">Account</Link> : null}
         </span>

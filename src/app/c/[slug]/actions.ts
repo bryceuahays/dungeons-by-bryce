@@ -108,6 +108,18 @@ export async function stepStage(slug: string, dir: 1 | -1) {
   if (next) await setPhase(slug, next);
 }
 
+// What players can choose when they make a character: the entries the DM unticked on the Players tab.
+export async function saveAvailable(slug: string, hidden: string[]): Promise<ActionState> {
+  const { supabase } = await requireViewer();
+  const { data: c } = await supabase.from('campaigns').select('id, settings').eq('slug', slug).maybeSingle();
+  if (!c) return { error: 'Campaign not found.' };
+  const ids = [...new Set((Array.isArray(hidden) ? hidden : []).map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x)))].slice(0, 5000);
+  const { error } = await supabase.from('campaigns').update({ settings: { ...(c.settings ?? {}), hidden: ids } }).eq('id', c.id);
+  if (error) return { error: 'That did not save. Only the campaign’s DM can change it.' };
+  fresh(slug);
+  return { note: 'Saved.' };
+}
+
 // Settings every member may read: the "newly revealed" feed, the current session number, the featured video.
 export async function saveSetting(slug: string, key: 'feed' | 'session' | 'video' | 'timeline' | 'rules', value: unknown): Promise<ActionState> {
   const { supabase } = await requireViewer();

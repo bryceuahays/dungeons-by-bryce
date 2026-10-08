@@ -12,6 +12,8 @@ import { GuideSection } from '@/components/GuideSection';
 import { SheetIsland, CombatIsland } from '@/components/Islands';
 import { PartyLive } from '@/components/PartyLive';
 import { SessionForm } from '@/components/DmForms';
+import { AvailableList, type AvailRow } from '@/components/AvailableList';
+import { TYPES } from '@/config/homebrew';
 import { createBlankCharacter, createCharacterV2, deleteCharacter } from '../actions';
 import type { CharacterRow, Section, SessionRow } from '@/lib/types';
 
@@ -268,6 +270,21 @@ async function OpenSheet({ ctx, id }: { ctx: CampaignCtx; id: string }) {
   return <>{back}<SheetAccess name={ch.data?.name || 'this character'} canEdit={ctx.canEdit}><SheetIsland html={html} character={{ id: ch.id, data: sheetData }} races={lore.races.map(({ id, name, traits, up }: any) => ({ id, name, traits, up }))} divine={divine} divineBy={Object.keys(divine).length ? 'tier' : ''} privateKeys={privateKeys} /></SheetAccess></>;
 }
 
+// The Players tab's list of what players can pick (everything a character is made from).
+const PICK_TYPES = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'item'];
+const SCHOOL_LEVEL = (l: number) => (Number(l) ? 'Level ' + l : 'Cantrip');
+async function Available({ ctx }: { ctx: CampaignCtx }) {
+  const all = await getSheetEntities(ctx, PICK_TYPES, { liteSpells: true });
+  const rows: AvailRow[] = all.map((e: any) => {
+    const d = e.data ?? {};
+    const group = e.type === 'subclass' ? String(d.parent ?? '') : e.type === 'feat' ? String(d.category ?? '') : e.type === 'spell' ? SCHOOL_LEVEL(d.level) : e.type === 'item' ? String(d.kind ?? (d.magic ? 'Magic item' : '')) : '';
+    const note = e.type === 'class' ? (d.hd ? 'd' + d.hd + ' hit die' : '') : e.type === 'subclass' ? (d.parent ? d.parent + ' subclass' : '') : e.type === 'spell' ? [SCHOOL_LEVEL(d.level), d.school].filter(Boolean).join(' · ') : e.type === 'item' ? [d.kind, d.rarity || d.magic?.rarity].filter((x) => x && x !== 'Standard').join(' · ') : e.type === 'feat' ? (d.category ? d.category + ' feat' : '') : '';
+    return { id: e.id, name: e.name, type: e.type, group, note, homebrew: e.source !== 'srd' };
+  }).sort((a, b) => Number(b.homebrew) - Number(a.homebrew) || a.name.localeCompare(b.name));
+  const hidden = Array.isArray(ctx.campaign.settings?.hidden) ? (ctx.campaign.settings!.hidden as string[]) : [];
+  return <AvailableList slug={ctx.campaign.slug} rows={rows} types={PICK_TYPES.map((t) => [t, TYPES[t].plural] as [string, string])} hidden={hidden} />;
+}
+
 async function Players({ ctx, section, open }: { ctx: CampaignCtx; section: Section; open?: string }) {
   if (!ctx.isDm) notFound();
   if (open && /^[0-9a-f-]{36}$/.test(open)) return <div className="cs-guide"><div className="wrap"><h2>{section.title}</h2><OpenSheet ctx={ctx} id={open} /></div></div>;
@@ -290,6 +307,9 @@ async function Players({ ctx, section, open }: { ctx: CampaignCtx; section: Sect
         <p className="lede">Every character in this campaign, in full.</p>
         <p className="row"><span className="who">Open a sheet (read-only until you choose to edit):</span>{((chars ?? []) as any[]).map((c) => <Link key={c.id} className="fchip" style={{ textDecoration: 'none' }} href={`/c/${ctx.campaign.slug}/players?c=${c.id}`}>{c.data?.name || 'Unnamed'}</Link>)}</p>
         <PartyLive campaignId={ctx.campaign.id} initial={(chars ?? []) as any[]} initialPrivate={priv} labels={labelRows?.[0]?.data ?? null} races={lore.races.map((r: any) => ({ id: r.id, name: r.name }))} names={names} />
+        <h3 id="available">What&apos;s available</h3>
+        <p className="lede">What players can choose from when they make a character: the rules this campaign plays by, plus the homebrew added to it. Untick anything they can&apos;t pick. To change an entry itself, open it under Homebrew.</p>
+        <Available ctx={ctx} />
       </div>
     </div>
   );
