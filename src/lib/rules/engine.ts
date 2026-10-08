@@ -42,13 +42,25 @@ const FULL: number[][] = [[2], [3], [4, 2], [4, 3], [4, 3, 2], [4, 3, 3], [4, 3,
 const HALF: number[][] = [[], [2], [3], [3], [4, 2], [4, 2], [4, 3], [4, 3], [4, 3, 2], [4, 3, 2], [4, 3, 3], [4, 3, 3], [4, 3, 3, 1], [4, 3, 3, 1], [4, 3, 3, 2], [4, 3, 3, 2], [4, 3, 3, 3, 1], [4, 3, 3, 3, 1], [4, 3, 3, 3, 2], [4, 3, 3, 3, 2]];
 const PACT: [number, number][] = [[1, 1], [2, 1], [2, 2], [2, 2], [2, 3], [2, 3], [2, 4], [2, 4], [2, 5], [2, 5], [3, 5], [3, 5], [3, 5], [3, 5], [3, 5], [3, 5], [4, 5], [4, 5], [4, 5], [4, 5]];
 // rules: '2024' for classes on the 2024 rules, where a half caster already has two slots at level 1.
-export function spellSlots(kind: string | undefined, level: number, rules?: string): number[] {
+// custom: the DM's own table (casting.slots), one row per class level, slots of 1st to 9th level.
+export function spellSlots(kind: string | undefined, level: number, rules?: string, table?: unknown): number[] {
   const l = Math.max(1, Math.min(20, level)) - 1;
+  if (kind === 'custom') {
+    const row = (Array.isArray(table) && Array.isArray(table[l]) ? table[l] : []).slice(0, 9).map((n: unknown) => Math.max(0, Number(n) || 0));
+    while (row.length && !row[row.length - 1]) row.pop();
+    return row;
+  }
   if (kind === 'full') return FULL[l];
   if (kind === 'half') return rules === '2024' && l === 0 ? [2] : HALF[l];
   if (kind === 'pact') { const [n, at] = PACT[l]; const out = Array(at).fill(0); out[at - 1] = n; return out; }
   return [];
 }
+// The highest spell level a class's slots reach, at any class level.
+export const slotTop = (c: any) => (c?.kind && c.kind !== 'none' ? Math.max(0, ...Array.from({ length: 20 }, (_, l) => spellSlots(c.kind, l + 1, c.rules, c.slots).length)) : 0);
+// Slots come back on a short rest: pact magic, or a custom table set to.
+export const slotsOnShortRest = (c: any) => c?.kind === 'pact' || (c?.kind === 'custom' && c.refill === 'short');
+// The usual spellcasting focus of each 2024 SRD caster.
+export const SRD_FOCUS: Record<string, string> = { Bard: 'Musical Instrument', Cleric: 'Holy Symbol', Druid: 'Druidic Focus', Paladin: 'Holy Symbol', Ranger: 'Druidic Focus', Sorcerer: 'Arcane Focus', Warlock: 'Arcane Focus', Wizard: 'Arcane Focus' };
 
 // 99 or more uses, written as a set number (like a Barbarian's rages at level 20), means unlimited.
 // A pool that grows with level (Lay on Hands, 5 x level) is just big.
@@ -151,7 +163,7 @@ export function derive(c: CharacterV2, entities: Entity[]) {
 
   const cast = cls?.data.casting && cls.data.casting.kind && cls.data.casting.kind !== 'none' ? cls.data.casting : null;
   const castMod = cast ? mods[cast.ability as Ability] ?? 0 : 0;
-  const casting = cast ? { ability: cast.ability as Ability, kind: cast.kind as string, dc: 8 + prof + castMod, attack: prof + castMod, slots: spellSlots(cast.kind, level, cast.rules) } : null;
+  const casting = cast ? { ability: cast.ability as Ability, kind: cast.kind as string, dc: 8 + prof + castMod, attack: prof + castMod, slots: spellSlots(cast.kind, level, cast.rules, cast.slots), shortRest: slotsOnShortRest(cast), focus: (cast.focus ?? '') as string } : null;
 
   // entries that changed since this character last looked at them
   const changed = chosen.filter((e) => e.source !== 'srd' && (e.version ?? 1) > ((c.seen ?? {})[e.id] ?? 1)).map((e) => ({ id: e.id, name: e.name, version: e.version ?? 1, note: e.change_note ?? '' }));
@@ -168,13 +180,13 @@ export function classTable(cls: { data: Record<string, any> }, sub?: { data: Rec
   const scaleCols = eff.filter((x) => x.t === 'scale') as Extract<Effect, { t: 'scale' }>[];
   const resCols = (eff.filter((x) => x.t === 'resource') as Extract<Effect, { t: 'resource' }>[]).filter((r) => !/^\d+$/.test(String(r.max)) || r.at);
   const kind = d.casting?.kind;
-  const maxSlot = kind && kind !== 'none' ? spellSlots(kind, 20, d.casting?.rules).length : 0;
+  const maxSlot = slotTop(d.casting);
   const zero = { str: 3, dex: 3, con: 3, int: 3, wis: 3, cha: 3 } as Record<Ability, number>;
   // cantrips known and prepared spells by level, when the class sets them (2024 casters)
   const counts = kind && kind !== 'none' ? ([['Cantrips', d.casting?.cantrips], ['Prepared spells', d.casting?.prepared]] as [string, unknown][]).filter(([, v]) => Array.isArray(v) && v.some((n) => Number(n) > 0)) as [string, (number | string)[]][] : [];
   const rows = Array.from({ length: 20 }, (_, i) => {
     const level = i + 1;
-    const slots = kind && kind !== 'none' ? spellSlots(kind, level, d.casting?.rules) : [];
+    const slots = kind && kind !== 'none' ? spellSlots(kind, level, d.casting?.rules, d.casting?.slots) : [];
     return {
       level, prof: classProf(d, level),
       features: feats.filter((f) => Number(f.level) === level).map((f) => f.name),

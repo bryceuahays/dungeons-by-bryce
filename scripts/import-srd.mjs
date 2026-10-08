@@ -112,6 +112,8 @@ const SUBCLASS_2024 = {
     'Aura of Devotion': { effects: [{ t: 'condition', v: 'Charmed' }] },
   },
 };
+// each 2024 caster's usual spellcasting focus (the same list as SRD_FOCUS in src/lib/rules/engine.ts)
+const SRD_FOCUS = { Bard: 'Musical Instrument', Cleric: 'Holy Symbol', Druid: 'Druidic Focus', Paladin: 'Holy Symbol', Ranger: 'Druidic Focus', Sorcerer: 'Arcane Focus', Warlock: 'Arcane Focus', Wizard: 'Arcane Focus' };
 const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
 function fix2024(index, fx) {
   return fx.flatMap((x) => {
@@ -189,7 +191,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
     const derived = [...saves.map((s) => ({ t: 'prof', kind: 'save', v: s })), ...(is51 ? levelEffects(own) : fix2024(c.index, levelEffects(own))), ...(is51 ? [] : EXTRA_2024[c.index] ?? [])];
     add(v, 'class', c.name, {
       hd: c.hit_die, primary: c.primary_ability?.desc ?? guide?.data.primary ?? '', saves, ...classProfs(c),
-      casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024', cantrips: perLevel(own, 'cantrips_known'), prepared: perLevel(own, 'prepared_spells') }) },
+      casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024', ...(SRD_FOCUS[c.name] ? { focus: SRD_FOCUS[c.name] } : {}), cantrips: perLevel(own, 'cantrips_known'), prepared: perLevel(own, 'prepared_spells') }) },
       desc: guide?.data.desc ?? '', effects: guide?.data.effects ?? derived, features: feats,
     });
   }

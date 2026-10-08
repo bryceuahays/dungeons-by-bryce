@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { EFFECTS, STATUS, TYPES, type Field } from '@/config/homebrew';
-import { ABILITIES, balanceHint, classTable, profBonus, spellSlots, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
+import { ABILITIES, SRD_FOCUS, balanceHint, classTable, profBonus, slotTop, slotsOnShortRest, spellSlots, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
 import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
@@ -189,16 +189,60 @@ const twenty = (v: unknown) => (Array.isArray(v) && v.length === 20 ? v : Array(
 function SlotTable({ casting }: { casting: any }) {
   const kind = casting?.kind;
   if (!kind || kind === 'none') return <p className="dim">No spellcasting. Pick a kind of caster to see its spell slots here.</p>;
-  const top = spellSlots(kind, 20, casting.rules).length;
+  const top = slotTop(casting);
   const counts = ([['Cantrips', casting.cantrips], ['Prepared', casting.prepared]] as [string, unknown][]).filter(([, v]) => Array.isArray(v) && v.some((n) => Number(n) > 0)) as [string, (number | string)[]][];
   return (
     <>
-      <p className="dim">{kind === 'pact' ? 'Pact slots are all one level (the highest shown) and refill on a short rest.' : 'How many slots of each spell level a character has at each class level. Slots refill on a long rest.'}</p>
+      <p className="dim">{kind === 'pact' ? 'Pact slots are all one level (the highest shown) and refill on a short rest.' : `How many slots of each spell level a character has at each class level. Slots refill on a ${slotsOnShortRest(casting) ? 'short or long' : 'long'} rest.`}</p>
       <div className="scroll"><table className="ctable slots">
         <thead><tr><th>Level</th>{counts.map(([h]) => <th key={h}>{h}</th>)}{Array.from({ length: top }, (_, i) => <th key={i}>{['1st', '2nd', '3rd'][i] ?? i + 1 + 'th'}</th>)}</tr></thead>
-        <tbody>{Array.from({ length: 20 }, (_, l) => { const row = spellSlots(kind, l + 1, casting.rules); return <tr key={l}><td>{l + 1}</td>{counts.map(([h, v]) => <td key={h}>{Number(v[l]) || '-'}</td>)}{Array.from({ length: top }, (_, i) => <td key={i}>{row[i] || '-'}</td>)}</tr>; })}</tbody>
+        <tbody>{Array.from({ length: 20 }, (_, l) => { const row = spellSlots(kind, l + 1, casting.rules, casting.slots); return <tr key={l}><td>{l + 1}</td>{counts.map(([h, v]) => <td key={h}>{Number(v[l]) || '-'}</td>)}{Array.from({ length: top }, (_, i) => <td key={i}>{row[i] || '-'}</td>)}</tr>; })}</tbody>
       </table></div>
     </>
+  );
+}
+
+// The class's own slot table (Spellcasting: "My own slot table"): 20 class levels by 9 spell levels.
+const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+const slotGrid = (kind: string, rules?: string) => Array.from({ length: 20 }, (_, l) => { const r = spellSlots(kind, l + 1, rules); return ORD.map((_, s) => r[s] || 0); });
+function CustomSlots({ casting, onChange }: { casting: any; onChange: (c: any) => void }) {
+  const grid: (number | string)[][] = Array.isArray(casting.slots) && casting.slots.length === 20 ? casting.slots : slotGrid('full', '2024');
+  const put = (l: number, s: number, v: string) => onChange({ ...casting, slots: grid.map((row, i) => (i === l ? ORD.map((_, j) => (j === s ? (v === '' ? '' : Number(v)) : row[j] ?? 0)) : row)) });
+  return (
+    <>
+      <p className="inline" style={{ alignItems: 'center' }}>
+        <span className="dim">Start from:</span>
+        {([['full', 'Full caster'], ['half', 'Half caster'], ['pact', 'Pact magic'], ['', 'Empty']] as const).map(([k, label]) => (
+          <button key={label} type="button" className="quiet small-btn" onClick={() => onChange({ ...casting, slots: k ? slotGrid(k, '2024') : slotGrid('none') })}>{label}</button>
+        ))}
+      </p>
+      <div className="scroll"><table className="ctable prof-edit slot-edit">
+        <thead><tr><th>Level</th>{ORD.map((o) => <th key={o}>{o}</th>)}</tr></thead>
+        <tbody>{grid.map((row, l) => <tr key={l}><td>{l + 1}</td>{ORD.map((o, s) => <td key={o}><input type="number" min={0} max={9} aria-label={`${o}-level slots at class level ${l + 1}`} value={row[s] ?? 0} onChange={(e) => put(l, s, e.target.value)} /></td>)}</tr>)}</tbody>
+      </table></div>
+      <label className="slot-refill">Slots come back on<select value={casting.refill === 'short' ? 'short' : 'long'} onChange={(e) => onChange({ ...casting, refill: e.target.value })}>
+        <option value="long">A long rest</option>
+        <option value="short">A short or long rest (like pact magic)</option>
+      </select></label>
+    </>
+  );
+}
+
+// The item a caster can use in place of material components that have no cost.
+const FOCI = ['Arcane Focus', 'Druidic Focus', 'Holy Symbol', 'Musical Instrument'];
+function FocusPick({ casting, base, onChange }: { casting: any; base?: string; onChange: (c: any) => void }) {
+  const v: string = casting.focus ?? SRD_FOCUS[base ?? ''] ?? '';
+  const other = v !== '' && !FOCI.includes(v);
+  return (
+    <div className="focus-pick">
+      <label>Spellcasting focus<select value={other ? 'other' : v} onChange={(e) => onChange({ ...casting, focus: e.target.value === 'other' ? 'Other' : e.target.value })}>
+        <option value="">None (components only)</option>
+        {FOCI.map((f) => <option key={f} value={f}>{f}</option>)}
+        <option value="other">Something else</option>
+      </select></label>
+      {other ? <label>What it is<input value={v === 'Other' ? '' : v} maxLength={80} placeholder="For example: a carved bone wand" onChange={(e) => onChange({ ...casting, focus: e.target.value || 'Other' })} /></label> : null}
+      <p className="dim">An item the character can hold to cast spells instead of their material components (except ones with a cost).</p>
+    </div>
   );
 }
 
@@ -408,9 +452,22 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               ) : null}
               {tab === 'Spells' ? (
                 <>
-                  {fieldList(pick(def.fields, CLASS_CASTING))}
+                  <div className="fgrid">{pick(def.fields, CLASS_CASTING).map((f) => <FieldInput key={f.key} f={f} data={data} onChange={(d: any) => {
+                    // switching to your own table starts it from the kind of caster it was (full if none)
+                    const was = data.casting?.kind;
+                    if (d.casting?.kind === 'custom' && !Array.isArray(d.casting.slots)) d = { ...d, casting: { ...d.casting, slots: slotGrid(was && was !== 'none' && was !== 'custom' ? was : 'full', '2024') } };
+                    setData(d);
+                  }} />)}</div>
                   {data.casting?.kind && data.casting.kind !== 'none' ? (
                     <>
+                      <FocusPick casting={data.casting} base={data.baseClass} onChange={(c) => setData({ ...data, casting: c })} />
+                      {data.casting.kind === 'custom' ? (
+                        <>
+                          <h3>Spell slots</h3>
+                          <p className="dim">How many slots of each spell level a character has at each class level. The table on the right shows the result.</p>
+                          <CustomSlots casting={data.casting} onChange={(c) => setData({ ...data, casting: c })} />
+                        </>
+                      ) : null}
                       <h3>Cantrips known</h3>
                       <p className="dim">How many cantrips (spells that cost no slot) a character knows at each class level. All 0 means the class gets none.</p>
                       <LevelNumbers label="Cantrips" values={twenty(data.casting?.cantrips)} onChange={(v) => setData({ ...data, casting: { ...data.casting, cantrips: v } })} />

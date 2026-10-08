@@ -316,3 +316,8 @@ h1 .beta-tag{font-size:.8rem}
 .give-spell{display:grid;gap:6px}
 .give-spell-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .feat-owner select{max-width:420px}
+/* the Spells tab: your own slot table, and the focus */
+.brew-form table.slot-edit td input{width:2.8em}
+.brew-form .slot-refill{max-width:420px;margin-top:4px}
+.brew-form .focus-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 16px;margin:8px 0 4px}
+.brew-form .focus-pick .dim{grid-column:1/-1;margin:0}

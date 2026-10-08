@@ -5,6 +5,7 @@ import { TYPES } from '@/config/homebrew';
 import { EntityEditor } from '@/components/EntityEditor';
 import { UpgradeHint } from '@/components/UpgradeHint';
 import { CLASS_BLURBS } from '@/config/class-blurbs';
+import { SRD_FOCUS } from '@/lib/rules/engine';
 import { loadClassOptions, loadFeatOptions, loadSpellOptions, loadSubclassOptions, srdListFor, type SpellOption } from '@/lib/class-spells';
 
 export const metadata = { title: 'New homebrew entry' };
@@ -39,7 +40,8 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
 function startData(type: string, start: { name: string; data: any } | null, spells?: SpellOption[]) {
   if (!start) return type === 'class' ? { features: MILESTONES } : {};
   if (type !== 'class') return start.data;
-  return { ...start.data, baseClass: start.name, desc: start.data?.desc || CLASS_BLURBS[start.name] || '', spellList: start.data?.spellList ?? srdListFor(spells ?? [], start.name) };
+  const c = start.data?.casting;
+  return { ...start.data, ...(c?.kind && c.kind !== 'none' && !c.focus && SRD_FOCUS[start.name] ? { casting: { ...c, focus: SRD_FOCUS[start.name] } } : {}), baseClass: start.name, desc: start.data?.desc || CLASS_BLURBS[start.name] || '', spellList: start.data?.spellList ?? srdListFor(spells ?? [], start.name) };
 }
 
 // What every class has, so a blank class starts with them already in place.

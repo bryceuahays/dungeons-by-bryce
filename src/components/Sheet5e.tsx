@@ -60,7 +60,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
       if (kind === 'long' ? r.recharge !== 'none' : r.recharge === 'short') delete nu[r.name];
       else if (kind === 'short' && r.recharge === 'short1' && nu[r.name]) nu[r.name] = Math.max(0, Number(nu[r.name]) - 1);
     });
-    up({ used: nu, ...(kind === 'long' || d.casting?.kind === 'pact' ? { slotsUsed: {} } : {}), ...(kind === 'long' ? { hp: d.hpMax, temp: 0 } : {}) });
+    up({ used: nu, ...(kind === 'long' || d.casting?.shortRest ? { slotsUsed: {} } : {}), ...(kind === 'long' ? { hp: d.hpMax, temp: 0 } : {}) });
   };
   const subs = of('subclass').filter((s) => !d.cls || !s.data.parent || String(s.data.parent).toLowerCase() === d.cls.name.toLowerCase());
   const maxSpell = d.casting ? d.casting.slots.length : 0;
