@@ -13,7 +13,7 @@ import { ChosenSpells, ClassSpells } from './ClassSpells';
 import { ClassBanner } from './ClassBanner';
 import { SubclassPage, SubclassesTab, featureSpells, parentOf, saveSubclass, subclassFeatures, subclassesFor, withSubclass, type ClassOption, type SubclassOption } from './ClassSubclasses';
 import { SpellTools } from './ClassGives';
-import { readResources } from './ClassFeatures';
+import { isMarker, readResources } from './ClassFeatures';
 import { FeatureTable, FeaturesTab, syncGrows, syncResources, syncUses } from './ClassFeatures';
 import type { SpellOption } from '@/lib/class-spells';
 import type { FeatOption } from './ClassGives';
@@ -160,7 +160,6 @@ type CampaignLink = { id: string; title: string; stages: Stage[]; members: Membe
 // The class editor's tabs, and which fields from TYPES.class each one shows.
 const CLASS_TABS = ['Main', 'Spells', 'Features', 'Subclasses', 'Leveling', 'Player'];
 const CLASS_CASTING = ['casting.kind', 'casting.ability'];
-const levelsOf = (data: any, re: RegExp) => [...new Set((data.features ?? []).filter((x: any) => re.test(x.name ?? '')).map((x: any) => Number(x.level)))].sort((p: any, q: any) => p - q).join(', ');
 const pick = (fields: Field[], keys: string[]) => keys.map((k) => fields.find((f) => f.key === k)).filter((f): f is Field => !!f);
 
 function SkillsBox({ data, onChange, list }: { data: any; onChange: (d: any) => void; list: Field }) {
@@ -244,6 +243,51 @@ function FocusPick({ casting, base, onChange }: { casting: any; base?: string; o
       {other ? <label>What it is<input value={v === 'Other' ? '' : v} maxLength={80} placeholder="For example: a carved bone wand" onChange={(e) => onChange({ ...casting, focus: e.target.value || 'Other' })} /></label> : null}
       <p className="dim">An item the character can hold to cast spells instead of their material components (except ones with a cost).</p>
     </div>
+  );
+}
+
+// The Leveling tab's milestones: the levels a character gets a subclass feature, an Ability Score
+// Improvement or an Epic Boon. They are features on the Features tab; ticking a level adds one there,
+// unticking removes it.
+const MILESTONE_ROWS: { key: string; label: string; is: (f: any) => boolean; name: (cls: string) => string; text: string; std?: number[] }[] = [
+  { key: 'sub', label: 'Subclass feature', is: isMarker, name: (cls) => (cls.trim() ? cls.trim() + ' Subclass' : 'Subclass feature'), text: 'You gain a feature from your subclass.' },
+  { key: 'asi', label: 'Ability Score Improvement', is: (f) => /^ability score improvement$/i.test(f.name ?? ''), name: () => 'Ability Score Improvement', text: 'Increase one ability score by 2, or two ability scores by 1 each (to a maximum of 20), or take a feat you qualify for.', std: [4, 8, 12, 16] },
+  { key: 'boon', label: 'Epic Boon', is: (f) => /^epic boon$/i.test(f.name ?? ''), name: () => 'Epic Boon', text: 'You gain an Epic Boon feat or another feat of your choice for which you qualify.', std: [19] },
+];
+function Milestones({ data, className, onChange }: { data: any; className: string; onChange: (d: any) => void }) {
+  const feats: any[] = data.features ?? [];
+  const at = (row: (typeof MILESTONE_ROWS)[number], level: number) => feats.some((f) => row.is(f) && Number(f.level) === level);
+  const toggle = (row: (typeof MILESTONE_ROWS)[number], level: number, on: boolean) => {
+    if (!on) { onChange({ ...data, features: feats.filter((f) => !(row.is(f) && Number(f.level) === level)) }); return; }
+    // the same name and text as the class's other ones, so a renamed "Oath feature" stays an oath feature
+    const like = feats.find(row.is);
+    const next = [...feats, { level, name: like?.name ?? row.name(className), text: like?.text ?? row.text, uses: null }];
+    onChange({ ...data, features: next.map((f, i) => [f, i] as const).sort((a, b) => Number(a[0].level) - Number(b[0].level) || a[1] - b[1]).map(([f]) => f) });
+  };
+  const levelsOn = (row: (typeof MILESTONE_ROWS)[number]) => Array.from({ length: 20 }, (_, i) => i + 1).filter((l) => at(row, l));
+  return (
+    <>
+      {[0, 10].map((from) => (
+        <table key={from} className="ctable prof-edit milestones"><thead><tr><th>Level</th>{Array.from({ length: 10 }, (_, i) => <th key={i}>{from + i + 1}</th>)}</tr></thead>
+          <tbody>{MILESTONE_ROWS.map((row) => (
+            <tr key={row.key}><td>{row.label}</td>{Array.from({ length: 10 }, (_, i) => {
+              const l = from + i + 1;
+              return <td key={i}><input type="checkbox" aria-label={`${row.label} at level ${l}`} checked={at(row, l)} onChange={(e) => toggle(row, l, e.target.checked)} /></td>;
+            })}</tr>
+          ))}</tbody></table>
+      ))}
+      <p className="inline" style={{ alignItems: 'center' }}>
+        {MILESTONE_ROWS.filter((r) => r.std).map((row) => {
+          const same = levelsOn(row).join() === row.std!.join();
+          return <button key={row.key} type="button" className="quiet small-btn" disabled={same} onClick={() => {
+            const rest = feats.filter((f) => !row.is(f));
+            const like = feats.find(row.is);
+            onChange({ ...data, features: [...rest, ...row.std!.map((level) => ({ level, name: like?.name ?? row.name(className), text: like?.text ?? row.text, uses: null }))].sort((a, b) => Number(a.level) - Number(b.level)) });
+          }}>{row.label}s at the usual levels ({row.std!.join(', ')})</button>;
+        })}
+      </p>
+      <p className="dim">Each tick is a feature on the Features tab, where you can change its wording. Most 2024 classes get their subclass at level 3; some, like the Fighter and Rogue, get extra Ability Score Improvements.</p>
+    </>
   );
 }
 
@@ -527,9 +571,8 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                   <h3>Copy to another class</h3>
                   <LevelingCopy data={data} onChange={setData} />
                   <h3>Milestones</h3>
-                  <p>Ability Score Improvements at levels: {levelsOf(data, /ability score improvement/i) || 'none yet'}</p>
-                  <p>Subclass features at levels: {levelsOf(data, /subclass/i) || 'none yet'}</p>
-                  <p className="dim">Read from the Features tab for now. Editing these here comes next.</p>
+                  <p className="dim">The levels a character gets these. Tick or untick a level; the table on the right follows.</p>
+                  <Milestones data={data} className={name} onChange={setData} />
                 </>
               ) : null}
               {tab === 'Player' ? (

@@ -341,3 +341,7 @@ h1 .beta-tag{font-size:.8rem}
 .brew-form label.mc-join{display:flex;flex-direction:row;align-items:center;gap:6px;margin:0}
 .brew-form label.mc-join select{width:auto}
 .brew-form .equip-item input[type=number]{padding-left:4px;padding-right:4px}
+/* the Leveling tab's milestones */
+.brew-form table.milestones td{text-align:center}
+.brew-form table.milestones td:first-child{text-align:left;white-space:nowrap}
+.brew-form table.milestones input[type=checkbox]{width:18px;height:18px}
