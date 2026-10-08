@@ -15,10 +15,13 @@ export type Effect = { at?: number } & (
   | { t: 'prof'; kind: 'skill' | 'save' | 'armor' | 'weapon' | 'tool' | 'language'; v: string }
   | { t: 'resist'; v: string; immune?: boolean }
   | { t: 'condition'; v: string } // immunity to a condition, like Charmed
-  | { t: 'speed'; mode: 'walk' | 'fly' | 'swim' | 'climb' | 'burrow'; n: number }
-  | { t: 'sense'; v: string; n: number }
+  | { t: 'speed'; mode: 'walk' | 'fly' | 'swim' | 'climb' | 'burrow'; n: number | 'walk' } // 'walk': equal to the walking speed
+  | { t: 'sense'; v: string; n: number; what?: string }
   | { t: 'resource'; name: string; max: string; recharge: 'short' | 'short1' | 'long' | 'none' } // short1: one use back on a short rest, all on a long rest
-  | { t: 'spell'; name: string }
+  | { t: 'spell'; name: string; cast?: 'free' | 'perRest'; n?: number; recharge?: 'long' | 'short'; self?: boolean } // no cast: always prepared
+  | { t: 'adv'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // advantage on a roll
+  | { t: 'attacks'; n: number; with?: string } // attacks per Attack action
+  | { t: 'damage'; amount: string; type?: string; when?: string } // extra damage: dice ("1d8") or an ability modifier ("cha")
   | { t: 'scale'; name: string; steps: [number, string][] }
   | { t: 'hp'; n: number }
   | { t: 'ac'; n: number }
@@ -140,7 +143,9 @@ export function derive(c: CharacterV2, entities: Entity[]) {
 
   const race = c.raceId ? byId.get(c.raceId) : undefined;
   const speed: Record<string, number> = { walk: Number(race?.data.speed) || 30 };
-  of('speed').forEach((x) => { speed[x.mode] = x.mode === 'walk' ? speed.walk + Number(x.n) : Math.max(speed[x.mode] ?? 0, Number(x.n)); });
+  // walking bonuses first, so a swim speed "equal to walking speed" counts them
+  of('speed').filter((x) => x.mode === 'walk').forEach((x) => { speed.walk += Number(x.n) || 0; });
+  of('speed').filter((x) => x.mode !== 'walk').forEach((x) => { speed[x.mode] = Math.max(speed[x.mode] ?? 0, x.n === 'walk' ? speed.walk : Number(x.n) || 0); });
   const senses = of('sense').reduce<Record<string, number>>((m, x) => { m[x.v] = Math.max(m[x.v] ?? 0, Number(x.n)); return m; }, {});
   const resist = [...new Set(of('resist').filter((x) => !x.immune).map((x) => x.v))];
   const immune = [...new Set([...of('resist').filter((x) => x.immune).map((x) => x.v), ...of('condition').map((x) => x.v)])];

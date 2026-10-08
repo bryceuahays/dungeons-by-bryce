@@ -8,6 +8,7 @@ import { SpellPopup } from './ClassSpells';
 import { EntityCard } from './EntityCard';
 import { TOOL_GROUPS, WEAPONS } from '@/config/proficiencies';
 import { ABILITIES } from '@/lib/rules/engine';
+import { GrowsEditor } from './ClassFeatures';
 
 // Two add-ons for a class feature, in plain language:
 //   Gives   - what the feature adds to the character sheet by itself. Stored as the feature's
@@ -23,13 +24,17 @@ export const SpellTools = createContext<{ spells: SpellOption[]; onSpellSaved: (
 const KINDS: [string, string][] = [
   ['prof', 'A proficiency'], ['ac', 'Armor class bonus'], ['speed', 'Speed'], ['resist', 'Resistance or immunity'],
   ['condition', 'Immunity to a condition'], ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score increase'],
-  ['spell', 'A spell always prepared'], ['text', 'A note on the sheet'],
+  ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
+  ['text', 'A note on the sheet'],
 ];
 export const GIVEN = KINDS.map(([k]) => k);
 const blank = (t: string): any => ({
   prof: { t, kind: 'skill', v: 'Perception' }, ac: { t, n: 1 }, speed: { t, mode: 'walk', n: 10 }, resist: { t, v: 'fire', immune: false },
   sense: { t, v: 'Darkvision', n: 60 }, condition: { t, v: 'Charmed' }, hp: { t, n: 1 }, ability: { t, ab: 'str', n: 1 }, spell: { t, name: '' }, text: { t, text: '' },
+  adv: { t, roll: 'save', ab: 'con', when: '' }, attacks: { t, n: 2, with: '' }, damage: { t, amount: '1d6', type: '', when: '' },
 }[t]);
+const SENSES = ['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'];
+const ROLLS: [string, string][] = [['save', 'Saving throws'], ['check', 'Ability checks'], ['attack', 'Attack rolls'], ['initiative', 'Initiative']];
 const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious'];
 const PROF_KINDS: [string, string][] = [['skill', 'Skill'], ['save', 'Saving throw'], ['armor', 'Armor'], ['weapon', 'Weapon'], ['tool', 'Tool'], ['language', 'Language']];
 const PROF_DEFAULT: Record<string, string> = { skill: 'Perception', save: 'wis', armor: 'Heavy armor', weapon: 'Martial weapons', tool: "Thieves' Tools", language: '' };
@@ -43,7 +48,7 @@ export function GivesEditor({ effects, onChange, spellNames }: { effects: any[];
       {gives.length ? gives.map(([g, i]) => (
         <div key={i} className="give-row">
           <label>What<select value={g.t} onChange={(e) => put(i, blank(e.target.value))}>{KINDS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
-          <GiveFields g={g} onChange={(x) => put(i, x)} spellNames={spellNames} />
+          <div className="give-fields"><GiveFields g={g} onChange={(x) => put(i, x)} spellNames={spellNames} /></div>
           <label className="give-at">From level<input type="number" min={1} max={20} placeholder="—" title="Leave blank to give it as soon as the feature arrives" value={g.at ?? ''} onChange={(e) => { const { at: _old, ...rest } = g; put(i, e.target.value ? { ...rest, at: Math.min(20, Math.max(1, Number(e.target.value))) } : rest); }} /></label>
           <button type="button" className="quiet small-btn danger" onClick={() => onChange(effects.filter((_, j) => j !== i))}>Remove</button>
         </div>
@@ -70,13 +75,42 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
       </>
     );
     case 'ac': return num('Bonus (+)', 'n', { min: 0 });
-    case 'speed': return <><label>Kind<select value={g.mode} onChange={(e) => set({ mode: e.target.value })}>{[['walk', 'Walking (added)'], ['fly', 'Flying'], ['swim', 'Swimming'], ['climb', 'Climbing'], ['burrow', 'Burrowing']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>{num('Feet', 'n', { min: 0, step: 5 })}</>;
+    case 'speed': return <><label>Kind<select value={g.mode} onChange={(e) => set({ mode: e.target.value, ...(e.target.value === 'walk' && g.n === 'walk' ? { n: 10 } : {}) })}>{[['walk', 'Walking (added)'], ['fly', 'Flying'], ['swim', 'Swimming'], ['climb', 'Climbing'], ['burrow', 'Burrowing']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+      {g.n === 'walk' ? null : num('Feet', 'n', { min: 0, step: 5 })}
+      {g.mode !== 'walk' ? <label className="ckrow"><input type="checkbox" checked={g.n === 'walk'} onChange={(e) => set({ n: e.target.checked ? 'walk' : 30 })} /> Equal to walking speed</label> : null}</>;
     case 'resist': return <><label>Damage type<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}</select></label><label className="ckrow"><input type="checkbox" checked={!!g.immune} onChange={(e) => set({ immune: e.target.checked })} /> Immune, not just resistant</label></>;
     case 'condition': return <label>Condition<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{CONDITIONS.map((s) => <option key={s}>{s}</option>)}</select></label>;
-    case 'sense': return <><label>Sense<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'].map((s) => <option key={s}>{s}</option>)}</select></label>{num('Feet', 'n', { min: 0, step: 5 })}</>;
+    case 'sense': {
+      const usual = SENSES.includes(g.v);
+      return <><label>Sense<select value={usual ? g.v : 'other'} onChange={(e) => set({ v: e.target.value === 'other' ? '' : e.target.value })}>{SENSES.map((s) => <option key={s}>{s}</option>)}<option value="other">Something else</option></select></label>
+        {usual ? null : <label>Called<input value={g.v ?? ''} maxLength={60} placeholder="For example: Devil's Sight" onChange={(e) => set({ v: e.target.value })} /></label>}
+        {num('Feet', 'n', { min: 0, step: 5 })}
+        {usual ? null : <label className="give-wide">What it lets them sense<input value={g.what ?? ''} maxLength={160} placeholder="For example: see normally in magical darkness" onChange={(e) => set({ what: e.target.value })} /></label>}</>;
+    }
+    case 'adv': return <>
+      <label>Roll<select value={g.roll} onChange={(e) => set({ roll: e.target.value })}>{ROLLS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+      {g.roll === 'initiative' ? null : <label>Ability<select value={g.ab ?? ''} onChange={(e) => set({ ab: e.target.value })}><option value="">Any</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>}
+      <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: to keep Concentration (blank: always)" onChange={(e) => set({ when: e.target.value })} /></label></>;
+    case 'attacks': return <>
+      {num('Attacks per Attack action', 'n', { min: 2, max: 8 })}
+      <label className="give-wide">With<input value={g.with ?? ''} maxLength={80} placeholder="Any weapon (blank), or for example: your pact weapon" onChange={(e) => set({ with: e.target.value })} /></label></>;
+    case 'damage': {
+      const dice = !ABILITIES.some(([k]) => k === g.amount);
+      return <>
+        <label>Amount<select value={dice ? 'dice' : g.amount} onChange={(e) => set({ amount: e.target.value === 'dice' ? '1d6' : e.target.value })}><option value="dice">Dice</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l} modifier</option>)}</select></label>
+        {dice ? <label>Dice<input value={g.amount ?? ''} maxLength={12} placeholder="1d8" onChange={(e) => set({ amount: e.target.value })} /></label> : null}
+        <label>Type<select value={g.type ?? ''} onChange={(e) => set({ type: e.target.value })}><option value="">Same as the attack</option>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}<option value="choice">Player&apos;s choice</option></select></label>
+        <label className="give-wide">When<input value={g.when ?? ''} maxLength={160} placeholder="For example: once per turn when you hit with your pact weapon" onChange={(e) => set({ when: e.target.value })} /></label></>;
+    }
     case 'hp': return num('Hit points per level', 'n', { min: 0 });
     case 'ability': return <><label>Ability<select value={g.ab} onChange={(e) => set({ ab: e.target.value })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="any">Player&apos;s choice</option></select></label>{num('Increase', 'n', { min: 1 })}</>;
-    case 'spell': return <GiveSpell name={g.name ?? ''} onChange={(name) => set({ name })} spellNames={spellNames} />;
+    case 'spell': return <>
+      <GiveSpell name={g.name ?? ''} onChange={(name) => set({ name })} spellNames={spellNames} />
+      <label>How<select value={g.cast ?? 'prepared'} onChange={(e) => set({ cast: e.target.value === 'prepared' ? undefined : e.target.value, ...(e.target.value === 'perRest' ? { n: g.n || 1, recharge: g.recharge ?? 'long' } : {}) })}>
+        <option value="prepared">Always prepared</option><option value="free">Cast without a spell slot, any time</option><option value="perRest">Cast without a spell slot, a few times per rest</option>
+      </select></label>
+      {g.cast === 'perRest' ? <>{num('Times', 'n', { min: 1, max: 20 })}<label>Back on<select value={g.recharge ?? 'long'} onChange={(e) => set({ recharge: e.target.value })}><option value="long">A long rest</option><option value="short">A short or long rest</option></select></label></> : null}
+      {g.cast ? <label className="ckrow"><input type="checkbox" checked={!!g.self} onChange={(e) => set({ self: e.target.checked || undefined })} /> On themselves only</label> : null}</>;
     default: return <label className="give-wide">Note<input value={g.text ?? ''} placeholder="For example: advantage on saves against being frightened" onChange={(e) => set({ text: e.target.value })} /></label>;
   }
 }
@@ -93,15 +127,18 @@ export type ChoiceOption = {
   requires?: string;                            // another option from this list they need first
   other?: string;                               // any other requirement, in words
   repeatable?: boolean;                         // can be taken more than once
+  // the same structured parts as a feature: how it's used, what it gives and grows, and what the player picks
+  use?: Use | null; effects?: any[]; choices?: Choice[];
 };
 // feature.choice: { count, from, options?, byGrows? }
 //   from: a list the site knows, "custom" with the DM's own options, or "same" for more picks from the
 //   list of an earlier feature with the same name (the Sorcerer's Metamagic at levels 10 and 17)
 //   byGrows: how many follows the feature's growing number (Eldritch Invocations: 1, then 3, 5, ...)
-export type Choice = { count: number; from: string; options?: ChoiceOption[]; byGrows?: boolean } | null;
+//   spell: for "spells" - which spells: { level: 0 cantrips, 1-9, or '' any; ritual: only rituals; any: any class's list, not just this class's }
+export type Choice = { count: number; from: string; options?: ChoiceOption[]; byGrows?: boolean; spell?: { level?: number | ''; ritual?: boolean; any?: boolean } } | null;
 const FROM: [string, string][] = [
   ['feat:Fighting style', 'Fighting Styles'], ['feat:Epic boon', 'Epic Boons'], ['feat:Origin', 'Origin feats'], ['feat:General', 'General feats'],
-  ['weapons', 'Weapons (for Weapon Mastery)'], ['skills', 'Skills they are proficient in (for Expertise)'], ['custom', 'My own list of options'],
+  ['weapons', 'Weapons (for Weapon Mastery)'], ['skills', 'Skills they are proficient in (for Expertise)'], ['spells', 'Spells'], ['custom', 'My own list of options'],
   ['same', 'More from an earlier feature\'s list (same name)'],
 ];
 const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
@@ -141,8 +178,15 @@ export function optionLine(o: ChoiceOption, resources: { id: string; name: strin
   ].filter(Boolean).join(' · ');
 }
 
-export function ChoiceEditor({ f, onChange, feats, resources = [] }: { f: any; onChange: (choice: Choice) => void; feats: FeatOption[]; resources?: { id: string; name: string }[] }) {
-  const c = guessChoice(f);
+// "3 cantrips from any class's list", "2 level 1 Ritual spells from this class's list"
+export function spellChoiceLine(c: NonNullable<Choice>) {
+  const s = c.spell ?? {};
+  const lv = s.level === 0 ? (c.count === 1 ? 'cantrip' : 'cantrips') : `${s.level ? 'level ' + s.level + ' ' : ''}${s.ritual ? 'Ritual ' : ''}spell${c.count === 1 ? '' : 's'}`;
+  return `${c.count} ${s.level === 0 && s.ritual ? 'Ritual ' : ''}${lv} from ${s.any ? "any class's" : "this class's"} spell list`;
+}
+
+export function ChoiceEditor({ f, onChange, feats, resources = [], spellNames = [], nested = false }: { f: any; onChange: (choice: Choice) => void; feats: FeatOption[]; resources?: { id: string; name: string }[]; spellNames?: string[]; nested?: boolean }) {
+  const c: Choice = nested ? (f.choice ?? null) : guessChoice(f);
   const [open, setOpen] = useState<number | null>(null);
   const growing = (f.effects ?? []).find((x: any) => x.t === 'scale');
   const fromFeats = c?.from.startsWith('feat:') ? feats.filter((x) => x.category.toLowerCase() === c.from.slice(5).toLowerCase()) : [];
@@ -157,7 +201,7 @@ export function ChoiceEditor({ f, onChange, feats, resources = [] }: { f: any; o
       <div className="feat-uses-pick">
         <label>Choose from<select value={c?.from ?? ''} onChange={(e) => onChange(e.target.value ? { count: c?.count ?? 1, from: e.target.value, ...(e.target.value === 'custom' ? { options: opts.length ? opts : [{ name: '', text: '' }] } : {}), ...(c?.byGrows ? { byGrows: true } : {}) } : null)}>
           <option value="">Nothing to choose</option>
-          {FROM.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          {FROM.filter(([k]) => !nested || (k !== 'same' && k !== 'custom')).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select></label>
         {c ? <label>How many<input type="number" min={1} max={20} value={c.count} disabled={!!c.byGrows && !!growing} onChange={(e) => onChange({ ...c, count: Math.max(1, Number(e.target.value) || 1) })} /></label> : null}
       </div>
@@ -165,7 +209,19 @@ export function ChoiceEditor({ f, onChange, feats, resources = [] }: { f: any; o
         <label className="ckrow"><input type="checkbox" checked={!!c.byGrows} onChange={(e) => onChange({ ...c, byGrows: e.target.checked || undefined })} /> How many follows this feature&apos;s growing number ({growing.name}: {(growing.steps ?? []).map(([l, v]: [number, string]) => `${v} at level ${l}`).join(', ')})</label>
       ) : null}
       {c && c.from === 'same' ? <p className="dim">Players pick {c.count} more from the list in the earlier &quot;{f.name}&quot; feature. Edit the options there.</p> : null}
-      {c && c.from !== 'custom' && c.from !== 'same' ? <p className="dim">Players pick {c.count} from: {preview.length ? preview.join(', ') : 'nothing yet - there are no options of that kind'}.</p> : null}
+      {c && c.from === 'spells' ? (
+        <div className="choice-rules">
+          <label>Spell level<select value={c.spell?.level ?? ''} onChange={(e) => onChange({ ...c, spell: { ...c.spell, level: e.target.value === '' ? '' : Number(e.target.value) } })}>
+            <option value="">Any level</option><option value="0">Cantrips</option>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((l) => <option key={l} value={l}>Level {l}</option>)}
+          </select></label>
+          <label>From<select value={c.spell?.any ? 'any' : 'class'} onChange={(e) => onChange({ ...c, spell: { ...c.spell, any: e.target.value === 'any' || undefined } })}>
+            <option value="class">This class&apos;s spell list</option><option value="any">Any class&apos;s spell list</option>
+          </select></label>
+          <label className="ckrow"><input type="checkbox" checked={!!c.spell?.ritual} onChange={(e) => onChange({ ...c, spell: { ...c.spell, ritual: e.target.checked || undefined } })} /> Rituals only</label>
+          <p className="dim choice-other">Players pick {spellChoiceLine(c)}.</p>
+        </div>
+      ) : null}
+      {c && !['custom', 'same', 'spells'].includes(c.from) ? <p className="dim">Players pick {c.count} from: {preview.length ? preview.join(', ') : 'nothing yet - there are no options of that kind'}.</p> : null}
       {c && c.from === 'custom' ? (
         <div className="choice-opts">
           <p className="dim">{opts.length} option{opts.length === 1 ? '' : 's'}. Open one to change it.</p>
@@ -194,6 +250,16 @@ export function ChoiceEditor({ f, onChange, feats, resources = [] }: { f: any; o
                     <label className="choice-other">Other requirement<input value={o.other ?? ''} maxLength={120} placeholder="For example: a Warlock cantrip that deals damage" onChange={(e) => setOpt(i, { other: e.target.value || undefined })} /></label>
                     <label className="ckrow"><input type="checkbox" checked={!!o.repeatable} onChange={(e) => setOpt(i, { repeatable: e.target.checked || undefined })} /> Can be taken more than once</label>
                   </div>
+                  <UseEditor f={o} onChange={(use) => setOpt(i, { use })} />
+                  <GivesEditor effects={o.effects ?? []} spellNames={spellNames} onChange={(effects) => setOpt(i, { effects })} />
+                  <GrowsEditor f={o as any} onChange={(effects) => setOpt(i, { effects })} />
+                  {(o.choices ?? []).map((ch, k) => (
+                    <div key={k} className="choice-nested">
+                      <ChoiceEditor nested f={{ name: o.name, choice: ch, effects: o.effects }} feats={feats} resources={resources} spellNames={spellNames}
+                        onChange={(next) => setOpt(i, { choices: next ? (o.choices ?? []).map((x, j) => (j === k ? next : x)) : (o.choices ?? []).filter((_, j) => j !== k) })} />
+                    </div>
+                  ))}
+                  <p><button type="button" className="quiet small-btn" onClick={() => setOpt(i, { choices: [...(o.choices ?? []), { count: 1, from: 'feat:Origin' }] })}>+ The player also picks something with this option</button></p>
                   <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { setOpts(opts.filter((_, j) => j !== i)); setOpen(null); }}>Remove this option</button></p>
                 </div>
               ) : null}

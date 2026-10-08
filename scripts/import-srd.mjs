@@ -155,6 +155,37 @@ function multiclass(c) {
 // the first feature with that name lists them; later ones (Metamagic at 10 and 17) pick more from it.
 const CLASS_OPTIONS = JSON.parse(fs.readFileSync(path.join(ROOT, 'seed', 'srd', 'class-options-5.2.json'), 'utf8'));
 const CHOICE_COUNT = { Metamagic: 2, 'Eldritch Invocations': 1 };
+// What each option does to the sheet, from its SRD wording (the editor's Gives, Grows and choices).
+const free = (name, self) => ({ t: 'spell', name, cast: 'free', ...(self ? { self: true } : {}) });
+const cantrip = (any) => ({ count: 1, from: 'spells', spell: { level: 0, ...(any ? { any: true } : {}) } });
+const OPTION_RULES = {
+  'Agonizing Blast': { effects: [{ t: 'damage', amount: 'cha', type: '', when: 'with the chosen Warlock cantrip' }], choices: [cantrip()] },
+  'Armor of Shadows': { effects: [free('Mage Armor', true)] },
+  'Ascendant Step': { effects: [free('Levitate', true)] },
+  "Devil's Sight": { effects: [{ t: 'sense', v: "Devil's Sight", n: 120, what: 'see normally in Dim Light and Darkness, magical or not' }] },
+  'Devouring Blade': { effects: [{ t: 'attacks', n: 3, with: 'your pact weapon' }] },
+  'Eldritch Mind': { effects: [{ t: 'adv', roll: 'save', ab: 'con', when: 'to maintain Concentration' }] },
+  'Eldritch Smite': { effects: [{ t: 'damage', amount: '1d8', type: 'force', when: 'once per turn when you hit with your pact weapon and expend a Pact Magic slot, plus 1d8 per level of the slot' }] },
+  'Eldritch Spear': { choices: [cantrip()], effects: [{ t: 'scale', name: 'Extra cantrip range', kind: 'distance', steps: Array.from({ length: 19 }, (_, i) => [i + 2, (i + 2) * 30 + ' ft']) }] },
+  'Fiendish Vigor': { effects: [free('False Life', true)] },
+  'Gift of the Depths': { effects: [{ t: 'speed', mode: 'swim', n: 'walk' }, { t: 'text', text: 'You can breathe underwater.' }, { t: 'spell', name: 'Water Breathing', cast: 'perRest', n: 1, recharge: 'long' }] },
+  'Lessons of the First Ones': { choices: [{ count: 1, from: 'feat:Origin' }] },
+  'Lifedrinker': { effects: [{ t: 'damage', amount: '1d6', type: 'choice', when: 'once per turn when you hit with your pact weapon (Necrotic, Psychic or Radiant)' }] },
+  'Mask of Many Faces': { effects: [free('Disguise Self')] },
+  'Master of Myriad Forms': { effects: [free('Alter Self')] },
+  'Misty Visions': { effects: [free('Silent Image')] },
+  'One with Shadows': { effects: [free('Invisibility', true)] },
+  'Otherworldly Leap': { effects: [free('Jump', true)] },
+  'Pact of the Blade': { effects: [{ t: 'prof', kind: 'weapon', v: 'Your pact weapon' }] },
+  'Pact of the Chain': { effects: [{ t: 'spell', name: 'Find Familiar', cast: 'free' }] },
+  'Pact of the Tome': { choices: [{ count: 3, from: 'spells', spell: { level: 0, any: true } }, { count: 2, from: 'spells', spell: { level: 1, ritual: true, any: true } }] },
+  'Repelling Blast': { choices: [cantrip()] },
+  'Thirsting Blade': { effects: [{ t: 'attacks', n: 2, with: 'your pact weapon' }] },
+  'Visions of Distant Realms': { effects: [free('Arcane Eye')] },
+  'Whispers of the Grave': { effects: [free('Speak with Dead')] },
+  'Witch Sight': { effects: [{ t: 'sense', v: 'Truesight', n: 30 }] },
+};
+const withRules = (o) => ({ ...o, ...(OPTION_RULES[o.name] ?? {}) });
 function withOptions(feats) {
   const seen = new Set();
   return feats.map((f) => {
@@ -162,7 +193,7 @@ function withOptions(feats) {
     if (!Array.isArray(options)) return f;
     const first = !seen.has(f.name);
     seen.add(f.name);
-    const choice = first ? { count: CHOICE_COUNT[f.name] ?? 1, from: 'custom', options, ...(f.name === 'Eldritch Invocations' ? { byGrows: true } : {}) } : { count: CHOICE_COUNT[f.name] ?? 1, from: 'same' };
+    const choice = first ? { count: CHOICE_COUNT[f.name] ?? 1, from: 'custom', options: options.map(withRules), ...(f.name === 'Eldritch Invocations' ? { byGrows: true } : {}) } : { count: CHOICE_COUNT[f.name] ?? 1, from: 'same' };
     return { ...f, choice };
   });
 }

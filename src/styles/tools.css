@@ -350,3 +350,11 @@ h1 .beta-tag{font-size:.8rem}
 .choice-body{display:grid;gap:8px}
 .choice-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 12px;align-items:end}
 .choice-rules .choice-other{grid-column:1/-1}
+/* Gives: the fields of each kind wrap in one cell */
+.give-row{grid-template-columns:1.1fr 2.4fr .6fr auto}
+.give-fields{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:end;min-width:0}
+.give-fields > *{flex:1 1 150px;min-width:0}
+.give-fields > .give-wide,.give-fields > .give-spell{flex-basis:100%}
+.give-fields > .ckrow{flex:0 1 auto}
+@media (max-width:900px){.give-row{grid-template-columns:1fr}}
+.choice-nested{border-left:2px solid var(--h-line);padding-left:10px}

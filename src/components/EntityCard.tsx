@@ -12,10 +12,13 @@ export function describeEffect(x: Effect): string {
     case 'prof': return `Proficiency: ${x.kind === 'save' ? (AB[x.v] ?? x.v) + ' saving throws' : x.v}${x.kind === 'skill' || x.kind === 'save' ? '' : ' (' + x.kind + ')'}${at}`;
     case 'resist': return `${x.immune ? 'Immunity' : 'Resistance'} to ${x.v} damage${at}`;
     case 'condition': return `Immunity to the ${x.v} condition${at}`;
-    case 'speed': return x.mode === 'walk' ? `Walking speed ${sgn(Number(x.n))} feet${at}` : `${x.mode[0].toUpperCase() + x.mode.slice(1)} speed ${x.n} feet${at}`;
-    case 'sense': return `${x.v} ${x.n} feet${at}`;
+    case 'speed': return x.mode === 'walk' ? `Walking speed ${sgn(Number(x.n))} feet${at}` : `${x.mode[0].toUpperCase() + x.mode.slice(1)} speed ${x.n === 'walk' ? 'equal to walking speed' : x.n + ' feet'}${at}`;
+    case 'sense': return `${x.v} ${x.n} feet${x.what ? ' (' + x.what + ')' : ''}${at}`;
     case 'resource': return `${x.name}: ${/^\d+$/.test(String(x.max)) ? x.max : describeMax(String(x.max))} per ${x.recharge === 'none' ? 'day (does not recharge by itself)' : x.recharge === 'short1' ? 'long rest (one back on a short rest)' : x.recharge + ' rest'}${at}`;
-    case 'spell': return `You can cast ${x.name}${at}`;
+    case 'spell': return `${x.cast === 'free' ? `You can cast ${x.name}${x.self ? ' on yourself' : ''} without a spell slot` : x.cast === 'perRest' ? `You can cast ${x.name}${x.self ? ' on yourself' : ''} without a spell slot ${x.n ?? 1} time${Number(x.n) > 1 ? 's' : ''} per ${x.recharge === 'short' ? 'short or long' : 'long'} rest` : `${x.name} is always prepared`}${at}`;
+    case 'adv': return `Advantage on ${x.roll === 'initiative' ? 'Initiative' : (x.ab ? (AB[x.ab] ?? x.ab) + ' ' : '') + ({ save: 'saving throws', check: 'checks', attack: 'attack rolls' } as Record<string, string>)[x.roll]}${x.when ? ' ' + x.when : ''}${at}`;
+    case 'attacks': return `${x.n} attacks when you take the Attack action${x.with ? ' with ' + x.with : ''}${at}`;
+    case 'damage': return `Extra ${AB[x.amount] ? AB[x.amount] + ' modifier' : x.amount}${x.type === 'choice' ? ' damage of your choice' : x.type ? ' ' + x.type + ' damage' : ' damage'}${x.when ? ' ' + x.when : ''}${at}`;
     case 'scale': return `${x.name}: ${(x.steps ?? []).map(([l, v]) => `${v} at level ${l}`).join(', ')}`;
     case 'hp': return `Hit point maximum +${x.n} per level${at}`;
     case 'ac': return `Armor class ${sgn(Number(x.n))}${at}`;

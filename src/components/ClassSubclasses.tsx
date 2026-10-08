@@ -164,7 +164,7 @@ export function SubclassFeatureList({ features, setFeatures, markers, resources,
               <p className="dim">Subclass features spend the class&apos;s resources (set on the Features tab), like an oath&apos;s use of Channel Divinity.</p>
             </fieldset>
             <UseEditor f={f} onChange={(use) => edit(i, { use })} />
-            <ChoiceEditor f={f} feats={feats} resources={resources} onChange={(choice) => edit(i, { choice })} />
+            <ChoiceEditor f={f} feats={feats} resources={resources} spellNames={spellNames} onChange={(choice) => edit(i, { choice })} />
             <GivesEditor effects={f.effects ?? []} spellNames={spellNames} onChange={(effects) => edit(i, { effects })} />
             <GrowsEditor f={f as any} onChange={(effects) => edit(i, { effects })} />
             <p className="inline"><button type="button" className="quiet small-btn danger" onClick={() => { setData({ features: features.filter((_, j) => j !== i) }); setOpenF(null); }}>Remove this feature</button></p>
