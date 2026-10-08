@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ABILITIES, classTable, mod, sgn, type Effect, type Feature } from '@/lib/rules/engine';
+import { limitText } from '@/lib/feat-text';
 import { areaText, saveText, spellText } from '@/lib/spell-rules.mjs';
 import { equipLine, multiclassLine } from '@/lib/class-equip';
 import { TYPES } from '@/config/homebrew';
@@ -9,7 +10,7 @@ export function describeEffect(x: Effect): string {
   const at = x.at && x.at > 1 ? ` (from level ${x.at})` : '';
   const AB: Record<string, string> = Object.fromEntries(ABILITIES);
   switch (x.t) {
-    case 'ability': return `${x.ab === 'any' ? 'One ability score of your choice' : AB[x.ab] ?? x.ab} ${sgn(Number(x.n))}${at}`;
+    case 'ability': return `${x.ab === 'any' ? (x.among?.length ? x.among.map((k: string) => AB[k] ?? k).join(' or ') : 'One ability score of your choice') : AB[x.ab] ?? x.ab} ${sgn(Number(x.n))}${x.split ? ' (or +1 to two)' : ''}${x.max ? `, up to ${x.max}` : ''}${at}`;
     case 'prof': return `Proficiency: ${x.kind === 'save' ? (AB[x.v] ?? x.v) + ' saving throws' : x.v}${x.kind === 'skill' || x.kind === 'save' ? '' : ' (' + x.kind + ')'}${at}`;
     case 'resist': return `${x.immune ? 'Immunity' : 'Resistance'} to ${x.v} damage${at}`;
     case 'condition': return `Immunity to the ${x.v} condition${at}`;
@@ -22,7 +23,8 @@ export function describeEffect(x: Effect): string {
     case 'damage': return `Extra ${AB[x.amount] ? AB[x.amount] + ' modifier' : x.amount}${x.type === 'choice' ? ' damage of your choice' : x.type ? ' ' + x.type + ' damage' : ' damage'}${x.when ? ' ' + x.when : ''}${at}`;
     case 'scale': return `${x.name}: ${(x.steps ?? []).map(([l, v]) => `${v} at level ${l}`).join(', ')}`;
     case 'hp': return `Hit point maximum +${x.n} per level${at}`;
-    case 'ac': return `Armor class ${sgn(Number(x.n))}${at}`;
+    case 'ac': return `Armor class ${sgn(Number(x.n))}${x.when ? ' while ' + x.when : ''}${at}`;
+    case 'bonus': return `${x.amount === 'prof' ? '+ Proficiency Bonus' : AB[x.amount] ? '+ ' + AB[x.amount] + ' modifier' : sgn(Number(x.amount))} to ${({ save: 'saving throws', check: 'ability checks', attack: 'attack rolls', initiative: 'Initiative', damage: 'damage rolls' } as Record<string, string>)[x.roll] ?? x.roll}${x.when ? ' ' + x.when : ''}${at}`;
     case 'text': return x.text + at;
   }
 }
@@ -97,6 +99,8 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
           {type === 'class' ? <><Fact k="Hit die" v={d.hd ? 'd' + d.hd : ''} /><Fact k="Primary ability" v={d.primary} /><Fact k="Saving throws" v={(d.saves ?? []).map((s: string) => Object.fromEntries(ABILITIES)[s] ?? s)} /><Fact k="Armor" v={d.armor} /><Fact k="Weapons" v={d.weapons} /><Fact k="Tools" v={d.tools} /><Fact k="Skills" v={d.skillCount ? `Choose ${d.skillCount}${(d.skillList ?? []).length ? ' from ' + d.skillList.join(', ') : ' of any'}` : ''} /><Fact k="Spellcasting" v={d.casting?.kind && d.casting.kind !== 'none' ? `${d.casting.kind === 'custom' ? 'own slot table' : d.casting.kind}${d.casting.ability ? ', using ' + (Object.fromEntries(ABILITIES)[d.casting.ability] ?? d.casting.ability) : ''}` : ''} /><Fact k="Spellcasting focus" v={d.casting?.kind && d.casting.kind !== 'none' ? d.casting.focus : ''} /><Fact k="Starting equipment" v={equipLine(d.startEquip)} /><Fact k="Multiclassing" v={multiclassLine(d.multiclass)} /></> : null}
           {type === 'background' ? <><Fact k="Skills" v={d.skills} /><Fact k="Tools" v={d.toolProfs} /><Fact k="Languages" v={d.languages} /><Fact k="Equipment" v={d.equipment} /></> : null}
           {type === 'feat' ? <Fact k="Prerequisite" v={d.prereq} /> : null}
+          {type === 'feat' && d.repeatable ? <Fact k="Repeatable" v={d.repeatNote ? 'Yes. ' + d.repeatNote : 'Yes'} /> : null}
+          {type === 'feat' && Array.isArray(d.benefits) ? d.benefits.map((b: any, i: number) => <Fact key={i} k={b.name || 'Benefit'} v={[limitText(b.limit), b.text].filter(Boolean).join('. ')} />) : null}
           {type === 'item' ? <><Fact k="Damage" v={d.damage} /><Fact k="Armor class" v={d.ac} /><Fact k="Properties" v={d.props} /><Fact k="Cost" v={d.cost} /><Fact k="Weight" v={d.weight} /></> : null}
           {type === 'rule' && d.section ? <Fact k="Section" v={d.section} /> : null}
           {type === 'feat' && d.category ? <Fact k="Category" v={d.category} /> : null}

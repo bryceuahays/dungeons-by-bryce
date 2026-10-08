@@ -11,7 +11,7 @@ export type EntityType = (typeof ENTITY_TYPES)[number];
 
 // The building blocks. `at` is the character level from which the effect applies.
 export type Effect = { at?: number } & (
-  | { t: 'ability'; ab: Ability | 'any'; n: number }
+  | { t: 'ability'; ab: Ability | 'any'; n: number; max?: number; among?: string[]; split?: boolean } // any: the player's choice (from the listed ones)
   | { t: 'prof'; kind: 'skill' | 'save' | 'armor' | 'weapon' | 'tool' | 'language'; v: string }
   | { t: 'resist'; v: string; immune?: boolean }
   | { t: 'condition'; v: string } // immunity to a condition, like Charmed
@@ -24,7 +24,8 @@ export type Effect = { at?: number } & (
   | { t: 'damage'; amount: string; type?: string; when?: string } // extra damage: dice ("1d8") or an ability modifier ("cha")
   | { t: 'scale'; name: string; steps: [number, string][] }
   | { t: 'hp'; n: number }
-  | { t: 'ac'; n: number }
+  | { t: 'ac'; n: number; when?: string }
+  | { t: 'bonus'; roll: 'save' | 'check' | 'attack' | 'initiative' | 'damage'; amount: number | string; when?: string } // amount: a number, 'prof' or an ability
   | { t: 'text'; text: string }
 );
 export type Feature = { level: number; name: string; text: string; effects?: Effect[] };
@@ -252,7 +253,7 @@ export function balanceHint(type: EntityType, data: Record<string, any>, srd: { 
       reasons.push(`Its traits add up to about ${r1(pts)} points. A typical ${type} lands between ${lo} and ${hi}.`);
       return { verdict: verdictBy(pts, lo, hi), reasons };
     }
-    reasons.push(`Its traits add up to about ${r1(pts)} points. The SRD ${type === 'race' ? 'races' : type + 'es'} run from ${r1(base.min)} to ${r1(base.max)}.`);
+    reasons.push(`Its traits add up to about ${r1(pts)} points. The SRD ${({ race: 'races', feat: 'feats', background: 'backgrounds', subclass: 'subclasses' } as Record<string, string>)[type] ?? type + 's'} run from ${r1(base.min)} to ${r1(base.max)}.`);
     const abil = (data.effects ?? []).filter((x: Effect) => x.t === 'ability').reduce((n: number, x: any) => n + Number(x.n), 0);
     if (type === 'race' && abil > 3) reasons.push(`It gives +${abil} in ability scores in total. Most SRD races give +3.`);
     if ((data.effects ?? []).some((x: Effect) => x.t === 'speed' && x.mode === 'fly')) reasons.push('A flying speed from level 1 is stronger than anything an SRD race has.');

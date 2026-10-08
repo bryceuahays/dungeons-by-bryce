@@ -24,14 +24,14 @@ export const SpellTools = createContext<{ spells: SpellOption[]; onSpellSaved: (
 const KINDS: [string, string][] = [
   ['prof', 'A proficiency'], ['ac', 'Armor class bonus'], ['speed', 'Speed'], ['resist', 'Resistance or immunity'],
   ['condition', 'Immunity to a condition'], ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score increase'],
-  ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
+  ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['bonus', 'A bonus to a roll'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
   ['text', 'A note on the sheet'],
 ];
 export const GIVEN = KINDS.map(([k]) => k);
 const blank = (t: string): any => ({
   prof: { t, kind: 'skill', v: 'Perception' }, ac: { t, n: 1 }, speed: { t, mode: 'walk', n: 10 }, resist: { t, v: 'fire', immune: false },
   sense: { t, v: 'Darkvision', n: 60 }, condition: { t, v: 'Charmed' }, hp: { t, n: 1 }, ability: { t, ab: 'str', n: 1 }, spell: { t, name: '' }, text: { t, text: '' },
-  adv: { t, roll: 'save', ab: 'con', when: '' }, attacks: { t, n: 2, with: '' }, damage: { t, amount: '1d6', type: '', when: '' },
+  adv: { t, roll: 'save', ab: 'con', when: '' }, bonus: { t, roll: 'attack', amount: 2, when: '' }, attacks: { t, n: 2, with: '' }, damage: { t, amount: '1d6', type: '', when: '' },
 }[t]);
 const SENSES = ['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'];
 const ROLLS: [string, string][] = [['save', 'Saving throws'], ['check', 'Ability checks'], ['attack', 'Attack rolls'], ['initiative', 'Initiative']];
@@ -74,7 +74,15 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
           : <label>Language<input value={g.v ?? ''} placeholder="For example: Celestial" onChange={(e) => set({ v: e.target.value })} /></label>}
       </>
     );
-    case 'ac': return num('Bonus (+)', 'n', { min: 0 });
+    case 'ac': return <>{num('Bonus (+)', 'n', { min: 0 })}<label className="give-wide">Only while<input value={g.when ?? ''} maxLength={120} placeholder="For example: wearing Light, Medium or Heavy armor (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;
+    case 'bonus': {
+      const fixed = !ABILITIES.some(([k]) => k === g.amount) && g.amount !== 'prof';
+      return <>
+        <label>Roll<select value={g.roll} onChange={(e) => set({ roll: e.target.value })}>{[...ROLLS, ['damage', 'Damage rolls']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        <label>Adds<select value={fixed ? 'n' : g.amount} onChange={(e) => set({ amount: e.target.value === 'n' ? 1 : e.target.value })}><option value="n">A number</option><option value="prof">Proficiency Bonus</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l} modifier</option>)}</select></label>
+        {fixed ? num('Bonus (+)', 'amount', { min: 1, max: 20 }) : null}
+        <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: with Ranged weapons (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;
+    }
     case 'speed': return <><label>Kind<select value={g.mode} onChange={(e) => set({ mode: e.target.value, ...(e.target.value === 'walk' && g.n === 'walk' ? { n: 10 } : {}) })}>{[['walk', 'Walking (added)'], ['fly', 'Flying'], ['swim', 'Swimming'], ['climb', 'Climbing'], ['burrow', 'Burrowing']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
       {g.n === 'walk' ? null : num('Feet', 'n', { min: 0, step: 5 })}
       {g.mode !== 'walk' ? <label className="ckrow"><input type="checkbox" checked={g.n === 'walk'} onChange={(e) => set({ n: e.target.checked ? 'walk' : 30 })} /> Equal to walking speed</label> : null}</>;
@@ -103,7 +111,14 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
         <label className="give-wide">When<input value={g.when ?? ''} maxLength={160} placeholder="For example: once per turn when you hit with your pact weapon" onChange={(e) => set({ when: e.target.value })} /></label></>;
     }
     case 'hp': return num('Hit points per level', 'n', { min: 0 });
-    case 'ability': return <><label>Ability<select value={g.ab} onChange={(e) => set({ ab: e.target.value })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="any">Player&apos;s choice</option></select></label>{num('Increase', 'n', { min: 1 })}</>;
+    case 'ability': return <>
+      <label>Ability<select value={g.ab} onChange={(e) => set({ ab: e.target.value, ...(e.target.value === 'any' ? {} : { among: undefined, split: undefined }) })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="any">Player&apos;s choice</option></select></label>
+      {num('Increase', 'n', { min: 1 })}
+      <label>Up to<input type="number" min={1} max={30} placeholder="20" value={g.max ?? ''} onChange={(e) => set({ max: e.target.value === '' ? undefined : Number(e.target.value) })} /></label>
+      {g.ab === 'any' ? <>
+        <span className="give-wide give-abs">Choose from: {ABILITIES.map(([k, l]) => <label key={k} className="ckrow"><input type="checkbox" checked={!g.among?.length || g.among.includes(k)} onChange={(e) => { const all = ABILITIES.map(([x]) => x); const cur: string[] = g.among?.length ? g.among : all; const next = e.target.checked ? [...cur, k] : cur.filter((x) => x !== k); set({ among: next.length === all.length ? undefined : next }); }} /> {l}</label>)}</span>
+        {Number(g.n) >= 2 ? <label className="ckrow"><input type="checkbox" checked={!!g.split} onChange={(e) => set({ split: e.target.checked || undefined })} /> Or split it as +1 to two scores</label> : null}
+      </> : null}</>;
     case 'spell': return <>
       <GiveSpell name={g.name ?? ''} onChange={(name) => set({ name })} spellNames={spellNames} />
       <label>How<select value={g.cast ?? 'prepared'} onChange={(e) => set({ cast: e.target.value === 'prepared' ? undefined : e.target.value, ...(e.target.value === 'perRest' ? { n: g.n || 1, recharge: g.recharge ?? 'long' } : {}) })}>
@@ -135,12 +150,13 @@ export type ChoiceOption = {
 //   list of an earlier feature with the same name (the Sorcerer's Metamagic at levels 10 and 17)
 //   byGrows: how many follows the feature's growing number (Eldritch Invocations: 1, then 3, 5, ...)
 //   spell: for "spells" - which spells: { level: 0 cantrips, 1-9, or '' any; ritual: only rituals; any: any class's list, not just this class's }
-export type Choice = { count: number; from: string; options?: ChoiceOption[]; byGrows?: boolean; spell?: { level?: number | ''; ritual?: boolean; any?: boolean } } | null;
+export type Choice = { count: number; from: string; options?: ChoiceOption[]; byGrows?: boolean; spell?: { level?: number | ''; ritual?: boolean; any?: boolean; lists?: string[] } } | null;
 const FROM: [string, string][] = [
   ['feat:Fighting style', 'Fighting Styles'], ['feat:Epic boon', 'Epic Boons'], ['feat:Origin', 'Origin feats'], ['feat:General', 'General feats'],
-  ['weapons', 'Weapons (for Weapon Mastery)'], ['skills', 'Skills they are proficient in (for Expertise)'], ['spells', 'Spells'], ['custom', 'My own list of options'],
+  ['weapons', 'Weapons (for Weapon Mastery)'], ['skills', 'Skills they are proficient in (for Expertise)'], ['anyskill', 'Any skills or tools (new proficiencies)'], ['spells', 'Spells'], ['custom', 'My own list of options'],
   ['same', 'More from an earlier feature\'s list (same name)'],
 ];
+const CASTER_LISTS = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock', 'Wizard'];
 const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
 
 // Features saved before choices existed: the SRD's choice features are recognised by name.
@@ -182,7 +198,8 @@ export function optionLine(o: ChoiceOption, resources: { id: string; name: strin
 export function spellChoiceLine(c: NonNullable<Choice>) {
   const s = c.spell ?? {};
   const lv = s.level === 0 ? (c.count === 1 ? 'cantrip' : 'cantrips') : `${s.level ? 'level ' + s.level + ' ' : ''}${s.ritual ? 'Ritual ' : ''}spell${c.count === 1 ? '' : 's'}`;
-  return `${c.count} ${s.level === 0 && s.ritual ? 'Ritual ' : ''}${lv} from ${s.any ? "any class's" : "this class's"} spell list`;
+  const from = s.lists?.length ? `the ${s.lists.length > 1 ? s.lists.slice(0, -1).join(', ') + ' or ' + s.lists[s.lists.length - 1] : s.lists[0]}` : s.any ? "any class's" : "this class's";
+  return `${c.count} ${s.level === 0 && s.ritual ? 'Ritual ' : ''}${lv} from ${from} spell list`;
 }
 
 export function ChoiceEditor({ f, onChange, feats, resources = [], spellNames = [], nested = false }: { f: any; onChange: (choice: Choice) => void; feats: FeatOption[]; resources?: { id: string; name: string }[]; spellNames?: string[]; nested?: boolean }) {
@@ -190,7 +207,7 @@ export function ChoiceEditor({ f, onChange, feats, resources = [], spellNames = 
   const [open, setOpen] = useState<number | null>(null);
   const growing = (f.effects ?? []).find((x: any) => x.t === 'scale');
   const fromFeats = c?.from.startsWith('feat:') ? feats.filter((x) => x.category.toLowerCase() === c.from.slice(5).toLowerCase()) : [];
-  const preview = !c ? [] : c.from === 'weapons' ? ['any Simple or Martial weapon with a mastery property'] : c.from === 'skills' ? ['any skill the character is proficient in'] : fromFeats.map((x) => x.name);
+  const preview = !c ? [] : c.from === 'weapons' ? ['any Simple or Martial weapon with a mastery property'] : c.from === 'skills' ? ['any skill the character is proficient in'] : c.from === 'anyskill' ? ['any skill or tool'] : fromFeats.map((x) => x.name);
   const opts = c?.options ?? [];
   const setOpts = (next: ChoiceOption[]) => onChange({ ...c!, options: next });
   const setOpt = (i: number, p: Partial<ChoiceOption>) => setOpts(opts.map((x, j) => (j === i ? { ...x, ...p } : x)));
@@ -201,7 +218,7 @@ export function ChoiceEditor({ f, onChange, feats, resources = [], spellNames = 
       <div className="feat-uses-pick">
         <label>Choose from<select value={c?.from ?? ''} onChange={(e) => onChange(e.target.value ? { count: c?.count ?? 1, from: e.target.value, ...(e.target.value === 'custom' ? { options: opts.length ? opts : [{ name: '', text: '' }] } : {}), ...(c?.byGrows ? { byGrows: true } : {}) } : null)}>
           <option value="">Nothing to choose</option>
-          {FROM.filter(([k]) => !nested || (k !== 'same' && k !== 'custom')).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+          {FROM.filter(([k]) => !nested || k !== 'same').map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select></label>
         {c ? <label>How many<input type="number" min={1} max={20} value={c.count} disabled={!!c.byGrows && !!growing} onChange={(e) => onChange({ ...c, count: Math.max(1, Number(e.target.value) || 1) })} /></label> : null}
       </div>
@@ -214,9 +231,10 @@ export function ChoiceEditor({ f, onChange, feats, resources = [], spellNames = 
           <label>Spell level<select value={c.spell?.level ?? ''} onChange={(e) => onChange({ ...c, spell: { ...c.spell, level: e.target.value === '' ? '' : Number(e.target.value) } })}>
             <option value="">Any level</option><option value="0">Cantrips</option>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map((l) => <option key={l} value={l}>Level {l}</option>)}
           </select></label>
-          <label>From<select value={c.spell?.any ? 'any' : 'class'} onChange={(e) => onChange({ ...c, spell: { ...c.spell, any: e.target.value === 'any' || undefined } })}>
-            <option value="class">This class&apos;s spell list</option><option value="any">Any class&apos;s spell list</option>
+          <label>From<select value={c.spell?.lists?.length ? 'lists' : c.spell?.any ? 'any' : 'class'} onChange={(e) => onChange({ ...c, spell: { ...c.spell, any: e.target.value === 'any' || undefined, lists: e.target.value === 'lists' ? ['Wizard'] : undefined } })}>
+            <option value="class">This class&apos;s spell list</option><option value="any">Any class&apos;s spell list</option><option value="lists">Certain classes&apos; lists</option>
           </select></label>
+          {c.spell?.lists?.length ? <span className="choice-other give-abs">Lists: {CASTER_LISTS.map((k) => <label key={k} className="ckrow"><input type="checkbox" checked={c.spell!.lists!.includes(k)} onChange={(e) => { const next = e.target.checked ? [...c.spell!.lists!, k] : c.spell!.lists!.filter((x) => x !== k); onChange({ ...c, spell: { ...c.spell, lists: next.length ? next : [k] } }); }} /> {k}</label>)}</span> : null}
           <label className="ckrow"><input type="checkbox" checked={!!c.spell?.ritual} onChange={(e) => onChange({ ...c, spell: { ...c.spell, ritual: e.target.checked || undefined } })} /> Rituals only</label>
           <p className="dim choice-other">Players pick {spellChoiceLine(c)}.</p>
         </div>

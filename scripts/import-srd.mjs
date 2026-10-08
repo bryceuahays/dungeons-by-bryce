@@ -198,6 +198,48 @@ function withOptions(feats) {
     return { ...f, choice };
   });
 }
+// 2024 feats as benefits (the bold-named parts of their wording), each with what it does to the sheet.
+const boonAsi = { name: 'Ability Score Increase', effects: [{ t: 'ability', ab: 'any', n: 1, max: 30 }] };
+const FEAT_RULES_2024 = {
+  Alert: { 'Initiative Proficiency': { effects: [{ t: 'bonus', roll: 'initiative', amount: 'prof' }] } },
+  'Magic Initiate': {
+    'Two Cantrips': { choice: { count: 2, from: 'spells', spell: { level: 0, lists: ['Cleric', 'Druid', 'Wizard'] } } },
+    'Level 1 Spell': { choice: { count: 1, from: 'spells', spell: { level: 1, lists: ['Cleric', 'Druid', 'Wizard'] } }, limit: { n: 1, per: 'long' } },
+  },
+  'Savage Attacker': { 'Savage Attacker': { limit: { n: 1, per: 'turn' } } },
+  Skilled: { Skilled: { choice: { count: 3, from: 'anyskill' } } },
+  'Ability Score Improvement': { 'Ability Score Improvement': { effects: [{ t: 'ability', ab: 'any', n: 2, split: true, max: 20 }] } },
+  Grappler: {
+    'Ability Score Increase': { effects: [{ t: 'ability', ab: 'any', n: 1, among: ['str', 'dex'], max: 20 }] },
+    'Punch and Grab': { limit: { n: 1, per: 'turn' } },
+    'Attack Advantage': { effects: [{ t: 'adv', roll: 'attack', ab: '', when: 'against a creature Grappled by you' }] },
+  },
+  Archery: { Archery: { effects: [{ t: 'bonus', roll: 'attack', amount: 2, when: 'with Ranged weapons' }] } },
+  Defense: { Defense: { effects: [{ t: 'ac', n: 1, when: 'wearing Light, Medium, or Heavy armor' }] } },
+  'Boon of Combat Prowess': { 'Ability Score Increase': boonAsi, 'Peerless Aim': { limit: { n: 1, per: 'turn' } } },
+  'Boon of Dimensional Travel': { 'Ability Score Increase': boonAsi },
+  'Boon of Fate': { 'Ability Score Increase': boonAsi, 'Improve Fate': { limit: { n: 1, per: 'initiative' } } },
+  'Boon of Irresistible Offense': { 'Ability Score Increase': boonAsi },
+  'Boon of Spell Recall': { 'Ability Score Increase': boonAsi },
+  'Boon of the Night Spirit': { 'Ability Score Increase': boonAsi },
+  'Boon of Truesight': { 'Ability Score Increase': boonAsi, Truesight: { effects: [{ t: 'sense', v: 'Truesight', n: 60 }] } },
+};
+const FEAT_CAT = { origin: 'Origin', general: 'General', 'fighting-style': 'Fighting style', 'epic-boon': 'Epic boon' };
+function feat2024(f) {
+  const desc = String(f.description ?? '');
+  const parts = desc.split(/\*\*([^*]+?)\.\*\*\s*/);
+  const intro = parts[0].trim();
+  const named = [];
+  for (let i = 1; i < parts.length; i += 2) named.push({ name: parts[i].trim(), text: parts[i + 1].trim() });
+  const benefits = (named.length ? named : [{ name: f.name, text: intro }]).map((b) => ({ ...b, ...(FEAT_RULES_2024[f.name]?.[b.name] ?? {}) }));
+  const p = f.prerequisites ?? {};
+  const req = { ...(p.minimum_level ? { level: p.minimum_level } : {}), ...(p.feature_named ? { feature: p.feature_named } : {}) };
+  return {
+    category: FEAT_CAT[f.type] ?? '', desc: named.length ? intro : '', req, prereq: [req.level ? `Level ${req.level}+` : '', req.feature ? `${req.feature} feature` : ''].filter(Boolean).join(', '),
+    ...(f.repeatable ? { repeatable: true, repeatNote: /different/i.test(f.repeatable) ? String(f.repeatable).replace(/^You can take this feat more than once,? ?(but )?/i, '').replace(/^./, (c) => c.toUpperCase()) : '' } : {}),
+    benefits, effects: benefits.flatMap((b) => b.effects ?? []),
+  };
+}
 const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
 function fix2024(index, fx) {
   return fx.flatMap((x) => {
@@ -307,7 +349,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
     });
   }
   for (const f of load(year, 'Feats')) {
-    add(v, 'feat', f.name, { prereq: prereqText(f.prerequisites), category: f.type ? cap(String(f.type).replace(/-/g, ' ')) : '', desc: text(f.desc ?? f.description) });
+    add(v, 'feat', f.name, is51 ? { prereq: prereqText(f.prerequisites), category: f.type ? cap(String(f.type).replace(/-/g, ' ')) : '', desc: text(f.desc ?? f.description) } : feat2024(f));
   }
 
   // ---- spells

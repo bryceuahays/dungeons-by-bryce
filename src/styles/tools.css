@@ -367,3 +367,4 @@ h1 .beta-tag{font-size:.8rem}
 .sr-label{display:block;font-size:.85rem;opacity:.8;margin-top:6px}
 .sr-grid > .sr-label{flex-basis:100%;margin:0}
 .sr-conds{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:2px 10px}
+.give-abs{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
