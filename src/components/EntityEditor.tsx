@@ -9,6 +9,7 @@ import { deleteEntity, saveEntity, setAttached, type BrewState } from '@/app/(hu
 import { ClassTableView, EntityCard } from './EntityCard';
 import { ArmorBox, ToolsBox, WeaponsBox, syncSaves } from './ClassProfs';
 import { ChosenSpells, ClassSpells } from './ClassSpells';
+import { ClassBanner } from './ClassBanner';
 import { FeatureTable, FeaturesTab, syncGrows, syncResources, syncUses } from './ClassFeatures';
 import type { SpellOption } from '@/lib/class-spells';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
@@ -311,6 +312,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
   return (
     <div className={'brew' + (onlyAdvanced ? ' brew-wide' : '') + (onlyAdvanced && tab === 'Player' ? ' brew-full' : '')}>
+      {onlyAdvanced ? <ClassBanner data={data} onChange={setData} /> : null}
       {onlyAdvanced ? (
         <div className="brew-head">
           <div className="depth" role="tablist" aria-label="How much detail">
