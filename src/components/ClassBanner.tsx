@@ -12,10 +12,8 @@ const MAX_UPLOAD = 3 * 1024 * 1024;
 const POSITIONS: [string, string][] = [['top', 'Top'], ['center', 'Middle'], ['bottom', 'Bottom']];
 // Each SRD class's own default banner, shown until the DM adds one. focus is the crop's centre
 // (the figure's face and weapon), so it stays in frame on wide screens and on phones alike.
-const DEFAULT_BANNERS: Record<string, { src: string; focus: string }> = {
-  Paladin: { src: '/class-banners/paladin.webp', focus: '30% 20%' },
-  Barbarian: { src: '/class-banners/barbarian.webp', focus: '37% 15%' },
-};
+// Pictures go in public/class-banners/, e.g. Paladin: { src: '/class-banners/paladin.webp', focus: '30% 20%' }.
+const DEFAULT_BANNERS: Record<string, { src: string; focus: string }> = {};
 // the class a homebrew class started from (set by the class picker), else its own name
 const defaultFor = (data: any, name: string) => DEFAULT_BANNERS[data.baseClass] ?? Object.entries(DEFAULT_BANNERS).find(([k]) => k.toLowerCase() === (name ?? '').trim().toLowerCase())?.[1];
 
