@@ -10,10 +10,14 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 
 const MAX_UPLOAD = 3 * 1024 * 1024;
 const POSITIONS: [string, string][] = [['top', 'Top'], ['center', 'Middle'], ['bottom', 'Bottom']];
-// Shown on classes without their own banner. The knight stands left of centre with the helmet
-// near the top, so the crop favours that spot on every screen shape.
-const DEFAULT_BANNER = '/class-banners/default.webp';
-const DEFAULT_FOCUS = '30% 20%';
+// Each SRD class's own default banner, shown until the DM adds one. focus is the crop's centre
+// (the figure's face and weapon), so it stays in frame on wide screens and on phones alike.
+const DEFAULT_BANNERS: Record<string, { src: string; focus: string }> = {
+  Paladin: { src: '/class-banners/paladin.webp', focus: '30% 20%' },
+  Barbarian: { src: '/class-banners/barbarian.webp', focus: '37% 15%' },
+};
+// the class a homebrew class started from (set by the class picker), else its own name
+const defaultFor = (data: any, name: string) => DEFAULT_BANNERS[data.baseClass] ?? Object.entries(DEFAULT_BANNERS).find(([k]) => k.toLowerCase() === (name ?? '').trim().toLowerCase())?.[1];
 
 // Shrink and compress in the browser, so a phone photo or large art works without fuss.
 async function prepare(file: File): Promise<Blob> {
@@ -34,8 +38,9 @@ async function prepare(file: File): Promise<Blob> {
   throw new Error('That image could not be made small enough. Try a smaller one.');
 }
 
-export function ClassBanner({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+export function ClassBanner({ data, name, onChange }: { data: any; name: string; onChange: (d: any) => void }) {
   const banner: { path: string; pos?: string } | undefined = data.banner?.path ? data.banner : undefined;
+  const fallback = defaultFor(data, name);
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -78,10 +83,11 @@ export function ClassBanner({ data, onChange }: { data: any; onChange: (d: any) 
   };
 
   return (
-    <div className="cls-banner">
+    <div className={'cls-banner' + (!banner && !fallback ? ' empty' : '')}>
       {banner && url ? <img src={url} alt="" style={{ objectPosition: 'center ' + (banner.pos ?? 'center') }} /> : null}
-      {!banner ? <img src={DEFAULT_BANNER} alt="" style={{ objectPosition: DEFAULT_FOCUS }} /> : null}
-      {!banner ? <p className="cls-banner-note">Default banner. Add your own and players will see it at the top of this class.</p> : null}
+      {!banner && fallback ? <img src={fallback.src} alt="" style={{ objectPosition: fallback.focus }} /> : null}
+      {!banner && fallback ? <p className="cls-banner-note">Default banner. Add your own and players will see it at the top of this class.</p> : null}
+      {!banner && !fallback ? <p className="cls-banner-hint">Add a banner picture for this class. Players will see it at the top of the class.</p> : null}
       <div className="cls-banner-tools">
         <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => choose(e.target.files?.[0])} />
         <button type="button" className="small-btn" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Working…' : banner ? 'Change image' : 'Add your own image'}</button>

@@ -312,7 +312,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
 
   return (
     <div className={'brew' + (onlyAdvanced ? ' brew-wide' : '') + (onlyAdvanced && tab === 'Player' ? ' brew-full' : '')}>
-      {onlyAdvanced ? <ClassBanner data={data} onChange={setData} /> : null}
+      {onlyAdvanced ? <ClassBanner data={data} name={name} onChange={setData} /> : null}
       {onlyAdvanced ? (
         <div className="brew-head">
           <div className="depth" role="tablist" aria-label="How much detail">

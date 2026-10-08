@@ -36,5 +36,5 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
 function startData(type: string, start: { name: string; data: any } | null, spells?: SpellOption[]) {
   if (!start) return {};
   if (type !== 'class') return start.data;
-  return { ...start.data, desc: start.data?.desc || CLASS_BLURBS[start.name] || '', spellList: start.data?.spellList ?? srdListFor(spells ?? [], start.name) };
+  return { ...start.data, baseClass: start.name, desc: start.data?.desc || CLASS_BLURBS[start.name] || '', spellList: start.data?.spellList ?? srdListFor(spells ?? [], start.name) };
 }
