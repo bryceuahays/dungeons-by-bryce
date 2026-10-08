@@ -34,11 +34,11 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
     supabase.from('entity_versions').select('version, note, name, data, created_at').eq('entity_id', id).order('version', { ascending: false }),
     supabase.from('campaigns').select('id, title, phases').eq('owner_id', user.id).order('created_at'),
     supabase.from('campaign_entities').select('campaign_id, vis, vis_players, vis_stage').eq('entity_id', id),
-    e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
-    e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
+    e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' || e.type === 'background' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
+    e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' || e.type === 'background' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
     e.type === 'class' ? loadSubclassOptions(supabase, user.id) : Promise.resolve(undefined),
     e.type === 'subclass' ? loadClassOptions(supabase, user.id) : Promise.resolve(undefined),
-    e.type === 'class' ? loadItemNames(supabase) : Promise.resolve(undefined),
+    e.type === 'class' || e.type === 'background' ? loadItemNames(supabase) : Promise.resolve(undefined),
   ]);
   const [faces, members] = await Promise.all([
     supabase.from('campaign_faces').select('campaign_id, title').eq('phase', ''),
@@ -60,8 +60,8 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
   });
   return (
     <>
-      {e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
-      <div className="inline" style={{ marginBottom: 12 }}>{e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
+      {e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
+      <div className="inline" style={{ marginBottom: 12 }}>{e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
       <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data }} />
     </>

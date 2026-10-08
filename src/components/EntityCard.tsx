@@ -56,6 +56,9 @@ export function ClassTableView({ table }: { table: ReturnType<typeof classTable>
 export function EntityCard({ type, name, source, status, data, compact }: { type: string; name: string; source?: string; status?: string; data: Record<string, any>; compact?: boolean }) {
   const d = data || {};
   const effects: Effect[] = d.effects ?? [];
+  // the same line once, with how many times (a background's ability increases show in its Ability scores line)
+  const effectLines = [...effects.filter((x) => !(type === 'background' && x.t === 'ability')).map(describeEffect)
+    .reduce((m, l) => m.set(l, (m.get(l) ?? 0) + 1), new Map<string, number>())];
   const features: Feature[] = [...(d.features ?? [])].sort((a, b) => (Number(a.level) || 1) - (Number(b.level) || 1));
   const def = TYPES[type];
   const table = type === 'class' ? classTable({ data: d }) : null;
@@ -97,7 +100,7 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
           {type === 'spell' ? <><Fact k="Damage or healing" v={d.damage || (d.rules ? spellText(d.rules, d.level).damage : '')} /><Fact k="At higher levels" v={d.higher} /><Fact k="Classes" v={d.classes} /></> : null}
           {type === 'race' ? <><Fact k="Creature type" v={d.type} /><Fact k="Size" v={d.size} /><Fact k="Speed" v={d.speed ? d.speed + ' feet' : ''} /><Fact k="Languages" v={d.languages} /></> : null}
           {type === 'class' ? <><Fact k="Hit die" v={d.hd ? 'd' + d.hd : ''} /><Fact k="Primary ability" v={d.primary} /><Fact k="Saving throws" v={(d.saves ?? []).map((s: string) => Object.fromEntries(ABILITIES)[s] ?? s)} /><Fact k="Armor" v={d.armor} /><Fact k="Weapons" v={d.weapons} /><Fact k="Tools" v={d.tools} /><Fact k="Skills" v={d.skillCount ? `Choose ${d.skillCount}${(d.skillList ?? []).length ? ' from ' + d.skillList.join(', ') : ' of any'}` : ''} /><Fact k="Spellcasting" v={d.casting?.kind && d.casting.kind !== 'none' ? `${d.casting.kind === 'custom' ? 'own slot table' : d.casting.kind}${d.casting.ability ? ', using ' + (Object.fromEntries(ABILITIES)[d.casting.ability] ?? d.casting.ability) : ''}` : ''} /><Fact k="Spellcasting focus" v={d.casting?.kind && d.casting.kind !== 'none' ? d.casting.focus : ''} /><Fact k="Starting equipment" v={equipLine(d.startEquip)} /><Fact k="Multiclassing" v={multiclassLine(d.multiclass)} /></> : null}
-          {type === 'background' ? <><Fact k="Skills" v={d.skills} /><Fact k="Tools" v={d.toolProfs} /><Fact k="Languages" v={d.languages} /><Fact k="Equipment" v={d.equipment} /></> : null}
+          {type === 'background' ? <><Fact k="Ability scores" v={(d.abilities ?? []).map((a: string) => (Object.fromEntries(ABILITIES) as Record<string, string>)[a] ?? a).join(', ') + ((d.abilities ?? []).length ? ' (+2 to one and +1 to another, or +1 to all three)' : '')} /><Fact k="Origin feat" v={d.feat?.name ? d.feat.name + (d.feat.note ? ` (${d.feat.note})` : '') : ''} /><Fact k="Skills" v={d.skills} /><Fact k="Tools" v={d.toolProfs} /><Fact k="Languages" v={d.languages} /><Fact k="Equipment" v={d.equipment} /></> : null}
           {type === 'feat' ? <Fact k="Prerequisite" v={d.prereq} /> : null}
           {type === 'feat' && d.repeatable ? <Fact k="Repeatable" v={d.repeatNote ? 'Yes. ' + d.repeatNote : 'Yes'} /> : null}
           {type === 'feat' && Array.isArray(d.benefits) ? d.benefits.map((b: any, i: number) => <Fact key={i} k={b.name || 'Benefit'} v={[limitText(b.limit), b.text].filter(Boolean).join('. ')} />) : null}
@@ -105,7 +108,7 @@ export function EntityCard({ type, name, source, status, data, compact }: { type
           {type === 'rule' && d.section ? <Fact k="Section" v={d.section} /> : null}
           {type === 'feat' && d.category ? <Fact k="Category" v={d.category} /> : null}
           {type === 'resource' ? <><Fact k="Each character has" v={d.max ? describeMax(String(d.max)) + ' ' + (d.unit || 'point') + 's' : ''} /><Fact k="Comes back on" v={d.recharge === 'none' ? 'Does not recharge by itself' : d.recharge ? `a ${d.recharge} rest` : ''} /></> : null}
-          {effects.length ? <ul className="traits">{effects.map((x, i) => <li key={i}>{describeEffect(x)}</li>)}</ul> : null}
+          {effectLines.length ? <ul className="traits">{effectLines.map(([line, n]) => <li key={line}>{line}{n > 1 ? ` (×${n})` : ''}</li>)}</ul> : null}
           {features.length && !compact ? (
             <ul className="traits">
               {features.map((f, i) => (

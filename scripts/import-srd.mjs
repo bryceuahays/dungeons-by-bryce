@@ -329,6 +329,30 @@ function species2024(r, subs, traitOf) {
   });
   return out.map((t) => ({ level: t.level ?? 1, ...t }));
 }
+// 2024 backgrounds: the recipe's fields (see src/components/BackgroundPage.tsx), plus the text and
+// sheet effects its Save writes.
+const TOOL_CHOICE_FROM = { 'Gaming Set': 'Gaming sets', "Artisan's Tools": "Artisan's tools", 'Musical Instrument': 'Musical instruments' };
+// the data leaves out the Sage's spell list; the SRD 5.2.1 document says "Magic Initiate (Wizard)"
+const FEAT_NOTE_2024 = { Sage: 'Wizard' };
+function background2024(b) {
+  const profs = names(b.proficiencies);
+  const skills = profs.filter((p) => /^Skill: /.test(p)).map((p) => p.slice(7));
+  const toolItems = profs.filter((p) => /^Tool: /.test(p)).map((p) => p.slice(6));
+  const pick = (b.proficiency_choices ?? [])[0];
+  const kind = pick ? Object.keys(TOOL_CHOICE_FROM).find((k) => new RegExp(k.replace(/s$/, ''), 'i').test(pick.desc ?? '')) : null;
+  const toolChoice = pick ? { n: pick.choose ?? 1, from: TOOL_CHOICE_FROM[kind] ?? 'Any tool' } : { n: 0, from: "Artisan's tools" };
+  const abilities = (b.ability_scores ?? []).map((a) => a.index);
+  const fake = { starting_equipment_options: [{ desc: String(b.equipment_options?.[0]?.desc ?? '').replace(/^Choose A or B:\s*/i, '') }] };
+  const pkgs = startEquip(fake);
+  return {
+    desc: '', abilities, feat: b.feat ? { name: b.feat.name, note: b.feat.note ?? FEAT_NOTE_2024[b.name] ?? '' } : { name: '', note: '' }, skills, toolItems, toolChoice,
+    tools: [...toolItems, ...(toolChoice.n ? [`Choose ${toolChoice.n}: ${toolChoice.from.toLowerCase()}`] : [])].join(', ') || 'None',
+    toolProfs: [...toolItems, ...(toolChoice.n ? [`Choose ${toolChoice.n}: ${toolChoice.from.toLowerCase()}`] : [])].join(', ') || 'None',
+    startEquip: pkgs, equipment: String(b.equipment_options?.[0]?.desc ?? ''),
+    effects: [...skills.map((v) => ({ t: 'prof', kind: 'skill', v })), ...toolItems.map((v) => ({ t: 'prof', kind: 'tool', v })), ...(abilities.length ? [1, 2, 3].map(() => ({ t: 'ability', ab: 'any', n: 1, among: abilities, max: 20 })) : [])],
+    features: [],
+  };
+}
 const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
 function fix2024(index, fx) {
   return fx.flatMap((x) => {
@@ -426,6 +450,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
 
   // ---- backgrounds, feats
   for (const b of load(year, 'Backgrounds')) {
+    if (!is51) { add(v, 'background', b.name, background2024(b)); continue; }
     const profs = names(b.starting_proficiencies ?? b.proficiencies);
     const skills = profs.filter((p) => /^Skill: /.test(p)).map((p) => p.slice(7)), tools = profs.filter((p) => !/^Skill: /.test(p)).map((p) => p.replace(/^Tool: /, ''));
     const abil = names(b.ability_scores);
