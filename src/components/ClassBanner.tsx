@@ -88,7 +88,7 @@ export function ClassBanner({ data, name, onChange }: { data: any; name: string;
       {!banner && !fallback ? <p className="cls-banner-hint">Add a banner picture for this class. Players will see it at the top of the class.</p> : null}
       <div className="cls-banner-tools">
         <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => choose(e.target.files?.[0])} />
-        <button type="button" className="small-btn" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Working…' : banner ? 'Change image' : 'Add your own image'}</button>
+        <button type="button" className="small-btn" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Working…' : banner ? 'Change image' : fallback ? 'Add your own image' : 'Add a banner image'}</button>
         {banner ? (
           <>
             <label className="ckrow">Focus<select value={banner.pos ?? 'center'} onChange={(e) => onChange({ ...data, banner: { ...banner, pos: e.target.value } })}>{POSITIONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
