@@ -79,12 +79,30 @@ const perLevel = (levels, key) => Array.from({ length: 20 }, (_, i) => Number(le
 // Pools the 2024 level tables do not list as a column.
 const EXTRA_2024 = {
   paladin: [{ t: 'resource', name: 'Lay on Hands', max: 'level*5', recharge: 'long' }],
+  // Font of Inspiration (level 5) makes it come back on a short rest too; the feature's text says so
+  bard: [{ t: 'resource', name: 'Bardic Inspiration', max: 'cha', recharge: 'long' }],
+  cleric: [{ t: 'resource', name: 'Divine Intervention', max: '1', recharge: 'long', at: 10 }],
+  monk: [{ t: 'resource', name: 'Uncanny Metabolism', max: '1', recharge: 'long', at: 2 }],
+  sorcerer: [{ t: 'resource', name: 'Innate Sorcery', max: '2', recharge: 'long' }],
+  warlock: [{ t: 'resource', name: 'Magical Cunning', max: '1', recharge: 'long', at: 2 }],
+  wizard: [{ t: 'resource', name: 'Arcane Recovery', max: '1', recharge: 'long' }],
   fighter: [{ t: 'resource', name: 'Action Surge', max: 'step:2=1,17=2', recharge: 'short', at: 2 }, { t: 'resource', name: 'Indomitable', max: 'step:9=1,13=2,17=3', recharge: 'long', at: 9 }],
 };
 // The 2024 data set flattens some subclass tables into the text (and mixes them up). The SRD 5.2
 // itself gives these: an oath's always-prepared spells by Paladin level, what spends Channel Divinity.
 const OATH_SPELLS = [[3, ['Protection from Evil and Good', 'Shield of Faith']], [5, ['Aid', 'Zone of Truth']], [9, ['Beacon of Hope', 'Dispel Magic']], [13, ['Freedom of Movement', 'Guardian of Faith']], [17, ['Commune', 'Flame Strike']]];
+const spellTable = (cls, title, rows, intro) => ({
+  text: intro + '\n' + rows.map(([l, sp]) => `${cls} level ${l}: ${sp.join(', ')}`).join('\n'),
+  effects: rows.flatMap(([l, sp]) => sp.map((name) => ({ t: 'spell', name, ...(l > 3 ? { at: l } : {}) }))),
+});
+const ALWAYS = (cls, table) => `When you reach a ${cls} level listed in the ${table} table, you thereafter always have the listed spells prepared.`;
+const SUBCLASS_SPELLS_2024 = {
+  'Life Domain': ['Life Domain Spells', spellTable('Cleric', 'Life Domain Spells', [[3, ['Aid', 'Bless', 'Cure Wounds', 'Lesser Restoration']], [5, ['Mass Healing Word', 'Revivify']], [7, ['Aura of Life', 'Death Ward']], [9, ['Greater Restoration', 'Mass Cure Wounds']]], 'Your connection to this divine domain ensures you always have certain spells ready. ' + ALWAYS('Cleric', 'Life Domain Spells'))],
+  'Draconic Sorcery': ['Draconic Spells', spellTable('Sorcerer', 'Draconic Spells', [[3, ['Alter Self', 'Chromatic Orb', 'Command', "Dragon's Breath"]], [5, ['Fear', 'Fly']], [7, ['Arcane Eye', 'Charm Monster']], [9, ['Legend Lore', 'Summon Dragon']]], ALWAYS('Sorcerer', 'Draconic Spells'))],
+  'Fiend Patron': ['Fiend Spells', spellTable('Warlock', 'Fiend Spells', [[3, ['Burning Hands', 'Command', 'Scorching Ray', 'Suggestion']], [5, ['Fireball', 'Stinking Cloud']], [7, ['Fire Shield', 'Wall of Fire']], [9, ['Geas', 'Insect Plague']]], 'The magic of your patron ensures you always have certain spells ready. ' + ALWAYS('Warlock', 'Fiend Spells'))],
+};
 const SUBCLASS_2024 = {
+  ...Object.fromEntries(Object.entries(SUBCLASS_SPELLS_2024).map(([sub, [feature, fix]]) => [sub, { [feature]: fix }])),
   'Oath of Devotion': {
     'Oath of Devotion Spells': {
       text: 'The magic of your oath ensures you always have certain spells ready; when you reach a Paladin level listed below, you thereafter always have the listed spells prepared.\n' + OATH_SPELLS.map(([l, sp]) => `Paladin level ${l}: ${sp.join(', ')}`).join('\n'),
@@ -94,6 +112,14 @@ const SUBCLASS_2024 = {
     'Aura of Devotion': { effects: [{ t: 'condition', v: 'Charmed' }] },
   },
 };
+const ONE_BACK_ON_SHORT = new Set(['Rage', 'Channel Divinity', 'Wild Shape', 'Second Wind']);
+function fix2024(index, fx) {
+  return fx.flatMap((x) => {
+    if (x.t === 'resource' && ONE_BACK_ON_SHORT.has(x.name)) return [{ ...x, recharge: 'short1' }];
+    if (index === 'ranger' && x.t === 'scale' && x.name === 'Favored Enemies') return [{ t: 'resource', name: 'Favored Enemy', max: 'step:' + x.steps.map(([l, n]) => l + '=' + n).join(','), recharge: 'long' }];
+    return [x];
+  });
+}
 const CAST_ABILITY = { bard: 'cha', cleric: 'wis', druid: 'wis', paladin: 'cha', ranger: 'wis', sorcerer: 'cha', warlock: 'cha', wizard: 'int' };
 function classProfs(c) {
   const all = names(c.proficiencies).filter((n) => !/^Saving Throw/.test(n));
@@ -160,7 +186,7 @@ for (const [year, v] of [['2014', '5.1'], ['2024', '5.2']]) {
     const guide = is51 ? core('class', c.name) : null;
     const kind = castKind(own, c.index);
     const saves = names(c.saving_throws).map((s) => s.toLowerCase());
-    const derived = [...saves.map((s) => ({ t: 'prof', kind: 'save', v: s })), ...levelEffects(own), ...(is51 ? [] : EXTRA_2024[c.index] ?? [])];
+    const derived = [...saves.map((s) => ({ t: 'prof', kind: 'save', v: s })), ...(is51 ? levelEffects(own) : fix2024(c.index, levelEffects(own))), ...(is51 ? [] : EXTRA_2024[c.index] ?? [])];
     add(v, 'class', c.name, {
       hd: c.hit_die, primary: c.primary_ability?.desc ?? guide?.data.primary ?? '', saves, ...classProfs(c),
       casting: kind === 'none' ? { kind } : { kind, ability: c.spellcasting?.spellcasting_ability?.index ?? CAST_ABILITY[c.index] ?? 'int', ...(is51 ? {} : { rules: '2024', cantrips: perLevel(own, 'cantrips_known'), prepared: perLevel(own, 'prepared_spells') }) },

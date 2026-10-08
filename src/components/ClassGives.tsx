@@ -104,6 +104,14 @@ export function guessChoice(f: { name?: string; text?: string; choice?: Choice; 
     return { count: grows ? Number(grows.steps?.[0]?.[1]) || 2 : n(/(\w+) kinds? of/, 2), from: 'weapons' };
   }
   if (name === 'expertise' || name.endsWith(' expertise')) return { count: n(/(\w+) of your skill proficiencies/, 2), from: 'skills' };
+  // "Choose one of your skill proficiencies ... You gain Expertise" (the Ranger's Deft Explorer)
+  if (/choose (\w+) of your skill proficiencies[^.]*expertise|gain expertise in (\w+) of your skill/.test(text)) return { count: n(/choose (\w+) of your skill proficiencies/, 1), from: 'skills' };
+  // the SRD data set does not include these options, so the DM lists them (custom)
+  if (name === 'metamagic') return { count: n(/you gain (\w+) metamagic options/, 2), from: 'custom', options: [] };
+  if (name === 'eldritch invocations') {
+    const grows = (f.effects ?? []).find((x) => x.t === 'scale');
+    return { count: grows ? Number(grows.steps?.[0]?.[1]) || 1 : 1, from: 'custom', options: [] };
+  }
   return null;
 }
 
@@ -159,7 +167,9 @@ const RANGES = ['Self', 'Touch', '5 feet', '10 feet', '30 feet', '60 feet', '120
 export function guessUse(f: { text?: string; use?: Use | null }): Use | null {
   if (f.use !== undefined) return f.use;
   const t = (f.text ?? '').toLowerCase();
-  const activation = /as a bonus action|bonus action/.test(t) ? 'bonus' : /\breaction\b/.test(t) ? 'reaction' : /when you take the attack action|as part of the attack action/.test(t) ? 'attack' : /\b(as an?|take the) (magic )?action\b/.test(t) ? 'action' : '';
+  const first = ([['bonus', /bonus action/], ['reaction', /\b(as a|take a|use your|your) reaction\b/], ['attack', /when you take the attack action|as part of the attack action/], ['action', /\b(as an?|take the) (magic |utilize )?action\b/]] as [string, RegExp][])
+    .map(([k, re]) => [k, t.search(re)] as const).filter(([, i]) => i >= 0).sort((a, b) => a[1] - b[1])[0];
+  const activation = first ? first[0] : '';
   const dm = t.match(/\bfor (1|10|one|ten) (minute|minutes|hour|hours|round|rounds)\b/);
   const duration = dm ? `${{ one: '1', ten: '10' }[dm[1]] ?? dm[1]} ${dm[2].replace(/s$/, '')}${['1', 'one'].includes(dm[1]) ? '' : 's'}` : /until the start of your next turn/.test(t) ? 'Until the start of your next turn' : '';
   const rm = t.match(/(\d+)-foot emanation/) ?? t.match(/within (\d+) feet/);

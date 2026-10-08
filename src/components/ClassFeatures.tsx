@@ -81,10 +81,17 @@ export function guessUses(f: Feature, resources: Resource[]): Uses {
   const same = resources.find((r) => r.name.trim().toLowerCase() === (f.name ?? '').trim().toLowerCase());
   if (same) return { res: same.id, cost: '' };
   const text = (f.text ?? '').toLowerCase();
-  const spent = resources.find((r) => r.name.trim() && text.includes(r.name.trim().toLowerCase()) && /expend|spend/.test(text));
-  // "expend 5 Hit Points from the pool": the number after expend or spend, else one use
-  const n = Number(text.match(/(?:expend|spend)s?\s+(\d+)/)?.[1]);
-  return spent ? { res: spent.id, cost: n > 0 ? n : 1 } : null;
+  // each "expend ..." / "spend ..." up to the end of its sentence; the resource must be named there,
+  // and the sentence must not be about getting uses back
+  const clauses = [...text.matchAll(/\b(?:expend|spend)\b[^.]{0,90}/g)].map((m) => m[0]).filter((c) => !/\bregain\b/.test(c));
+  for (const c of clauses) {
+    // singular or plural ("1 Focus Point" spends Focus Points)
+    const spent = resources.find((r) => r.name.trim() && c.includes(r.name.trim().toLowerCase().replace(/s$/, '')));
+    // "expend 5 Hit Points from the pool": the number after expend or spend, else one use
+    const n = Number(c.match(/^(?:expend|spend)\s+(\d+)/)?.[1]);
+    if (spent) return { res: spent.id, cost: n > 0 ? n : 1 };
+  }
+  return null;
 }
 // Saved with the class so the links are kept (and the guesses are only made once).
 export function syncUses(data: any) {
