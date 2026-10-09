@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { BREW_KINDS, PROMPTS, applyBase, basedOnOf, parseBrewImport } from '@/lib/brew-import';
+import { BREW_KINDS, PROMPTS, applyBase, basedOnOf, classSubclasses, parseBrewImport, readAnswer, type NewSub } from '@/lib/brew-import';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import type { SpellOption } from '@/lib/class-spells';
 import { EntityEditor } from './EntityEditor';
@@ -19,7 +19,7 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
   const [answer, setAnswer] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState<'yes' | 'blocked' | ''>('');
-  const [made, setMade] = useState<{ name: string; data: any; notes: string[] } | null>(null);
+  const [made, setMade] = useState<{ name: string; data: any; notes: string[]; subs: NewSub[] } | null>(null);
   const label = BREW_KINDS.find(([k]) => k === type)?.[1] ?? 'Homebrew';
   const noun = label.toLowerCase().replace('race or species', 'race');
 
@@ -50,11 +50,13 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
       const base = await findBase(basedOn).catch(() => null);
       setBusy(false);
       if (base) {
-        result = applyBase(type, base, result, answer, spells);
+        result = applyBase(type, base, result, readAnswer(answer), spells);
         if (guessed) result.notes = [`Your notes call it a ${base.name} variant, so it started from the ${base.name}. If that is wrong, go back and add "basedOn" to the answer, or fill it in by hand.`, ...result.notes];
       } else if (!guessed) result.notes = [`Your notes say this is based on "${basedOn}", but there is no ${noun} by that name in the SRD or your homebrew, so only what your notes say was filled in.`, ...result.notes];
     }
-    setMade(result);
+    // a class's subclasses (patrons, oaths, paths): real subclasses of it, saved when the class is
+    const subs = type === 'class' ? classSubclasses(readAnswer(answer), result.data, result.notes, subclasses, spells) : [];
+    setMade({ ...result, subs });
     window.scrollTo(0, 0);
   };
 
@@ -66,7 +68,7 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
           {made.notes.length ? <><p>Notes on the import:</p><ul>{made.notes.map((n, i) => <li key={i}>{n}</li>)}</ul></> : null}
           <p className="inline"><button type="button" className="quiet small-btn" onClick={() => setMade(null)}>Back to the import</button></p>
         </div>
-        <EntityEditor id={null} pro={pro} srd={srd.filter((s) => s.type === type)} versions={[]} campaigns={[]} version={1} changeNote="" spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
+        <EntityEditor id={null} pro={pro} srd={srd.filter((s) => s.type === type)} versions={[]} campaigns={[]} version={1} changeNote="" spells={spells} feats={feats} subclasses={[...made.subs, ...subclasses]} classes={classes} items={items}
           initial={{ type, name: made.name, status: 'draft', depth: 'advanced', source: 'homebrew', data: made.data }} />
       </>
     );

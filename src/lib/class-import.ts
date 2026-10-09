@@ -17,6 +17,8 @@ Rules:
 - If my notes do not mention something, leave that key out (or use an empty list). Never guess.
 - Copy feature descriptions in my own words; do not rewrite them.
 - If my notes say this is a reskin, reflavor or variant of an official D&D one, put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
+- Patrons, oaths, paths, circles, colleges, domains and anything else a player picks one of to shape the class are subclasses: put each in "subclasses", never as a feature's choice.
+- Use the structured keys (gives, grows, chooses, resources) for anything the rules track; keep "description" for the words players read.
 - Answer with the JSON only: no explanation before or after it.
 
 Format (every key is optional except "format"):
@@ -75,12 +77,22 @@ Format (every key is optional except "format"):
         | { "type": "armorClass", "bonus": 1 }
         | { "type": "speed", "kind": "walk" | "fly" | "swim" | "climb" | "burrow", "feet": 10 }
         | { "type": "resistance", "damage": "fire", "immune": false }
+        | { "type": "conditionImmunity", "condition": "Charmed" }
         | { "type": "sense", "sense": "Darkvision" | "Blindsight" | "Tremorsense" | "Truesight", "feet": 60 }
         | { "type": "hitPointsPerLevel", "amount": 1 }
         | { "type": "abilityIncrease", "ability": "str", "amount": 1 }
+        | { "type": "advantage", "on": "save" | "check" | "attack" | "initiative", "ability": "wis", "when": "against being Frightened" }
         | { "type": "spell", "name": "spell always prepared" }
         | { "type": "note", "text": "anything else, like advantage on certain saves" }
       ]
+    }
+  ],
+  "subclasses": [                              // patrons, oaths, paths, circles, colleges, domains: each one here, not as a feature's choice
+    {
+      "name": "subclass name",
+      "basedOn": "Fiend Patron",                // the official subclass this one reflavors, if my notes say so
+      "description": "what it is like",
+      "features": [ ...the same as "features" above, with "level" the class level it is gained at ]
     }
   ],
   "proficiencyBonus": [20 numbers, only if my notes change the usual +2 to +6]

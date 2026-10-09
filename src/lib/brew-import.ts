@@ -20,6 +20,7 @@ Rules:
 - If my notes do not mention something, leave that key out (or use an empty list). Never guess.
 - Copy descriptions in my own words; do not rewrite them.
 - If my notes say this is a reskin, reflavor or variant of an official D&D one, put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
+- Use the structured keys (gives, grows, chooses, limit) for anything the rules track; keep "description" for the words players read.
 - Answer with the JSON only: no explanation before or after it.
 
 Format (every key is optional except "format"):
@@ -382,8 +383,8 @@ const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const RESKIN_WORDS = '[Rr]eskin|[Rr]e-skin|[Rr]eflavou?r|[Rr]e-flavou?r|[Vv]ariant|[Vv]ersion|[Tt]ake';
 export function reskinNamed(s: unknown) {
   const t = str(s);
-  return t.match(new RegExp(`\\b(?:${RESKIN_WORDS})(?:ed)? (?:of|on) (?:the |a |an )?([A-Z][\\w'’-]+(?: [A-Z][\\w'’-]+){0,2})`))?.[1]
-    ?? t.match(new RegExp(`\\b([A-Z][\\w'’-]+(?: [A-Z][\\w'’-]+){0,2}) (?:${RESKIN_WORDS})\\b`))?.[1] ?? '';
+  return t.match(new RegExp(`\\b(?:${RESKIN_WORDS})(?:ed)? (?:of|on) (?:the |a |an )?([A-Z][\\w'’-]+(?: [A-Z][\\w'’-]+){0,3})`))?.[1]
+    ?? t.match(new RegExp(`\\b([A-Z][\\w'’-]+(?: [A-Z][\\w'’-]+){0,3}) (?:${RESKIN_WORDS})\\b`))?.[1] ?? '';
 }
 export function basedOnOf(text: string): { name: string; guessed: boolean } {
   const start = text.indexOf('{'), end = text.lastIndexOf('}');
@@ -395,8 +396,13 @@ export function basedOnOf(text: string): { name: string; guessed: boolean } {
   } catch { return { name: '', guessed: false }; }
 }
 
-export function applyBase(type: string, base: { name: string; data: any }, imported: { name: string; data: any; notes: string[] }, text: string, spells: SpellOption[] = []) {
-  const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1).replace(/\/\/[^\n"]*$/gm, ''));
+// The AI's answer as an object (null when it cannot be read).
+export function readAnswer(text: string): any {
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  try { return JSON.parse(text.slice(start, end + 1).replace(/\/\/[^\n"]*$/gm, '')); } catch { return null; }
+}
+
+export function applyBase(type: string, base: { name: string; data: any }, imported: { name: string; data: any; notes: string[] }, j: any, spells: SpellOption[] = []) {
   const notes = [...imported.notes];
   const out: any = structuredClone(base.data);
   const key = PARTS[type];
@@ -468,3 +474,51 @@ export function applyBase(type: string, base: { name: string; data: any }, impor
   return { name: imported.name || base.name, data: out, notes };
 }
 const isMarkerName = (n: string) => /\bsubclass\b/i.test(n ?? '');
+
+// ---------------------------------------------------------------- a class's subclasses
+
+// A class answer's subclasses become real subclasses of it (saved with the class, like ones made on its
+// Subclasses tab): the answer's "subclasses", and a feature whose choice is really a subclass pick
+// (patrons, oaths, paths: "Pact Origins", with options like "Reflavor of The Fiend"), which is taken out
+// of the class. One that reflavors an official subclass starts from it, the same as a reskinned class.
+export type NewSub = { id: string; name: string; mine: true; dirty: true; cloned_from: string | null; data: any };
+const SUB_WORDS = /\b(patrons?|oaths?|paths?|circles?|colleges?|domains?|traditions?|archetypes?|subclass(?:es)?|schools?|origins?|orders?|bloodlines?|conclaves?|ways?)\b/i;
+const lcs = (s: unknown) => String(s ?? '').toLowerCase().trim();
+// "The Fiend" finds "Fiend Patron"; "Oath of Devotion" finds itself
+export function findSubclass(name: string, all: { id: string; name: string; mine: boolean; data: any }[]) {
+  const t = lcs(name).replace(/^the /, '');
+  if (!t) return null;
+  const srd = all.filter((s) => !s.mine);
+  return srd.find((s) => lcs(s.name) === t) ?? srd.find((s) => lcs(s.name).split(/\s+/).includes(t) || lcs(s.name).startsWith(t + ' ') || lcs(s.name).endsWith(' ' + t)) ?? null;
+}
+
+export function classSubclasses(j: any, data: any, notes: string[], all: { id: string; name: string; mine: boolean; data: any }[], spells: SpellOption[]) {
+  const raw: any[] = [...list(j?.subclasses)];
+  // a feature whose options are subclasses: by its name, or by options that reflavor official subclasses
+  const features: any[] = data.features ?? [];
+  const pick = features.find((f) => f.choice?.from === 'custom' && (f.choice.options ?? []).length >= 2
+    && (SUB_WORDS.test(f.name) || (f.choice.options as any[]).filter((o) => findSubclass(reskinNamed(o.text), all)).length >= 2));
+  if (pick && !raw.length) {
+    for (const o of pick.choice.options) raw.push({ name: o.name, description: o.text, basedOn: reskinNamed(o.text) });
+    data.features = features.filter((f) => f !== pick);
+    notes.push(`"${pick.name}" lists ${pick.choice.options.length} ${/patron/i.test(pick.name + JSON.stringify(pick.choice.options)) ? 'patrons' : 'options'} a player picks one of, so each became a subclass of this class (see the Subclasses tab), picked at the class's subclass levels.`);
+  }
+  const subs: NewSub[] = [];
+  for (const s of raw) {
+    const name = str(s?.name, 120);
+    if (!name) continue;
+    const own: { name: string; data: any; notes: string[] } = { name, data: subclassOf(s, notes), notes: [] };
+    const baseName = str(s.basedOn, 80) || reskinNamed(s.description);
+    const base = baseName ? findSubclass(baseName, all) : null;
+    let made = own;
+    if (base) {
+      made = applyBase('subclass', { name: base.name, data: base.data }, own, s, spells);
+      notes.push(`${name} starts from the official ${base.name}: its features, renamed where your notes say so.`);
+    } else if (!(own.data.features ?? []).length) {
+      notes.push(`${name} has no features in your notes${baseName ? ` (${baseName} is not in the SRD)` : ''}, so it was made with its description only. Add its features on the Subclasses tab.`);
+    }
+    const { parent: _p, parentClassId: _pc, ...rest } = made.data;
+    subs.push({ id: 'new:' + Math.random().toString(36).slice(2), name, mine: true, dirty: true, cloned_from: base?.id ?? null, data: rest });
+  }
+  return subs;
+}
