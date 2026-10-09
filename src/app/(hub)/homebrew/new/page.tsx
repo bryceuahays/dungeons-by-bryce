@@ -38,11 +38,12 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
 
 // The SRD 5.2 classes have no description: start a class from the picker with its card's text.
 // Its spell list starts as the SRD's list for that class.
-function startData(type: string, start: { name: string; data: any } | null, spells?: SpellOption[]) {
+function startData(type: string, start: { id: string; name: string; data: any } | null, spells?: SpellOption[]) {
   if (!start) return type === 'class' ? { features: MILESTONES } : type === 'spell' ? { level: 1, school: 'Evocation' } : {};
-  if (type !== 'class') return start.data;
+  // made from an SRD entry: it replaces that entry for players (the editor can turn this off)
+  if (type !== 'class') return { ...start.data, replaces: [start.id] };
   const c = start.data?.casting;
-  return { ...start.data, ...(c?.kind && c.kind !== 'none' && !c.focus && SRD_FOCUS[start.name] ? { casting: { ...c, focus: SRD_FOCUS[start.name] } } : {}), baseClass: start.name, desc: start.data?.desc || CLASS_BLURBS[start.name] || '', spellList: start.data?.spellList ?? srdListFor(spells ?? [], start.name) };
+  return { ...start.data, replaces: [start.id], ...(c?.kind && c.kind !== 'none' && !c.focus && SRD_FOCUS[start.name] ? { casting: { ...c, focus: SRD_FOCUS[start.name] } } : {}), baseClass: start.name, desc: start.data?.desc || CLASS_BLURBS[start.name] || '', spellList: start.data?.spellList ?? srdListFor(spells ?? [], start.name) };
 }
 
 // What every class has, so a blank class starts with them already in place.

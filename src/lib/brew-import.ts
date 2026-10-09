@@ -402,7 +402,7 @@ export function readAnswer(text: string): any {
   try { return JSON.parse(text.slice(start, end + 1).replace(/\/\/[^\n"]*$/gm, '')); } catch { return null; }
 }
 
-export function applyBase(type: string, base: { name: string; data: any }, imported: { name: string; data: any; notes: string[] }, j: any, spells: SpellOption[] = []) {
+export function applyBase(type: string, base: { name: string; data: any; id?: string; source?: string }, imported: { name: string; data: any; notes: string[] }, j: any, spells: SpellOption[] = []) {
   const notes = [...imported.notes];
   const out: any = structuredClone(base.data);
   const key = PARTS[type];
@@ -467,6 +467,8 @@ export function applyBase(type: string, base: { name: string; data: any }, impor
     out[k] = v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k]) ? { ...out[k], ...v } : v;
   }
   if (type === 'class') out.baseClass = out.baseClass || base.name;
+  // made to replace an SRD entry: players in its campaigns get this one instead (see getSheetEntities)
+  out.replaces = base.id && base.source === 'srd' ? [base.id] : [];
   const kept = baseParts.filter((b) => ![...reskinned.values()].includes(b.name)).length;
   const moved = [...reskinned].filter(([to, from]) => to !== from.toLowerCase());
   const part = type === 'feat' ? 'benefit' : 'feature';
@@ -512,7 +514,7 @@ export function classSubclasses(j: any, data: any, notes: string[], all: { id: s
     const base = baseName ? findSubclass(baseName, all) : null;
     let made = own;
     if (base) {
-      made = applyBase('subclass', { name: base.name, data: base.data }, own, s, spells);
+      made = applyBase('subclass', { name: base.name, data: base.data, id: base.id, source: base.mine ? 'homebrew' : 'srd' }, own, s, spells);
       notes.push(`${name} starts from the official ${base.name}: its features, renamed where your notes say so.`);
     } else if (!(own.data.features ?? []).length) {
       notes.push(`${name} has no features in your notes${baseName ? ` (${baseName} is not in the SRD)` : ''}, so it was made with its description only. Add its features on the Subclasses tab.`);

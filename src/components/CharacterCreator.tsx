@@ -139,9 +139,9 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
   };
 
   // ------------------------------------------------------------ the steps
-  const cards = ({ type, value, onPick, line }: { type: string; value: string | null | undefined; onPick: (id: string) => void; line: (e: Entity) => string }) => (
+  const cards = ({ type, value, onPick, line, list }: { type: string; value: string | null | undefined; onPick: (id: string) => void; line: (e: Entity) => string; list?: Entity[] }) => (
     <div className="cc-cards">
-      {of(type).map((e) => (
+      {(list ?? of(type)).map((e) => (
         <button key={e.id} type="button" className={'cc-card' + (value === e.id ? ' on' : '')} aria-pressed={value === e.id} onClick={() => onPick(e.id)}>
           <b>{e.name}</b>{e.source !== 'srd' ? <span className="chip">homebrew</span> : null}
           <small>{line(e)}</small>
@@ -173,7 +173,7 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
           {c.level >= subLevel ? (
             <>
               <h3>Subclass</h3>
-              {subs.length ? cards({ type: "subclass", value: c.subId, line: (e) => first(e.data.desc, 120), onPick: (id) => up({ subId: id }) }) : <p className="dim">No {cls.name} subclasses are available.</p>}
+              {subs.length ? cards({ type: "subclass", list: subs, value: c.subId, line: (e) => first(e.data.desc, 120), onPick: (id) => up({ subId: id }) }) : <p className="dim">No {cls.name} subclasses are available.</p>}
               {choices(c.subId ? byId.get(c.subId) : undefined)}
             </>
           ) : <p className="dim">You choose your subclass at level {subLevel}.</p>}

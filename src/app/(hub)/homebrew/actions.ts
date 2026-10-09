@@ -79,7 +79,7 @@ export async function cloneEntity(id: string, _: BrewState, __: FormData): Promi
   for (let n = 1; n < 30 && !made; n++) {
     const { data, error } = await supabase.from('entities').insert({
       owner_id: user.id, type: src.type, name: src.name + (src.owner_id === user.id ? ' (copy)' : ''), slug: slugOf(src.name) + (n > 1 ? '-' + n : ''),
-      source: src.source === 'private' ? 'private' : 'homebrew', status: 'draft', depth: 'quick', data: src.data, cloned_from: src.id,
+      source: src.source === 'private' ? 'private' : 'homebrew', status: 'draft', depth: 'quick', data: src.source === 'srd' ? { ...src.data, replaces: [src.id] } : src.data, cloned_from: src.id,
     }).select('id').single();
     if (data) made = data.id;
     else if (!/duplicate|unique/i.test(error?.message || '')) return fail(error?.message, 'The copy could not be made.');

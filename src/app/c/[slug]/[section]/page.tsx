@@ -90,7 +90,10 @@ function CharacterPicker({ slug, tab, chars, current }: { slug: string; tab: str
 // The standard fifth edition sheet (every campaign that does not have its own rule set).
 async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: string; play: boolean }) {
   const slug = ctx.campaign.slug;
-  const [chars, entities, party] = await Promise.all([myCharacters(ctx), getSheetEntities(ctx, undefined, { liteSpells: true }), ctx.supabase.rpc('party_cards', { c: ctx.campaign.id })]);
+  const chars = await myCharacters(ctx);
+  // what these characters already use stays, even if homebrew has since replaced it
+  const used = chars.flatMap((c) => { const d = c.data ?? {}; return [d.raceId, d.clsId, d.subId, d.bgId, ...(d.feats ?? []), ...(d.spells ?? [])].filter(Boolean) as string[]; });
+  const [entities, party] = await Promise.all([getSheetEntities(ctx, undefined, { liteSpells: true, keep: used }), ctx.supabase.rpc('party_cards', { c: ctx.campaign.id })]);
   const current = chars.find((c) => c.id === pick) ?? chars[0];
   // characters you made in the other campaigns of this campaign's world, which can be brought in
   const worldId = (ctx.campaign as any).world_id as string | null;

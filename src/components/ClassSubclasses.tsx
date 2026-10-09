@@ -22,7 +22,9 @@ const same = (a?: string, b?: string) => (a ?? '').trim().toLowerCase() === (b ?
 export function subclassesFor(all: SubclassOption[], cls: { id: string | null; name: string; baseClass?: string }) {
   // an unsaved copy only exists in this editor, so it is this class's even if the class was renamed since
   const mine = all.filter((s) => s.mine && (s.id.startsWith('new:') || (cls.id && s.data?.parentClassId === cls.id) || same(s.data?.parent, cls.name)));
-  const srd = all.filter((s) => !s.mine && (same(s.data?.parent, cls.baseClass) || same(s.data?.parent, cls.name)));
+  // an SRD subclass one of yours replaces (a reskin, or your own version of it) is not listed beside it
+  const replaced = new Set(mine.flatMap((s) => (Array.isArray(s.data?.replaces) ? s.data.replaces : s.cloned_from ? [s.cloned_from] : [])));
+  const srd = all.filter((s) => !s.mine && !replaced.has(s.id) && (same(s.data?.parent, cls.baseClass) || same(s.data?.parent, cls.name)));
   return [...mine, ...srd];
 }
 
@@ -62,7 +64,7 @@ export function SubclassesTab({ classId, className, baseClass, classFeatures, re
                   if (s.mine) { put({ ...n, dirty: true }); return; }
                   // changing the SRD subclass: it stays as it is, and your changes go into a new copy
                   const id = 'new:' + Math.random().toString(36).slice(2);
-                  setSubclasses([{ ...n, id, mine: true, cloned_from: s.id, data: { ...n.data, parent: className, parentClassId: classId } }, ...subclasses]);
+                  setSubclasses([{ ...n, id, mine: true, cloned_from: s.id, data: { ...n.data, parent: className, parentClassId: classId, replaces: [s.id] } }, ...subclasses]);
                   setStartF(openF); setOpen(id);
                 }} />
             ) : null}
@@ -243,6 +245,7 @@ export function featureSpells(data: any): { level: number; name: string }[] {
 }
 
 // Save a subclass from outside its own editor (the class's Save, after a feature was moved into it).
-export async function saveSubclass(s: SubclassOption, cls: { name: string; id: string | null }, pro: boolean) {
-  return saveEntity(s.id.startsWith('new:') ? null : s.id, { type: 'subclass', name: s.name, status: 'draft', depth: pro ? 'advanced' : 'quick', source: 'homebrew', data: { ...s.data, parent: cls.name, parentClassId: cls.id }, cloned_from: s.cloned_from ?? null });
+// saved with its class: it takes the class's status (a Live class's subclasses are live too)
+export async function saveSubclass(s: SubclassOption, cls: { name: string; id: string | null; status?: string }, pro: boolean) {
+  return saveEntity(s.id.startsWith('new:') ? null : s.id, { type: 'subclass', name: s.name, status: cls.status ?? 'draft', depth: pro ? 'advanced' : 'quick', source: 'homebrew', data: { ...s.data, parent: cls.name, parentClassId: cls.id }, cloned_from: s.cloned_from ?? null });
 }

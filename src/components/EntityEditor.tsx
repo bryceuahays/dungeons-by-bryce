@@ -1,7 +1,8 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from 'next/link';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import { supabaseBrowser } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { EFFECTS, STATUS, TYPES, type Field } from '@/config/homebrew';
 import { ABILITIES, SRD_FOCUS, balanceHint, classTable, profBonus, slotTop, slotsOnShortRest, spellSlots, type Effect, type EntityType, type Feature } from '@/lib/rules/engine';
@@ -415,7 +416,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       const changed = subclassesFor(subclasses, { id, name, baseClass: data.baseClass }).filter((s) => s.mine && (s.dirty || s.id.startsWith('new:')));
       let next = subclasses, failed = 0;
       for (const s of changed) {
-        const sr = await saveSubclass(s, { name, id: r.id }, pro);
+        const sr = await saveSubclass(s, { name, id: r.id, status }, pro);
         if (sr?.id) next = next.map((x) => (x.id === s.id ? { ...s, id: sr.id!, dirty: false } : x)); else failed++;
       }
       if (changed.length) {
@@ -573,7 +574,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
                       const features = [...(s.data?.features ?? []), { ...f, uses: feature.uses ?? null }].sort((a: any, b: any) => Number(a.level) - Number(b.level));
                       // the SRD subclass stays as it is: the feature goes into your own copy of it
                       const moved: SubclassOption = s.mine ? { ...s, dirty: true, data: { ...s.data, features } }
-                        : { id: 'new:' + Math.random().toString(36).slice(2), name: s.name, mine: true, cloned_from: s.id, data: { ...s.data, features, parent: name, parentClassId: id } };
+                        : { id: 'new:' + Math.random().toString(36).slice(2), name: s.name, mine: true, cloned_from: s.id, data: { ...s.data, features, parent: name, parentClassId: id, replaces: [s.id] } };
                       setSubclasses(s.mine ? subclasses.map((x) => (x.id === s.id ? moved : x)) : [moved, ...subclasses]);
                       setData({ ...data, features: rest });
                     }} feats={feats ?? []} spellNames={allSpells.map((s) => s.name)} onOpenSubclasses={(at) => { setSubFocus(at ?? null); setTab('Subclasses'); }}
@@ -638,6 +639,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
             <label className="ckrow" title="Private entries are never included in anything you publish or sell."><input type="checkbox" checked={source === 'private'} onChange={(e) => setSource(e.target.checked ? 'private' : 'homebrew')} /> Private (never published or sold)</label>
           </div>
           <p className="dim">{STATUS.find((s) => s.id === status)?.what}</p>
+          <ReplacesBox data={data} setData={setData} original={initial.data?.replaces ?? (clonedFrom ? [clonedFrom] : [])} />
           <div className="inline">
             <button type="button" disabled={pending} onClick={() => save(false)}>{pending ? 'Saving' : id ? 'Save' : 'Create'}</button>
             {id ? <ConfirmButton className="quiet danger" disabled={pending} ask={'Delete this entry for good?'} yes="Yes, delete" onConfirm={() => { start(() => deleteEntity(id)); }}>Delete</ConfirmButton> : null}
@@ -702,5 +704,24 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       </aside>
     </div>
     </SpellTools.Provider>
+  );
+}
+
+// Made from an SRD entry (a reskin, or your own version of one): whether players in the campaigns
+// it is added to get this instead of the SRD one (data.replaces, read by getSheetEntities).
+function ReplacesBox({ data, setData, original }: { data: any; setData: (d: any) => void; original: string[] }) {
+  // an entry copied from the SRD before this existed replaces it from now on, once it is saved
+  const fill = (ids: string[]) => (setData as any)((d: any) => (d.replaces === undefined ? { ...d, replaces: ids } : d));
+  const [names, setNames] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!original.length) return;
+    let live = true;
+    supabaseBrowser().from('entities').select('id, name, source').in('id', original).then(({ data: rows }: { data: { id: string; name: string; source: string }[] | null }) => { if (!live) return; const srd = (rows ?? []).filter((r) => r.source === 'srd'); setNames(srd); if (srd.length) fill(srd.map((r) => r.id)); });
+    return () => { live = false; };
+  }, [original.join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!names.length) return null;
+  const on = Array.isArray(data.replaces) ? data.replaces.length > 0 : true;
+  return (
+    <label className="ckrow"><input type="checkbox" checked={on} onChange={(e) => setData({ ...data, replaces: e.target.checked ? names.map((n) => n.id) : [] })} /> Replaces the SRD {names.map((n) => n.name).join(', ')}: in campaigns this is added to, players get this one instead</label>
   );
 }

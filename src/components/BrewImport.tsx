@@ -34,10 +34,10 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
   // a reskin ("basedOn": "Warlock") starts from that official entry (the 2024 one first), or one of your own
   const findBase = async (name: string) => {
     const db = supabaseBrowser();
-    const { data: srd } = await db.from('entities').select('name, data, srd_version').eq('source', 'srd').eq('type', type).ilike('name', name).order('srd_version', { ascending: false }).limit(1);
-    if (srd?.[0]) return srd[0] as { name: string; data: any };
-    const { data: own } = await db.from('entities').select('name, data').neq('source', 'srd').eq('type', type).ilike('name', name).limit(1);
-    return (own?.[0] as { name: string; data: any } | undefined) ?? null;
+    const { data: srd } = await db.from('entities').select('id, name, source, data, srd_version').eq('source', 'srd').eq('type', type).ilike('name', name).order('srd_version', { ascending: false }).limit(1);
+    if (srd?.[0]) return srd[0] as { id: string; name: string; source: string; data: any };
+    const { data: own } = await db.from('entities').select('id, name, source, data').neq('source', 'srd').eq('type', type).ilike('name', name).limit(1);
+    return (own?.[0] as { id: string; name: string; source: string; data: any } | undefined) ?? null;
   };
   const open = async () => {
     const r = parseBrewImport(type, answer, spells);
