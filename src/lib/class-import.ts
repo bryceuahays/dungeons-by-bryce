@@ -10,13 +10,13 @@ import type { SpellOption } from './class-spells';
 
 export const IMPORT_FORMAT = 'dungeons-by-bryce-class-1';
 
-export const IMPORT_PROMPT = `I am going to give you my notes for a homebrew Dungeons & Dragons 5th edition class. Turn them into one JSON object in exactly the format below, so a website can fill in its class editor.
+export const IMPORT_PROMPT = `I am going to give you my notes for a homebrew fifth edition class. Turn them into one JSON object in exactly the format below, so a website can fill in its class editor.
 
 Rules:
 - Use ONLY what my notes say. Do not invent, balance or "complete" anything.
 - If my notes do not mention something, leave that key out (or use an empty list). Never guess.
 - Copy feature descriptions in my own words; do not rewrite them.
-- If my notes say this is a reskin, reflavor or variant of an official D&D one, put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
+- If my notes say this is a reskin, reflavor or variant of an official fifth edition one (from the SRD), put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
 - Patrons, oaths, paths, circles, colleges, domains and anything else a player picks one of to shape the class are subclasses: put each in "subclasses", never as a feature's choice.
 - Use the structured keys (gives, grows, chooses, resources) for anything the rules track; keep "description" for the words players read.
 - Anything a character counts up or down or has a limited number of (points, charges, uses, a corruption or stress score) is a resource: give it a name, an amount and how it comes back ("never" for a score that only goes up), and have the features that change it use it.
@@ -35,10 +35,10 @@ Format (every key is optional except "format"):
   "savingThrows": ["str", "con"],          // ability keys as above
   "armor": ["light", "medium", "heavy", "shields"],
   "weaponCategories": ["simple", "martial"],
-  "weapons": ["Rapier", "Longbow"],        // individual weapons, by their D&D name
-  "tools": ["Thieves' Tools"],             // individual tools, by their D&D name
+  "weapons": ["Rapier", "Longbow"],        // individual weapons, by their official name
+  "tools": ["Thieves' Tools"],             // individual tools, by their official name
   "toolChoice": { "count": 1, "from": "Artisan's tools" | "Musical instruments" | "Gaming sets" | "Artisan's tools or musical instruments" | "Any tool" },
-  "skillChoices": { "count": 2, "from": ["Athletics", "Perception"] },   // D&D skill names; empty "from" means any skill
+  "skillChoices": { "count": 2, "from": ["Athletics", "Perception"] },   // official skill names; empty "from" means any skill
   "spellcasting": {
     "type": "none" | "full" | "half" | "pact",   // full = up to 9th-level slots like a wizard, half = up to 5th like a paladin, pact = warlock-style
     "ability": "int" | "wis" | "cha",
@@ -164,7 +164,7 @@ export function parseClassImport(text: string, spells: SpellOption[]): ImportRes
     const count = int(j.skillChoices.count, 0, 18);
     if (count !== null) data.skillCount = count;
     const from: string[] = [];
-    for (const s of Array.isArray(j.skillChoices.from) ? j.skillChoices.from : []) { const m = pickName(s, SKILL_NAMES); if (m) from.push(m); else notes.push(`"${str(s)}" is not a D&D skill, so it was left off the skill list.`); }
+    for (const s of Array.isArray(j.skillChoices.from) ? j.skillChoices.from : []) { const m = pickName(s, SKILL_NAMES); if (m) from.push(m); else notes.push(`"${str(s)}" is not a fifth edition skill, so it was left off the skill list.`); }
     data.skillList = [...new Set(from)];
   }
 

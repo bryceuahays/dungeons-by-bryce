@@ -13,13 +13,13 @@ export const BREW_KINDS: [string, string][] = [
   ['spell', 'Spell'], ['item', 'Item'], ['monster', 'Monster'], ['resource', 'Custom resource'],
 ];
 
-const head = (what: string, id: string) => `I am going to give you my notes for a homebrew Dungeons & Dragons 5th edition ${what}. Turn them into one JSON object in exactly the format below, so a website can fill in its editor.
+const head = (what: string, id: string) => `I am going to give you my notes for a homebrew fifth edition ${what}. Turn them into one JSON object in exactly the format below, so a website can fill in its editor.
 
 Rules:
 - Use ONLY what my notes say. Do not invent, balance or "complete" anything.
 - If my notes do not mention something, leave that key out (or use an empty list). Never guess.
 - Copy descriptions in my own words; do not rewrite them.
-- If my notes say this is a reskin, reflavor or variant of an official D&D one, put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
+- If my notes say this is a reskin, reflavor or variant of an official fifth edition one (from the SRD), put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
 - Use the structured keys (gives, grows, chooses, limit) for anything the rules track; keep "description" for the words players read.
 - Answer with the JSON only: no explanation before or after it.
 
@@ -246,7 +246,7 @@ function raceOf(j: any, notes: string[]) {
 }
 function backgroundOf(j: any, notes: string[]) {
   const skills: string[] = [];
-  for (const s of list(j.skills)) { const m = pickName(s, SKILL_NAMES); if (m) skills.push(m); else notes.push(`"${str(s)}" is not a D&D skill, so it was left out.`); }
+  for (const s of list(j.skills)) { const m = pickName(s, SKILL_NAMES); if (m) skills.push(m); else notes.push(`"${str(s)}" is not a fifth edition skill, so it was left out.`); }
   const langs = langsOf(j.languages);
   return {
     ...(j.description ? { desc: str(j.description) } : {}), ...(abs(j.abilityScores).length ? { abilities: abs(j.abilityScores).slice(0, 3) } : {}),
