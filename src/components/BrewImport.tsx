@@ -44,13 +44,15 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
     if (!r.ok) { setError(r.error); return; }
     setError('');
     let result = { name: r.name, data: r.data, notes: r.notes };
-    const basedOn = basedOnOf(answer);
+    const { name: basedOn, guessed } = basedOnOf(answer);
     if (basedOn) {
       setBusy(true);
       const base = await findBase(basedOn).catch(() => null);
       setBusy(false);
-      if (base) result = applyBase(type, base, result, answer);
-      else result.notes = [`Your notes say this is based on "${basedOn}", but there is no ${noun} by that name in the SRD or your homebrew, so only what your notes say was filled in.`, ...result.notes];
+      if (base) {
+        result = applyBase(type, base, result, answer, spells);
+        if (guessed) result.notes = [`Your notes call it a ${base.name} variant, so it started from the ${base.name}. If that is wrong, go back and add "basedOn" to the answer, or fill it in by hand.`, ...result.notes];
+      } else if (!guessed) result.notes = [`Your notes say this is based on "${basedOn}", but there is no ${noun} by that name in the SRD or your homebrew, so only what your notes say was filled in.`, ...result.notes];
     }
     setMade(result);
     window.scrollTo(0, 0);

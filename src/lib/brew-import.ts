@@ -6,7 +6,7 @@
 import { SKILL_NAMES } from '@/config/homebrew';
 import { ALL_LANGUAGES } from '@/config/proficiencies';
 import { IMPORT_PROMPT, ab, abs, choiceOf, giveOf, int, parseClassImport, pickName, str, type ImportResult } from './class-import';
-import type { SpellOption } from './class-spells';
+import { srdListFor, type SpellOption } from './class-spells';
 
 export const BREW_KINDS: [string, string][] = [
   ['class', 'Class'], ['subclass', 'Subclass'], ['race', 'Race or species'], ['background', 'Background'], ['feat', 'Feat'],
@@ -376,12 +376,26 @@ const RAW_PARTS: Record<string, string> = { class: 'features', subclass: 'featur
 const meaningful = (v: unknown) => v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && !v.length) && !(typeof v === 'object' && !Array.isArray(v) && !Object.keys(v as object).length);
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-export function basedOnOf(text: string) {
+// What the answer says it reskins. When the AI left "basedOn" out, the notes often still say it
+// ("Warlock variant", "a reskin of the Ranger"): that is tried too (guessed: true), and only used
+// if such an entry exists.
+const RESKIN_WORDS = '[Rr]eskin|[Rr]e-skin|[Rr]eflavou?r|[Rr]e-flavou?r|[Vv]ariant|[Vv]ersion|[Tt]ake';
+export function reskinNamed(s: unknown) {
+  const t = str(s);
+  return t.match(new RegExp(`\\b(?:${RESKIN_WORDS})(?:ed)? (?:of|on) (?:the |a |an )?([A-Z][\\w'’-]+(?: [A-Z][\\w'’-]+){0,2})`))?.[1]
+    ?? t.match(new RegExp(`\\b([A-Z][\\w'’-]+(?: [A-Z][\\w'’-]+){0,2}) (?:${RESKIN_WORDS})\\b`))?.[1] ?? '';
+}
+export function basedOnOf(text: string): { name: string; guessed: boolean } {
   const start = text.indexOf('{'), end = text.lastIndexOf('}');
-  try { return str(JSON.parse(text.slice(start, end + 1).replace(/\/\/[^\n"]*$/gm, '')).basedOn, 80); } catch { return ''; }
+  try {
+    const j = JSON.parse(text.slice(start, end + 1).replace(/\/\/[^\n"]*$/gm, ''));
+    if (str(j.basedOn)) return { name: str(j.basedOn, 80), guessed: false };
+    const g = reskinNamed(j.description) || reskinNamed(j.name);
+    return { name: g, guessed: !!g };
+  } catch { return { name: '', guessed: false }; }
 }
 
-export function applyBase(type: string, base: { name: string; data: any }, imported: { name: string; data: any; notes: string[] }, text: string) {
+export function applyBase(type: string, base: { name: string; data: any }, imported: { name: string; data: any; notes: string[] }, text: string, spells: SpellOption[] = []) {
   const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1).replace(/\/\/[^\n"]*$/gm, ''));
   const notes = [...imported.notes];
   const out: any = structuredClone(base.data);
@@ -393,7 +407,11 @@ export function applyBase(type: string, base: { name: string; data: any }, impor
   if (imported.name && imported.name.toLowerCase() !== base.name.toLowerCase()) renames.push([base.name, imported.name]);
   const reskinned = new Map<string, string>(); // new name -> official name
   for (const p of list(j[RAW_PARTS[type]])) {
-    const from = str(p?.reskinOf, 120), to = str(p?.name, 120);
+    const to = str(p?.name, 120);
+    // the official part it reflavors: as the answer says, as its description says ("Reflavor of Pact
+    // Magic"), or a part with the very same name (the notes change it rather than add one)
+    const said = str(p?.reskinOf, 120) || reskinNamed(p?.description);
+    const from = said && baseParts.some((b) => str(b.name).toLowerCase() === said.toLowerCase()) ? said : baseParts.some((b) => str(b.name).toLowerCase() === to.toLowerCase()) ? to : said;
     if (!from || !to) continue;
     const hit = baseParts.find((b) => str(b.name).toLowerCase() === from.toLowerCase());
     if (!hit) { notes.push(`"${to}" reflavors "${from}", which the official ${base.name} does not have, so it was added as a new ${type === 'feat' ? 'benefit' : 'feature'}.`); continue; }
@@ -437,12 +455,16 @@ export function applyBase(type: string, base: { name: string; data: any }, impor
   // everything else the notes set: on top (objects like spellcasting are merged key by key)
   for (const [k, v] of Object.entries(imported.data)) {
     if (k === key || !meaningful(v)) continue;
+    // spells the notes name are added to the official class's list, not a list of their own
+    if (k === 'spellList' && type === 'class') { out.spellList = [...new Set([...(out.spellList?.length ? out.spellList : srdListFor(spells, base.name)), ...(v as string[])])]; continue; }
     if (k === 'resources' && Array.isArray(out.resources)) { out.resources = [...out.resources.filter((r: any) => !(v as any[]).some((x) => x.name.toLowerCase() === r.name.toLowerCase())), ...(v as any[])]; continue; }
     out[k] = v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k]) ? { ...out[k], ...v } : v;
   }
   if (type === 'class') out.baseClass = out.baseClass || base.name;
   const kept = baseParts.filter((b) => ![...reskinned.values()].includes(b.name)).length;
-  notes.unshift(`Started from the official ${base.name}: everything your notes did not change is the ${base.name}'s.${reskinned.size ? ` ${reskinned.size} ${type === 'feat' ? 'benefit' : 'feature'}${reskinned.size > 1 ? 's were' : ' was'} renamed from the ${base.name}'s (${[...reskinned].map(([to, from]) => `${from} → ${list(j[RAW_PARTS[type]]).find((r: any) => str(r?.name).toLowerCase() === to)?.name ?? to}`).join(', ')}).` : ''}${kept ? ` ${kept} more ${kept > 1 ? 'were' : 'was'} kept as they are.` : ''}`);
+  const moved = [...reskinned].filter(([to, from]) => to !== from.toLowerCase());
+  const part = type === 'feat' ? 'benefit' : 'feature';
+  notes.unshift(`Started from the official ${base.name}: everything your notes did not change is the ${base.name}'s.${moved.length ? ` ${moved.length} ${part}${moved.length > 1 ? 's were' : ' was'} renamed from the ${base.name}'s (${moved.map(([to, from]) => `${from} → ${list(j[RAW_PARTS[type]]).find((r: any) => str(r?.name).toLowerCase() === to)?.name ?? to}`).join(', ')}).` : ''}${kept ? ` ${kept} more ${kept > 1 ? 'were' : 'was'} kept as they are.` : ''}${type === 'class' && imported.data.spellList?.length ? ` The spells your notes name were added to the ${base.name}'s spell list.` : ''}`);
   return { name: imported.name || base.name, data: out, notes };
 }
 const isMarkerName = (n: string) => /\bsubclass\b/i.test(n ?? '');
