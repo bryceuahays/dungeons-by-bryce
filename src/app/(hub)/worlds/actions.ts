@@ -44,9 +44,10 @@ export async function saveWorld(id: string, w: { name: string; tagline: string; 
   return { note: 'Saved.' };
 }
 
-export async function deleteWorld(id: string) {
+export async function deleteWorld(id: string): Promise<FormState> {
   const { supabase } = await requireViewer();
-  await supabase.from('worlds').delete().eq('id', id);
+  const { error, count } = await supabase.from('worlds').delete({ count: 'exact' }).eq('id', id);
+  if (error || !count) return { error: 'The world could not be deleted. Try again in a moment.' };
   revalidatePath('/worlds');
   redirect('/worlds');
 }

@@ -38,6 +38,7 @@ export function WorldEditor({ world, campaigns, others, entries, mine }: {
   const [busy, start] = useTransition();
   const [addCamp, setAddCamp] = useState('');
   const [addEnt, setAddEnt] = useState('');
+  const [sure, setSure] = useState(false);
   const run = (fn: () => Promise<any>) => start(async () => { const r = await fn(); setMsg(r?.error ?? r?.note ?? ''); router.refresh(); });
   const save = (d = data) => run(() => saveWorld(world.id, { name, tagline, rules, data: d }));
   // the banner saves as soon as it is picked, so an upload is never left unsaved
@@ -115,7 +116,13 @@ export function WorldEditor({ world, campaigns, others, entries, mine }: {
         </p>
       </div>
 
-      <p><button type="button" className="quiet small-btn danger" disabled={busy} onClick={() => { if (confirm(`Delete ${name}? Its campaigns and homebrew are kept; they just stop being in this world.`)) start(() => deleteWorld(world.id)); }}>Delete this world</button></p>
+      {sure ? (
+        <div className="panel narrow">
+          <p><b>Delete {name}?</b> Its campaigns and homebrew are kept; they just stop being in this world. This can&apos;t be undone.</p>
+          <p className="inline"><button type="button" className="danger" disabled={busy} onClick={() => run(() => deleteWorld(world.id))}>{busy ? 'Deleting…' : 'Yes, delete this world'}</button><button type="button" className="quiet" disabled={busy} onClick={() => setSure(false)}>Cancel</button></p>
+        </div>
+      ) : <p><button type="button" className="quiet small-btn danger" onClick={() => setSure(true)}>Delete this world</button></p>}
+      {msg && sure ? <p className="error">{msg}</p> : null}
     </div>
   );
 }
