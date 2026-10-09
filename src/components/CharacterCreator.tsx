@@ -18,15 +18,17 @@ import { SpellDetail } from './Sheet5e';
 //   Details (name, languages, alignment, look, story) · Review
 
 type Weapon = { name: string; mastery: string; cat: string };
+type Armor = { name: string; type: string; base: number; dex: 'full' | 'max2' | 'none' };
 const AB = Object.fromEntries(ABILITIES) as Record<Ability, string>;
-const ARRAY = [15, 14, 13, 12, 10, 8];
+// 4d6, dropping the lowest die
+const roll4d6 = () => { const dice = Array.from({ length: 4 }, () => 1 + Math.floor(Math.random() * 6)); return { dice, total: dice.reduce((a, b) => a + b, 0) - Math.min(...dice) }; };
 const COST: Record<number, number> = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
 const ALIGNMENTS = ['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil', 'Unaligned'];
 const SKILL_NAMES = SKILLS.map(([n]) => n);
 const first = (s: string, n = 160) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n).replace(/\s\S*$/, '') + '…' : t; };
 const lc = (s: unknown) => String(s ?? '').toLowerCase().trim();
 
-export function CharacterCreator({ slug, character, entities, weapons }: { slug: string; character: { id: string; data: any }; entities: Entity[]; weapons: Weapon[] }) {
+export function CharacterCreator({ slug, character, entities, weapons, armors }: { slug: string; character: { id: string; data: any }; entities: Entity[]; weapons: Weapon[]; armors: Armor[] }) {
   const router = useRouter();
   const [c, setC] = useState<CharacterV2>(() => ({ ...blankV2(), ...(character.data ?? {}), v: 2 }));
   const [state, setState] = useState('');
@@ -238,10 +240,12 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
     </>
   );
 
-  // ability scores: standard array, point buy or rolled (typed in)
-  const [method, setMethod] = useState<'array' | 'buy' | 'manual'>(() => (Object.values(c.ab).every((v) => v === 10) ? 'array' : Object.values(c.ab).every((v) => v >= 8 && v <= 15) && Object.values(c.ab).reduce((n, v) => n + (COST[v] ?? 0), 0) <= 27 && !ARRAY.every((v) => Object.values(c.ab).includes(v)) ? 'buy' : Object.values(c.ab).slice().sort((a, b) => b - a).join() === ARRAY.join() ? 'array' : 'manual'));
+  // ability scores: rolled or chosen (3 to 18), or point buy
+  // the way the player chose is remembered with the character
+  const method: 'roll' | 'buy' = (c.picks ?? {})['ab:method']?.v?.[0] === 'buy' ? 'buy' : 'roll';
+  const setMethod = (m: 'roll' | 'buy') => up({ picks: { ...(latest.current.picks ?? {}), 'ab:method': { from: 'method', v: [m] } }, ...(m === 'buy' ? { ab: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 } } : {}) });
+  const [rolls, setRolls] = useState<Record<string, number[]>>({});
   const spent = ABILITIES.reduce((n, [k]) => n + (COST[c.ab[k]] ?? 99), 0);
-  const used = (k: Ability) => ABILITIES.filter(([x]) => x !== k).map(([x]) => c.ab[x]);
   // every skill, with where its proficiency comes from; the class's picks are made here
   const skillFrom = (n: string) => (bgSkills.has(n) ? 'background' : (c.skills ?? []).includes(n) ? cls?.name ?? 'class' : d.skills.find((x) => x.name === n)?.proficient ? 'species or feat' : '');
   const classSkills = cls ? (Number(cls.data.skillCount) ? (
@@ -263,11 +267,12 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
   const abilityStep = (
     <>
       <p className="inline">
-        {([['array', 'Standard array'], ['buy', 'Point buy'], ['manual', 'Rolled or typed in']] as const).map(([k, l]) => (
-          <button key={k} type="button" className={'small-btn' + (method === k ? '' : ' quiet')} onClick={() => { setMethod(k); if (k === 'buy') up({ ab: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 } }); if (k === 'array') up({ ab: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 } }); }}>{l}</button>
+        {([['roll', 'Roll or choose'], ['buy', 'Point buy']] as const).map(([k, l]) => (
+          <button key={k} type="button" className={'small-btn' + (method === k ? '' : ' quiet')} onClick={() => { if (method !== k) setMethod(k); }}>{l}</button>
         ))}
+        {method === 'roll' ? <button type="button" className="small-btn" onClick={() => { const r = ABILITIES.map(() => roll4d6()); setRolls(Object.fromEntries(ABILITIES.map(([k], i) => [k, r[i].dice]))); up({ ab: Object.fromEntries(ABILITIES.map(([k], i) => [k, r[i].total])) as Record<Ability, number> }); }}>Roll all six</button> : null}
       </p>
-      <p className="dim">{method === 'array' ? 'Give each of 15, 14, 13, 12, 10 and 8 to one ability.' : method === 'buy' ? `Every score starts at 8; raising one costs points (up to 15). ${27 - spent} of 27 points left.` : 'Roll 4d6 and drop the lowest die, six times, or type in the scores your DM gave you.'}</p>
+      <p className="dim">{method === 'buy' ? `Every score starts at 8; raising one costs points (up to 15). ${27 - spent} of 27 points left.` : 'Roll 4d6 and drop the lowest die for each ability (here, or with real dice), or pick the scores your DM gave you.'}</p>
       {cls?.data.primary ? <p className="dim">Tip: {cls.name}s rely most on {cls.data.primary}.</p> : null}
       <div className="cc-abs">
         {ABILITIES.map(([k, label]) => {
@@ -275,21 +280,21 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
           return (
             <div key={k} className="cc-ab">
               <b>{label}</b>
-              {method === 'array' ? (
-                <select value={ARRAY.includes(c.ab[k]) && !used(k).includes(c.ab[k]) ? c.ab[k] : ''} onChange={(e) => up({ ab: { ...c.ab, [k]: Number(e.target.value) || 10 } })}>
-                  <option value="">—</option>
-                  {ARRAY.filter((v) => !used(k).includes(v) || v === c.ab[k]).map((v) => <option key={v} value={v}>{v}</option>)}
-                </select>
-              ) : method === 'buy' ? (
+              {method === 'buy' ? (
                 <span className="s5-hp"><button type="button" disabled={c.ab[k] <= 8} onClick={() => up({ ab: { ...c.ab, [k]: c.ab[k] - 1 } })}>−</button><b>{c.ab[k]}</b><button type="button" disabled={c.ab[k] >= 15 || spent - (COST[c.ab[k]] ?? 0) + (COST[c.ab[k] + 1] ?? 99) > 27} onClick={() => up({ ab: { ...c.ab, [k]: c.ab[k] + 1 } })}>+</button></span>
               ) : (
-                <input type="number" min={3} max={20} value={c.ab[k]} onChange={(e) => up({ ab: { ...c.ab, [k]: Math.max(1, Math.min(30, Number(e.target.value) || 10)) } })} />
+                <span className="cc-roll">
+                  <select value={c.ab[k]} aria-label={label} onChange={(e) => { setRolls({ ...rolls, [k]: [] }); up({ ab: { ...c.ab, [k]: Number(e.target.value) } }); }}>{Array.from({ length: 16 }, (_, i) => i + 3).map((v) => <option key={v} value={v}>{v}</option>)}{c.ab[k] > 18 ? <option value={c.ab[k]}>{c.ab[k]}</option> : null}</select>
+                  <button type="button" className="quiet small-btn" title="Roll 4d6, drop the lowest" onClick={() => { const r = roll4d6(); setRolls({ ...rolls, [k]: r.dice }); up({ ab: { ...c.ab, [k]: r.total } }); }}>Roll</button>
+                </span>
               )}
+              {rolls[k]?.length ? <small className="dim">rolled {rolls[k].map((x, i) => (i === rolls[k].indexOf(Math.min(...rolls[k])) ? `(${x})` : x)).join(' ')}</small> : null}
               <small>{bonus ? `${sgn(bonus)} from your choices = ` : ''}<b>{d.scores[k]}</b> ({sgn(d.mods[k])})</small>
             </div>
           );
         })}
       </div>
+
       <h3>Saving throws</h3>
       <p className="s5-chips">{d.saves.map((x) => <span key={x.key} className={x.proficient ? 'on' : ''}>{x.label} {sgn(x.bonus)}</span>)}</p>
       <h3>Skills</h3>
@@ -300,31 +305,57 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
     </>
   );
 
-  // equipment: a package from the class and one from the background
+  // equipment: a package from the class and one from the background, then the armor worn
   const equip = (picks['equip:class']?.v ?? [])[0], equipBg = (picks['equip:bg']?.v ?? [])[0];
   const pkgs = (e: Entity | undefined): Pkg[] => (e?.data.startEquip ?? []).filter((p: Pkg) => p.items?.some((i) => i.name) || Number(p.gp) > 0);
   const gearOf = (p?: Pkg) => (p ? p.items.filter((i) => i.name).map((i) => (Number(i.count) > 1 ? `${i.count} × ${i.name}` : i.name)) : []);
+  const armorIn = (gear: string) => armors.filter((a) => gear.split('\n').some((g) => lc(g.replace(/^\d+ × /, '')) === lc(a.name)));
   const setEquip = (which: 'class' | 'bg', idx: string) => {
     const next = { ...picks, ['equip:' + which]: { from: 'equip', v: [idx] } };
     const cp = pkgs(cls)[Number((next['equip:class']?.v ?? [])[0])], bp = pkgs(bg)[Number((next['equip:bg']?.v ?? [])[0])];
-    up({ picks: next, gear: [...gearOf(cp), ...gearOf(bp)].join('\n'), gp: (Number(cp?.gp) || 0) + (Number(bp?.gp) || 0) });
+    const gear = [...gearOf(cp), ...gearOf(bp)].join('\n');
+    // wear the best armor in the new gear, and hold a shield if there is one
+    const worn = armorIn(gear).filter((a) => a.type !== 'shield').sort((a, b) => b.base - a.base)[0];
+    up({ picks: next, gear, gp: (Number(cp?.gp) || 0) + (Number(bp?.gp) || 0), armor: worn ? { name: worn.name, base: worn.base, dex: worn.dex } : null, shield: armorIn(gear).some((a) => a.type === 'shield') });
   };
   const pkgPick = (e: Entity | undefined, which: 'class' | 'bg', value?: string) => (e && pkgs(e).length ? (
-    <fieldset className="cc-choice">
-      <legend>From your {which === 'class' ? 'class' : 'background'} ({e.name}) <span className={'chip' + (value !== undefined ? ' done' : '')}>{value !== undefined ? 'done' : 'choose'}</span></legend>
-      <div className="cc-opts one">
-        {pkgs(e).map((p, i) => <label key={i} className={'cc-opt' + (value === String(i) ? ' on' : '')}><input type="radio" name={'eq' + which} checked={value === String(i)} onChange={() => setEquip(which, String(i))} /><span><b>Option {'ABCDEFGH'[i]}</b><small>{pkgLine(p)}</small></span></label>)}
+    <>
+      <h3>From your {which === 'class' ? 'class' : 'background'}: {e.name} <span className={'chip' + (value !== undefined ? ' done' : '')}>{value !== undefined ? 'chosen' : 'choose one'}</span></h3>
+      <div className="cc-cards cc-pkgs">
+        {pkgs(e).map((p, i) => (
+          <button key={i} type="button" className={'cc-card' + (value === String(i) ? ' on' : '')} aria-pressed={value === String(i)} onClick={() => setEquip(which, String(i))}>
+            <b>Option {'ABCDEFGH'[i]}</b>
+            {p.items.filter((x) => x.name).length ? <ul className="cc-items">{p.items.filter((x) => x.name).map((x, j) => <li key={j}>{Number(x.count) > 1 ? `${x.count} × ` : ''}{x.name}</li>)}</ul> : null}
+            {Number(p.gp) ? <span className="cc-gold">{p.gp} GP</span> : null}
+          </button>
+        ))}
       </div>
-    </fieldset>
+    </>
   ) : null);
+  const myArmor = armorIn(c.gear ?? '').filter((a) => a.type !== 'shield');
   const equipmentStep = (
     <>
       {!cls && !bg ? <p className="dim">Pick a class and a background first.</p> : null}
       {pkgPick(cls, 'class', equip)}
       {pkgPick(bg, 'bg', equipBg)}
-      {c.gear || c.gp ? <div className="cc-detail"><h3>You start with</h3><p style={{ whiteSpace: 'pre-line' }}>{c.gear}</p>{c.gp ? <p><b>{c.gp} GP</b></p> : null}<p className="dim">You can change your gear on your sheet later.</p></div> : null}
+      {c.gear || c.gp ? (
+        <div className="cc-detail">
+          <h3>You start with</h3>
+          <ul className="cc-items">{(c.gear ?? '').split('\n').filter(Boolean).map((g, i) => <li key={i}>{g}</li>)}</ul>
+          {c.gp ? <p><b>{c.gp} GP</b> to spend</p> : null}
+          <div className="cc-row">
+            <label className="f">Armor you wear<select value={c.armor?.name ?? ''} onChange={(e) => { const a = armors.find((x) => x.name === e.target.value); up({ armor: a ? { name: a.name, base: a.base, dex: a.dex } : null }); }}>
+              <option value="">None</option>
+              {myArmor.map((a) => <option key={a.name} value={a.name}>{a.name} ({a.type}, AC {a.base}{a.dex === 'full' ? ' + Dex' : a.dex === 'max2' ? ' + Dex (max 2)' : ''})</option>)}
+            </select></label>
+            {armorIn(c.gear ?? '').some((a) => a.type === 'shield') ? <label className="ck"><input type="checkbox" checked={!!c.shield} onChange={(e) => up({ shield: e.target.checked })} /> Hold your shield (+2)</label> : null}
+            <p className="kv"><b>Armor class:</b> {d.ac}</p>
+          </div>
+        </div>
+      ) : null}
     </>
   );
+
 
   // spells: cantrips and prepared spells from the class's list
   const lvl = Math.max(1, Math.min(20, c.level)) - 1;
@@ -384,7 +415,6 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
   if (!race) todo.push(['Species', 'Choose a species.']);
   const stepOf = (e: Entity) => (e.type === 'race' ? 'Species' : e.type === 'background' ? 'Background' : e.type === 'feat' ? (e.name.toLowerCase() === lc(bg?.data.feat?.name) ? 'Background' : 'Species') : 'Class');
   d.chosen.forEach((e) => choiceParts(e).forEach(({ ft, ch }: any) => { if ((picks[pickKey(e, ft)]?.v ?? []).length < countOf(ft, ch) && optionsFor(e, ft, ch).length) todo.push([stepOf(e), `${e.name}: choose ${ft.name}.`]); }));
-  if (method === 'array' && Object.values(c.ab).slice().sort((a, b) => b - a).join() !== ARRAY.join()) todo.push(['Abilities & Skills', 'Give every ability a score.']);
   if (method === 'buy' && spent > 27) todo.push(['Abilities & Skills', 'You spent more than 27 points.']);
   if (pkgs(cls).length && equip === undefined) todo.push(['Equipment', 'Choose your class equipment.']);
   if (pkgs(bg).length && equipBg === undefined) todo.push(['Equipment', 'Choose your background equipment.']);
@@ -410,7 +440,7 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
       <div className="cc-detail">
         <h3>{c.name || 'Unnamed character'} <small className="dim">Level {d.level} {race?.name} {cls?.name}{c.subId ? ` (${byId.get(c.subId)?.name})` : ''}</small></h3>
         <p className="kv"><b>Background:</b> {bg?.name ?? '—'}{c.alignment ? ` · ${c.alignment}` : ''}</p>
-        <p className="kv"><b>Hit points:</b> {d.hpMax} · <b>Armor class:</b> {d.ac} (before armor) · <b>Speed:</b> {d.speed.walk} ft · <b>Proficiency:</b> +{d.prof}</p>
+        <p className="kv"><b>Hit points:</b> {d.hpMax} · <b>Armor class:</b> {d.ac}{c.armor ? ` (${c.armor.name}${c.shield ? ' and shield' : ''})` : c.shield ? ' (shield)' : ' (no armor)'} · <b>Speed:</b> {d.speed.walk} ft · <b>Proficiency:</b> +{d.prof}</p>
         <p className="kv"><b>Abilities:</b> {ABILITIES.map(([k, l]) => `${l.slice(0, 3)} ${d.scores[k]} (${sgn(d.mods[k])})`).join(' · ')}</p>
         <p className="kv"><b>Saving throws:</b> {d.saves.filter((s) => s.proficient).map((s) => s.label).join(', ') || '—'}</p>
         <p className="kv"><b>Skills:</b> {d.skills.filter((s) => s.proficient).map((s) => `${s.name} ${sgn(s.bonus)}${s.expert ? ' (expertise)' : ''}`).join(', ') || '—'}</p>

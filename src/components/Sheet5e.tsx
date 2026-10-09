@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { ABILITIES, blankV2, derive, sgn, type Ability, type CharacterV2, type Entity } from '@/lib/rules/engine';
 import { EntityCard } from './EntityCard';
-import { yearOf } from '@/config/rules';
 
 // A spell on the sheet. The long text of SRD spells is not sent with the page (there are
 // hundreds); it is fetched the first time a spell is opened.
@@ -29,7 +28,6 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(c);
   const d = useMemo(() => derive(c, entities), [c, entities]);
-  const of = (t: string) => entities.filter((e) => e.type === t).sort((a, b) => a.name.localeCompare(b.name));
 
   const flush = async () => {
     timer.current = null;
@@ -53,8 +51,6 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
   useEffect(() => () => { if (timer.current) { clearTimeout(timer.current); void flush(); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const used = c.used ?? {}, slotsUsed = c.slotsUsed ?? {};
-  // "+1 of your choice" picks the creator already made for an entry (a background's three) are not asked again
-  const anyCount = d.chosen.filter((e) => !c.abPicks?.[e.id]).flatMap((e) => (e.data.effects ?? [])).filter((x: any) => x.t === 'ability' && x.ab === 'any').length;
   const rest = (kind: 'short' | 'long') => {
     const nu = { ...used };
     d.resources.forEach((r) => {
@@ -63,16 +59,10 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
     });
     up({ used: nu, ...(kind === 'long' || d.casting?.shortRest ? { slotsUsed: {} } : {}), ...(kind === 'long' ? { hp: d.hpMax, temp: 0 } : {}) });
   };
-  const subs = of('subclass').filter((s) => !d.cls || !s.data.parent || String(s.data.parent).toLowerCase() === d.cls.name.toLowerCase());
-  const maxSpell = d.casting ? d.casting.slots.length : 0;
-  const list: string[] | undefined = Array.isArray(d.cls?.data.spellList) && d.cls.data.spellList.length ? d.cls.data.spellList : undefined;
-  const classSpells = of('spell').filter((s) => Number(s.data.level) <= Math.max(maxSpell, 0) && (list ? list.includes(s.id) : !d.cls || !(s.data.classes ?? []).length || (s.data.classes ?? []).map((x: string) => x.toLowerCase().trim()).includes(d.cls.name.toLowerCase())));
   const known = (c.spells ?? []).map((id) => entities.find((e) => e.id === id)).filter(Boolean) as Entity[];
   const grantedSpells = d.granted.map((g) => ({ ...g, entity: entities.find((e) => e.type === 'spell' && e.name.toLowerCase() === g.name.toLowerCase()) }));
   const hp = c.hp ?? d.hpMax;
   const [opened, setOpened] = useState<string[]>([]);
-  const both = new Set(entities.filter((e) => e.source === 'srd').map((e) => e.srd_version)).size > 1;
-  const tag = (e: Entity) => (e.source === 'srd' ? (both ? ` (${yearOf(e.srd_version)})` : '') : e.status === 'playtest' ? ' (homebrew, playtest)' : ' (homebrew)');
 
 
   const vitals = (
@@ -121,49 +111,23 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
         <details key={s.key} className="s5-item" onToggle={(e) => { if ((e.target as HTMLDetailsElement).open) setOpened((o) => (o.includes(s.key) ? o : [...o, s.key])); }}>
           <summary><b>{s.name}</b> <small>{s.entity ? (Number(s.entity.data.level) ? 'level ' + s.entity.data.level : 'cantrip') : ''}{s.from ? ' · from ' + s.from : ''}</small></summary>
           {s.entity ? (opened.includes(s.key) ? <SpellDetail entity={s.entity} /> : null) : <p className="who">Ask your DM for the details of this spell.</p>}
-          {s.id && !readOnly ? <button type="button" className="act sm" onClick={() => up({ spells: (c.spells ?? []).filter((x) => x !== s.id) })}>Remove</button> : null}
         </details>
       ))}
-      {d.casting && !readOnly ? (
-        <label className="f">Add a spell
-          <select value="" onChange={(e) => { if (e.target.value) up({ spells: [...(c.spells ?? []), e.target.value] }); }}>
-            <option value="">Choose…</option>
-            {classSpells.filter((s) => !(c.spells ?? []).includes(s.id)).sort((a, b) => Number(a.data.level) - Number(b.data.level) || a.name.localeCompare(b.name)).map((s) => <option key={s.id} value={s.id}>{Number(s.data.level) ? `Level ${s.data.level}` : 'Cantrip'}: {s.name}{tag(s)}</option>)}
-          </select>
-        </label>
-      ) : null}
     </section>
   ) : null;
 
-  const pick = (label: string, type: string, key: 'raceId' | 'clsId' | 'subId' | 'bgId', list = of(type)) => (
-    <label className="f">{label}
-      <select value={c[key] ?? ''} onChange={(e) => up({ [key]: e.target.value || null, ...(key === 'clsId' ? { subId: null } : {}) } as any)}>
-        <option value="">None yet</option>
-        {list.map((e) => <option key={e.id} value={e.id}>{e.name}{tag(e)}</option>)}
-        {c[key] && !list.some((e) => e.id === c[key]) ? <option value={c[key]!}>(no longer available)</option> : null}
-      </select>
-    </label>
-  );
 
+  // who the character is: made in the character creator, shown here
+  const fact = (k: string, v: string | undefined | null) => (v ? <p className="kv"><b>{k}:</b> {v}</p> : null);
   const identity = (
     <section className="s5-block">
-      <div className="fields">
-        <label className="f">Character name<input value={c.name} maxLength={80} onChange={(e) => up({ name: e.target.value })} /></label>
-        <label className="f">Level<input type="number" min={1} max={20} value={c.level} onChange={(e) => up({ level: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })} /></label>
-        {pick('Race', 'race', 'raceId')}
-        {pick('Class', 'class', 'clsId')}
-        {subs.length ? pick('Subclass', 'subclass', 'subId', subs) : null}
-        {pick('Background', 'background', 'bgId')}
+      <div className="s5-facts">
+        {fact('Species', d.race?.name)}
+        {fact('Class', d.cls ? `${d.cls.name} ${d.level}${c.subId ? ' (' + (entities.find((e) => e.id === c.subId)?.name ?? '') + ')' : ''}` : '')}
+        {fact('Background', c.bgId ? entities.find((e) => e.id === c.bgId)?.name : '')}
+        {fact('Alignment', c.alignment)}
+        {fact('Feats', d.chosen.filter((e) => e.type === 'feat').map((e) => e.name).join(', '))}
       </div>
-      {of('feat').length ? (
-        <label className="f" style={{ marginTop: 10 }}>Feats
-          <select value="" onChange={(e) => { if (e.target.value) up({ feats: [...(c.feats ?? []), e.target.value] }); }}>
-            <option value="">Add a feat…</option>
-            {of('feat').filter((x) => !(c.feats ?? []).includes(x.id)).map((x) => <option key={x.id} value={x.id}>{x.name}{tag(x)}</option>)}
-          </select>
-        </label>
-      ) : null}
-      {(c.feats ?? []).length ? <p className="row">{(c.feats ?? []).map((id) => <button key={id} type="button" className="fchip" aria-pressed="true" onClick={() => up({ feats: (c.feats ?? []).filter((x) => x !== id) })} title="Remove">{entities.find((e) => e.id === id)?.name ?? 'Feat'} ×</button>)}</p> : null}
     </section>
   );
 
@@ -172,37 +136,23 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
       <h3>Abilities</h3>
       <div className="s5-abs">
         {ABILITIES.map(([k, label]) => (
-          <label key={k} className="s5-ab">{label}
-            <input type="number" min={1} max={30} value={c.ab[k]} onChange={(e) => up({ ab: { ...c.ab, [k]: Number(e.target.value) } })} aria-label={label + ' base score'} />
-            <b>{sgn(d.mods[k])}</b><small>{d.scores[k] !== c.ab[k] ? `${d.scores[k]} with bonuses` : 'score ' + d.scores[k]}</small>
-          </label>
+          <div key={k} className="s5-ab">{label}<b>{sgn(d.mods[k])}</b><small>score {d.scores[k]}</small></div>
         ))}
       </div>
-      {Array.from({ length: anyCount }, (_, i) => (
-        <label key={i} className="f" style={{ marginTop: 8 }}>A +1 of your choice goes to
-          <select value={(c.anyAb ?? [])[i] ?? ''} onChange={(e) => { const a = [...(c.anyAb ?? [])]; a[i] = e.target.value as Ability; up({ anyAb: a }); }}><option value="">Choose…</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
-        </label>
-      ))}
       <h3>Saving throws</h3>
-      <p className="s5-chips">{d.saves.map((s) => <span key={s.key} className={s.proficient ? 'on' : ''}>{s.label.slice(0, 3)} {sgn(s.bonus)}</span>)}</p>
-      <h3>Skills {d.cls?.data.skillCount ? <small>(your class lets you pick {d.cls.data.skillCount}{(d.cls.data.skillList ?? []).length ? ' from its list' : ''})</small> : null}</h3>
+      <p className="s5-chips">{d.saves.map((x) => <span key={x.key} className={x.proficient ? 'on' : ''}>{x.label.slice(0, 3)} {sgn(x.bonus)}</span>)}</p>
+      <h3>Skills</h3>
       <div className="s5-skills">
-        {d.skills.map((s) => {
-          const fixed = s.proficient && !(c.skills ?? []).includes(s.name);
-          return <label key={s.name} className={s.proficient ? 'on' : ''}><input type="checkbox" checked={s.proficient} disabled={fixed} onChange={(e) => up({ skills: e.target.checked ? [...(c.skills ?? []), s.name] : (c.skills ?? []).filter((x) => x !== s.name) })} /> {s.name} <b>{sgn(s.bonus)}</b></label>;
-        })}
+        {d.skills.map((x) => <span key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name}{x.expert ? ' (expertise)' : ''}</span>)}
       </div>
     </section>
   );
 
   const defence = (
     <section className="s5-block">
-      <h3>Armor and hit points</h3>
-      <div className="fields">
-        <label className="f">Armor class before bonuses (blank: 10 + Dexterity)<input type="number" value={c.acBase ?? ''} placeholder={String(10 + d.mods.dex)} onChange={(e) => up({ acBase: e.target.value === '' ? null : Number(e.target.value) })} /></label>
-        <label className="f">Hit point maximum (blank: worked out, {d.hpAuto})<input type="number" value={c.hpMax ?? ''} placeholder={String(d.hpAuto)} onChange={(e) => up({ hpMax: e.target.value === '' ? null : Number(e.target.value) })} /></label>
-      </div>
-      <label className="ck" style={{ marginTop: 8 }}><input type="checkbox" checked={!!c.shield} onChange={(e) => up({ shield: e.target.checked })} /> Carrying a shield (+2)</label>
+      <h3>Armor and proficiencies</h3>
+      {fact('Armor worn', c.armor?.name ?? 'None')}
+      <label className="ck" style={{ marginTop: 4 }}><input type="checkbox" checked={!!c.shield} onChange={(e) => up({ shield: e.target.checked })} /> Holding a shield (+2)</label>
       {[['Senses', Object.entries(d.senses).map(([k, v]) => `${k} ${v} ft`)], ['Resistances', d.resist], ['Immunities', d.immune], ['Armor', [...d.profs.armor, d.cls?.data.armor].filter(Boolean)], ['Weapons', [...d.profs.weapon, d.cls?.data.weapons].filter(Boolean)], ['Tools', [...d.profs.tool, d.cls?.data.tools].filter((x) => x && x !== 'None')], ['Languages', [...d.profs.language, d.race?.data.languages].filter(Boolean)]]
         .map(([k, v]) => ((v as string[]).length ? <p key={k as string} className="kv"><b>{k}:</b> {(v as string[]).join(', ')}</p> : null))}
     </section>
@@ -218,6 +168,9 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
 
   const notes = (
     <section className="s5-block">
+      {c.appearance ? <p className="kv"><b>Looks:</b> {c.appearance}</p> : null}
+      {c.backstory ? <p className="kv" style={{ whiteSpace: 'pre-line' }}><b>Story:</b> {c.backstory}</p> : null}
+      {c.gp ? <p className="kv"><b>Gold:</b> {c.gp} GP</p> : null}
       <div className="fields">
         <label className="f">Gear<textarea rows={5} value={c.gear ?? ''} onChange={(e) => up({ gear: e.target.value })} /></label>
         <label className="f">Notes<textarea rows={5} value={c.notes ?? ''} onChange={(e) => up({ notes: e.target.value })} /></label>
@@ -230,7 +183,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
       {d.changed.map((ch) => (
         <p key={ch.id} className="s5-changed" role="status"><b>{ch.name} was updated</b> (version {ch.version}){ch.note ? ': ' + ch.note : '.'} {readOnly ? null : <button type="button" className="act sm" onClick={() => up({ seen: { ...(c.seen ?? {}), [ch.id]: ch.version } })}>Got it</button>}</p>
       ))}
-      <h2 className="s5-name">{c.name || 'Unnamed character'} <small>Level {d.level} {c.race} {c.cls}</small></h2>
+      <h2 className="s5-name">{c.name || 'Unnamed character'} <small>Level {d.level} {d.race?.name ?? c.race} {d.cls?.name ?? c.cls}</small></h2>
       {play ? <>{vitals}{resources}{magic}{features}{abilities}</> : <>{identity}{vitals}{abilities}{defence}{resources}{magic}{features}{notes}</>}
     </fieldset>
   );

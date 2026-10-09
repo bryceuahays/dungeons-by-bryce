@@ -455,3 +455,21 @@ h1 .beta-tag{font-size:.8rem}
 .cc-skills div.on{opacity:1}
 .cc-skills b{display:inline-block;min-width:2.2em}
 .cc-skills small{opacity:.7}
+/* the creator's tick boxes keep their own size (campaign pages stretch inputs to full width) */
+.cc input[type=checkbox],.cc input[type=radio]{width:auto;flex:0 0 auto;margin-top:3px}
+.cc-opt{text-align:left}
+.cc-opt span{flex:1 1 auto}
+.cc-pkgs{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.cc-items{margin:4px 0 0;padding-left:18px;font-size:.92em}
+.cc-items li{margin:1px 0}
+.cc-gold{margin-top:6px;font-weight:600;color:#c9a45c}
+.cc-roll{display:flex;gap:6px;align-items:center}
+.cc-roll select{width:70px}
+/* the sheet: read-only facts and skills */
+.s5 .s5-facts{display:flex;flex-wrap:wrap;gap:4px 22px}
+.s5 .s5-skills span{display:flex;align-items:center;gap:8px;padding:4px 0;opacity:.7}
+.s5 .s5-skills span.on{opacity:1;color:var(--gold,#c8a45a)}
+.s5 .s5-skills span b{min-width:2.4em}
+.cc .s5-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.cc .s5-chips span{padding:4px 10px;border:1px solid var(--line,#2a3152);border-radius:99px;font-size:.9rem;opacity:.7}
+.cc .s5-chips span.on{border-color:var(--gold,#c8a45a);color:var(--gold,#c8a45a);opacity:1}

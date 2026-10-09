@@ -106,7 +106,8 @@ export type CharacterV2 = {
   // the character creator: what the player picked for each feature's choice (see pickKey), the languages
   // they chose, the gold left from starting equipment, and who they are
   picks?: Record<string, { from: string; v: string[] }>; langs?: string[]; gp?: number;
-  abPicks?: Record<string, Ability[]>;          // an entry's "+1 of your choice" picks, by entry id (a background's three)
+  abPicks?: Record<string, Ability[]>;
+  armor?: { name: string; base: number; dex: 'full' | 'max2' | 'none' } | null; // the armor worn (from the creator's equipment step)          // an entry's "+1 of your choice" picks, by entry id (a background's three)
   alignment?: string; appearance?: string; backstory?: string; built?: boolean;
 };
 export const blankV2 = (): CharacterV2 => ({ v: 2, t: 0, name: '', player: '', level: 1, race: '', cls: '', raceId: null, clsId: null, subId: null, bgId: null, feats: [], ab: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }, anyAb: [], skills: [], expert: [], hp: null, hpMax: null, temp: 0, acBase: null, shield: false, used: {}, slotsUsed: {}, spells: [], extra: [], gear: '', notes: '', seen: {} });
@@ -208,7 +209,9 @@ export function derive(c: CharacterV2, entities: Entity[]) {
   const hpAuto = hd + mods.con + (level - 1) * (Math.floor(hd / 2) + 1 + mods.con) + hpPerLevel * level;
   const hpMax = c.hpMax != null && c.hpMax !== ('' as any) ? Number(c.hpMax) : Math.max(1, hpAuto);
   const acBonus = of('ac').reduce((n, x) => n + Number(x.n), 0);
-  const ac = (c.acBase != null && c.acBase !== ('' as any) ? Number(c.acBase) : 10 + mods.dex) + acBonus + (c.shield ? 2 : 0);
+  // armor worn: its base plus Dexterity (all of it, at most 2, or none)
+  const worn = c.armor && Number(c.armor.base) ? Number(c.armor.base) + (c.armor.dex === 'none' ? 0 : c.armor.dex === 'max2' ? Math.min(2, mods.dex) : mods.dex) : 10 + mods.dex;
+  const ac = (c.acBase != null && c.acBase !== ('' as any) ? Number(c.acBase) : worn) + acBonus + (c.shield ? 2 : 0);
 
   const cast = cls?.data.casting && cls.data.casting.kind && cls.data.casting.kind !== 'none' ? cls.data.casting : null;
   const castMod = cast ? mods[cast.ability as Ability] ?? 0 : 0;

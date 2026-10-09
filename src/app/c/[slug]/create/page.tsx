@@ -26,10 +26,11 @@ export default async function Create({ params, searchParams }: { params: Promise
   const entities = all.filter((e: any) => !hidden.has(e.id) || keep.has(e.id));
   // weapons for Weapon Mastery, and what an item is, for the equipment step
   const weapons = (items as any[]).filter((i) => !hidden.has(i.id) && i.data?.kind === 'Weapon' && i.data?.weapon?.mastery).map((i) => ({ name: i.name, mastery: String(i.data.weapon.mastery), cat: String(i.data.weapon.cat ?? '') }));
+  const armors = (items as any[]).filter((i) => i.data?.armor?.type && Number(i.data.armor.base)).map((i) => ({ name: i.name, type: String(i.data.armor.type), base: Number(i.data.armor.base), dex: (i.data.armor.dex ?? 'full') as 'full' | 'max2' | 'none' }));
   return (
     <div className="cs-guide">
       <div className="wrap">
-        <CharacterCreator slug={slug} character={{ id: row.id, data: row.data }} entities={entities as any} weapons={weapons} />
+        <CharacterCreator slug={slug} character={{ id: row.id, data: row.data }} entities={entities as any} weapons={weapons} armors={armors} />
       </div>
     </div>
   );
