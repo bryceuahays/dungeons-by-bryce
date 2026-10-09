@@ -320,7 +320,7 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
   };
   const pkgPick = (e: Entity | undefined, which: 'class' | 'bg', value?: string) => (e && pkgs(e).length ? (
     <>
-      <h3>From your {which === 'class' ? 'class' : 'background'}: {e.name} <span className={'chip' + (value !== undefined ? ' done' : '')}>{value !== undefined ? 'chosen' : 'choose one'}</span></h3>
+      <h3>From your {which === 'class' ? 'class' : 'background'}: {e.name} <span className={'chip' + (value !== undefined ? ' done' : ' todo')}>{value !== undefined ? 'chosen' : 'choose one'}</span></h3>
       <div className="cc-cards cc-pkgs">
         {pkgs(e).map((p, i) => (
           <button key={i} type="button" className={'cc-card' + (value === String(i) ? ' on' : '')} aria-pressed={value === String(i)} onClick={() => setEquip(which, String(i))}>
@@ -335,7 +335,7 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
   const myArmor = armorIn(c.gear ?? '').filter((a) => a.type !== 'shield');
   const equipmentStep = (
     <>
-      {!cls && !bg ? <p className="dim">Pick a class and a background first.</p> : null}
+      {!cls && !bg ? <p className="dim">Pick a class and a background first.</p> : <p className="dim">Choose one option from your class{pkgs(bg).length ? ' and one from your background' : ''}.</p>}
       {pkgPick(cls, 'class', equip)}
       {pkgPick(bg, 'bg', equipBg)}
       {c.gear || c.gp ? (
@@ -422,6 +422,10 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
   if (casting && nPrepared && haveP < nPrepared) todo.push(['Spells', `Choose ${nPrepared - haveP} more spell${nPrepared - haveP > 1 ? 's' : ''}.`]);
   if (!c.name.trim()) todo.push(['Details', 'Give your character a name.']);
   if (langs.length < 3) todo.push(['Details', 'Choose your languages.']);
+  if (!c.alignment) todo.push(['Details', 'Choose an alignment.']);
+  if (!(c.appearance ?? '').trim()) todo.push(['Details', 'Describe what they look like.']);
+  if (!(c.backstory ?? '').trim()) todo.push(['Details', 'Write a little of their story.']);
+  if (method === 'roll' && ABILITIES.every(([k]) => c.ab[k] === 10)) todo.push(['Abilities & Skills', 'Roll or choose your ability scores.']);
 
   const [finishing, setFinishing] = useState(false);
   const finish = async () => {
