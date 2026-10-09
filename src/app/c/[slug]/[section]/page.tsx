@@ -13,6 +13,7 @@ import { SheetIsland, CombatIsland } from '@/components/Islands';
 import { PartyLive } from '@/components/PartyLive';
 import { SessionForm } from '@/components/DmForms';
 import { AvailableList, type AvailRow } from '@/components/AvailableList';
+import { CharacterChooser } from '@/components/CharacterChooser';
 import { TYPES } from '@/config/homebrew';
 import { createBlankCharacter, createCharacterV2, deleteCharacter } from '../actions';
 import type { CharacterRow, Section, SessionRow } from '@/lib/types';
@@ -91,13 +92,26 @@ async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: str
   const slug = ctx.campaign.slug;
   const [chars, entities, party] = await Promise.all([myCharacters(ctx), getSheetEntities(ctx, undefined, { liteSpells: true }), ctx.supabase.rpc('party_cards', { c: ctx.campaign.id })]);
   const current = chars.find((c) => c.id === pick) ?? chars[0];
+  // characters you made in the other campaigns of this campaign's world, which can be brought in
+  const worldId = (ctx.campaign as any).world_id as string | null;
+  const [{ data: worldCamps }, { data: worldRow }] = worldId ? await Promise.all([
+    ctx.supabase.from('campaigns').select('id, title').eq('world_id', worldId).neq('id', ctx.campaign.id),
+    ctx.supabase.from('worlds').select('name').eq('id', worldId).maybeSingle(),
+  ]) : [{ data: [] as any[] }, { data: null as any }];
+  const { data: elsewhere } = (worldCamps ?? []).length ? await ctx.supabase.from('characters').select('id, campaign_id, data').eq('owner', ctx.user.id).in('campaign_id', (worldCamps ?? []).map((c: any) => c.id)).order('updated_at', { ascending: false }) : { data: [] as any[] };
+  const line = (d: any) => [d?.level ? 'Level ' + d.level : '', d?.race, d?.cls].filter(Boolean).join(' ');
+  const chooser = (
+    <CharacterChooser slug={slug} current={current?.id ?? null} worldName={worldRow?.name ?? ''}
+      here={chars.map((c) => ({ id: c.id, name: c.data?.name || 'Unnamed', line: line(c.data) }))}
+      world={(elsewhere ?? []).map((c: any) => ({ id: c.id, name: c.data?.name || 'Unnamed', line: line(c.data), campaign: (worldCamps ?? []).find((w: any) => w.id === c.campaign_id)?.title ?? 'another campaign' }))} />
+  );
   if (!current) {
     return (
       <div className="cs-guide"><div className="wrap"><h2>{play ? 'Combat' : 'My character'}</h2>
         <div className="plate" style={{ marginTop: 16 }}>
           <h3>You have no character in this campaign yet</h3>
-          <p>Pick a race, a class and a background, set your ability scores, and the sheet works out the rest: bonuses, hit points, proficiencies, resources and spell slots.</p>
-          <form action={createCharacterV2.bind(null, slug)}><button className="act" type="submit">Create a character</button></form>
+          <p>{(elsewhere ?? []).length ? 'Bring in a character you made in another campaign in this world, or create a new one.' : 'Create one: the character creator walks you through class, background, species, ability scores, equipment and spells.'}</p>
+          {chooser}
         </div>
       </div></div>
     );
@@ -106,7 +120,7 @@ async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: str
   return (
     <div className="cs-guide">
       <div className="wrap">
-        <CharacterPicker slug={slug} tab={play ? 'combat' : 'sheet'} chars={chars} current={current} />
+        {play ? <CharacterPicker slug={slug} tab="combat" chars={chars} current={current} /> : chooser}
         {!play ? <p className="row"><Link className="act sm" href={`/c/${slug}/create?c=${current.id}`}>{current.data?.built ? 'Change it in the character creator' : 'Continue in the character creator'}</Link></p> : null}
         <Sheet5e key={current.id} character={{ id: current.id, data: current.data }} entities={entities} play={play} />
         {play ? <p className="row"><Link className="act" href={`/c/${slug}/sheet?c=${current.id}`}>Open the full sheet</Link></p> : (
@@ -115,7 +129,6 @@ async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: str
             <div className="plate">
               {others.length ? others.map((p) => <div className="party-line" key={p.id}><b>{p.name || 'Unnamed character'}</b><span className="who">Level {p.level} {p.race} {p.cls}{p.player ? `. Played by ${p.player}` : ''}</span></div>) : <p className="who">Nobody else has a character here yet.</p>}
             </div>
-            <form action={createCharacterV2.bind(null, slug)} style={{ marginTop: 16 }}><button className="act sm" type="submit">Make another character</button></form>
             <details style={{ marginTop: 30 }}>
               <summary className="who" style={{ cursor: 'pointer' }}>Delete this character</summary>
               <form action={deleteCharacter.bind(null, slug, current.id)} style={{ marginTop: 8 }}>

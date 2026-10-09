@@ -8,7 +8,7 @@ import { yearOf } from '@/config/rules';
 
 // A spell on the sheet. The long text of SRD spells is not sent with the page (there are
 // hundreds); it is fetched the first time a spell is opened.
-function SpellDetail({ entity }: { entity: Entity }) {
+export function SpellDetail({ entity }: { entity: Entity }) {
   const [data, setData] = useState<any>(entity.data._lite ? null : entity.data);
   useEffect(() => {
     if (data) return;

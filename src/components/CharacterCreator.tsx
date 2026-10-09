@@ -9,6 +9,7 @@ import { pkgLine, type Pkg } from '@/lib/class-equip';
 import { guessChoice } from './ClassGives';
 import { isMarker } from './ClassFeatures';
 import { EntityCard } from './EntityCard';
+import { SpellDetail } from './Sheet5e';
 
 // The character creator: one step at a time, like most character builders. Every pick is saved to the
 // character as it is made (the same row the sheet reads), and the sheet works the rest out (derive).
@@ -57,10 +58,12 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
   const bg = c.bgId ? byId.get(c.bgId) : undefined;
   const race = c.raceId ? byId.get(c.raceId) : undefined;
   const casting = cls?.data.casting?.kind && cls.data.casting.kind !== 'none' ? cls.data.casting : null;
-  const steps = ['Class', 'Background', 'Species', 'Abilities', 'Equipment', ...(casting ? ['Spells'] : []), 'Details', 'Review'];
+  const steps = ['Class', 'Background', 'Species', 'Abilities & Skills', 'Equipment', ...(casting ? ['Spells'] : []), 'Details', 'Review'];
   const [step, setStep] = useState(0);
   const at = steps[Math.min(step, steps.length - 1)];
   const go = (i: number) => { setStep(Math.max(0, Math.min(steps.length - 1, i))); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  const readSpell = (id: string) => { const e = byId.get(id); return e ? <SpellDetail entity={e} /> : null; };
 
   // ------------------------------------------------------------ choices inside features
   const picks = c.picks ?? {};
@@ -113,8 +116,8 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
             <fieldset key={key} className="cc-choice">
               <legend>{ft.name} <span className={'chip' + (have.length >= n ? ' done' : '')}>{have.length}/{n}</span></legend>
               {ft.text ? <p className="dim">{first(ft.text, 260)}</p> : null}
-              {!opts.length ? <p className="dim">There is nothing to choose from here yet. Ask your DM.</p> : many ? (
-                <ManyPicker opts={opts} have={have} n={n} onToggle={toggle} />
+              {!opts.length ? <p className="dim">There is nothing to choose from here yet. Ask your DM.</p> : many || ch.from === 'spells' ? (
+                <ManyPicker opts={opts} have={have} n={n} onToggle={toggle} read={ch.from === 'spells' ? readSpell : undefined} />
               ) : (
                 <div className="cc-opts">
                   {opts.map(([v, label, note]) => (
@@ -163,22 +166,7 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
           {cls.data.desc ? <p>{first(cls.data.desc, 400)}</p> : null}
           <p className="kv"><b>Hit points:</b> {cls.data.hd} + Constitution modifier at level 1 · <b>Saving throws:</b> {(cls.data.saves ?? []).map((s: Ability) => AB[s]).join(', ')}</p>
           <p className="kv"><b>Armor:</b> {cls.data.armor || 'None'} · <b>Weapons:</b> {cls.data.weapons || 'None'}</p>
-          {Number(cls.data.skillCount) ? (
-            <fieldset className="cc-choice">
-              <legend>Skills <span className={'chip' + ((c.skills ?? []).length >= Number(cls.data.skillCount) ? ' done' : '')}>{(c.skills ?? []).length}/{cls.data.skillCount}</span></legend>
-              <div className="cc-opts">
-                {((cls.data.skillList ?? []).length ? cls.data.skillList : SKILL_NAMES).map((s: string) => {
-                  const on = (c.skills ?? []).includes(s), fromBg = bgSkills.has(s);
-                  return (
-                    <label key={s} className={'cc-opt' + (on ? ' on' : '')}>
-                      <input type="checkbox" checked={on} disabled={fromBg || (!on && (c.skills ?? []).length >= Number(cls.data.skillCount))} onChange={(e) => up({ skills: e.target.checked ? [...(c.skills ?? []), s] : (c.skills ?? []).filter((x) => x !== s) })} />
-                      <span><b>{s}</b>{fromBg ? <small>from your background</small> : null}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-          ) : null}
+          {Number(cls.data.skillCount) ? <p className="dim">You choose your {cls.data.skillCount} {cls.name} skills on the Abilities &amp; Skills step.</p> : null}
           {choices(cls)}
           {c.level >= subLevel ? (
             <>
@@ -254,6 +242,24 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
   const [method, setMethod] = useState<'array' | 'buy' | 'manual'>(() => (Object.values(c.ab).every((v) => v === 10) ? 'array' : Object.values(c.ab).every((v) => v >= 8 && v <= 15) && Object.values(c.ab).reduce((n, v) => n + (COST[v] ?? 0), 0) <= 27 && !ARRAY.every((v) => Object.values(c.ab).includes(v)) ? 'buy' : Object.values(c.ab).slice().sort((a, b) => b - a).join() === ARRAY.join() ? 'array' : 'manual'));
   const spent = ABILITIES.reduce((n, [k]) => n + (COST[c.ab[k]] ?? 99), 0);
   const used = (k: Ability) => ABILITIES.filter(([x]) => x !== k).map(([x]) => c.ab[x]);
+  // every skill, with where its proficiency comes from; the class's picks are made here
+  const skillFrom = (n: string) => (bgSkills.has(n) ? 'background' : (c.skills ?? []).includes(n) ? cls?.name ?? 'class' : d.skills.find((x) => x.name === n)?.proficient ? 'species or feat' : '');
+  const classSkills = cls ? (Number(cls.data.skillCount) ? (
+            <fieldset className="cc-choice">
+              <legend>Choose {cls.data.skillCount} {cls.name} skills <span className={'chip' + ((c.skills ?? []).length >= Number(cls.data.skillCount) ? ' done' : '')}>{(c.skills ?? []).length}/{cls.data.skillCount}</span></legend>
+              <div className="cc-opts">
+                {((cls.data.skillList ?? []).length ? cls.data.skillList : SKILL_NAMES).map((s: string) => {
+                  const on = (c.skills ?? []).includes(s), fromBg = bgSkills.has(s);
+                  return (
+                    <label key={s} className={'cc-opt' + (on ? ' on' : '')}>
+                      <input type="checkbox" checked={on} disabled={fromBg || (!on && (c.skills ?? []).length >= Number(cls.data.skillCount))} onChange={(e) => up({ skills: e.target.checked ? [...(c.skills ?? []), s] : (c.skills ?? []).filter((x) => x !== s) })} />
+                      <span><b>{s}</b>{fromBg ? <small>from your background</small> : null}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ) : null) : null;
   const abilityStep = (
     <>
       <p className="inline">
@@ -283,6 +289,13 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
             </div>
           );
         })}
+      </div>
+      <h3>Saving throws</h3>
+      <p className="s5-chips">{d.saves.map((x) => <span key={x.key} className={x.proficient ? 'on' : ''}>{x.label} {sgn(x.bonus)}</span>)}</p>
+      <h3>Skills</h3>
+      {classSkills}
+      <div className="cc-skills">
+        {d.skills.map((x) => <div key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name} <small>{AB[x.ability].slice(0, 3)}{skillFrom(x.name) ? ' · ' + skillFrom(x.name) : ''}{x.expert ? ' · expertise' : ''}</small></div>)}
       </div>
     </>
   );
@@ -330,7 +343,7 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
           <fieldset key={String(label)} className="cc-choice">
             <legend>{label} {Number(n) ? <span className={'chip' + (Number(have) >= Number(n) ? ' done' : '')}>{have}/{n}</span> : null}</legend>
             <ManyPicker opts={list.map((s) => [s.id, s.name, `${Number(s.data.level) ? 'Level ' + s.data.level : 'Cantrip'} ${s.data.school ?? ''}`])} have={(c.spells ?? []).filter((id) => list.some((s) => s.id === id))} n={Number(n) || 99}
-              onToggle={(v, on) => up({ spells: on ? [...(c.spells ?? []), v] : (c.spells ?? []).filter((x) => x !== v) })} />
+              onToggle={(v, on) => up({ spells: on ? [...(c.spells ?? []), v] : (c.spells ?? []).filter((x) => x !== v) })} read={readSpell} />
           </fieldset>
         );
       })}
@@ -364,15 +377,15 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
   // what is still missing, for the review step and the step tabs
   const todo: [string, string][] = [];
   if (!cls) todo.push(['Class', 'Choose a class.']);
-  if (cls && (c.skills ?? []).length < Number(cls.data.skillCount || 0)) todo.push(['Class', `Choose ${Number(cls.data.skillCount) - (c.skills ?? []).length} more skill${Number(cls.data.skillCount) - (c.skills ?? []).length > 1 ? 's' : ''}.`]);
+  if (cls && (c.skills ?? []).length < Number(cls.data.skillCount || 0)) todo.push(['Abilities & Skills', `Choose ${Number(cls.data.skillCount) - (c.skills ?? []).length} more skill${Number(cls.data.skillCount) - (c.skills ?? []).length > 1 ? 's' : ''}.`]);
   if (cls && c.level >= subLevel && subs.length && !c.subId) todo.push(['Class', 'Choose a subclass.']);
   if (!bg) todo.push(['Background', 'Choose a background.']);
   if (bg && bgAbs.length && mine.length < 3) todo.push(['Background', 'Choose your ability score increases.']);
   if (!race) todo.push(['Species', 'Choose a species.']);
   const stepOf = (e: Entity) => (e.type === 'race' ? 'Species' : e.type === 'background' ? 'Background' : e.type === 'feat' ? (e.name.toLowerCase() === lc(bg?.data.feat?.name) ? 'Background' : 'Species') : 'Class');
   d.chosen.forEach((e) => choiceParts(e).forEach(({ ft, ch }: any) => { if ((picks[pickKey(e, ft)]?.v ?? []).length < countOf(ft, ch) && optionsFor(e, ft, ch).length) todo.push([stepOf(e), `${e.name}: choose ${ft.name}.`]); }));
-  if (method === 'array' && Object.values(c.ab).slice().sort((a, b) => b - a).join() !== ARRAY.join()) todo.push(['Abilities', 'Give every ability a score.']);
-  if (method === 'buy' && spent > 27) todo.push(['Abilities', 'You spent more than 27 points.']);
+  if (method === 'array' && Object.values(c.ab).slice().sort((a, b) => b - a).join() !== ARRAY.join()) todo.push(['Abilities & Skills', 'Give every ability a score.']);
+  if (method === 'buy' && spent > 27) todo.push(['Abilities & Skills', 'You spent more than 27 points.']);
   if (pkgs(cls).length && equip === undefined) todo.push(['Equipment', 'Choose your class equipment.']);
   if (pkgs(bg).length && equipBg === undefined) todo.push(['Equipment', 'Choose your background equipment.']);
   if (casting && nCantrips && haveC < nCantrips) todo.push(['Spells', `Choose ${nCantrips - haveC} more cantrip${nCantrips - haveC > 1 ? 's' : ''}.`]);
@@ -409,7 +422,7 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
     </>
   );
 
-  const body: Record<string, ReactNode> = { Class: classStep, Background: backgroundStep, Species: speciesStep, Abilities: abilityStep, Equipment: equipmentStep, Spells: spellsStep, Details: detailsStep, Review: reviewStep };
+  const body: Record<string, ReactNode> = { Class: classStep, Background: backgroundStep, Species: speciesStep, 'Abilities & Skills': abilityStep, Equipment: equipmentStep, Spells: spellsStep, Details: detailsStep, Review: reviewStep };
   const left = (s: string) => todo.filter(([x]) => x === s).length;
   return (
     <div className="cc">
@@ -419,7 +432,7 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
       </nav>
       <div className="cc-main">
         <div className="cc-body">
-          <h3 className="cc-title">{at === 'Class' ? 'Choose a class' : at === 'Background' ? 'Choose a background' : at === 'Species' ? 'Choose a species' : at === 'Abilities' ? 'Set your ability scores' : at === 'Equipment' ? 'Choose your starting equipment' : at === 'Spells' ? 'Choose your spells' : at === 'Details' ? 'Who are they?' : 'Review'}</h3>
+          <h3 className="cc-title">{at === 'Class' ? 'Choose a class' : at === 'Background' ? 'Choose a background' : at === 'Species' ? 'Choose a species' : at === 'Abilities & Skills' ? 'Ability scores and skills' : at === 'Equipment' ? 'Choose your starting equipment' : at === 'Spells' ? 'Choose your spells' : at === 'Details' ? 'Who are they?' : 'Review'}</h3>
           {body[at]}
           <p className="cc-nav">
             {step > 0 ? <button type="button" className="quiet" onClick={() => go(step - 1)}>← {steps[step - 1]}</button> : <span />}
@@ -440,17 +453,20 @@ export function CharacterCreator({ slug, character, entities, weapons }: { slug:
 }
 
 // A long list (spells, weapons, many options): search and tick, with the picked ones on top.
-function ManyPicker({ opts, have, n, onToggle }: { opts: [string, string, string][]; have: string[]; n: number; onToggle: (v: string, on: boolean) => void }) {
+function ManyPicker({ opts, have, n, onToggle, read }: { opts: [string, string, string][]; have: string[]; n: number; onToggle: (v: string, on: boolean) => void; read?: (v: string) => ReactNode }) {
   const [q, setQ] = useState('');
+  const [open, setOpen] = useState<string | null>(null);
   const shown = opts.filter(([v, l]) => have.includes(v) || !q.trim() || l.toLowerCase().includes(q.trim().toLowerCase()));
   return (
     <>
       <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label="Search" className="cc-search" />
       <ul className="avail-list">
         {shown.sort((a, b) => Number(have.includes(b[0])) - Number(have.includes(a[0]))).map(([v, l, note]) => (
-          <li key={v}>
+          <li key={v} className={open === v ? 'reading' : ''}>
             <label className="ckrow"><input type="checkbox" checked={have.includes(v)} disabled={!have.includes(v) && have.length >= n} onChange={(e) => onToggle(v, e.target.checked)} /> <b>{l}</b></label>
             <span className="dim">{note}</span>
+            {read ? <button type="button" className="quiet small-btn" aria-expanded={open === v} onClick={() => setOpen(open === v ? null : v)}>{open === v ? 'Close' : 'Read'}</button> : null}
+            {read && open === v ? <div className="cc-read">{read(v)}</div> : null}
           </li>
         ))}
       </ul>

@@ -50,6 +50,20 @@ export async function createCharacterV2(slug: string) {
   redirect(row ? `/c/${slug}/create?c=${row.id}` : `/c/${slug}/sheet`);
 }
 
+// A character you made in another campaign in the same world, copied into this one (fresh: no spent
+// resources or damage). The original stays where it was.
+export async function bringCharacter(slug: string, fromId: string) {
+  const { supabase, user } = await requireViewer();
+  const { data: here } = await supabase.from('campaigns').select('id, world_id').eq('slug', slug).maybeSingle();
+  if (!here?.world_id || !/^[0-9a-f-]{36}$/.test(fromId)) redirect(`/c/${slug}/sheet`);
+  const { data: src } = await supabase.from('characters').select('data, campaign_id').eq('id', fromId).eq('owner', user.id).maybeSingle();
+  const { data: from } = src ? await supabase.from('campaigns').select('world_id').eq('id', src.campaign_id).maybeSingle() : { data: null };
+  if (!src || from?.world_id !== here.world_id) redirect(`/c/${slug}/sheet`);
+  const { data: row } = await supabase.from('characters').insert({ owner: user.id, campaign_id: here.id, data: { ...src.data, used: {}, slotsUsed: {}, hp: null, temp: 0, seen: {}, t: Date.now() } }).select('id').single();
+  fresh(slug);
+  redirect(`/c/${slug}/sheet${row ? '?c=' + row.id : ''}`);
+}
+
 export async function deleteCharacter(slug: string, characterId: string) {
   const { supabase } = await requireViewer();
   await supabase.from('characters').delete().eq('id', characterId); // RLS: only the owner or the DM
