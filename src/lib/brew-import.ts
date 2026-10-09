@@ -44,6 +44,8 @@ const GIVES_DOC = `"gives": [                                // what it adds to 
         | { "type": "hitPointsPerLevel", "amount": 1 }
         | { "type": "abilityIncrease", "ability": "str" | "any", "amount": 1 }
         | { "type": "advantage", "on": "save" | "check" | "attack" | "initiative", "ability": "wis", "when": "against being Frightened" }
+        | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
+        | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "a spell always prepared or known" }
         | { "type": "note", "text": "anything else" }
       ]`;
@@ -424,8 +426,13 @@ export function applyBase(type: string, base: { name: string; data: any; id?: st
     const said = str(p?.reskinOf, 120) || reskinNamed(p?.description);
     const from = said && baseParts.some((b) => str(b.name).toLowerCase() === said.toLowerCase()) ? said : baseParts.some((b) => str(b.name).toLowerCase() === to.toLowerCase()) ? to : said;
     if (!from || !to) continue;
-    const hit = baseParts.find((b) => str(b.name).toLowerCase() === from.toLowerCase());
+    // the same name, or failing that the one sharing a key word: the 2014 "Divine Smite" is the
+    // 2024 "Paladin's Smite", "Wild Shape" is still "Wild Shape"
+    const words = (n: string) => lcs(n).replace(/'s\b/g, '').split(/[^a-z]+/).filter((w) => w.length > 3 && !['your', 'with', 'from', 'feature', 'subclass'].includes(w));
+    const hit = baseParts.find((b) => str(b.name).toLowerCase() === from.toLowerCase())
+      ?? baseParts.filter((b) => !isMarkerName(b.name) && ![...reskinned.values()].includes(b.name)).find((b) => words(b.name).some((w) => words(from).includes(w)));
     if (!hit) { notes.push(`"${to}" reflavors "${from}", which the official ${base.name} does not have, so it was added as a new ${type === 'feat' ? 'benefit' : 'feature'}.`); continue; }
+    if (hit.name.toLowerCase() !== from.toLowerCase()) notes.push(`"${to}" reflavors "${from}": the official ${base.name} calls it "${hit.name}", so that is the one renamed.`);
     reskinned.set(to.toLowerCase(), hit.name);
     if (hit.name.toLowerCase() !== to.toLowerCase()) renames.push([hit.name, to]);
   }
@@ -473,6 +480,8 @@ export function applyBase(type: string, base: { name: string; data: any; id?: st
     out[k] = v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k]) ? { ...out[k], ...v } : v;
   }
   if (type === 'class') out.baseClass = out.baseClass || base.name;
+  // an official class keeps its spells on the spells themselves: its reskin starts with that list
+  if (type === 'class' && out.casting?.kind && out.casting.kind !== 'none' && !out.spellList?.length) out.spellList = srdListFor(spells, base.name);
   // made to replace an SRD entry: players in its campaigns get this one instead (see getSheetEntities)
   out.replaces = base.id && base.source === 'srd' ? [base.id] : [];
   const kept = baseParts.filter((b) => ![...reskinned.values()].includes(b.name)).length;

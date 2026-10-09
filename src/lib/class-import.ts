@@ -19,6 +19,8 @@ Rules:
 - If my notes say this is a reskin, reflavor or variant of an official D&D one, put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
 - Patrons, oaths, paths, circles, colleges, domains and anything else a player picks one of to shape the class are subclasses: put each in "subclasses", never as a feature's choice.
 - Use the structured keys (gives, grows, chooses, resources) for anything the rules track; keep "description" for the words players read.
+- Anything a character counts up or down or has a limited number of (points, charges, uses, a corruption or stress score) is a resource: give it a name, an amount and how it comes back ("never" for a score that only goes up), and have the features that change it use it.
+- A feature that gives a damage bonus, an advantage, a resistance or a proficiency gives it in "gives", even when it only applies in some situations (put the situation in "when" or the note).
 - Answer with the JSON only: no explanation before or after it.
 
 Format (every key is optional except "format"):
@@ -82,6 +84,8 @@ Format (every key is optional except "format"):
         | { "type": "hitPointsPerLevel", "amount": 1 }
         | { "type": "abilityIncrease", "ability": "str", "amount": 1 }
         | { "type": "advantage", "on": "save" | "check" | "attack" | "initiative", "ability": "wis", "when": "against being Frightened" }
+        | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
+        | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "spell always prepared" }
         | { "type": "note", "text": "anything else, like advantage on certain saves" }
       ]
@@ -256,6 +260,8 @@ export function giveOf(g: any, feature: string, notes: string[]): any {
     case 'hitPointsPerLevel': { const n = int(g.amount, 1, 10); if (n) return { t: 'hp', n }; break; }
     case 'abilityIncrease': { const a = ab(g.ability) || (str(g.ability).toLowerCase() === 'any' ? 'any' : ''); const n = int(g.amount, 1, 4); if (a && n) return { t: 'ability', ab: a, n }; break; }
     case 'spell': if (str(g.name)) return { t: 'spell', name: str(g.name, 80) }; break;
+    case 'extraDamage': { const dice = str(g.amount).replace(/\s/g, ''); const amount = /^\d*d\d+$/.test(dice) ? dice : ab(g.amount); if (amount) return { t: 'damage', amount, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
+    case 'bonus': { const roll = ['save', 'check', 'attack', 'initiative', 'damage'].includes(g.to) ? g.to : ''; const amount = g.amount === 'proficiency' ? 'prof' : ab(g.amount) || int(g.amount, -10, 20); if (roll && amount !== null && amount !== '') return { t: 'bonus', roll, amount, ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
     case 'advantage': { const roll = ['save', 'check', 'attack', 'initiative'].includes(g.on) ? g.on : ''; if (roll) return { t: 'adv', roll, ...(ab(g.ability) ? { ab: ab(g.ability) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
     case 'conditionImmunity': if (str(g.condition)) return { t: 'condition', v: str(g.condition, 30) }; break;
     case 'note': if (str(g.text)) return { t: 'text', text: str(g.text, 300) }; break;
