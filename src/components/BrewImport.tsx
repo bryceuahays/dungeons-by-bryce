@@ -32,12 +32,27 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
   };
   const [busy, setBusy] = useState(false);
   // a reskin ("basedOn": "Warlock") starts from that official entry (the 2024 one first), or one of your own
-  const findBase = async (name: string) => {
+  // the exact name first, then a close one ("the Goblin" finds "Goblin Warrior", "Fiend" finds "Fiend Patron")
+  const findBase = async (said: string) => {
     const db = supabaseBrowser();
-    const { data: srd } = await db.from('entities').select('id, name, source, data, srd_version').eq('source', 'srd').eq('type', type).ilike('name', name).order('srd_version', { ascending: false }).limit(1);
-    if (srd?.[0]) return srd[0] as { id: string; name: string; source: string; data: any };
-    const { data: own } = await db.from('entities').select('id, name, source, data').neq('source', 'srd').eq('type', type).ilike('name', name).limit(1);
-    return (own?.[0] as { id: string; name: string; source: string; data: any } | undefined) ?? null;
+    type Base = { id: string; name: string; source: string; data: any };
+    const name = said.trim().replace(/^(the|a|an) /i, '').replace(/[%_]/g, '');
+    const patterns = [name, `${name} %`, `% ${name}`, `%${name}%`];
+    // your own homebrew by that exact name first, then the SRD (2024 before 2014)
+    const { data: mine } = await db.from('entities').select('id, name, source, data').neq('source', 'srd').eq('type', type).ilike('name', name).limit(1);
+    if (mine?.[0]) return mine[0] as Base;
+    // an exact name beats a close one (the Goblin is the 2014 Goblin, not the 2024 Goblin Boss)
+    for (const pattern of patterns) {
+      for (const v of ['5.2', '5.1']) {
+        const { data: srd } = await db.from('entities').select('id, name, source, data').eq('source', 'srd').eq('srd_version', v).eq('type', type).ilike('name', pattern).order('name').limit(1);
+        if (srd?.[0]) return srd[0] as Base;
+      }
+    }
+    for (const pattern of patterns.slice(1)) {
+      const { data: own } = await db.from('entities').select('id, name, source, data').neq('source', 'srd').eq('type', type).ilike('name', pattern).limit(1);
+      if (own?.[0]) return own[0] as Base;
+    }
+    return null;
   };
   const open = async () => {
     const r = parseBrewImport(type, answer, spells);
@@ -86,6 +101,10 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
           <li><b>Copy the AI&apos;s whole answer</b> and paste it into the box at the bottom of this page.</li>
           <li>Press <b>Open in the editor</b>. It opens with everything from your notes filled in, and anything missing left blank for you.</li>
         </ol>
+        <div className="import-tip">
+          <b>Reskinning something official?</b> Say so in your notes and name it, like <i>&ldquo;This is a Warlock reskin&rdquo;</i>, and name what each part reflavors, like <i>&ldquo;Blade Secrets is our version of Eldritch Invocations&rdquo;</i> or <i>&ldquo;The False Seer is a reflavor of the Fiend Patron&rdquo;</i>.
+          The site then starts from the official one and fills in everything your notes don&apos;t change (hit points, proficiencies, spell slots, features and the rest), and the official one is replaced by yours for your players.
+        </div>
         <p className="dim">Your notes go only to the AI you choose. This site reads just the answer you paste here, and nothing is saved until you press Create.</p>
       </div>
 

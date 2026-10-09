@@ -347,6 +347,12 @@ function resourceOf(j: any, notes: string[]) {
   };
 }
 
+const readKind = (type: string, j: any, notes: string[]): any => (type === 'subclass' ? subclassOf(j, notes) : type === 'race' ? raceOf(j, notes) : type === 'background' ? backgroundOf(j, notes) : type === 'feat' ? featOf(j, notes)
+  : type === 'spell' ? spellOf(j) : type === 'item' ? itemOf(j, notes) : type === 'monster' ? monsterOf(j) : type === 'resource' ? resourceOf(j, notes) : null);
+// what the reader fills in when the answer says nothing (a spell's level 0, a monster's Medium size):
+// on a reskin those are not changes, so the official values stay
+const defaultsOf = (type: string): any => (type === 'class' ? {} : readKind(type, {}, []) ?? {});
+
 export function parseBrewImport(type: string, text: string, spells: SpellOption[]): ImportResult {
   if (type === 'class') return parseClassImport(text, spells);
   const start = text.indexOf('{'), end = text.lastIndexOf('}');
@@ -358,8 +364,7 @@ export function parseBrewImport(type: string, text: string, spells: SpellOption[
   const said = str(j.format).match(/^dungeons-by-bryce-([a-z]+)-/)?.[1];
   if (said && said !== type) return { ok: false, error: `That answer is for a ${said}, but you picked ${BREW_KINDS.find(([k]) => k === type)?.[1].toLowerCase() ?? type} above. Pick ${said} in the list, or give your AI the ${type} prompt.` };
   const notes: string[] = [];
-  const data = type === 'subclass' ? subclassOf(j, notes) : type === 'race' ? raceOf(j, notes) : type === 'background' ? backgroundOf(j, notes) : type === 'feat' ? featOf(j, notes)
-    : type === 'spell' ? spellOf(j) : type === 'item' ? itemOf(j, notes) : type === 'monster' ? monsterOf(j) : type === 'resource' ? resourceOf(j, notes) : null;
+  const data = readKind(type, j, notes);
   if (!data) return { ok: false, error: 'That kind of homebrew cannot be imported yet.' };
   const name = str(j.name, 120);
   if (!name && Object.keys(data).length <= 1) return { ok: false, error: 'The answer did not contain anything to import. Check that your AI received your notes after the prompt.' };
@@ -459,8 +464,9 @@ export function applyBase(type: string, base: { name: string; data: any; id?: st
   }
 
   // everything else the notes set: on top (objects like spellcasting are merged key by key)
+  const defaults = defaultsOf(type);
   for (const [k, v] of Object.entries(imported.data)) {
-    if (k === key || !meaningful(v)) continue;
+    if (k === key || !meaningful(v) || JSON.stringify(v) === JSON.stringify(defaults[k])) continue;
     // spells the notes name are added to the official class's list, not a list of their own
     if (k === 'spellList' && type === 'class') { out.spellList = [...new Set([...(out.spellList?.length ? out.spellList : srdListFor(spells, base.name)), ...(v as string[])])]; continue; }
     if (k === 'resources' && Array.isArray(out.resources)) { out.resources = [...out.resources.filter((r: any) => !(v as any[]).some((x) => x.name.toLowerCase() === r.name.toLowerCase())), ...(v as any[])]; continue; }
