@@ -53,7 +53,8 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
   useEffect(() => () => { if (timer.current) { clearTimeout(timer.current); void flush(); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const used = c.used ?? {}, slotsUsed = c.slotsUsed ?? {};
-  const anyCount = d.chosen.flatMap((e) => (e.data.effects ?? [])).filter((x: any) => x.t === 'ability' && x.ab === 'any').length;
+  // "+1 of your choice" picks the creator already made for an entry (a background's three) are not asked again
+  const anyCount = d.chosen.filter((e) => !c.abPicks?.[e.id]).flatMap((e) => (e.data.effects ?? [])).filter((x: any) => x.t === 'ability' && x.ab === 'any').length;
   const rest = (kind: 'short' | 'long') => {
     const nu = { ...used };
     d.resources.forEach((r) => {

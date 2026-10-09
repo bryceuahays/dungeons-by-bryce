@@ -14,11 +14,13 @@ const AB = Object.fromEntries(ABILITIES) as Record<string, string>;
 const plural = (n: string) => (/s$/i.test(n) || n.includes('(') ? n : n + 's');
 
 // "(A) Chain Mail, 6 Javelins and 9 GP; or (B) 150 GP"
+// "Chain Mail, 6 Javelins and 9 GP"
+export const pkgLine = (p: Pkg) => {
+  const parts = [...p.items.filter((i) => i.name.trim()).map((i) => (Number(i.count) > 1 ? `${i.count} ${plural(i.name)}` : i.name)), ...(Number(p.gp) > 0 ? [`${p.gp} GP`] : [])];
+  return parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0] ?? 'nothing';
+};
 export function equipLine(pkgs: Pkg[] | undefined) {
-  const one = (p: Pkg) => {
-    const parts = [...p.items.filter((i) => i.name.trim()).map((i) => (Number(i.count) > 1 ? `${i.count} ${plural(i.name)}` : i.name)), ...(Number(p.gp) > 0 ? [`${p.gp} GP`] : [])];
-    return parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0] ?? 'nothing';
-  };
+  const one = pkgLine;
   const list = (pkgs ?? []).filter((p) => p.items.some((i) => i.name.trim()) || Number(p.gp) > 0);
   if (!list.length) return '';
   return list.length === 1 ? one(list[0]) : list.map((p, i) => `(${LETTER[i]}) ${one(p)}`).join('; or ');

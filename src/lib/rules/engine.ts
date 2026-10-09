@@ -103,42 +103,84 @@ export type CharacterV2 = {
   hp?: number | null; hpMax?: number | null; temp?: number; acBase?: number | null; shield?: boolean;
   used?: Record<string, number>; slotsUsed?: Record<string, number>; spells?: string[]; extra?: string[];
   gear?: string; notes?: string; seen?: Record<string, number>;
+  // the character creator: what the player picked for each feature's choice (see pickKey), the languages
+  // they chose, the gold left from starting equipment, and who they are
+  picks?: Record<string, { from: string; v: string[] }>; langs?: string[]; gp?: number;
+  abPicks?: Record<string, Ability[]>;          // an entry's "+1 of your choice" picks, by entry id (a background's three)
+  alignment?: string; appearance?: string; backstory?: string; built?: boolean;
 };
 export const blankV2 = (): CharacterV2 => ({ v: 2, t: 0, name: '', player: '', level: 1, race: '', cls: '', raceId: null, clsId: null, subId: null, bgId: null, feats: [], ab: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }, anyAb: [], skills: [], expert: [], hp: null, hpMax: null, temp: 0, acBase: null, shield: false, used: {}, slotsUsed: {}, spells: [], extra: [], gear: '', notes: '', seen: {} });
 
 export type Derived = ReturnType<typeof derive>;
 
+// The parts of an entry a player can make choices in: a class's, subclass's or race's features and a
+// feat's benefits. A pick is saved under the entry and the part's name and level.
+export const partsOf = (e: Entity): any[] => (e.type === 'feat' ? e.data.benefits ?? [] : e.data.features ?? []);
+export const pickKey = (e: { id: string }, ft: { name?: string; level?: number }) => `${e.id}:${ft.name ?? ''}:${Number(ft.level) || 1}`;
+// The entries a character has: race, class, subclass, background and feats, plus the background's
+// Origin feat and any feats picked in a choice (a Human's Versatile).
+export function chosenOf(c: CharacterV2, entities: Entity[]) {
+  const byId = new Map(entities.map((e) => [e.id, e]));
+  const out = [c.raceId, c.clsId, c.subId, c.bgId, ...(c.feats ?? [])].map((id) => (id ? byId.get(id) : undefined)).filter(Boolean) as Entity[];
+  const add = (e: Entity | undefined) => { if (e && !out.includes(e)) out.push(e); };
+  const bg = c.bgId ? byId.get(c.bgId) : undefined;
+  const origin = String(bg?.data.feat?.name ?? '').toLowerCase();
+  if (origin) add(entities.find((e) => e.type === 'feat' && e.name.toLowerCase() === origin));
+  Object.values(c.picks ?? {}).forEach((p) => { if (String(p.from).startsWith('feat:')) p.v.forEach((id) => add(byId.get(id))); });
+  return out;
+}
+
 // Everything the sheet shows that is worked out rather than typed in.
 export function derive(c: CharacterV2, entities: Entity[]) {
   const level = Math.max(1, Math.min(20, Number(c.level) || 1));
   const byId = new Map(entities.map((e) => [e.id, e]));
-  const chosen = [c.raceId, c.clsId, c.subId, c.bgId, ...(c.feats ?? [])].map((id) => (id ? byId.get(id) : undefined)).filter(Boolean) as Entity[];
+  const chosen = chosenOf(c, entities);
   const cls = c.clsId ? byId.get(c.clsId) : undefined;
+  const picked: { from: string; v: string[]; who: string }[] = [];
 
-  const effects: (Effect & { from: string })[] = [];
+  const effects: (Effect & { from: string; eid?: string })[] = [];
   const features: (Feature & { from: string })[] = [];
   for (const e of chosen) {
-    (e.data.effects ?? []).forEach((x: Effect) => { if ((x.at ?? 1) <= level) effects.push({ ...x, from: e.name }); });
-    (e.data.features ?? []).forEach((ft: Feature) => {
+    (e.data.effects ?? []).forEach((x: Effect) => { if ((x.at ?? 1) <= level) effects.push({ ...x, from: e.name, eid: e.id }); });
+    partsOf(e).forEach((ft: Feature & { choice?: any }) => {
       if ((Number(ft.level) || 1) > level) return;
       features.push({ ...ft, from: e.name });
-      (ft.effects ?? []).forEach((x) => { if ((x.at ?? 1) <= level) effects.push({ ...x, from: e.name + ': ' + ft.name }); });
+      // what the player picked here: an option's own effects, or skills, spells and weapons
+      const p = (c.picks ?? {})[pickKey(e, ft)];
+      if (p?.v?.length) {
+        picked.push({ ...p, who: e.name + ': ' + ft.name });
+        const opts: any[] = ft.choice?.options ?? partsOf(e).find((x: any) => x.name === ft.name && x.choice?.options?.length)?.choice?.options ?? [];
+        p.v.forEach((name) => {
+          const o = opts.find((x) => x.name === name);
+          if (!o) return;
+          features.push({ level: ft.level, name: ft.name + ': ' + o.name, text: o.text ?? '', from: e.name });
+          (o.effects ?? []).forEach((x: Effect) => { if ((x.at ?? 1) <= level) effects.push({ ...x, from: e.name + ': ' + o.name, eid: e.id }); });
+        });
+      }
+      // a feat's benefits' effects are already on the feat itself (featOut)
+      if (e.type !== 'feat') (ft.effects ?? []).forEach((x) => { if ((x.at ?? 1) <= level) effects.push({ ...x, from: e.name + ': ' + ft.name, eid: e.id }); });
     });
   }
 
   const scores = { ...c.ab } as Record<Ability, number>;
   let anyIndex = 0;
+  const perEntry: Record<string, number> = {};
   const of = <T extends Effect['t']>(t: T) => effects.filter((x) => x.t === t) as (Extract<Effect, { t: T }> & { from: string })[];
   for (const x of of('ability')) {
-    const target = x.ab === 'any' ? (c.anyAb ?? [])[anyIndex++] : x.ab;
-    if (target && target in scores) scores[target] = Number(scores[target]) + Number(x.n);
+    // "of your choice": the entry's own picks when the creator made them, else the sheet's list
+    const own = (x as any).eid && c.abPicks?.[(x as any).eid];
+    const target = (x.ab === 'any' ? (own ? own[perEntry[(x as any).eid] = (perEntry[(x as any).eid] ?? -1) + 1] : (c.anyAb ?? [])[anyIndex++]) : x.ab) as Ability | undefined;
+    if (target && target in scores) scores[target] = Math.min(x.max ? Number(x.max) : 99, Number(scores[target]) + Number(x.n));
   }
   const mods = Object.fromEntries(ABILITIES.map(([k]) => [k, mod(scores[k])])) as Record<Ability, number>;
   const prof = classProf(cls?.data, level);
 
   const profs = { skill: new Set<string>(c.skills ?? []), save: new Set<string>(), armor: new Set<string>(), weapon: new Set<string>(), tool: new Set<string>(), language: new Set<string>() };
   of('prof').forEach((x) => profs[x.kind]?.add(x.v));
-  const expert = new Set(c.expert ?? []);
+  const SKILL_NAMES = new Set(SKILLS.map(([n]) => n));
+  picked.filter((p) => p.from === 'anyskill').forEach((p) => p.v.forEach((v) => (SKILL_NAMES.has(v) ? profs.skill : profs.tool).add(v)));
+  (c.langs ?? []).forEach((l) => profs.language.add(l));
+  const expert = new Set([...(c.expert ?? []), ...picked.filter((p) => p.from === 'skills').flatMap((p) => p.v)]);
   const saves = ABILITIES.map(([k, label]) => ({ key: k, label, proficient: profs.save.has(k), bonus: mods[k] + (profs.save.has(k) ? prof : 0) }));
   const skills = SKILLS.map(([name, a]) => ({ name, ability: a, proficient: profs.skill.has(name), expert: expert.has(name), bonus: mods[a] + (profs.skill.has(name) ? prof * (expert.has(name) ? 2 : 1) : 0) }));
 
@@ -157,8 +199,9 @@ export function derive(c: CharacterV2, entities: Entity[]) {
     if (max > 0 && !resources.some((r) => r.name === e.name)) resources.push({ name: e.name, recharge: e.data.recharge ?? 'long', max, unlimited: max >= 99, from: 'This campaign' });
   });
   const scales = of('scale').map((x) => ({ name: x.name, value: scaleAt(x.steps, level), from: x.from })).filter((s) => s.value);
-  const granted = of('spell').map((x) => ({ name: x.name, from: x.from }));
-  const riders = of('text').map((x) => ({ text: x.text, from: x.from }));
+  const granted = [...of('spell').map((x) => ({ name: x.name, from: x.from })),
+    ...picked.filter((p) => p.from === 'spells').flatMap((p) => p.v.map((id) => ({ name: byId.get(id)?.name ?? '', from: p.who }))).filter((g) => g.name)];
+  const riders = [...of('text').map((x) => ({ text: x.text, from: x.from })), ...picked.filter((p) => p.from === 'weapons').map((p) => ({ text: p.v.join(', '), from: p.who }))];
 
   const hd = Number(cls?.data.hd) || 8;
   const hpPerLevel = of('hp').reduce((n, x) => n + Number(x.n), 0);

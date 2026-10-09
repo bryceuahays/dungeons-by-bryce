@@ -46,7 +46,8 @@ export async function createCharacterV2(slug: string) {
   const id = await campaignId(supabase, slug);
   if (!id) redirect('/campaigns');
   const { data: row } = await supabase.from('characters').insert({ owner: user.id, campaign_id: id, data: { ...blankV2(), player: profile.display_name, t: Date.now() } }).select('id').single();
-  redirect(`/c/${slug}/sheet${row ? '?c=' + row.id : ''}`);
+  // a new character starts in the step-by-step creator
+  redirect(row ? `/c/${slug}/create?c=${row.id}` : `/c/${slug}/sheet`);
 }
 
 export async function deleteCharacter(slug: string, characterId: string) {

@@ -107,6 +107,7 @@ async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: str
     <div className="cs-guide">
       <div className="wrap">
         <CharacterPicker slug={slug} tab={play ? 'combat' : 'sheet'} chars={chars} current={current} />
+        {!play ? <p className="row"><Link className="act sm" href={`/c/${slug}/create?c=${current.id}`}>{current.data?.built ? 'Change it in the character creator' : 'Continue in the character creator'}</Link></p> : null}
         <Sheet5e key={current.id} character={{ id: current.id, data: current.data }} entities={entities} play={play} />
         {play ? <p className="row"><Link className="act" href={`/c/${slug}/sheet?c=${current.id}`}>Open the full sheet</Link></p> : (
           <>
