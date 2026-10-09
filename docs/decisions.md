@@ -148,3 +148,20 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 113. **Delivery is one step:** it moves the campaign to the client's account and starts their Pro months that day (added to any they already have). The client needs an account first.
 114. **Pro months from a commission are a date on the account,** separate from a subscription. The Plans page says when they end.
 115. **"Not taking requests" hides the form and the Request buttons** and says so at the top. The tiers stay visible.
+
+## Project board setup
+
+116. **The commercial build went live before the board was made.** You asked for that. `main` now holds everything, so "Done" on the board means built, tested and live, and partners branch from the real site.
+117. **Status was judged from the code and the tests,** not from the docs. A feature is "Done" only if every part of its line in your list is built. Where one part is missing it is "Partly done", even when the missing part is small or is yours to decide (the invite link lands on the campaign rather than the character page; faction clocks do not advance by themselves; no class is in the free originals pack).
+118. **The field is called "Work type", not "Type".** GitHub reserves the name "Type" on project boards and refused it.
+119. **The "showed a player something hidden" question on the bug form is a required Yes / No / Not sure choice,** not a required tick-box. A required tick-box on a GitHub form must be ticked before the form can be sent, which would mark every bug as a leak.
+120. **Issues call it "Bryce's first campaign", not by its title.** The real title is hidden from that campaign's players, and partners who play in it will read the board. The repository itself still names it throughout (and holds its DM secrets), which is a separate thing for you to decide before giving a player access.
+121. **Groundwork is six issues.** Feature flags, the homebrew shared core, and four folder splits (table tools, server actions, store, character sheet), one per area where features share files today. Nothing was refactored.
+122. **The homebrew builder is split into four next pieces:** lore organization, race building, class building, and items on the sheet. They are not on your list, so I gave them priority Should for you to re-sort. All four wait for the shared core.
+123. **"Lore organization" is my reading of what you meant:** world lore (places, factions, gods, history, people) as a new kind of homebrew entry that can be linked, attached to a campaign and revealed in stages. Correct the issue before anyone starts it.
+124. **A feature that waits on groundwork is in Backlog even when part of it exists,** following your rule that blocked work stays in Backlog until the groundwork merges.
+125. **Thirteen issues come from `TODO-LATER.md`,** each with priority Could. Items in that file that are already done are ticked, not removed.
+126. **Business tasks that are Must start in "Ready",** the Should one in "Backlog".
+127. **Full campaign export is listed as not started, and the site currently advertises it.** The plan config marks export as a Pro feature and the pricing page lists "Export" under Pro, but there is no export yet, and your list says it should be on every plan. No code was changed in this run, so the pricing page still says it.
+128. **The scripts that created the board are not in the repository.** Only the templates, `CLAUDE.md` and the docs were allowed to change.
+129. **New code is proposed to live in `src/features/<area>/<feature>/`.** That folder does not exist yet; the groundwork issues create it.

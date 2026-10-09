@@ -1,0 +1,86 @@
+name: Bug report
+description: Something is broken, looks wrong, or showed someone something it should not have.
+title: "Bug: "
+labels: ["bug", "needs-testing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing. Fill in every box, even if the answer is short. One bug per report.
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: The steps, one per line, so someone else can make it happen again.
+      placeholder: |
+        1. Opened the campaign as a player
+        2. Tapped Maps
+        3. Zoomed in on the first map
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: Copy any message you saw, word for word.
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options:
+        - iPhone
+        - Android phone
+        - Tablet
+        - Desktop
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and model
+      description: For example "Safari on an iPhone 14" or "Chrome on a Windows laptop".
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your role when it happened
+      options:
+        - DM
+        - Player
+        - Logged out
+    validations:
+      required: true
+  - type: input
+    id: campaign
+    attributes:
+      label: Campaign name
+      description: The campaign you were in. Write "none" if you were not in one.
+    validations:
+      required: true
+  - type: dropdown
+    id: leak
+    attributes:
+      label: This bug showed a player something that should have been hidden
+      description: DM-only text, a secret meant for another player, a hidden part of a map, something from a later reveal stage. If yes, this is a launch blocker and gets looked at first.
+      options:
+        - "No"
+        - "Yes"
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or screen recording
+      description: Optional. Drag a picture or video into this box. Cover anything secret before you post it.
+    validations:
+      required: false
