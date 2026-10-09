@@ -16,12 +16,14 @@ Rules:
 - Use ONLY what my notes say. Do not invent, balance or "complete" anything.
 - If my notes do not mention something, leave that key out (or use an empty list). Never guess.
 - Copy feature descriptions in my own words; do not rewrite them.
+- If my notes say this is a reskin, reflavor or variant of an official D&D one, put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
 - Answer with the JSON only: no explanation before or after it.
 
 Format (every key is optional except "format"):
 {
   "format": "${IMPORT_FORMAT}",
   "name": "class name",
+  "basedOn": "Warlock",                     // the official class this reskins, if my notes say so
   "description": "what the class is like",
   "hitDie": 6 | 8 | 10 | 12,
   "primaryAbilities": ["str" | "dex" | "con" | "int" | "wis" | "cha"],
@@ -55,6 +57,7 @@ Format (every key is optional except "format"):
     {
       "level": 1,
       "name": "feature name",
+      "reskinOf": "Pact Magic",              // the official feature this one reflavors, if my notes say so
       "description": "what it does, in my words",
       "usesResource": "Channel Divinity",       // the name of a resource above, if the feature spends one
       "cost": 1,                                // how much one use spends; leave out if it varies
@@ -153,9 +156,10 @@ export function parseClassImport(text: string, spells: SpellOption[]): ImportRes
   const sc = j.spellcasting;
   if (sc && typeof sc === 'object') {
     const kind = ['none', 'full', 'half', 'pact'].includes(sc.type) ? sc.type : 'none';
-    data.casting = { kind };
-    if (kind !== 'none') {
-      data.casting.rules = '2024';
+    // the type only when the answer gives one (a reskin keeps its official class's spellcasting otherwise)
+    data.casting = sc.type ? { kind } : {};
+    if (kind !== 'none' || !sc.type) {
+      if (sc.type) data.casting.rules = '2024';
       if (ab(sc.ability)) data.casting.ability = ab(sc.ability);
       const c = twenty(sc.cantripsKnown), p = twenty(sc.preparedSpells);
       if (c) data.casting.cantrips = c;

@@ -1,7 +1,8 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
-import { BREW_KINDS, PROMPTS, parseBrewImport } from '@/lib/brew-import';
+import { BREW_KINDS, PROMPTS, applyBase, basedOnOf, parseBrewImport } from '@/lib/brew-import';
+import { supabaseBrowser } from '@/lib/supabase/client';
 import type { SpellOption } from '@/lib/class-spells';
 import { EntityEditor } from './EntityEditor';
 import type { FeatOption } from './ClassGives';
@@ -29,11 +30,29 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
   const copy = async () => {
     try { await navigator.clipboard.writeText(PROMPTS[type]); setCopied('yes'); } catch { setCopied('blocked'); }
   };
-  const open = () => {
+  const [busy, setBusy] = useState(false);
+  // a reskin ("basedOn": "Warlock") starts from that official entry (the 2024 one first), or one of your own
+  const findBase = async (name: string) => {
+    const db = supabaseBrowser();
+    const { data: srd } = await db.from('entities').select('name, data, srd_version').eq('source', 'srd').eq('type', type).ilike('name', name).order('srd_version', { ascending: false }).limit(1);
+    if (srd?.[0]) return srd[0] as { name: string; data: any };
+    const { data: own } = await db.from('entities').select('name, data').neq('source', 'srd').eq('type', type).ilike('name', name).limit(1);
+    return (own?.[0] as { name: string; data: any } | undefined) ?? null;
+  };
+  const open = async () => {
     const r = parseBrewImport(type, answer, spells);
     if (!r.ok) { setError(r.error); return; }
     setError('');
-    setMade({ name: r.name, data: r.data, notes: r.notes });
+    let result = { name: r.name, data: r.data, notes: r.notes };
+    const basedOn = basedOnOf(answer);
+    if (basedOn) {
+      setBusy(true);
+      const base = await findBase(basedOn).catch(() => null);
+      setBusy(false);
+      if (base) result = applyBase(type, base, result, answer);
+      else result.notes = [`Your notes say this is based on "${basedOn}", but there is no ${noun} by that name in the SRD or your homebrew, so only what your notes say was filled in.`, ...result.notes];
+    }
+    setMade(result);
     window.scrollTo(0, 0);
   };
 
@@ -42,7 +61,7 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
       <>
         <div className="panel">
           <p><b>Imported.</b> Everything your notes covered is filled in; anything they did not is blank. Check it over, then press Create to save the {noun}.</p>
-          {made.notes.length ? <><p>A few things could not be filled in:</p><ul>{made.notes.map((n, i) => <li key={i}>{n}</li>)}</ul></> : null}
+          {made.notes.length ? <><p>Notes on the import:</p><ul>{made.notes.map((n, i) => <li key={i}>{n}</li>)}</ul></> : null}
           <p className="inline"><button type="button" className="quiet small-btn" onClick={() => setMade(null)}>Back to the import</button></p>
         </div>
         <EntityEditor id={null} pro={pro} srd={srd.filter((s) => s.type === type)} versions={[]} campaigns={[]} version={1} changeNote="" spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
@@ -83,7 +102,7 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
         <h2>2. Paste your AI&apos;s answer</h2>
         <textarea className="mono" rows={14} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Paste the whole answer here. It starts with { and ends with }." aria-label="Your AI's answer" />
         {error ? <p className="bad" role="alert">{error}</p> : null}
-        <p className="inline"><button type="button" disabled={!answer.trim()} onClick={open}>Open in the editor</button></p>
+        <p className="inline"><button type="button" disabled={!answer.trim() || busy} onClick={() => { void open(); }}>{busy ? 'Opening…' : 'Open in the editor'}</button></p>
       </div>
     </>
   );

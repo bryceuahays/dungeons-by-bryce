@@ -19,11 +19,13 @@ Rules:
 - Use ONLY what my notes say. Do not invent, balance or "complete" anything.
 - If my notes do not mention something, leave that key out (or use an empty list). Never guess.
 - Copy descriptions in my own words; do not rewrite them.
+- If my notes say this is a reskin, reflavor or variant of an official D&D one, put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
 - Answer with the JSON only: no explanation before or after it.
 
 Format (every key is optional except "format"):
 {
-  "format": "dungeons-by-bryce-${id}-1",`;
+  "format": "dungeons-by-bryce-${id}-1",
+  "basedOn": "the official ${what} this reskins, if my notes say so",`;
 const tail = `
 }
 
@@ -46,6 +48,7 @@ const GIVES_DOC = `"gives": [                                // what it adds to 
       ]`;
 const TRAIT_DOC = (word: string, levels: boolean) => `{
       ${levels ? '"level": 1,                               // the character level it starts at\n      ' : ''}"name": "${word} name",
+      "reskinOf": "the official ${word} this one reflavors, if my notes say so",
       "description": "what it does, in my words",
       "limit": { "times": 1 | "proficiency", "per": "turn" | "round" | "short" | "long" },   // only if it has limited uses
       "chooses": {                               // only if the player picks something
@@ -361,3 +364,85 @@ export function parseBrewImport(type: string, text: string, spells: SpellOption[
   if (!name && Object.keys(data).length <= 1) return { ok: false, error: 'The answer did not contain anything to import. Check that your AI received your notes after the prompt.' };
   return { ok: true, name, data, notes };
 }
+
+// ---------------------------------------------------------------- reskins of an official entry
+
+// The answer says it is "basedOn" an official entry (a Warlock reskin): start from that entry, so
+// everything the notes do not change is the official one's, rename what the notes reflavor ("reskinOf"),
+// and lay the notes' own changes on top. Renames reach everything that refers to a part by name:
+// the class's resources and growing numbers, the features that spend a resource, and the rules text.
+const PARTS: Record<string, string> = { class: 'features', subclass: 'features', race: 'features', background: 'features', feat: 'benefits' };
+const RAW_PARTS: Record<string, string> = { class: 'features', subclass: 'features', race: 'traits', background: 'traits', feat: 'benefits', resource: 'waysToSpend' };
+const meaningful = (v: unknown) => v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && !v.length) && !(typeof v === 'object' && !Array.isArray(v) && !Object.keys(v as object).length);
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export function basedOnOf(text: string) {
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  try { return str(JSON.parse(text.slice(start, end + 1).replace(/\/\/[^\n"]*$/gm, '')).basedOn, 80); } catch { return ''; }
+}
+
+export function applyBase(type: string, base: { name: string; data: any }, imported: { name: string; data: any; notes: string[] }, text: string) {
+  const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1).replace(/\/\/[^\n"]*$/gm, ''));
+  const notes = [...imported.notes];
+  const out: any = structuredClone(base.data);
+  const key = PARTS[type];
+  const baseParts: any[] = key ? out[key] ?? [] : [];
+
+  // what is renamed: the entry itself, and each part the notes reflavor
+  const renames: [string, string][] = [];
+  if (imported.name && imported.name.toLowerCase() !== base.name.toLowerCase()) renames.push([base.name, imported.name]);
+  const reskinned = new Map<string, string>(); // new name -> official name
+  for (const p of list(j[RAW_PARTS[type]])) {
+    const from = str(p?.reskinOf, 120), to = str(p?.name, 120);
+    if (!from || !to) continue;
+    const hit = baseParts.find((b) => str(b.name).toLowerCase() === from.toLowerCase());
+    if (!hit) { notes.push(`"${to}" reflavors "${from}", which the official ${base.name} does not have, so it was added as a new ${type === 'feat' ? 'benefit' : 'feature'}.`); continue; }
+    reskinned.set(to.toLowerCase(), hit.name);
+    if (hit.name.toLowerCase() !== to.toLowerCase()) renames.push([hit.name, to]);
+  }
+  // longest first, so "Mystic Arcanum" is renamed before a shorter name inside it
+  renames.sort((a, b) => b[0].length - a[0].length);
+  const swap = (s: string) => renames.reduce((t, [a, b]) => t.replace(new RegExp(`\\b${esc(a)}(s?)\\b`, 'g'), b + '$1'), s);
+  const named = (n: string) => renames.find(([a]) => a.toLowerCase() === String(n ?? '').toLowerCase())?.[1] ?? n;
+  const rid = (id: string) => (String(id).startsWith('r:') ? 'r:' + named(String(id).slice(2)).toLowerCase() : id);
+  const fixFx = (fx: any[] | undefined) => (fx ?? []).map((x) => ({ ...x, ...(x.name && (x.t === 'resource' || x.t === 'scale') ? { name: named(x.name) } : {}), ...(x.text ? { text: swap(x.text) } : {}) }));
+  if (out.desc) out.desc = swap(out.desc);
+  if (out.effects) out.effects = fixFx(out.effects);
+  if (Array.isArray(out.resources)) out.resources = out.resources.map((r: any) => ({ ...r, id: rid(r.id ?? 'r:' + r.name), name: named(r.name) }));
+  if (key) out[key] = baseParts.map((b) => ({
+    ...b, name: isMarkerName(b.name) ? swap(b.name) : named(b.name), text: swap(b.text ?? ''), effects: fixFx(b.effects),
+    ...(b.uses?.res ? { uses: { ...b.uses, res: rid(b.uses.res) } } : {}),
+    ...(b.choice?.options ? { choice: { ...b.choice, options: b.choice.options.map((o: any) => ({ ...o, text: swap(o.text ?? '') })) } } : {}),
+  }));
+
+  // the notes' own parts: a reskin keeps the official mechanics and takes the notes' words and changes;
+  // anything else is new
+  if (key) {
+    for (const p of imported.data[key] ?? []) {
+      const of = reskinned.get(String(p.name).toLowerCase());
+      const targets = of ? out[key].filter((b: any) => String(b.name).toLowerCase() === String(p.name).toLowerCase()) : [];
+      if (!targets.length) { out[key].push(p); continue; }
+      const raw = list(j[RAW_PARTS[type]]).find((r: any) => str(r?.name).toLowerCase() === String(p.name).toLowerCase());
+      const t = targets.find((b: any) => raw?.level !== undefined && Number(b.level) === Number(raw.level)) ?? targets[0];
+      if (str(raw?.description)) t.text = p.text;
+      if (raw?.level !== undefined && p.level) t.level = p.level;
+      if (meaningful(p.effects)) t.effects = [...(t.effects ?? []).filter((x: any) => x.t === 'scale'), ...p.effects];
+      if (p.choice) t.choice = p.choice;
+      if (p.uses) t.uses = p.uses;
+      if (p.limit) t.limit = p.limit;
+    }
+    if (type === 'class' || type === 'subclass' || type === 'race') out[key].sort((a: any, b: any) => (Number(a.level) || 1) - (Number(b.level) || 1));
+  }
+
+  // everything else the notes set: on top (objects like spellcasting are merged key by key)
+  for (const [k, v] of Object.entries(imported.data)) {
+    if (k === key || !meaningful(v)) continue;
+    if (k === 'resources' && Array.isArray(out.resources)) { out.resources = [...out.resources.filter((r: any) => !(v as any[]).some((x) => x.name.toLowerCase() === r.name.toLowerCase())), ...(v as any[])]; continue; }
+    out[k] = v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k]) ? { ...out[k], ...v } : v;
+  }
+  if (type === 'class') out.baseClass = out.baseClass || base.name;
+  const kept = baseParts.filter((b) => ![...reskinned.values()].includes(b.name)).length;
+  notes.unshift(`Started from the official ${base.name}: everything your notes did not change is the ${base.name}'s.${reskinned.size ? ` ${reskinned.size} ${type === 'feat' ? 'benefit' : 'feature'}${reskinned.size > 1 ? 's were' : ' was'} renamed from the ${base.name}'s (${[...reskinned].map(([to, from]) => `${from} → ${list(j[RAW_PARTS[type]]).find((r: any) => str(r?.name).toLowerCase() === to)?.name ?? to}`).join(', ')}).` : ''}${kept ? ` ${kept} more ${kept > 1 ? 'were' : 'was'} kept as they are.` : ''}`);
+  return { name: imported.name || base.name, data: out, notes };
+}
+const isMarkerName = (n: string) => /\bsubclass\b/i.test(n ?? '');
