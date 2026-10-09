@@ -63,10 +63,10 @@ async function ReadyMade({ world, campaigns }: { world: any; campaigns: { id: st
         <p className="kv"><b>Game:</b> 5th edition (SRD)</p>
         <p className="kv"><b>Rules:</b> {RULES[rules].label}</p>
         {String(world.data?.desc ?? '').split(/\n{2,}/).filter(Boolean).map((p: string, i: number) => <p key={i} className="dim">{p}</p>)}
-        <p className="inline">
+        <div className="inline">
           <Link className="button" href={'/new-campaign?world=' + world.id}>Start a campaign in this world</Link>
           <form action={copyWorld.bind(null, world.id)} style={{ display: 'inline' }}><button type="submit" className="quiet">Make my own copy to add homebrew</button></form>
-        </p>
+        </div>
         <p className="dim">This world is ready-made and the same for everyone, so it can&apos;t be changed. Your own copy starts with the same rules, and you can add your homebrew to it.</p>
       </div>
       <h2>What&apos;s in it</h2>
