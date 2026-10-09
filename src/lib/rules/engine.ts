@@ -182,7 +182,9 @@ export function derive(c: CharacterV2, entities: Entity[]) {
   picked.filter((p) => p.from === 'anyskill').forEach((p) => p.v.forEach((v) => (SKILL_NAMES.has(v) ? profs.skill : profs.tool).add(v)));
   (c.langs ?? []).forEach((l) => profs.language.add(l));
   const expert = new Set([...(c.expert ?? []), ...picked.filter((p) => p.from === 'skills').flatMap((p) => p.v)]);
-  const saves = ABILITIES.map(([k, label]) => ({ key: k, label, proficient: profs.save.has(k), bonus: mods[k] + (profs.save.has(k) ? prof : 0) }));
+  // flat bonuses that always apply (Alert's Proficiency Bonus to Initiative, a +1 to saving throws); ones with a 'when' are situational
+  const bonusTo = (roll: string) => of('bonus').filter((x) => x.roll === roll && !x.when).reduce((n, x) => n + (x.amount === 'prof' ? prof : typeof x.amount === 'string' && x.amount in mods ? mods[x.amount as Ability] : Number(x.amount) || 0), 0);
+  const saves = ABILITIES.map(([k, label]) => ({ key: k, label, proficient: profs.save.has(k), bonus: mods[k] + (profs.save.has(k) ? prof : 0) + bonusTo('save') }));
   const skills = SKILLS.map(([name, a]) => ({ name, ability: a, proficient: profs.skill.has(name), expert: expert.has(name), bonus: mods[a] + (profs.skill.has(name) ? prof * (expert.has(name) ? 2 : 1) : 0) }));
 
   const race = c.raceId ? byId.get(c.raceId) : undefined;
@@ -220,7 +222,7 @@ export function derive(c: CharacterV2, entities: Entity[]) {
   // entries that changed since this character last looked at them
   const changed = chosen.filter((e) => e.source !== 'srd' && (e.version ?? 1) > ((c.seen ?? {})[e.id] ?? 1)).map((e) => ({ id: e.id, name: e.name, version: e.version ?? 1, note: e.change_note ?? '' }));
 
-  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: mods.dex, passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? 0), casting, changed, cls, race, chosen };
+  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: mods.dex + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? 0), casting, changed, cls, race, chosen };
 }
 
 // ---------------------------------------------------------------- class table (levels 1 to 20)
