@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useActionState, useState, useTransition } from 'react';
 import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
 import { ThemeEditor } from './ThemeEditor';
+import { ConfirmButton } from './ConfirmButton';
 import { NEW_CAMPAIGN_RULES, RULES } from '@/config/rules';
 
 function Msg({ state }: { state: FormState }) {
@@ -174,7 +175,7 @@ export function FeedbackRowActions({ id, done }: { id: string; done: boolean }) 
   return (
     <span className="confirm">
       <button type="button" className="quiet small-btn" disabled={pending} onClick={() => start(() => feedbackSetDone(id, !done))}>{done ? 'Mark as open' : 'Mark as done'}</button>
-      <button type="button" className="quiet small-btn" disabled={pending} onClick={() => { if (confirm('Delete this note?')) start(() => feedbackDelete(id)); }}>Delete</button>
+      <ConfirmButton className="quiet small-btn" disabled={pending} ask={'Delete this note?'} yes="Yes, delete" onConfirm={() => { start(() => feedbackDelete(id)); }}>Delete</ConfirmButton>
     </span>
   );
 }

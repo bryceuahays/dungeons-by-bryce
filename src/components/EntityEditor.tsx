@@ -24,6 +24,7 @@ import { isMarker, readResources } from './ClassFeatures';
 import { FeatureTable, FeaturesTab, syncGrows, syncResources, syncUses } from './ClassFeatures';
 import type { SpellOption } from '@/lib/class-spells';
 import type { FeatOption } from './ClassGives';
+import { ConfirmButton } from './ConfirmButton';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
 
 const get = (o: any, path: string) => path.split('.').reduce((v, k) => (v == null ? v : v[k]), o);
@@ -639,7 +640,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
           <p className="dim">{STATUS.find((s) => s.id === status)?.what}</p>
           <div className="inline">
             <button type="button" disabled={pending} onClick={() => save(false)}>{pending ? 'Saving' : id ? 'Save' : 'Create'}</button>
-            {id ? <button type="button" className="quiet danger" disabled={pending} onClick={() => { if (confirm('Delete this entry for good?')) start(() => deleteEntity(id)); }}>Delete</button> : null}
+            {id ? <ConfirmButton className="quiet danger" disabled={pending} ask={'Delete this entry for good?'} yes="Yes, delete" onConfirm={() => { start(() => deleteEntity(id)); }}>Delete</ConfirmButton> : null}
           </div>
           {id && pro ? (
             <div className="inline" style={{ marginTop: 10 }}>

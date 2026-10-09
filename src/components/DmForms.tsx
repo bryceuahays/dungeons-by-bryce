@@ -1,5 +1,6 @@
 'use client';
 import { useActionState, useState, useTransition } from 'react';
+import { ConfirmButton } from './ConfirmButton';
 import { addContentRow, addSection, addSession, createInvite, deleteCampaign, importPages, saveSetting, saveStages, updateCampaign, updateSection, updateSession, type ActionState } from '@/app/c/[slug]/actions';
 
 function Msg({ state }: { state: ActionState }) {
@@ -154,7 +155,7 @@ export function SectionRow({ slug, section, first, last, phases }: { slug: strin
             <option value="">From the start</option>{phases.slice(1).map((p) => <option key={p.id} value={p.id}>From: {p.label}</option>)}
           </select>
         ) : null}
-        {!builtIn ? <button className="act sm danger" disabled={pending} onClick={() => { if (confirm(`Delete the "${section.title}" tab and everything on it? This cannot be undone.`)) run({ remove: true }); }}>Delete</button> : null}
+        {!builtIn ? <ConfirmButton className="act sm danger" disabled={pending} ask={`Delete the "${section.title}" tab and everything on it? This cannot be undone.`} yes="Yes, delete" onConfirm={() => { run({ remove: true }); }}>Delete</ConfirmButton> : null}
       </span>
     </div>
   );

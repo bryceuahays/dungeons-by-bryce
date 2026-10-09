@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Entry, ToolProps } from '@/lib/entry-types';
 import { UpgradeHint } from '../UpgradeHint';
 import { VisPicker, visLabel } from '../VisPicker';
+import { ConfirmButton } from '../ConfirmButton';
 import { Problem, uploadPicture, useEntries, visOf } from './kit';
 
 type Pt = [number, number];
@@ -168,7 +169,7 @@ export function MapsTool(p: ToolProps & { initial: Entry[]; beats: { id: string;
               <summary>This map: who sees it, and removing it</summary>
               <p style={{ marginTop: 10 }}><VisPicker value={visOf(map)} stages={p.stages} members={p.members} allow={['all', 'dm', 'stage']} disabled={!p.canWrite} onChange={(v) => save({ id: map.id, campaign_id: p.campaignId, kind: 'map', ...v })} /></p>
               <p className="muted">{regions.length} hidden area{regions.length === 1 ? '' : 's'} drawn, {regions.filter((r) => r.vis === 'all').length} revealed. {pins.length} pin{pins.length === 1 ? '' : 's'}.</p>
-              <p className="row"><button type="button" className="act sm danger" disabled={!p.canWrite} onClick={async () => { if (confirm(`Delete the map "${map.title}" with its areas and pins?`)) { await remove(map.id); setCurrent(null); setSel(null); } }}>Delete this map</button></p>
+              <p className="row"><ConfirmButton className="act sm danger" disabled={!p.canWrite} ask={`Delete the map "${map.title}" with its areas and pins?`} yes="Yes, delete" onConfirm={() => { void (async () => { await remove(map.id); setCurrent(null); setSel(null); })(); }}>Delete this map</ConfirmButton></p>
             </details>
           ) : null}
           {p.dm && !p.make.maps_plus ? <>{p.can.maps_plus ? <p className="muted">The maps and hidden areas that came with this campaign work as they are: reveal them, edit them, add your own pins. New maps and new hidden areas are part of Pro.</p> : null}<UpgradeHint feature="maps_plus" /></> : null}
