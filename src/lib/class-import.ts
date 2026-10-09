@@ -86,15 +86,15 @@ Format (every key is optional except "format"):
 My notes:
 `;
 
-const AB = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+export const AB = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const ABILITY_WORDS: Record<string, string> = { strength: 'str', dexterity: 'dex', constitution: 'con', intelligence: 'int', wisdom: 'wis', charisma: 'cha' };
-const ab = (v: unknown) => { const t = String(v ?? '').trim().toLowerCase(); return AB.includes(t) ? t : ABILITY_WORDS[t] ?? (AB.includes(t.slice(0, 3)) ? t.slice(0, 3) : ''); };
-const abs = (v: unknown) => [...new Set((Array.isArray(v) ? v : []).map(ab).filter(Boolean))];
-const str = (v: unknown, max = 5000) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, max) : '');
-const int = (v: unknown, lo: number, hi: number) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : null; };
-const twenty = (v: unknown) => (Array.isArray(v) && v.length === 20 && v.every((n) => Number.isFinite(Number(n))) ? v.map((n) => Math.max(0, Math.round(Number(n)))) : null);
+export const ab = (v: unknown) => { const t = String(v ?? '').trim().toLowerCase(); return AB.includes(t) ? t : ABILITY_WORDS[t] ?? (AB.includes(t.slice(0, 3)) ? t.slice(0, 3) : ''); };
+export const abs = (v: unknown) => [...new Set((Array.isArray(v) ? v : []).map(ab).filter(Boolean))];
+export const str = (v: unknown, max = 5000) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, max) : '');
+export const int = (v: unknown, lo: number, hi: number) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : null; };
+export const twenty = (v: unknown) => (Array.isArray(v) && v.length === 20 && v.every((n) => Number.isFinite(Number(n))) ? v.map((n) => Math.max(0, Math.round(Number(n)))) : null);
 // a name matched to our own list, ignoring case and a plural "s" ("Longswords" is "Longsword")
-const pickName = (v: unknown, from: string[]) => { const t = str(v).toLowerCase().replace(/s$/, ''); return from.find((x) => x.toLowerCase() === t || x.toLowerCase() === t + 's') ?? null; };
+export const pickName = (v: unknown, from: string[]) => { const t = str(v).toLowerCase().replace(/s$/, ''); return from.find((x) => x.toLowerCase() === t || x.toLowerCase() === t + 's') ?? null; };
 const PRIMARY_NAMES: Record<string, string> = { str: 'Strength', dex: 'Dexterity', con: 'Constitution', int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma' };
 
 export type ImportResult = { ok: true; name: string; data: any; notes: string[] } | { ok: false; error: string };
@@ -210,11 +210,12 @@ export function parseClassImport(text: string, spells: SpellOption[]): ImportRes
 }
 
 // "chooses": the lists the editor knows by name, or the DM's own options
-const CHOICE_FROM: Record<string, string> = { 'fighting styles': 'feat:Fighting style', 'fighting style': 'feat:Fighting style', 'epic boons': 'feat:Epic boon', 'epic boon': 'feat:Epic boon', 'origin feats': 'feat:Origin', 'general feats': 'feat:General', weapons: 'weapons', skills: 'skills' };
-function choiceOf(c: any) {
+const CHOICE_FROM: Record<string, string> = { 'fighting styles': 'feat:Fighting style', 'fighting style': 'feat:Fighting style', 'epic boons': 'feat:Epic boon', 'epic boon': 'feat:Epic boon', 'origin feats': 'feat:Origin', 'general feats': 'feat:General', weapons: 'weapons', skills: 'skills', 'any skills': 'anyskill', 'any skill': 'anyskill', spells: 'spells' };
+export function choiceOf(c: any) {
   if (!c || typeof c !== 'object') return null;
   const count = int(c.count, 1, 20) ?? 1;
   const from = CHOICE_FROM[str(c.from).toLowerCase()];
+  if (from === 'spells') { const lv = c.spellLevel === undefined || c.spellLevel === '' ? '' : int(c.spellLevel, 0, 9) ?? ''; const lists = (Array.isArray(c.spellLists) ? c.spellLists : []).map((x: unknown) => str(x, 30)).filter(Boolean); return { count, from, spell: { level: lv, ...(lists.length ? { lists } : {}) } }; }
   if (from) return { count, from };
   const options = (Array.isArray(c.options) ? c.options : []).map((o: any) => ({ name: str(o?.name, 80), text: str(o?.description) })).filter((o: any) => o.name);
   return options.length ? { count, from: 'custom', options } : null;
@@ -223,7 +224,7 @@ function choiceOf(c: any) {
 // "gives": into the sheet effects the editor's Gives box edits
 const DAMAGE = ['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder'];
 const SENSES = ['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'];
-function giveOf(g: any, feature: string, notes: string[]): any {
+export function giveOf(g: any, feature: string, notes: string[]): any {
   switch (g?.type) {
     case 'proficiency': {
       const kind = ['skill', 'save', 'armor', 'weapon', 'tool', 'language'].includes(g.in) ? g.in : '';
@@ -239,6 +240,8 @@ function giveOf(g: any, feature: string, notes: string[]): any {
     case 'hitPointsPerLevel': { const n = int(g.amount, 1, 10); if (n) return { t: 'hp', n }; break; }
     case 'abilityIncrease': { const a = ab(g.ability) || (str(g.ability).toLowerCase() === 'any' ? 'any' : ''); const n = int(g.amount, 1, 4); if (a && n) return { t: 'ability', ab: a, n }; break; }
     case 'spell': if (str(g.name)) return { t: 'spell', name: str(g.name, 80) }; break;
+    case 'advantage': { const roll = ['save', 'check', 'attack', 'initiative'].includes(g.on) ? g.on : ''; if (roll) return { t: 'adv', roll, ...(ab(g.ability) ? { ab: ab(g.ability) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
+    case 'conditionImmunity': if (str(g.condition)) return { t: 'condition', v: str(g.condition, 30) }; break;
     case 'note': if (str(g.text)) return { t: 'text', text: str(g.text, 300) }; break;
   }
   notes.push(`Something "${feature}" gives could not be read (${str(JSON.stringify(g), 80)}), so it was left out.`);

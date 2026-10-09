@@ -85,7 +85,7 @@ function parseArea(desc) {
 
 function parseSave(desc) {
   const t = String(desc ?? '');
-  const m = t.match(/(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) saving throw/);
+  const m = t.match(/(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) saving throw/i);
   if (!m) return { ab: '', success: 'half' };
   const success = /half as much damage|half damage/i.test(t) ? 'half' : /damage/i.test(t) ? 'none' : 'other';
   return { ab: ABS[m[1].toLowerCase()], success };
@@ -94,8 +94,8 @@ function parseSave(desc) {
 function parseDamage(desc, hint) {
   const out = [];
   const seen = new Set();
-  for (const m of String(desc ?? '').matchAll(/(\d+d\d+)(?:\s*\+\s*\d+)?\s+(Acid|Bludgeoning|Cold|Fire|Force|Lightning|Necrotic|Piercing|Poison|Psychic|Radiant|Slashing|Thunder) damage/g)) {
-    const k = m[1] + m[2];
+  for (const m of String(desc ?? '').matchAll(/(\d+d\d+)(?:\s*\+\s*\d+)?\s+(Acid|Bludgeoning|Cold|Fire|Force|Lightning|Necrotic|Piercing|Poison|Psychic|Radiant|Slashing|Thunder) damage/gi)) {
+    const k = m[1] + m[2].toLowerCase();
     if (seen.has(k) || out.length >= 3) continue;
     seen.add(k);
     out.push({ dice: m[1], type: m[2].toLowerCase() });

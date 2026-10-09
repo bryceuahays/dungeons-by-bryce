@@ -14,7 +14,7 @@ export default async function ClassPicker() {
       <h1>Make a class</h1>
       <div className="panel">
         <p>Pick a class to start from. It opens with everything already filled in for that class, and you change what you like. Nothing is saved until you press Save.</p>
-        <p className="inline"><Link className="button" href="/homebrew/classes/import">Import class <span className="beta-tag">Beta</span></Link><Link className="button quiet" href="/homebrew/new?type=class">Start from a blank class</Link></p>
+        <p className="inline"><Link className="button quiet" href="/homebrew/new?type=class">Start from a blank class</Link></p>
       </div>
       <div className="cards">
         {(classes ?? []).map((c) => (
