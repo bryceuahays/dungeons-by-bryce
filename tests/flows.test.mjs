@@ -50,10 +50,13 @@ test('new campaign: two steps, a world to choose, system and genre choices, and 
   assert.equal(res.status, 200);
   for (const t of ['Step 1 of 2: Details', 'Step 2 of 2: Hub and tools', 'Description', 'Web address', 'Choose a world…', 'Ember Reach', 'Tools the hub starts with', 'Paste your campaign (optional)', 'Look']) assert.ok(res.text.includes(t), 'the form has: ' + t);
   assert.ok(new RegExp(`<option value="${w.id}" selected`).test(res.text) || res.text.includes(`"world":"${w.id}"`) || res.text.includes(`value="${w.id}"`), 'the world the flow started from is offered');
-  for (const s of SYSTEMS) assert.ok(res.text.includes(s.name) && res.text.includes(`name="system" value="${s.id}"`), 'system choice: ' + s.name);
+  // an input with this name and value, whatever order its attributes are written in
+  const esc = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const input = (name, value) => new RegExp(`<input(?=[^>]*name="${name}")(?=[^>]*value="${esc(value)}")[^>]*>`).test(res.text);
+  for (const s of SYSTEMS) assert.ok(res.text.includes(s.name) && input('system', s.id), 'system choice: ' + s.name);
   assert.ok(!/<select name="system"/.test(res.text), 'systems are choices, not a dropdown');
-  for (const g of GENRES) assert.ok(res.text.includes(`name="genre" value="${g}"`), 'genre: ' + g);
-  for (const t of TOOLS) assert.ok(res.text.includes(`name="tool" value="${t.id}"`), 'tool: ' + t.name);
+  for (const g of GENRES) assert.ok(input('genre', g), 'genre: ' + g);
+  for (const t of TOOLS) assert.ok(input('tool', t.id), 'tool: ' + t.name);
 });
 
 test('a campaign\'s hub has the tools chosen for it; one made before the choice keeps them all', async () => {

@@ -1,6 +1,7 @@
 // The game systems a campaign can use. For now these are the fifth edition rule sets the
 // site has; a campaign's system is its rules setting (settings.rules). No server imports.
-import { rulesOf, type RulesChoice } from './rules';
+// Tests load this file directly, so the import carries its .ts extension.
+import { rulesOf, type RulesChoice } from './rules.ts';
 
 export const SYSTEMS: { id: RulesChoice; name: string; what: string }[] = [
   { id: '2024', name: 'Fifth edition, 2024 rules', what: 'The revised rules (SRD 5.2).' },
