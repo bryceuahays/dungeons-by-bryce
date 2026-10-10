@@ -37,10 +37,6 @@ after(cleanup);
 // ------------------------------------------------------------------ Phase 11: themes
 
 test('themes: default themes on every plan; premium themes and the editor on Pro', async () => {
-  // "To be a god" is the first theme, and the preset is exactly what that campaign wears
-  const tbg = await campaign();
-  const { preset: _p, ...god } = theme('midnight');
-  assert.deepEqual(tbg.theme, god, 'the preset matches the campaign token for token, so it looks identical');
   assert.equal(THEMES[0].id, 'midnight');
   assert.ok(THEMES.filter((t) => !t.premium).length >= 3, 'three or four default themes');
 
@@ -108,9 +104,9 @@ test('custom campaign sites: a public page with the tiers; requests are for the 
 
 test('store: private content cannot be published; a product is a frozen copy; the buyer gets an editable campaign of their own', async () => {
   // only the admin publishes, and only campaigns they run
-  const tbg = await campaign();
-  assert.equal((await post('/admin/store/publish', free.session, { campaign: tbg.id, title: 'Stolen' })).status, 403);
-  const notMine = await post('/admin/store/publish', head.session, { campaign: tbg.id, title: 'Not mine', slug: 'not-mine-' + rnd() });
+  const dummy = await campaign();
+  assert.equal((await post('/admin/store/publish', free.session, { campaign: dummy.id, title: 'Stolen' })).status, 403);
+  const notMine = await post('/admin/store/publish', head.session, { campaign: dummy.id, title: 'Not mine', slug: 'not-mine-' + rnd() });
   assert.ok(decodeURIComponent(notMine.headers.get('location')).includes('campaigns you run'));
   // a campaign holding private rules, or private homebrew, is refused
   const tainted = await makeCampaign(head, 'Tainted');

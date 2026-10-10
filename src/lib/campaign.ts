@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { requireViewer } from './auth';
 import { safeCssValue } from './sanitize';
-import type { Campaign, ContentRow, RuleRow, Section } from './types';
+import type { Campaign, ContentRow, Section } from './types';
 import type { CampaignAccess } from './entitlements';
 import { RULES, rulesOf } from '@/config/rules';
 
@@ -84,7 +84,7 @@ export const getCampaign = cache(async (slug: string) => {
 
 export type CampaignCtx = Awaited<ReturnType<typeof getCampaign>>;
 
-// "Hidden from players until after session negative" / "Shown to players only before session negative"
+// "Hidden from players until after the fair" / "Shown to players only before the fair"
 export function phaseLabel(campaign: Campaign, phase: string | null | undefined): string {
   if (!phase) return '';
   const order = campaign.phases.map((p) => p.id);
@@ -159,31 +159,6 @@ export async function getLore(ctx: CampaignCtx) {
   });
   return { races, factions };
 }
-
-// Builder rules for the current phase, grouped by kind.
-export async function getRules(ctx: CampaignCtx, kinds?: string[]) {
-  const { supabase, campaign } = ctx;
-  const out: RuleRow[] = [];
-  for (let from = 0; ; from += 1000) {
-    let q = supabase.from('rules').select('kind, key, sort, data, phase').eq('campaign_id', campaign.id);
-    if (kinds) q = q.in('kind', kinds);
-    q = campaign.phase ? q.or(`phase.is.null,phase.eq.${campaign.phase}`) : q.is('phase', null);
-    const { data } = await q.order('kind').order('sort').range(from, from + 999);
-    out.push(...((data ?? []) as RuleRow[]));
-    if (!data || data.length < 1000) break;
-  }
-  const by: Record<string, RuleRow[]> = {};
-  out.forEach((r) => { (by[r.kind] ||= []).push(r); });
-  return by;
-}
-
-// "To be a god" (and any campaign given its rule set) keeps its own builder and sheet.
-// Every other campaign uses the standard fifth edition sheet.
-export const usesLegacySheet = cache(async (campaignId: string) => {
-  const { supabase } = await requireViewer();
-  const { count } = await supabase.from('rules').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('kind', 'class');
-  return (count ?? 0) > 0;
-});
 
 // What the standard sheet can draw on: the SRD, plus the homebrew attached to this
 // campaign that this viewer is allowed to see (row-level security decides).

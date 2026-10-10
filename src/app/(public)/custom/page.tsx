@@ -7,7 +7,7 @@ import { CommissionForm } from '@/components/CommissionForm';
 
 export const metadata = { title: 'Have Bryce build it', description: 'Send your notes, your world and your references, and have your campaign built for you on Dungeons by Bryce: a theme made for it, your lore and NPCs entered, maps with hidden regions, and it is handed over to your account.', robots: { index: true, follow: true } };
 
-const SHOTS: [string, string][] = [['custom/example-1.webp', 'A campaign\'s overview page, in its own theme'], ['custom/example-2.webp', 'A lore page with cards for each people'], ['custom/example-3.webp', 'The same campaign on a phone']];
+const SHOTS: [string, string][] = [['custom/example-1.webp', 'A campaign\'s overview page, in its own theme'], ['custom/example-2.webp', 'A page about the setting'], ['custom/example-3.webp', 'The same campaign on a phone']];
 
 export default async function Custom({ searchParams }: { searchParams: Promise<{ tier?: string; paid?: string }> }) {
   const { tier = '', paid } = await searchParams;
@@ -41,7 +41,7 @@ export default async function Custom({ searchParams }: { searchParams: Promise<{
       {shots.length ? (
         <>
           <h2>What a finished campaign looks like</h2>
-          <p className="dim">From one of my own campaigns, as its players see it.</p>
+          <p className="dim">From the demo campaign, as a player sees it.</p>
           <div className="shots">{shots.map(([f, alt]) => <img key={f} src={'/' + f} alt={alt} loading="lazy" />)}</div>
         </>
       ) : null}

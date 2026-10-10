@@ -420,21 +420,5 @@ export async function generateEdition(reader: SupabaseClient, sellerId: string, 
   const mineBrew = src.homebrew.filter((a) => a.entities.owner_id === sellerId);
   if (mineBrew.length) await admin.from('campaign_entities').insert(mineBrew.map((a) => ({ campaign_id: id, entity_id: a.entities.id, vis: a.vis === 'players' ? 'dm' : a.vis, vis_stage: a.vis_stage })));
 
-  // ---- custom resources kept in the old rule set become homebrew of the seller's own, so the mechanics travel
-  const { data: divine } = await reader.from('rules').select('key, data').eq('campaign_id', campaignId).eq('kind', 'divine');
-  for (const d of (divine ?? []) as any[]) {
-    const list = ((d.data?.v ?? []) as any[]).filter((x) => x?.name);
-    if (!list.length) continue;
-    const isBase = d.key === 'all';
-    const name = isBase ? 'Divinity' : String(d.key);
-    const entSlug = `divinity-${String(d.key).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-    const data = isBase
-      ? { max: 'prof', recharge: 'long', unit: 'point', desc: `The pool every character with divinity can spend from. Set how many each character has.\n\n${list.map((x) => `${x.name}: ${x.desc}`).join('\n\n')}` }
-      : { prereq: 'Granted by the DM', desc: `What a character gains at this tier of divinity.`, features: list.map((x) => ({ level: 1, name: x.name, text: [x.cost ? `${x.cost}.` : '', x.desc].filter(Boolean).join(' ') })) };
-    const { data: was } = await admin.from('entities').select('id').eq('owner_id', sellerId).eq('slug', entSlug).maybeSingle();
-    const ent = was ?? (await admin.from('entities').insert({ owner_id: sellerId, source: 'homebrew', type: isBase ? 'resource' : 'feat', slug: entSlug, name, status: 'live', depth: 'advanced', data }).select('id').single()).data;
-    if (ent) await admin.from('campaign_entities').upsert({ campaign_id: id, entity_id: ent.id, vis: 'dm' });
-  }
-  if ((divine ?? []).length) left.push('The divinity rules were turned into homebrew entries of your own (a "Divinity" resource and one entry per tier), attached as DM only. Check them under Homebrew.');
   return { slug, left };
 }

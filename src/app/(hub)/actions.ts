@@ -122,10 +122,6 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
   // packs ticked on the form (the database checks the account may use each one)
   for (const p of form.getAll('pack').map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x)).slice(0, 10)) await supabase.rpc('attach_pack', { p, c: id });
 
-  // Optionally start from another campaign's character rules and sheet.
-  const from = String(form.get('copy') || '');
-  if (from) await supabase.rpc('copy_campaign_rules', { src: from, dst: id });
-
   revalidatePath('/campaigns');
   redirect('/c/' + slug + '/manage' + note);
 }

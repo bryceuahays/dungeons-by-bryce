@@ -110,7 +110,7 @@ export const TYPES: Record<string, TypeDef> = {
     ],
   },
   resource: {
-    label: 'Custom resource', plural: 'Custom resources', blurb: 'A pool every character in a campaign can spend from, such as a Divinity pool. Classes and items can refer to it by name.', effects: false, features: false, featureLevels: false,
+    label: 'Custom resource', plural: 'Custom resources', blurb: 'A pool every character in a campaign can spend from, such as a pool of favour. Classes and items can refer to it by name.', effects: false, features: false, featureLevels: false,
     fields: [
       { key: 'max', label: 'How many a character has', kind: 'text', def: 'prof', guided: true, help: 'A number, or: level, prof (proficiency bonus), half (half level), an ability (cha), level*5, cha+1, or steps like step:1=2,5=3,11=4.' },
       { key: 'recharge', label: 'Comes back on', kind: 'select', options: ['long', 'short', 'none'], def: 'long', guided: true },

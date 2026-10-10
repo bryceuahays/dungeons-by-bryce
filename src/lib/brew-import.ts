@@ -184,7 +184,7 @@ Each ACTION is:
 My notes:
 `;
 const RESOURCE_PROMPT = `${head('resource (a pool of points or uses every character in a campaign has)', 'resource')}
-  "name": "resource name, like Divinity",
+  "name": "resource name, like Favour",
   "description": "what the pool is",
   "unit": "point", "units": "points",       // what one, and more than one, is called
   "amount": { "type": "fixed", "value": 2 }

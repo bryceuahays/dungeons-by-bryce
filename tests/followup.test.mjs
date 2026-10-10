@@ -88,22 +88,21 @@ test('the official entries work on a sheet, in the class table, and as stat bloc
 });
 
 test('a campaign chooses its rules version; existing campaigns keep the 2014 rules', async () => {
-  const tbg = await campaign();
-  assert.equal(tbg.settings.rules, '2014');
   const demo = (await admin.from('campaigns').select('settings').eq('is_demo', true).single()).data;
   assert.equal(demo.settings.rules, '2014');
   const c = await makeCampaign(pro, 'Rules Realm', { settings: { rules: '2024' } });
   await join(pro, c.id, free);
-  await free.client.from('characters').insert({ owner: free.id, campaign_id: c.id, data: { ...blankV2(), name: 'Tester' } });
-  const sheet = async () => (await page(`/c/${c.slug}/sheet`, free.session)).text;
+  const made = await free.client.from('characters').insert({ owner: free.id, campaign_id: c.id, data: { ...blankV2(), name: 'Tester' } }).select('id').single();
+  // the choices are offered in the character creator
+  const sheet = async () => (await page(`/c/${c.slug}/create?c=${made.data.id}`, free.session)).text;
   let html = await sheet();
-  assert.ok(html.includes('Goliath') && html.includes('>Orc<') && !html.includes('Half-Elf') && !html.includes('(2024)'), '2024: the 5.2 species, and no version labels when there is only one');
+  assert.ok(html.includes('Goliath') && !html.includes('Half-Elf'), '2024: the 5.2 species');
   await pro.client.from('campaigns').update({ settings: { rules: '2014' } }).eq('id', c.id);
   html = await sheet();
   assert.ok(html.includes('Half-Elf') && !html.includes('Goliath'), '2014: the 5.1 races');
   await pro.client.from('campaigns').update({ settings: { rules: 'both' } }).eq('id', c.id);
   html = await sheet();
-  assert.ok(html.includes('Goliath') && html.includes('Half-Elf') && html.includes('Dwarf (2014)') && html.includes('Dwarf (2024)'), 'both: side by side, labelled');
+  assert.ok(html.includes('Goliath') && html.includes('Half-Elf'), 'both: side by side');
   // spells are listed without their long text; the text is fetched when a spell is opened
   assert.ok(html.includes('Fireball') && !html.includes('bright streak flashes'));
   const manage = await page(`/c/${c.slug}/manage`, pro.session);

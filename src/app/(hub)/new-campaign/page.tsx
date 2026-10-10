@@ -9,16 +9,12 @@ export const metadata = { title: 'New campaign' };
 
 export default async function NewCampaign({ searchParams }: { searchParams: Promise<{ world?: string }> }) {
   const { world = '' } = await searchParams;
-  const { supabase, user } = await requireViewer();
+  const { supabase } = await requireViewer();
   const plan = await getPlan();
-  // campaigns you run or play in: the ones whose character rules you may copy
-  const [{ data }, { data: faces }, { data: packs }, { data: worlds }] = await Promise.all([
-    supabase.from('campaigns').select('id, title').eq('owner_id', user.id).order('created_at'),
-    supabase.from('campaign_faces').select('campaign_id, title').eq('phase', ''),
+  const [{ data: packs }, { data: worlds }] = await Promise.all([
     supabase.from('packs').select('id, name, description, free').eq('official', true).order('created_at'),
     supabase.from('worlds').select('id, name, official').order('official', { ascending: false }).order('name'),
   ]);
-  const real = new Map((faces ?? []).map((f) => [f.campaign_id, f.title]));
   return (
     <>
       <h1>New campaign</h1>
@@ -29,7 +25,7 @@ export default async function NewCampaign({ searchParams }: { searchParams: Prom
       <span id="build" />
       <div className="panel"><p className="dim">You will be the DM of this campaign. You add its pages (or paste them in below), invite your own players with a code, and decide what they can see. Only you and your players can open it. The person who runs this site (the Head DM) can also look inside a campaign when they need to, for example to help with a problem or check a report.</p></div>
       {remaining(plan, 'campaigns') <= 0 ? <UpgradeHint feature="campaigns" /> : null}
-      <NewCampaignForm pro={plan.pro} worlds={(worlds ?? []).map((w) => ({ id: w.id, name: w.official ? w.name + ' (ready-made)' : w.name }))} world={world} packs={packs ?? []} campaigns={(data ?? []).map((c) => ({ id: c.id, title: real.get(c.id) ?? c.title }))} />
+      <NewCampaignForm pro={plan.pro} worlds={(worlds ?? []).map((w) => ({ id: w.id, name: w.official ? w.name + ' (ready-made)' : w.name }))} world={world} packs={packs ?? []} />
     </>
   );
 }

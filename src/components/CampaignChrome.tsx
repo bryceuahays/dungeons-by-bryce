@@ -11,7 +11,7 @@ export function CampaignChrome({ slug, title, playerTitle, tabs, isDm, realDm, a
   const path = usePathname();
   const base = '/c/' + slug;
   const rest = path.slice(base.length).split('/').filter(Boolean);
-  const current = rest[0] === 'tools' ? '' : rest[0] === 'edit' ? rest[1] : rest[0] === 'session' ? 'sessions' : rest[0] === 'builder' ? 'sheet' : rest[0] || tabs[0]?.slug;
+  const current = rest[0] === 'tools' ? '' : rest[0] === 'edit' ? rest[1] : rest[0] === 'session' ? 'sessions' : rest[0] || tabs[0]?.slug;
   const onContent = tabs.find((t) => t.slug === rest[0])?.kind === 'content';
 
   // "Hide DM secrets": blurs secret blocks while players can see the DM's screen.

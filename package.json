@@ -8,11 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "extract": "node scripts/extract.mjs",
-    "css": "node scripts/build-css.mjs",
     "images": "node scripts/build-images.mjs",
-    "seed": "node scripts/seed.mjs",
-    "verify-seed": "node scripts/verify-seed.mjs",
     "screenshots": "node scripts/screenshots.mjs",
     "test": "node --test --test-concurrency=1 \"tests/*.test.mjs\"",
     "sync-config": "node scripts/sync-config.mjs",
@@ -21,7 +17,7 @@
     "test:local": "node scripts/test-local.mjs",
     "fetch-srd": "node scripts/fetch-srd.mjs",
     "import-srd": "node scripts/import-srd.mjs",
-    "seed-originals": "node scripts/seed-originals.mjs"
+    "seed-fixture": "node scripts/seed-fixture.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

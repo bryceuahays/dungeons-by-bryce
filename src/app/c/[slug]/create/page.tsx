@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { redirect } from 'next/navigation';
-import { getCampaign, getSheetEntities, usesLegacySheet } from '@/lib/campaign';
+import { getCampaign, getSheetEntities } from '@/lib/campaign';
 import { CharacterCreator } from '@/components/CharacterCreator';
 
 export const metadata = { title: 'Create a character' };
@@ -11,7 +11,6 @@ export default async function Create({ params, searchParams }: { params: Promise
   const { slug } = await params;
   const { c } = await searchParams;
   const ctx = await getCampaign(slug);
-  if (await usesLegacySheet(ctx.campaign.id)) redirect(`/c/${slug}/builder${c ? '?c=' + c : ''}`);
   if (!c || !/^[0-9a-f-]{36}$/.test(c)) redirect(`/c/${slug}/sheet`);
   const { data: row } = await ctx.supabase.from('characters').select('id, data').eq('id', c).eq('owner', ctx.user.id).eq('campaign_id', ctx.campaign.id).maybeSingle();
   if (!row) redirect(`/c/${slug}/sheet`);

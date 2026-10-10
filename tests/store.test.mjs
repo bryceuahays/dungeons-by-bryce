@@ -120,14 +120,16 @@ test('paid packs: admin-only, never with private content, usable only once bough
 
 // ------------------------------------------------------------------ Parts 3 and 4
 
-test('editions: framework and full, the upgrade path, spoiler protection, and what works on the free plan', async () => {
-  // "To be a god" has a listing, as unpublished drafts only
-  const tbg = await campaign();
-  const drafts = (await admin.from('products').select('slug, status, edition, price_cents, spoiler_campaign, full_product').eq('campaign_id', tbg.id)).data;
-  assert.deepEqual(drafts.map((d) => [d.edition, d.status, d.price_cents]).sort(), [['framework', 'draft', STORE.editions.framework.cents], ['full', 'draft', STORE.editions.full.cents]]);
-  assert.ok(drafts.every((d) => d.spoiler_campaign === tbg.id) && drafts.find((d) => d.edition === 'framework').full_product);
-  assert.equal(((await anonClient().from('products').select('id').eq('campaign_id', tbg.id)).data ?? []).length, 0);
-  assert.equal(((await buyer.client.from('products').select('id').eq('campaign_id', tbg.id)).data ?? []).length, 0, 'drafts are the admin\'s alone');
+test('editions: framework and full, the upgrade path, spoiler protection, and what works on the free plan', async (t) => {
+  // a draft listing is its seller's alone
+  const dummy = await campaign();
+  const draftSlug = 'test-draft-' + Date.now();
+  await admin.from('products').insert({ slug: draftSlug, seller_id: dummy.owner_id, campaign_id: dummy.id, spoiler_campaign: dummy.id, kind: 'campaign', edition: 'full', title: 'Draft listing', price_cents: STORE.editions.full.cents, status: 'draft' });
+  t.after(() => admin.from('products').delete().eq('slug', draftSlug));
+  const drafts = (await admin.from('products').select('slug, status, edition, price_cents, spoiler_campaign, full_product').eq('campaign_id', dummy.id)).data;
+  assert.equal(drafts.length, 1);
+  assert.equal(((await anonClient().from('products').select('id').eq('campaign_id', dummy.id)).data ?? []).length, 0);
+  assert.equal(((await buyer.client.from('products').select('id').eq('campaign_id', dummy.id)).data ?? []).length, 0, 'drafts are the admin\'s alone');
 
   // a story campaign with three stages, a custom resource of the seller's own, and a player in it
   const src = await makeCampaign(head, 'The Salt Road', { phases: [{ id: 'one', label: 'Act one' }, { id: 'two', label: 'Act two' }, { id: 'three', label: 'Act three' }], phase: 'one' });

@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireViewer } from '@/lib/auth';
 import { VIEW_AS_PLAYER } from '@/lib/campaign';
-import { blank } from '@/islands/character';
 import { blankV2 } from '@/lib/rules/engine';
 import { cleanTheme, presetOf } from '@/lib/theme';
 import { parseCampaignText, MAX_IMPORT_CHARS } from '@/lib/import';
@@ -29,15 +28,6 @@ export async function setViewAsPlayer(slug: string, on: boolean, pick?: { player
   else store.delete(VIEW_AS_PLAYER);
   fresh(slug);
   redirect('/c/' + slug);
-}
-
-export async function createBlankCharacter(slug: string) {
-  const { supabase, user, profile } = await requireViewer();
-  const id = await campaignId(supabase, slug);
-  if (!id) redirect('/campaigns');
-  const data = { ...blank(), player: profile.display_name, t: Date.now() };
-  const { data: row } = await supabase.from('characters').insert({ owner: user.id, campaign_id: id, data }).select('id').single();
-  redirect(`/c/${slug}/sheet${row ? '?c=' + row.id : ''}`);
 }
 
 // A new character on the standard fifth edition sheet.
@@ -406,18 +396,6 @@ export async function saveSessionNotes(slug: string, sessionId: string, notes: s
   const { data } = await supabase.from('sessions').select('content').eq('id', sessionId).maybeSingle();
   await supabase.from('sessions').update({ content: { ...(data?.content ?? {}), notes } }).eq('id', sessionId);
   fresh(slug);
-}
-
-export async function saveSessionBeat(slug: string, sessionId: string, beatId: string, html: string): Promise<ActionState> {
-  const { supabase } = await requireViewer();
-  const { data } = await supabase.from('sessions').select('content').eq('id', sessionId).maybeSingle();
-  const beats = data?.content?.beats;
-  if (!Array.isArray(beats)) return { error: 'This session has no run sheet.' };
-  const next = beats.map((b: { id: string; html: string }) => (b.id === beatId ? { ...b, html } : b));
-  const { error } = await supabase.from('sessions').update({ content: { ...data!.content, beats: next } }).eq('id', sessionId);
-  if (error) return { error: 'That did not save.' };
-  fresh(slug);
-  return { note: 'Saved.' };
 }
 
 export async function duplicateContentRow(slug: string, rowId: string): Promise<ActionState> {

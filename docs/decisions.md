@@ -14,8 +14,8 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 ## Phases 0 to 2
 
 7. **Phases 0, 1 and 2 are one commit.** They share one database change (sources, limits and plans all touch the same rules), so they were built and tested together.
-8. **Every rule that existed before is `private`,** all 435 rows of "To be a god". None is confirmed SRD wording, and seven of its classes come from other editions.
-9. **Private rules can only be copied between two campaigns run by the same person.** Before, a player in "To be a god" could copy its character rules into their own campaign. That is now refused.
+8. **Every rule that existed before is `private`,** all 435 rows of Bryce's first campaign. None is confirmed SRD wording, and seven of its classes come from other editions.
+9. **Private rules can only be copied between two campaigns run by the same person.** Before, a player in Bryce's first campaign could copy its character rules into their own campaign. That is now refused.
 10. **New campaigns start with the standard fifth edition sheet** (SRD plus the DM's homebrew) instead of "no character builder".
 11. **"Grandfathered" means: every account that existed when this was built gets full access, and you can give full access to any account from the Head DM page.** Your friends had not made accounts yet, so there was nobody to mark. When they sign up, open Head DM, find them under Accounts, and choose "Give full access".
 12. **Players in a campaign get whatever that campaign's DM has.** A feature is on or off per campaign, by the plan of the DM who owns it.
@@ -32,8 +32,8 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 ## Phase 3: homebrew builder
 
 22. **The builder is at Homebrew in the hub bar,** not inside one campaign. An entry belongs to the DM who made it and can be attached to any campaign they run.
-23. **A new, general fifth edition sheet was built for every campaign except "To be a god".** The old builder and sheet are tied to that campaign's own rules, so they stay with it, untouched. Campaigns without that rule set get the standard sheet: pick race, class, subclass, background and feats, and everything else is worked out.
-24. **Structured effects apply to the standard sheet only.** "To be a god" sheets are not changed by homebrew entries.
+23. **A new, general fifth edition sheet was built for every campaign except Bryce's first campaign.** The old builder and sheet are tied to that campaign's own rules, so they stay with it, untouched. Campaigns without that rule set get the standard sheet: pick race, class, subclass, background and feats, and everything else is worked out.
+24. **Structured effects apply to the standard sheet only.** Bryce's first campaign sheets are not changed by homebrew entries.
 25. **Quick, Guided and Advanced edit the same data,** so switching never loses anything. Quick shows the name and description. Guided walks through steps with defaults filled in. Advanced shows every field and the raw data.
 26. **The balance hint compares with the SRD entries that ship with the site.** Races, feats, backgrounds and subclasses by a points total of their effects; classes by hit die, saves, spellcasting and number of features; spells by damage against SRD spells of the same level; monsters by hit points, armor class and attack bonus against SRD creatures near the same challenge; items by bonus against rarity. It always says why, and it never blocks anything.
 27. **A new version is made only when you write a change note.** A plain Save updates the current version. Players whose character uses an entry see "X was updated" with your note until they tap Got it.
@@ -48,17 +48,17 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 ## Phases 4 to 10: reveals, table tools, timeline, maps, world state, session zero, video
 
 35. **Phases 4 to 10 are one commit.** NPCs, beats, maps, regions, pins, clocks, clues, consequences, the initiative tracker and the session zero page all live in one table with one visibility rule, so they were built and tested as one piece.
-36. **Reveal stages are the old "phases", renamed and opened to every campaign.** "To be a god" keeps its two stages and every tag it had. A block or tab can be "only in this stage" (what existed before) or "from this stage onward" (new).
+36. **Reveal stages are the old "phases", renamed and opened to every campaign.** Bryce's first campaign keeps its two stages and every tag it had. A block or tab can be "only in this stage" (what existed before) or "from this stage onward" (new).
 37. **A stage keeps everything tagged with it when you rename or reorder it.** If you remove a stage, blocks still tagged for it are hidden from players until you retag them. Nothing is deleted.
 38. **"View as" previews any player at any stage, without editing.** A player's own private notes are the one thing it cannot show, because the DM cannot read them at all.
 39. **The "newly revealed" feed is off until the DM turns it on.** The DM's reveal log always records. A stage change is announced to players as "The story has moved on", never by the stage's name, because stage names can be spoilers.
-40. **Table tools sit behind one "Table tools" link in the campaign's top strip.** No tabs were added to existing campaigns, so "To be a god" keeps exactly the tabs it had.
+40. **Table tools sit behind one "Table tools" link in the campaign's top strip.** No tabs were added to existing campaigns, so Bryce's first campaign keeps exactly the tabs it had.
 41. **The timeline banner appears only once a campaign has a beat the viewer may see.** A campaign that does not use the timeline looks as it did.
 42. **"It happened" is one click.** The beat becomes visible to whoever it was planned for (the table, or one player), with the date and the session number you are on. A "who sees it" control appears on the beat straight away to change that.
 43. **Players can add beats that have happened, and notes on beats they can see: for the table, or private to themselves and the DM.** They cannot plan beats, address a beat to another player, or change anyone else's.
 44. **An NPC has a public part and a DM part.** Name, portrait, location, faction, status and "what the players know" are public to whoever may see that NPC. Wants, relationships, secrets and the attached stat block are stored apart and never sent to players.
 45. **One fight at a time per campaign.** Players always see player characters' hit points; enemy hit points only if the DM ticks "show". When a hidden creature is acting, players are told only that "something you cannot see is acting".
-46. **The DM can open either kind of sheet** (the standard one, or "To be a god"'s own) read-only, with a switch to edit.
+46. **The DM can open either kind of sheet** (the standard one, or Bryce's first campaign's own) read-only, with a switch to edit.
 47. **Hidden map regions are painted over on the server.** The player's browser never receives the covered part of the picture. Each painted copy is kept so it is made once. Pictures are shrunk to 4,096 pixels on the long side when uploaded.
 48. **A pin for a story beat is a pin set to "once a story beat happens".** Place it when you plan the beat; it appears for players when you mark the beat as hit.
 49. **Clues and secrets in the clue tracker are always DM-only.** What players learn is revealed through NPCs, blocks, beats and pins.
@@ -69,7 +69,7 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 
 ## Phases 11 to 13: themes, custom sites, the store, the public face
 
-54. **The first theme is named "Midnight and gold", not "To be a god".** It is that campaign's look, token for token (a test checks they match). But theme names are sent to every browser, and that campaign's real title is a secret from its own players until its reveal, so the preset is named for how it looks. The campaign keeps its own stored theme and looks exactly as before.
+54. **The first theme is named "Midnight and gold", not Bryce's first campaign.** It is that campaign's look, token for token (a test checks they match). But theme names are sent to every browser, and that campaign's real title is a secret from its own players until its reveal, so the preset is named for how it looks. The campaign keeps its own stored theme and looks exactly as before.
 55. **Four default themes on every plan** (Slate and sea-glass, Ember and ash, Deep grove, Vellum) and three premium ones (Midnight and gold, Abyssal, Frostbound). The theme editor adds your own colours, fonts, corner style, page width, starfield and a hero image.
 56. **A free account that creates a campaign with a custom look gets the default theme instead of an error.** Changing an existing campaign to a premium or custom theme on the free plan is refused. A campaign's current theme is never changed or locked by a downgrade.
 57. **The raw theme box on the Manage page is gone.** The theme editor replaces it.
@@ -126,9 +126,9 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 94. **Parts 1 to 4 share one commit,** because packs, editions and purchase rules all live in the same store code and database rules.
 95. **A framework is generated as a real campaign in your account,** for you to read and edit before publishing. The generator never publishes. Each run of same-kind blocks becomes one labelled slot; table headers are kept and the rows emptied; tabs, stage tags and DM-only flags are kept; faction entries become one blank faction; race entries and the old character sheet are dropped.
 96. **Tab names and per-stage titles are yours to check.** The generator keeps tab names (they are the layout) and drops per-stage titles from a framework. If a tab name gives the story away, rename it in the copy.
-97. **"Make a publishable copy" was added beside the generator.** A campaign that holds private content cannot go live. The copy is the whole campaign minus the old rule set, the old character sheet, and race entries that come from published material. This is what makes a full edition of "To be a god" possible at all.
-98. **The divinity rules become homebrew of your own** when a copy is generated from "To be a god": a "Divinity" resource and one entry per tier, attached to the copy as DM only. The resource's size is a placeholder for you to set.
-99. **A draft listing can exist for a campaign that cannot be published yet.** That is how the "To be a god" drafts were made: the listing rows exist (framework at $7, full at $20, linked), nothing is frozen, and nothing is for sale.
+97. **"Make a publishable copy" was added beside the generator.** A campaign that holds private content cannot go live. The copy is the whole campaign minus the old rule set, the old character sheet, and race entries that come from published material. This is what makes a full edition of Bryce's first campaign possible at all.
+98. **The campaign's own extra rules become homebrew of your own** when a copy is generated from Bryce's first campaign: a resource and one entry per tier, attached to the copy as DM only. The resource's size is a placeholder for you to set.
+99. **A draft listing can exist for a campaign that cannot be published yet.** That is how the Bryce's first campaign drafts were made: the listing rows exist (framework at $7, full at $20, linked), nothing is frozen, and nothing is for sale.
 100. **An upgrade goes into the copy the buyer already has.** A slot they left as it came is filled. Anything they changed is kept, and the full edition's version is added beside it, marked DM only, for them to merge. Unused placeholder NPCs, beats and clocks are removed; the real ones arrive.
 101. **The upgrade price is the full edition's price minus the framework's,** worked out on the server at checkout. The subscriber discount applies on top.
 102. **The subscriber discount applies to Pro, founder and full-access accounts.**
@@ -142,9 +142,40 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 107. **Why the page could not be found:** it was at `/custom`, linked from the navigation of the public pages and from one button at the very bottom of the landing page. Signed in, the landing page sends you straight to My campaigns, whose navigation had no link, so a signed-in person had no way to reach it. And none of it is on the live site yet.
 108. **The service is called "Have Bryce build it" everywhere,** and the label is one config value.
 109. **Reference images are collected as links,** not uploads. An open upload box on a public page invites abuse; a pasted link to a picture or a board does the same job.
-110. **The example pictures are "To be a god" as its players see it today** (a throwaway player account, the current stage), captioned "From one of my own campaigns" without naming it. One picture is cropped to stop above trait notes that cite published books.
+110. **The example pictures are Bryce's first campaign as its players see it today** (a throwaway player account, the current stage), captioned "From one of my own campaigns" without naming it. One picture is cropped to stop above trait notes that cite published books.
 111. **The price, revision rounds and Pro months are fixed on the request when it is made,** so changing the config later does not change a request already in.
 112. **The payment link is for you to send.** The site can only email your own address until it has a sending domain, so "Make a payment link" shows the link with a copy button. When the client pays, the request is marked paid by itself. You can also mark it paid by hand.
 113. **Delivery is one step:** it moves the campaign to the client's account and starts their Pro months that day (added to any they already have). The client needs an account first.
 114. **Pro months from a commission are a date on the account,** separate from a subscription. The Plans page says when they end.
 115. **"Not taking requests" hides the form and the Request buttons** and says so at the top. The tiers stay visible.
+
+## Project board setup
+
+116. **The commercial build went live before the board was made.** You asked for that. `main` now holds everything, so "Done" on the board means built, tested and live, and partners branch from the real site.
+117. **Status was judged from the code and the tests,** not from the docs. A feature is "Done" only if every part of its line in your list is built. Where one part is missing it is "Partly done", even when the missing part is small or is yours to decide (the invite link lands on the campaign rather than the character page; faction clocks do not advance by themselves; no class is in the free originals pack).
+118. **The field is called "Work type", not "Type".** GitHub reserves the name "Type" on project boards and refused it.
+119. **The "showed a player something hidden" question on the bug form is a required Yes / No / Not sure choice,** not a required tick-box. A required tick-box on a GitHub form must be ticked before the form can be sent, which would mark every bug as a leak.
+120. **Issues call it "Bryce's first campaign", not by its title.** The real title is hidden from that campaign's players, and partners who play in it will read the board. The repository itself still names it throughout (and holds its DM secrets), which is a separate thing for you to decide before giving a player access.
+121. **Groundwork is six issues.** Feature flags, the homebrew shared core, and four folder splits (table tools, server actions, store, character sheet), one per area where features share files today. Nothing was refactored.
+122. **The homebrew builder is split into four next pieces:** lore organization, race building, class building, and items on the sheet. They are not on your list, so I gave them priority Should for you to re-sort. All four wait for the shared core.
+123. **"Lore organization" is my reading of what you meant:** world lore (places, factions, gods, history, people) as a new kind of homebrew entry that can be linked, attached to a campaign and revealed in stages. Correct the issue before anyone starts it.
+124. **A feature that waits on groundwork is in Backlog even when part of it exists,** following your rule that blocked work stays in Backlog until the groundwork merges.
+125. **Thirteen issues come from `TODO-LATER.md`,** each with priority Could. Items in that file that are already done are ticked, not removed.
+126. **Business tasks that are Must start in "Ready",** the Should one in "Backlog".
+127. **Full campaign export is listed as not started, and the site currently advertises it.** The plan config marks export as a Pro feature and the pricing page lists "Export" under Pro, but there is no export yet, and your list says it should be on every plan. No code was changed in this run, so the pricing page still says it.
+128. **The scripts that created the board are not in the repository.** Only the templates, `CLAUDE.md` and the docs were allowed to change.
+129. **New code is proposed to live in `src/features/<area>/<feature>/`.** That folder does not exist yet; the groundwork issues create it.
+
+## Removing Bryce's first campaign
+
+130. **The campaign is gone from the site and the code, on your instruction.** Everything in it was first copied into a private archive on your computer, outside the repository, and checked against the database.
+131. **Your five original races were not touched.** They were already homebrew entries of your own, in the free originals pack, separate from the campaign.
+132. **The sheet, character builder and session run sheet that only that campaign used were removed.** Every campaign now uses the standard sheet. A session is its details and your planning notes.
+133. **The old database tables stay, empty** (`rules`, `character_private`). Dropping a table is not something to do in passing; nothing in the app reads them.
+134. **The tests run against a made-up dummy campaign** ("The Harvest Fair", which becomes "The Hollow Crown" at its second stage). It is in your account, it is not secret, and it is in the repository in full (`tests/fixtures/dummy-campaign.mjs`). You will see it in your campaign list.
+135. **Race entries on a lore page use general headings now:** "History", "Now" and "Their part in the story", and an "Upgrade" line only when one is written.
+136. **The example pictures on the custom-site page come from the public demo campaign.**
+137. **The original build notes (`BRIEF.md`, `DECISIONS.md`, `REPORT.md`, `PHASE-REPORT.md`) were moved to your private archive,** because they are mostly about that campaign. The remaining documents call it "Bryce's first campaign".
+138. **The option to copy another campaign's character rules when creating a campaign was removed,** since there are no such rules left to copy.
+139. **The script that built the free originals pack from the campaign is gone.** The pack stays as it is and is edited by hand under Homebrew.
+140. **Old versions on GitHub still contain the campaign.** You chose not to rewrite the history. Anyone who already has a copy of the repository still has it.

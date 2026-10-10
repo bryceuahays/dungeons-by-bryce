@@ -2,7 +2,7 @@
 
 Alec built this on his own copy of the site with a separate test database. Nothing here has touched
 the live site or the live database. Every database change is additive: nothing existing is removed,
-and Bryce's first campaign is not touched (it keeps its own character builder).
+and nothing in any existing campaign is changed.
 
 **Before the team rules.** This was built before `CLAUDE.md`'s team rules and the project board
 arrived, so it is one large branch rather than small `feature/<issue>` pull requests, its code is in

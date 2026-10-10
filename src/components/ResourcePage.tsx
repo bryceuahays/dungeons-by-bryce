@@ -6,7 +6,7 @@ import { AmountInput, RECHARGE, amountOf, blankAmount, maxOf, type Amount } from
 import { TraitCards, type Trait } from './TraitCards';
 
 // A custom resource's own page, built like the class page: a pool every character in the campaign has
-// (a Divinity pool, say), as fields the sheet can count down and refill.
+// (a pool of favour, say), as fields the sheet can count down and refill.
 //   amount: how many a character has (the class page's choices; written as max on save)
 //   unit, units: what one is called ("point", "points")
 //   recharge: long | short | short1 | none
