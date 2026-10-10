@@ -8,7 +8,8 @@ import { isSystem } from '@/config/systems';
 export const metadata = { title: 'Create a character' };
 
 // The step-by-step character creator for a character that is not in a campaign. It offers the
-// SRD for the character's system; a campaign's own homebrew comes with the campaign.
+// SRD for the character's system and the owner's own homebrew; a campaign's homebrew comes
+// with the campaign.
 export default async function SoloCreate({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
@@ -23,8 +24,8 @@ export default async function SoloCreate({ params }: { params: Promise<{ id: str
   const mine = (row.data ?? {}) as any;
   const keep = [mine.raceId, mine.clsId, mine.subId, mine.bgId, ...(mine.feats ?? []), ...(mine.spells ?? [])].filter(Boolean) as string[];
   const [entities, items] = await Promise.all([
-    getSystemEntities(supabase, system, ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], { liteSpells: true, keep }),
-    getSystemEntities(supabase, system, ['item']),
+    getSystemEntities(supabase, system, ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], { liteSpells: true, keep, owner: user.id }),
+    getSystemEntities(supabase, system, ['item'], { owner: user.id }),
   ]);
   // weapons for Weapon Mastery, and what an item is, for the equipment step
   const weapons = (items as any[]).filter((i) => i.data?.kind === 'Weapon' && i.data?.weapon?.mastery).map((i) => ({ name: i.name, mastery: String(i.data.weapon.mastery), cat: String(i.data.weapon.cat ?? '') }));

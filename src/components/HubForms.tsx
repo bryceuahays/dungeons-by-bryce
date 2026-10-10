@@ -130,7 +130,7 @@ export function NewCharacterForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(createMyCharacter, null);
   return (
     <form action={action} className="panel narrow">
-      <p className="dim">A character made here is not in a campaign. You can add it to a campaign that uses the same system at any time.</p>
+      <p className="dim">A character made here is not in a campaign. It can use the official rules for its system and your own homebrew. You can add it to a campaign that uses the same system at any time.</p>
       <fieldset className="multi">
         <legend>System</legend>
         {SYSTEMS.map((sys) => <label key={sys.id} className="ckrow"><input type="radio" name="system" value={sys.id} defaultChecked={sys.id === NEW_CAMPAIGN_RULES} style={{ flexShrink: 0 }} /> <span><b>{sys.name}</b> <span className="dim">{sys.what}</span></span></label>)}

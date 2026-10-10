@@ -162,7 +162,7 @@ export async function getLore(ctx: CampaignCtx) {
 
 // What the standard sheet can draw on: the SRD, plus the homebrew attached to this
 // campaign that this viewer is allowed to see (row-level security decides).
-export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], opts: { liteSpells?: boolean; keep?: string[] } = {}) {
+export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], opts: { liteSpells?: boolean; keep?: string[]; owner?: string } = {}) {
   const cols = 'id, type, name, source, srd_version, status, version, change_note, data';
   const versions = RULES[rulesOf(ctx.campaign.settings)].versions as readonly string[];
   // the SRD is large: it is read in pages, and (for the sheet) spells come without their
@@ -181,9 +181,12 @@ export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class
   const [srd, spells, attached] = await Promise.all([
     page(types.filter((t) => !(lite && t === 'spell')), cols),
     lite ? page(['spell'], 'id, type, name, source, srd_version, status, version, level:data->level, school:data->school, classes:data->classes, ritual:data->ritual') : [],
-    ctx.supabase.from('campaign_entities').select(`vis, vis_players, vis_stage, entities(${cols})`).eq('campaign_id', ctx.campaign.id),
+    // a character outside any campaign (opts.owner) draws on its owner's own homebrew instead of a campaign's
+    opts.owner
+      ? ctx.supabase.from('entities').select(cols).eq('owner_id', opts.owner).neq('source', 'srd').in('type', types).order('name')
+      : ctx.supabase.from('campaign_entities').select(`vis, vis_players, vis_stage, entities(${cols})`).eq('campaign_id', ctx.campaign.id),
   ]);
-  const mine = ((attached.data ?? []) as any[])
+  const mine = opts.owner ? ((attached.data ?? []) as any[]) : ((attached.data ?? []) as any[])
     .filter((a) => a.entities && types.includes(a.entities.type))
     // the DM previewing as a player gets what players get
     .filter((a) => ctx.realDm && !ctx.asPlayer ? true : a.entities.status !== 'draft' && a.vis !== 'dm')
@@ -202,9 +205,9 @@ export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class
   return [...all.filter((e) => keep.has(e.id) || !(replaced.has(e.id) || gone.has(e.type + ':' + String(e.name).toLowerCase()))), ...mine];
 }
 
-// What a character that is NOT in a campaign can draw on: the SRD for its system. (A campaign's
-// homebrew comes with the campaign, so there is none here.)
-export function getSystemEntities(supabase: Awaited<ReturnType<typeof requireViewer>>['supabase'], system: RulesChoice, types?: string[], opts: { liteSpells?: boolean; keep?: string[] } = {}) {
+// What a character that is NOT in a campaign can draw on: the SRD for its system, plus its
+// owner's own homebrew (opts.owner). A campaign's homebrew comes with the campaign.
+export function getSystemEntities(supabase: Awaited<ReturnType<typeof requireViewer>>['supabase'], system: RulesChoice, types?: string[], opts: { liteSpells?: boolean; keep?: string[]; owner?: string } = {}) {
   const none = { supabase, campaign: { id: '00000000-0000-0000-0000-000000000000', settings: { rules: system } }, realDm: false, asPlayer: false } as unknown as CampaignCtx;
   return getSheetEntities(none, types, opts);
 }

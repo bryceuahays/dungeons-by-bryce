@@ -168,6 +168,12 @@ test('a character can be made outside any campaign; only its owner opens it; it 
   assert.ok(sheet.status === 200 && sheet.text.includes('Loner') && sheet.text.includes('not in a campaign'));
   const creator = await page(`/characters/${id}/create`, player.session);
   assert.ok(creator.status === 200 && creator.text.includes('Half-Elf') && !creator.text.includes('Goliath'), 'the creator offers the SRD for its system');
+  // and its owner's own homebrew, never anyone else's
+  await player.client.from('entities').insert({ type: 'race', slug: 'mine-' + rnd(), name: 'Saltborn Kin', status: 'live', data: { speed: 30 } });
+  await dm.client.from('entities').insert({ type: 'race', slug: 'theirs-' + rnd(), name: 'Someone Elses Folk', status: 'live', data: { speed: 30 } });
+  const withBrew = await page(`/characters/${id}/create`, player.session);
+  assert.ok(withBrew.text.includes('Saltborn Kin') && !withBrew.text.includes('Someone Elses Folk'), 'own homebrew is offered; other people\'s is not');
+  assert.ok((await page(`/characters/${id}`, player.session)).status === 200);
   for (const r of [`/characters/${id}`, `/characters/${id}/create`]) assert.equal((await page(r, dm.session)).status, 404, 'nobody else can open ' + r);
   assert.equal(((await dm.client.from('characters').select('id').eq('id', id)).data ?? []).length, 0, 'or read it');
 

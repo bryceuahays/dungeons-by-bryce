@@ -22,7 +22,7 @@ export default async function SoloCharacter({ params }: { params: Promise<{ id: 
   const d = (ch.data ?? {}) as any;
   // what this character already uses stays on its sheet
   const keep = [d.raceId, d.clsId, d.subId, d.bgId, ...(d.feats ?? []), ...(d.spells ?? [])].filter(Boolean) as string[];
-  const entities = await getSystemEntities(supabase, system, undefined, { liteSpells: true, keep });
+  const entities = await getSystemEntities(supabase, system, undefined, { liteSpells: true, keep, owner: user.id });
   return (
     <div className="cs-guide">
       <div className="wrap">
