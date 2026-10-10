@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useActionState, useRef, useState, useTransition } from 'react';
-import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, moveMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
+import { adminDeleteCampaign, changePassword, createCampaign, createMyCharacter, deleteMyCharacter, moveMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
 import { ThemeEditor } from './ThemeEditor';
 import { ConfirmButton } from './ConfirmButton';
 import { NEW_CAMPAIGN_RULES } from '@/config/rules';
@@ -121,6 +121,22 @@ export function NewCampaignForm({ pro, packs = [], worlds = [], world = '' }: { 
         <Msg state={state} />
         <p className="inline"><button type="button" className="quiet" onClick={() => go(1)}>Back to details</button><button type="submit" disabled={pending}>{pending ? 'Creating' : 'Create campaign'}</button></p>
       </div>
+    </form>
+  );
+}
+
+// A new character outside any campaign: choose its system, and the creator opens.
+export function NewCharacterForm() {
+  const [state, action, pending] = useActionState<FormState, FormData>(createMyCharacter, null);
+  return (
+    <form action={action} className="panel narrow">
+      <p className="dim">A character made here is not in a campaign. You can add it to a campaign that uses the same system at any time.</p>
+      <fieldset className="multi">
+        <legend>System</legend>
+        {SYSTEMS.map((sys) => <label key={sys.id} className="ckrow"><input type="radio" name="system" value={sys.id} defaultChecked={sys.id === NEW_CAMPAIGN_RULES} style={{ flexShrink: 0 }} /> <span><b>{sys.name}</b> <span className="dim">{sys.what}</span></span></label>)}
+      </fieldset>
+      <Msg state={state} />
+      <button type="submit" disabled={pending}>{pending ? 'Creating' : 'Create character'}</button>
     </form>
   );
 }
