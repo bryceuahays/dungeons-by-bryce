@@ -34,6 +34,9 @@ const money = (c) => (c ? `${c.quantity} ${c.unit}` : '');
 const core = (type, name) => SRD_CORE.find((e) => e.type === type && e.name.toLowerCase() === String(name).toLowerCase());
 // prerequisites come as a list, one object, or plain words, depending on the version
 const prereqText = (p) => (!p ? '' : typeof p === 'string' ? p : (Array.isArray(p) ? p : [p]).map((x) => (typeof x === 'string' ? x : x.ability_score ? `${x.ability_score.name} ${x.minimum_score} or higher` : x.minimum_level ? `Level ${x.minimum_level} or higher` : x.feature_named ?? x.description ?? x.desc ?? x.name ?? '')).filter(Boolean).join(', '));
+// node scripts/import-srd.mjs --dry-run   changes nothing: writes what a real run would add, replace
+// and remove (and which of those removals are in use) to docs/srd-import-preview.md
+const DRY = process.argv.includes('--dry-run');
 const out = [];           // { v, type, name, data }
 const failed = [];
 const add = (v, type, name, data) => { if (!name) return failed.push(`${v} ${type}: an entry with no name`); out.push({ v, type, name: String(name).slice(0, 120), data }); };
@@ -666,7 +669,7 @@ for (const e of out) {
   if (!was) fresh.push(row);
   else if (was.name === row.name && stable(was.data) === stable(row.data)) unchanged++;
   else {
-    const r = await admin.from('entities').update(row).eq('id', was.id);
+    const r = DRY ? { error: null } : await admin.from('entities').update(row).eq('id', was.id);
     if (r.error) failed.push(`${key}: ${r.error.message}`); else { updated++; replaced.push(`${e.v} ${e.type}: ${was.name}`); }
   }
   const clash = others.filter((o) => o.type === e.type && o.name.toLowerCase() === e.name.toLowerCase());
@@ -674,15 +677,25 @@ for (const e of out) {
 }
 let added = 0;
 for (let i = 0; i < fresh.length; i += 200) {
-  const r = await admin.from('entities').insert(fresh.slice(i, i + 200));
+  const r = DRY ? { error: null } : await admin.from('entities').insert(fresh.slice(i, i + 200));
   if (r.error) { failed.push(`insert ${fresh[i].type} ${fresh[i].name}…: ${r.error.message}`); } else added += Math.min(200, fresh.length - i);
 }
 // entries that were marked srd but are not in the official data (the hand-written stand-ins)
 const gone = [...srdNow].filter(([k]) => !seen.has(k)).map(([, e]) => e);
+// which of those a character, a campaign or a homebrew entry points at (removing one breaks that link)
+const refs = [];
+for (const [table, cols] of [['characters', 'id, data'], ['campaign_entities', 'campaign_id, entity_id'], ['entities', 'id, data, cloned_from']]) {
+  for (let from = 0; ; from += 1000) {
+    const { data } = await admin.from(table).select(cols).range(from, from + 999);
+    refs.push(...(data ?? []).map((r) => JSON.stringify(r)));
+    if (!data || data.length < 1000) break;
+  }
+}
+const inUse = gone.filter((e) => refs.some((r) => r.includes(e.id) && !r.startsWith(`{"id":"${e.id}"`)));
 const removed = [];
 for (const e of gone) {
-  const r = await admin.from('entities').delete().eq('id', e.id).eq('source', 'srd');
-  if (r.error) failed.push(`remove ${e.type} ${e.name}: ${r.error.message}`); else removed.push(`${e.srd_version} ${e.type}: ${e.name}`);
+  const r = DRY ? { error: null } : await admin.from('entities').delete().eq('id', e.id).eq('source', 'srd');
+  if (r.error) failed.push(`remove ${e.type} ${e.name}: ${r.error.message}`); else removed.push(`${e.srd_version} ${e.type}: ${e.name}${inUse.includes(e) ? ' (IN USE)' : ''}`);
 }
 
 const types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'item', 'monster', 'condition', 'rule'];
@@ -722,7 +735,12 @@ ${removed.length ? removed.map((f) => `- ${f}`).join('\n') : (firstRun ? 'None.'
 
 ${collisions.length ? [...new Set(collisions)].map((f) => `- ${f}`).join('\n') : 'None.'}
 `;
+if (DRY) {
+  fs.writeFileSync(path.join(ROOT, 'docs', 'srd-import-preview.md'), `# SRD import PREVIEW: nothing was changed\n\nWhat a real run of \`node scripts/import-srd.mjs\` would do to this database.\n\n**Removals that a character, a campaign or a homebrew entry still points at:** ${inUse.length ? inUse.map((e) => `${e.srd_version} ${e.type} "${e.name}"`).join(', ') : 'none'}.\n\n` + report.replace(/^# SRD import report\n/, '').replace('This run: ', 'A real run would make: '));
+  console.log(`PREVIEW (nothing changed): would add ${added}, replace ${updated}, leave ${unchanged}, remove ${removed.length} (${inUse.length} of them in use). Details: docs/srd-import-preview.md`);
+  process.exit(0);
+}
 if (firstRun || added || updated || removed.length || failed.length) fs.writeFileSync(path.join(ROOT, 'docs', 'srd-import-report.md'), report);
-console.log(`SRD import: ${added} added, ${updated} replaced, ${unchanged} unchanged, ${removed.length} removed, ${failed.length} failed.`);
+console.log(`SRD import: ${added} added, ${updated} replaced, ${unchanged} unchanged, ${removed.length} removed (${inUse.length} in use), ${failed.length} failed.`);
 console.log(JSON.stringify(counts));
 if (failed.length) console.log(failed.slice(0, 10).join('\n'));

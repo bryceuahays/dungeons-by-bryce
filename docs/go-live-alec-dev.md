@@ -71,6 +71,16 @@ PowerShell on your machine, from the project folder, with `.env.local` pointing 
 
    ```
    npm.cmd run fetch-srd
+   node scripts/import-srd.mjs --dry-run
+   ```
+
+   That first run is a **preview: it changes nothing.** It prints what a real run would add, replace
+   and remove, and writes the details to `docs/srd-import-preview.md`. Alec's branch produces exactly
+   the same 2,797 official entries (same names) as the current import, so it should say
+   **remove 0 (0 of them in use)** and add 0; only "replace" should be large. If it says anything is
+   removed and in use, stop and send Alec the preview file. Otherwise run it for real:
+
+   ```
    npm.cmd run import-srd
    node scripts/seed-worlds.mjs
    ```
