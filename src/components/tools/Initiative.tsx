@@ -6,6 +6,7 @@ import { SRD_CONDITIONS, type Entry, type ToolProps } from '@/lib/entry-types';
 import { mod, type Entity } from '@/lib/rules/engine';
 import { EntityCard } from '../EntityCard';
 import { Sheet5e } from '../Sheet5e';
+import { ConfirmButton } from '../ConfirmButton';
 import { useLive } from './kit';
 
 type Combatant = { id: string; name: string; kind: 'pc' | 'npc' | 'monster'; init: number; dex: number; hp: number; hpMax: number; ac: number; conditions: string[]; conc: boolean; hidden: boolean; showHp: boolean; ref?: string };
@@ -129,7 +130,7 @@ function DmTracker(p: ToolProps & { initial: Entry | null; characters: { id: str
           <button type="button" className="act" disabled={!s.list.length} onClick={() => { const list = s.list.map((c) => ({ ...c, init: d20() + c.dex })); const first = [...list].sort((a, b) => b.init - a.init || b.dex - a.dex)[0]; up({ round: 1, turn: first?.id ?? null, list }); }}>Roll initiative for everyone</button>
           <button type="button" className="act sm" disabled={!order.length} onClick={() => step(-1)}>Previous turn</button>
           <button type="button" className="act" disabled={!order.length} onClick={() => step(1)}>Next turn</button>
-          <button type="button" className="act sm danger" disabled={!s.list.length} onClick={() => { if (confirm('End the fight and clear the tracker?')) up({ ...empty }); }}>End the fight</button>
+          <ConfirmButton className="act sm danger" disabled={!s.list.length} ask={'End the fight and clear the tracker?'} onConfirm={() => { up({ ...empty }); }}>End the fight</ConfirmButton>
           <span className="who" role="status">{state}</span>
         </p>
       </div>

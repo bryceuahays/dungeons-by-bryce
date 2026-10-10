@@ -6,6 +6,7 @@ import type { Entry, ToolProps } from '@/lib/entry-types';
 import { saveSetting } from '@/app/c/[slug]/actions';
 import { UpgradeHint } from '../UpgradeHint';
 import { visLabel } from '../VisPicker';
+import { ConfirmButton } from '../ConfirmButton';
 import { EntryForm, Problem, useEntries, visOf, type F } from './kit';
 
 // ================================================================ per-player secrets and private notes
@@ -23,12 +24,12 @@ export function NotesTool(p: ToolProps & { initial: Note[] }) {
     setErr(''); setRows([data as Note, ...rows]); setDraft({ ...draft, title: '', body: '' });
   };
   const change = async (n: Note, body: string) => { const { error } = await supabase.from('player_notes').update({ body }).eq('id', n.id); if (!error) setRows(rows.map((x) => (x.id === n.id ? { ...x, body } : x))); else setErr('That did not save.'); };
-  const drop = async (n: Note) => { if (!confirm('Delete this for good?')) return; const { error } = await supabase.from('player_notes').delete().eq('id', n.id); if (!error) setRows(rows.filter((x) => x.id !== n.id)); };
+  const drop = async (n: Note) => { const { error } = await supabase.from('player_notes').delete().eq('id', n.id); if (!error) setRows(rows.filter((x) => x.id !== n.id)); };
   const NoteCard = ({ n, editable }: { n: Note; editable: boolean }) => (
     <div className="plate">
       <h3>{n.title || 'Untitled'}</h3>
       {editable ? <textarea rows={Math.min(14, Math.max(3, n.body.split('\n').length + 1))} defaultValue={n.body} onBlur={(e) => { if (e.target.value !== n.body) void change(n, e.target.value); }} aria-label={'Text of ' + (n.title || 'note')} /> : <p style={{ whiteSpace: 'pre-wrap' }}>{n.body}</p>}
-      {editable ? <p className="row"><span className="muted">Saved when you click away.</span><button type="button" className="act sm danger" onClick={() => drop(n)}>Delete</button></p> : null}
+      {editable ? <p className="row"><span className="muted">Saved when you click away.</span><ConfirmButton className="act sm danger" ask="Delete this for good?" yes="Yes, delete" onConfirm={() => { void drop(n); }}>Delete</ConfirmButton></p> : null}
     </div>
   );
 
@@ -153,7 +154,7 @@ export function WorldTool(p: ToolProps & { initial: Entry[]; npcs: { id: string;
         {cons.filter((c) => !tag || tagsOf(c).includes(tag)).map((c) => (
           <li key={c.id}>
             {c.data.session ? <span className="who">Session {c.data.session}</span> : null} {c.title} {tagsOf(c).map((t) => <span key={t} className="pillb">{t}</span>)}
-            {p.dm ? <> <span className={'pillb ' + (c.vis === 'dm' ? 'dm' : 'pl')}>{visLabel(visOf(c), p.stages, p.members)}</span>{p.canWrite ? <> <button type="button" className="act sm" onClick={() => save({ id: c.id, campaign_id: p.campaignId, kind: 'consequence', vis: c.vis === 'dm' ? 'all' : 'dm' })}>{c.vis === 'dm' ? 'Show to players' : 'Make DM only'}</button> <button type="button" className="act sm danger" onClick={() => { if (confirm('Delete this?')) void remove(c.id); }}>Delete</button></> : null}</> : null}
+            {p.dm ? <> <span className={'pillb ' + (c.vis === 'dm' ? 'dm' : 'pl')}>{visLabel(visOf(c), p.stages, p.members)}</span>{p.canWrite ? <> <button type="button" className="act sm" onClick={() => save({ id: c.id, campaign_id: p.campaignId, kind: 'consequence', vis: c.vis === 'dm' ? 'all' : 'dm' })}>{c.vis === 'dm' ? 'Show to players' : 'Make DM only'}</button> <ConfirmButton className="act sm danger" ask={'Delete this?'} yes="Yes, delete" onConfirm={() => { void remove(c.id); }}>Delete</ConfirmButton></> : null}</> : null}
           </li>
         ))}
       </ul>
@@ -178,7 +179,7 @@ export function WorldTool(p: ToolProps & { initial: Entry[]; npcs: { id: string;
                 {p.canWrite ? <><button type="button" className="act" disabled={filled >= n} onClick={() => save({ id: c.id, campaign_id: p.campaignId, kind: 'clock', data: { ...c.data, filled: filled + 1 } })}>Advance</button>
                 <button type="button" className="act sm" disabled={filled <= 0} onClick={() => save({ id: c.id, campaign_id: p.campaignId, kind: 'clock', data: { ...c.data, filled: filled - 1 } })}>Back</button>
                 <button type="button" className="act sm" onClick={() => save({ id: c.id, campaign_id: p.campaignId, kind: 'clock', vis: c.vis === 'dm' ? 'all' : 'dm' })}>{c.vis === 'dm' ? 'Reveal to players' : 'Make DM only'}</button>
-                <button type="button" className="act sm danger" onClick={() => { if (confirm('Delete this clock?')) void remove(c.id); }}>Delete</button></> : null}
+                <ConfirmButton className="act sm danger" ask={'Delete this clock?'} yes="Yes, delete" onConfirm={() => { void remove(c.id); }}>Delete</ConfirmButton></> : null}
               </p> : null}
             </div>
           );
@@ -211,7 +212,7 @@ export function WorldTool(p: ToolProps & { initial: Entry[]; npcs: { id: string;
                 </ul>
                 {open === 'clue:' + s.id ? <EntryForm fields={clueFields} entry={{ vis: 'dm' }} stages={p.stages} members={p.members} canName={false} allowVis={null} saveLabel="Add clue" onCancel={() => setOpen(null)}
                   onSave={async (patch) => { const r = await save({ ...patch, campaign_id: p.campaignId, kind: 'clue', parent: s.id, vis: 'dm' }); if (!r.error) setOpen(null); return r; }} />
-                  : p.canWrite ? <p className="row">{p.make.world ? <button type="button" className="act sm" onClick={() => setOpen('clue:' + s.id)}>Add a clue</button> : null}<button type="button" className="act sm danger" onClick={() => { if (confirm('Delete this secret and its clues?')) void remove(s.id); }}>Delete</button></p> : null}
+                  : p.canWrite ? <p className="row">{p.make.world ? <button type="button" className="act sm" onClick={() => setOpen('clue:' + s.id)}>Add a clue</button> : null}<ConfirmButton className="act sm danger" ask={'Delete this secret and its clues?'} yes="Yes, delete" onConfirm={() => { void remove(s.id); }}>Delete</ConfirmButton></p> : null}
               </div>
             );
           })}

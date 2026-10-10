@@ -1,5 +1,6 @@
 'use client';
 import { useActionState, useState, useTransition } from 'react';
+import { ConfirmButton } from './ConfirmButton';
 import { commissionPayLink, deliverCommission, setCommission, transferCampaign, type FormState } from '@/app/(hub)/actions';
 
 type Job = { id: string; status: string; notes: string; revisions_used: number; revisions_included: number; pay_url: string; pro_months: number };
@@ -17,7 +18,7 @@ export function CommissionRow({ job, options, campaigns }: { job: Job; options: 
       {job.status === 'requested' ? (
         <p className="inline">
           <button type="button" disabled={pending} onClick={() => set({ status: 'accepted' })}>Accept</button>
-          <button type="button" className="quiet" disabled={pending} onClick={() => { if (confirm('Decline this request?')) set({ status: 'declined' }); }}>Decline</button>
+          <ConfirmButton className="quiet" disabled={pending} ask={'Decline this request?'} onConfirm={() => { set({ status: 'declined' }); }}>Decline</ConfirmButton>
         </p>
       ) : null}
       <label>Status<select value={job.status} disabled={pending} onChange={(e) => set({ status: e.target.value })}>{options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>

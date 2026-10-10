@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useActionState, useState, useTransition } from 'react';
 import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
 import { ThemeEditor } from './ThemeEditor';
+import { ConfirmButton } from './ConfirmButton';
 import { NEW_CAMPAIGN_RULES, RULES } from '@/config/rules';
 
 function Msg({ state }: { state: FormState }) {
@@ -46,7 +47,7 @@ export function PasswordForm() {
   );
 }
 
-export function NewCampaignForm({ pro, packs = [] }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[] }) {
+export function NewCampaignForm({ pro, packs = [], worlds = [], world = '' }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[]; worlds?: { id: string; name: string }[]; world?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
   return (
     <form action={action}>
@@ -54,6 +55,8 @@ export function NewCampaignForm({ pro, packs = [] }: { pro: boolean; packs?: { i
         <label>Title<input name="title" maxLength={80} placeholder="Leave empty if your pasted text starts with # Title" /></label>
         <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the title.<input name="slug" pattern="[a-z0-9][a-z0-9\-]{1,60}" placeholder="my-next-campaign" /></label>
         <label>Tagline<textarea name="tagline" rows={2} maxLength={300} /></label>
+        {worlds.length ? <label>World<select name="world" defaultValue={world}><option value="">None (a campaign of its own)</option>{worlds.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label> : null}
+        {worlds.length ? <p className="dim">A campaign in a world plays by that world&apos;s rules and gets its homebrew (the rules version below is then ignored).</p> : null}
       </div>
       <h2>Paste your campaign (optional)</h2>
       <div className="panel">
@@ -166,7 +169,7 @@ export function FeedbackRowActions({ id, done }: { id: string; done: boolean }) 
   return (
     <span className="confirm">
       <button type="button" className="quiet small-btn" disabled={pending} onClick={() => start(() => feedbackSetDone(id, !done))}>{done ? 'Mark as open' : 'Mark as done'}</button>
-      <button type="button" className="quiet small-btn" disabled={pending} onClick={() => { if (confirm('Delete this note?')) start(() => feedbackDelete(id)); }}>Delete</button>
+      <ConfirmButton className="quiet small-btn" disabled={pending} ask={'Delete this note?'} yes="Yes, delete" onConfirm={() => { start(() => feedbackDelete(id)); }}>Delete</ConfirmButton>
     </span>
   );
 }

@@ -13,10 +13,12 @@ export default async function Campaigns() {
   // Row-level security returns the campaigns this account runs or has joined.
   // The campaigns row holds the title and tagline for the current phase, which is all a
   // player can read. A campaign's DM also gets its real ones (campaign_faces).
-  const [{ data }, { data: faces }] = await Promise.all([
+  const [{ data }, { data: faces }, { data: worlds }] = await Promise.all([
     supabase.from('campaigns').select('*').order('created_at'),
     supabase.from('campaign_faces').select('campaign_id, title, tagline').eq('phase', ''),
+    supabase.from('worlds').select('id, name'),
   ]);
+  const worldName = new Map((worlds ?? []).map((w) => [w.id, w.name]));
   const campaigns = (data ?? []) as Campaign[];
   const real = new Map((faces ?? []).map((f) => [f.campaign_id, f]));
   const mine = campaigns.filter((c) => c.owner_id === user.id);
@@ -29,7 +31,7 @@ export default async function Campaigns() {
       <Link key={c.id} className="ccard" href={'/c/' + c.slug} style={themeStyle(c.theme)}>
         <b>{face?.title ?? c.title}</b>
         <span>{face?.tagline ?? c.tagline}</span>
-        {face ? <i>You run this campaign{face.title !== c.title ? `. Players see: ${c.title}` : ''}</i> : null}
+        {face ? <i>You run this campaign{face.title !== c.title ? `. Players see: ${c.title}` : ''}{(c as any).world_id && worldName.get((c as any).world_id) ? `. World: ${worldName.get((c as any).world_id)}` : ''}</i> : null}
       </Link>
     );
   };

@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState, useTransition } from 'react';
 import { deleteContentRow, duplicateContentRow, moveContentRow, saveContentRow, saveSessionNotes } from '@/app/c/[slug]/actions';
+import { ConfirmButton } from './ConfirmButton';
 import type { ContentRow } from '@/lib/types';
 
 // ---------------------------------------------------------------- rich text
@@ -111,7 +112,7 @@ function RowEditor({ slug, row, twin, phases, members, canName }: { slug: string
         <div className="row" style={{ marginTop: 12 }}>
           {AUTO.has(row.kind) ? null : <button className="act" disabled={pending} onClick={() => save({ body, title })}>Save</button>}
           <label className="row muted">Who sees it
-            <select className="small" value={row.visibility} disabled={pending} onChange={(e) => { const v = e.target.value as 'player' | 'dm'; if (v === 'dm' || confirm('Show this block to players?')) save({ visibility: v }); }}>
+            <select className="small" value={row.visibility} disabled={pending} onChange={(e) => { const v = e.target.value as 'player' | 'dm'; save({ visibility: v }); }}>
               <option value="dm">DM only</option><option value="player">Players and DM</option>
             </select>
           </label>
@@ -145,7 +146,7 @@ function RowEditor({ slug, row, twin, phases, members, canName }: { slug: string
           <button className="act sm" disabled={pending} onClick={() => run(() => moveContentRow(slug, row.section, row.id, -1))}>Move up</button>
           <button className="act sm" disabled={pending} onClick={() => run(() => moveContentRow(slug, row.section, row.id, 1))}>Move down</button>
           <button className="act sm" disabled={pending} onClick={() => run(() => duplicateContentRow(slug, row.id))}>Duplicate</button>
-          <button className="act sm danger" disabled={pending} onClick={() => { if (confirm('Delete this block for good?')) run(() => deleteContentRow(slug, row.id)); }}>Delete</button>
+          <ConfirmButton className="act sm danger" disabled={pending} ask={'Delete this block for good?'} yes="Yes, delete" onConfirm={() => { run(() => deleteContentRow(slug, row.id)); }}>Delete</ConfirmButton>
           {msg?.error ? <span className="err" role="alert">{msg.error}</span> : null}
           {msg?.note ? <span className="okmsg" role="status">{msg.note}</span> : null}
         </div>

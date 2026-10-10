@@ -8,8 +8,8 @@
 //
 // No imports here: tests load this file directly.
 
-export type FieldKind = 'text' | 'long' | 'number' | 'select' | 'check' | 'multi' | 'abilities' | 'pairs';
-export type Field = { key: string; label: string; kind: FieldKind; options?: string[]; def?: unknown; guided?: boolean; help?: string };
+export type FieldKind = 'primary' | 'text' | 'long' | 'number' | 'select' | 'check' | 'multi' | 'abilities' | 'pairs';
+export type Field = { key: string; label: string; kind: FieldKind; options?: string[]; optionLabels?: Record<string, string>; def?: unknown; guided?: boolean; help?: string };
 export type TypeDef = { label: string; plural: string; blurb: string; fields: Field[]; effects: boolean; features: boolean; featureLevels: boolean };
 
 const AB = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
@@ -30,15 +30,15 @@ export const TYPES: Record<string, TypeDef> = {
     label: 'Class', plural: 'Classes', blurb: 'A calling with twenty levels of features.', effects: true, features: true, featureLevels: true,
     fields: [
       { key: 'hd', label: 'Hit die', kind: 'select', options: ['6', '8', '10', '12'], def: '8', guided: true },
-      { key: 'primary', label: 'Primary ability', kind: 'text', def: '', guided: true },
+      { key: 'primary', label: 'Primary ability', kind: 'primary', def: '', guided: true, help: 'Where a player of this class should put their best score. Also the score a character needs at 13 or more to multiclass into it.' },
       { key: 'saves', label: 'Saving throw proficiencies (pick two)', kind: 'multi', options: AB, def: [], guided: true },
-      { key: 'casting.kind', label: 'Spellcasting', kind: 'select', options: ['none', 'full', 'half', 'pact'], def: 'none', guided: true, help: 'Full: spell slots like a wizard. Half: like a paladin. Pact: a few slots that return on a short rest.' },
+      { key: 'casting.kind', label: 'Spellcasting', kind: 'select', options: ['none', 'full', 'half', 'pact', 'custom'], optionLabels: { none: 'No spellcasting', full: 'Full caster (like a Wizard): slots up to 9th level', half: 'Half caster (like a Paladin): slots up to 5th level', pact: 'Pact magic (like a Warlock): a few slots that refill on a short rest', custom: 'My own slot table' }, def: 'none', guided: true, help: 'How many spell slots the class gets as it levels up. The slot table shows each level.' },
       { key: 'casting.ability', label: 'Spellcasting ability', kind: 'select', options: ['', 'int', 'wis', 'cha'], def: '', guided: true },
       { key: 'armor', label: 'Armor proficiencies', kind: 'text', def: 'Light armor' },
       { key: 'weapons', label: 'Weapon proficiencies', kind: 'text', def: 'Simple weapons' },
       { key: 'tools', label: 'Tool proficiencies', kind: 'text', def: 'None' },
       { key: 'skillCount', label: 'How many skills the player picks', kind: 'number', def: 2, guided: true },
-      { key: 'skillList', label: 'Skills to pick from (none ticked means any)', kind: 'multi', options: SKILL_NAMES, def: [] },
+      { key: 'skillList', label: 'Proficient skill options', kind: 'multi', options: SKILL_NAMES, def: [], help: 'The skills a player of this class can choose to be proficient in, through the class alone. None ticked means any skill.' },
     ],
   },
   subclass: {

@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { attachPack, attachUsablePack, cloneEntity, createPack, deletePack, importPack, saveEntity, setInPack, type BrewState } from '@/app/(hub)/homebrew/actions';
+import { attachPack, attachUsablePack, cloneEntity, createPack, deleteEntity, deletePack, importPack, saveEntity, setInPack, type BrewState } from '@/app/(hub)/homebrew/actions';
 import { EDITIONS, type EditionId } from '@/config/editions';
 import { convertItem, convertMonster, convertSpell, type Converted } from '@/lib/rules/convert';
+import { ConfirmButton } from './ConfirmButton';
 import { EntityCard } from './EntityCard';
 
 const Msg = ({ s }: { s: BrewState }) => (s?.error ? <p className="bad" role="alert">{s.error} {s.upgrade ? <Link href="/upgrade">See plans</Link> : null}</p> : s?.note ? <p className="good" role="status">{s.note}</p> : null);
@@ -13,6 +14,12 @@ const Msg = ({ s }: { s: BrewState }) => (s?.error ? <p className="bad" role="al
 export function CloneButton({ id, label = 'Clone and tweak' }: { id: string; label?: string }) {
   const [state, action, pending] = useActionState<BrewState, FormData>(cloneEntity.bind(null, id), null);
   return <form action={action} className="inline"><button type="submit" className="quiet small-btn" disabled={pending}>{pending ? 'Copying' : label}</button><Msg s={state} /></form>;
+}
+
+// Delete from the "Your entries" list, without opening the entry first.
+export function DeleteEntryButton({ id, name }: { id: string; name: string }) {
+  const [pending, start] = useTransition();
+  return <ConfirmButton className="quiet small-btn danger" disabled={pending} ask={`Delete "${name}" for good?`} yes="Yes, delete" onConfirm={() => { start(() => deleteEntity(id)); }}>{pending ? 'Deleting' : 'Delete'}</ConfirmButton>;
 }
 
 // One click: add a whole pack to one of your campaigns.
@@ -78,7 +85,7 @@ export function PackTools({ pack, entries, mine, campaigns }: { pack: { id: stri
         <Msg s={state} />
         <p className="inline" style={{ marginTop: 12 }}>
           <button type="button" className="quiet" onClick={download} disabled={!entries.length}>Export as a file (JSON)</button>
-          <button type="button" className="quiet danger" disabled={busy} onClick={() => { if (confirm('Delete this pack? The entries in it are kept.')) start(() => deletePack(pack.id)); }}>Delete pack</button>
+          <ConfirmButton className="quiet danger" disabled={busy} ask={'Delete this pack? The entries in it are kept.'} yes="Yes, delete" onConfirm={() => { start(() => deletePack(pack.id)); }}>Delete pack</ConfirmButton>
         </p>
       </div>
     </>

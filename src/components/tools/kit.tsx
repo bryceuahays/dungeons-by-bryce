@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { FEATURES } from '@/config/plans';
 import type { Entry } from '@/lib/entry-types';
+import { ConfirmButton } from '../ConfirmButton';
 import { VisPicker, type Member, type Stage, type Vis } from '../VisPicker';
 
 // The table tools write straight to the database from the browser, as the signed-in
@@ -131,7 +132,7 @@ export function EntryForm({ fields, entry, stages, members, beats, allowVis, can
       <p className="row" style={{ marginTop: 10 }}>
         <button type="button" className="act" disabled={busy || !title.trim()} onClick={submit}>{busy ? 'Saving' : saveLabel}</button>
         {onCancel ? <button type="button" className="act sm" onClick={onCancel}>Cancel</button> : null}
-        {onDelete ? <button type="button" className="act sm danger" onClick={() => { if (confirm('Delete this for good?')) onDelete(); }}>Delete</button> : null}
+        {onDelete ? <ConfirmButton className="act sm danger" ask={'Delete this for good?'} yes="Yes, delete" onConfirm={() => { onDelete(); }}>Delete</ConfirmButton> : null}
       </p>
       <Problem r={res} />
     </div>

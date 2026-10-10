@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ConfirmButton } from './ConfirmButton';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
 type Result = { error?: string; note?: string } | null;
@@ -62,7 +63,6 @@ export function BackgroundUploader({ folder, has, save }: { folder: string; has:
   }
 
   async function remove() {
-    if (!confirm('Remove your background and go back to the standard one?')) return;
     setBusy(true); setMsg(null);
     const r = await save(false);
     setMsg(r); setBusy(false);
@@ -87,7 +87,7 @@ export function BackgroundUploader({ folder, has, save }: { folder: string; has:
       </div>
       <p className="bgup-actions">
         <button type="button" className="act" onClick={upload} disabled={busy || !ready}>{busy ? 'Working…' : has ? 'Replace background' : 'Use these pictures'}</button>
-        {has ? <button type="button" className="act quiet" onClick={remove} disabled={busy}>Remove my background</button> : null}
+        {has ? <ConfirmButton className="act quiet" disabled={busy} ask="Go back to the standard background?" yes="Yes, remove it" onConfirm={() => { void remove(); }}>Remove my background</ConfirmButton> : null}
         {!has && !ready ? <span className="bgup-hint">Choose both pictures to continue.</span> : null}
         {msg?.error ? <span className="bad err" role="alert">{msg.error}</span> : null}
         {msg?.note ? <span className="good okmsg" role="status">{msg.note}</span> : null}

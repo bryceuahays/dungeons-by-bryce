@@ -162,7 +162,7 @@ export async function getLore(ctx: CampaignCtx) {
 
 // What the standard sheet can draw on: the SRD, plus the homebrew attached to this
 // campaign that this viewer is allowed to see (row-level security decides).
-export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], opts: { liteSpells?: boolean } = {}) {
+export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], opts: { liteSpells?: boolean; keep?: string[] } = {}) {
   const cols = 'id, type, name, source, srd_version, status, version, change_note, data';
   const versions = RULES[rulesOf(ctx.campaign.settings)].versions as readonly string[];
   // the SRD is large: it is read in pages, and (for the sheet) spells come without their
@@ -188,7 +188,18 @@ export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class
     // the DM previewing as a player gets what players get
     .filter((a) => ctx.realDm && !ctx.asPlayer ? true : a.entities.status !== 'draft' && a.vis !== 'dm')
     .map((a) => a.entities);
-  return [...srd, ...spells.map(({ level, school, classes, ritual, ...e }) => ({ ...e, change_note: '', data: { level, school, classes, ritual, _lite: true } })), ...mine];
+  // homebrew that replaces an SRD entry (a Warlock reskin, someone's own version of the Fighter) hides
+  // that entry here, in every rules version (matched by kind and name); characters that already use it
+  // (opts.keep) keep it
+  const replaced = new Set<string>(mine.flatMap((e: any) => (Array.isArray(e.data?.replaces) ? e.data.replaces : [])).map(String));
+  const all = [...srd, ...spells.map(({ level, school, classes, ritual, ...e }) => ({ ...e, change_note: '', data: { level, school, classes, ritual, _lite: true } }))];
+  if (!replaced.size) return [...all, ...mine];
+  const known = all.filter((e) => replaced.has(e.id));
+  const missing = [...replaced].filter((id) => !known.some((e) => e.id === id));
+  const { data: more } = missing.length ? await ctx.supabase.from('entities').select('id, type, name').in('id', missing) : { data: [] as any[] };
+  const gone = new Set([...known, ...(more ?? [])].map((e: any) => e.type + ':' + String(e.name).toLowerCase()));
+  const keep = new Set(opts.keep ?? []);
+  return [...all.filter((e) => keep.has(e.id) || !(replaced.has(e.id) || gone.has(e.type + ':' + String(e.name).toLowerCase()))), ...mine];
 }
 
 export { themeStyle } from './theme-style';

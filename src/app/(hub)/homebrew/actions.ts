@@ -79,7 +79,7 @@ export async function cloneEntity(id: string, _: BrewState, __: FormData): Promi
   for (let n = 1; n < 30 && !made; n++) {
     const { data, error } = await supabase.from('entities').insert({
       owner_id: user.id, type: src.type, name: src.name + (src.owner_id === user.id ? ' (copy)' : ''), slug: slugOf(src.name) + (n > 1 ? '-' + n : ''),
-      source: src.source === 'private' ? 'private' : 'homebrew', status: 'draft', depth: 'quick', data: src.data, cloned_from: src.id,
+      source: src.source === 'private' ? 'private' : 'homebrew', status: 'draft', depth: 'quick', data: src.source === 'srd' ? { ...src.data, replaces: [src.id] } : src.data, cloned_from: src.id,
     }).select('id').single();
     if (data) made = data.id;
     else if (!/duplicate|unique/i.test(error?.message || '')) return fail(error?.message, 'The copy could not be made.');
@@ -172,4 +172,30 @@ export async function importPack(_: BrewState, form: FormData): Promise<BrewStat
   }
   revalidatePath('/homebrew');
   redirect(`/homebrew/packs/${pack.id}?imported=${made}`);
+}
+
+// One spell's full entry, for reading it inside the class editor's spell list.
+// Row-level security decides what the viewer may read (the SRD, and their own homebrew).
+export async function spellDetail(id: string): Promise<{ name: string; source: string; status: string; data: Record<string, any> } | null> {
+  const { supabase } = await requireViewer();
+  const { data } = await supabase.from('entities').select('name, source, status, data').eq('id', id).eq('type', 'spell').maybeSingle();
+  return data ?? null;
+}
+
+// Delete one of your own spells from inside the class editor (no page change, unlike deleteEntity).
+export async function deleteSpell(id: string): Promise<BrewState> {
+  const { supabase, user } = await requireViewer();
+  const { data, error } = await supabase.from('entities').delete().eq('id', id).eq('type', 'spell').eq('owner_id', user.id).select('id');
+  if (error || !data?.length) return { error: 'That spell could not be deleted.' };
+  revalidatePath('/homebrew');
+  return { note: 'Deleted.' };
+}
+
+// Delete one of your own subclasses from the class editor's Subclasses tab (no page change).
+export async function deleteSubclass(id: string): Promise<BrewState> {
+  const { supabase, user } = await requireViewer();
+  const { data, error } = await supabase.from('entities').delete().eq('id', id).eq('type', 'subclass').eq('owner_id', user.id).select('id');
+  if (error || !data?.length) return { error: 'That subclass could not be deleted.' };
+  revalidatePath('/homebrew');
+  return { note: 'Deleted.' };
 }

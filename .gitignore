@@ -13,3 +13,6 @@ next-env.d.ts
 .vercel
 .env*
 seed/srd/full/
+
+# output of scripts/import-srd.mjs --dry-run
+docs/srd-import-preview.md

@@ -4,7 +4,7 @@ import { getPlan, remaining } from '@/lib/entitlements';
 import { TYPES } from '@/config/homebrew';
 import { FREE_LIMITS } from '@/config/plans';
 import { UpgradeHint } from '@/components/UpgradeHint';
-import { AttachPackForm, ImportPackForm, NewPackForm } from '@/components/BrewForms';
+import { AttachPackForm, DeleteEntryButton, ImportPackForm, NewPackForm } from '@/components/BrewForms';
 
 export const metadata = { title: 'Homebrew' };
 
@@ -30,14 +30,14 @@ export default async function Homebrew() {
       <div className="panel">
         <p>Make your own races, classes, subclasses, backgrounds, feats, spells, items, monsters, and resources. Start from nothing, or clone anything in the SRD and change it. Attach an entry to a campaign and it shows up on your players&apos; sheets.</p>
         <p className="dim">{plan.pro ? 'You have the full builder.' : `Free plan: ${own.length} of ${FREE_LIMITS.homebrew} entries of your own used, in Quick mode. Entries from packs and from bought campaigns do not count.`}</p>
-        <p className="inline"><Link className="button quiet" href="/homebrew/srd">Browse the SRD (2014 and 2024 rules)</Link> <Link className="button quiet" href="/homebrew/convert">Convert from an older edition</Link></p>
+        <p className="inline"><Link className="button" href="/homebrew/import">Import homebrew <span className="beta-tag">Beta</span></Link> <Link className="button quiet" href="/homebrew/srd">Browse the SRD (2014 and 2024 rules)</Link> <Link className="button quiet" href="/homebrew/convert">Convert from an older edition</Link></p>
       </div>
       {left <= 0 ? <UpgradeHint feature="homebrew" /> : null}
 
       <h2>Make something new</h2>
       <div className="cards brewtypes">
         {Object.entries(TYPES).map(([id, t]) => (
-          <Link key={id} className="ccard" href={'/homebrew/new?type=' + id}><b>{t.label}</b><span>{t.blurb}</span></Link>
+          <Link key={id} className="ccard" href={id === 'class' ? '/homebrew/classes' : id === 'subclass' ? '/homebrew/subclasses' : id === 'race' ? '/homebrew/races' : id === 'background' ? '/homebrew/backgrounds' : id === 'item' ? '/homebrew/items' : id === 'spell' ? '/homebrew/spells' : id === 'feat' ? '/homebrew/feats' : id === 'monster' ? '/homebrew/monsters' : '/homebrew/new?type=' + id}><b>{t.label}</b><span>{t.blurb}</span></Link>
         ))}
       </div>
 
@@ -48,7 +48,7 @@ export default async function Homebrew() {
             {entries.map((e) => (
               <li key={e.id}>
                 <span><Link href={'/homebrew/' + e.id}><b>{e.name}</b></Link> <span className="dim">{TYPES[e.type]?.label ?? e.type} · {e.status}{e.version > 1 ? ' · version ' + e.version : ''}{e.source === 'private' ? ' · private' : ''}{e.origin === 'product' ? ' · came with a purchase' : ''}</span></span>
-                <Link href={'/homebrew/' + e.id}>Edit</Link>
+                <span className="inline"><Link href={'/homebrew/' + e.id}>Edit</Link><DeleteEntryButton id={e.id} name={e.name} /></span>
               </li>
             ))}
           </ul>
