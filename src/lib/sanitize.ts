@@ -44,24 +44,7 @@ const CONTENT: sanitizeHtml.IOptions = {
   },
 };
 
-// The My character form: plain fields the sheet script fills in. No forms, links, or scripts.
-const FORM: sanitizeHtml.IOptions = {
-  ...base,
-  allowedTags: ['section', 'div', 'h2', 'h3', 'h4', 'p', 'span', 'b', 'i', 'em', 'strong', 'small', 'br', 'label', 'input', 'select', 'option', 'textarea', 'button', 'ul', 'li'],
-  allowedAttributes: {
-    '*': ['class', 'style', 'id', 'hidden', 'aria-label', 'data-k', 'title'],
-    input: [{ name: 'type', values: ['text', 'number', 'checkbox'] }, 'min', 'max', 'value', 'placeholder', 'autocomplete', 'inputmode', 'readonly', 'checked'],
-    textarea: ['rows', 'placeholder', 'autocomplete', 'spellcheck', 'readonly'],
-    select: [], option: ['value', 'selected'],
-    button: [{ name: 'type', values: ['button'] }],
-  },
-  transformTags: {
-    button: (tagName, attribs) => ({ tagName, attribs: { ...attribs, type: 'button' } }),
-  },
-};
-
 export const cleanContent = (html: string) => sanitizeHtml(html, CONTENT);
-export const cleanForm = (html: string) => sanitizeHtml(html, FORM);
 
 // One value of a campaign theme (a colour or a font list) as it may appear in a style attribute.
 export const safeCssValue = (v: unknown): string | null => {

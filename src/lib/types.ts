@@ -62,7 +62,6 @@ export type ContentRow = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RuleRow = { kind: string; key: string; sort: number; data: any; phase: string | null };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type CharacterRow = { id: string; owner: string; campaign_id: string; data: any; builder: any; updated_at: string };

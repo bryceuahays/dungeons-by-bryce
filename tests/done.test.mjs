@@ -1,4 +1,6 @@
-// BRIEF section 11, "Done means", plus the before/after session negative rules, as automated tests.
+// The core promises, as automated tests: what a player can and cannot get from the
+// database and from the site, reveal stages, joining, live updates, and roles.
+// They run against the dummy campaign in tests/fixtures (node scripts/seed-fixture.mjs).
 // Run with the app running:  TEST_SITE_URL=<url> npm test   (defaults to http://localhost:3000)
 
 import { test, before, after } from 'node:test';
@@ -7,15 +9,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { admin, anonClient, campaign, cleanup, cookieFor, invite, makeUser, page, wait, BUCKET, ROOT, SITE, SLUG, URL_, ANON } from './helpers.mjs';
+import { DUMMY as seed, FACES, WORDS, RACE_IDS } from './fixtures/dummy-campaign.mjs';
+import { blankV2 } from '../src/lib/rules/engine.ts';
 
-// never, for any player, in any phase
-const FORBIDDEN = [/\bAdo\b/, /Zandrioch/, /Ideas in reserve/, /Still to decide/];
-const leaks = (text) => FORBIDDEN.filter((re) => re.test(text)).map(String);
-// not while the phase is "before" (exact, case-sensitive)
-const BEFORE_FORBIDDEN = ['To be a god', 'to-be-a-god', 'demigod', 'god-slayer', 'Spark', 'Concord', 'Reavers', 'Refusers', 'Unbowed', 'Foundry', 'is dead'];
-const early = (text) => BEFORE_FORBIDDEN.filter((t) => text.includes(t));
-const BEFORE_SLUG = 'to-kill-god';
-const seed = JSON.parse(fs.readFileSync(path.join(ROOT, 'seed', 'to-be-a-god.json'), 'utf8'));
+// never, for any player, at any stage
+const leaks = (text) => WORDS.dmOnly.filter((w) => text.includes(w));
+// not while the stage is "before" (exact, case-sensitive)
+const early = (text) => WORDS.afterOnly.filter((t) => text.includes(t));
+const BEFORE_SLUG = FACES.before.slug;
+const BEFORE_TITLE = FACES.before.title, AFTER_TITLE = FACES.after.title;
+const AFTER_TABS = seed.sections.filter((s) => s.phase === 'after').map((s) => s.slug);
+const lore = (id, phase) => seed.content.find((r) => r.kind === 'race-phase' && r.key === id && r.phase === phase).body;
 
 let C, S, dm, player, other, outsider, originalPhase;
 
@@ -49,7 +53,7 @@ after(async () => {
 test('player: direct queries for DM content return nothing', async () => {
   const all = await player.client.from('content').select('id, visibility, body, title').eq('campaign_id', C.id);
   assert.equal(all.error, null);
-  assert.ok(all.data.length > 30, 'player should still get the player rows');
+  assert.ok(all.data.length > 10, 'player should still get the player rows');
   assert.equal(all.data.filter((r) => r.visibility !== 'player').length, 0);
   assert.deepEqual(leaks(JSON.stringify(all.data)), []);
   const dmOnly = await player.client.from('content').select('id').eq('visibility', 'dm');
@@ -68,7 +72,7 @@ test('player: direct queries for sessions, invites and private tables return not
 });
 
 test('player: cannot read another player\'s character, only the public card', async () => {
-  const mine = await other.client.from('characters').insert({ owner: other.id, campaign_id: C.id, data: { name: 'Secret Keeper', race: 'lorn', cls: 'Wizard', level: 3, tier: 'God', spark: 5, faith: 4, domain: 'Silence', notes: 'private note', ab: { str: 8 } } }).select('id').single();
+  const mine = await other.client.from('characters').insert({ owner: other.id, campaign_id: C.id, data: { ...blankV2(), name: 'Secret Keeper', race: 'Reedfolk', cls: 'Wizard', level: 3, notes: 'private note' } }).select('id').single();
   assert.equal(mine.error, null);
   const peek = await player.client.from('characters').select('*').eq('id', mine.data.id);
   assert.equal(peek.data.length, 0);
@@ -79,7 +83,7 @@ test('player: cannot read another player\'s character, only the public card', as
   const card = cards.data.find((x) => x.id === mine.data.id);
   assert.ok(card, 'party card is visible');
   assert.deepEqual(Object.keys(card).sort(), ['cls', 'id', 'level', 'name', 'owner', 'player', 'race']);
-  assert.ok(!/God|Silence|private note|spark|faith/i.test(JSON.stringify(card)));
+  assert.ok(!/private note/i.test(JSON.stringify(card)));
   const hack = await player.client.from('characters').update({ data: { name: 'hacked' } }).eq('id', mine.data.id).select('id');
   assert.equal((hack.data ?? []).length, 0);
 });
@@ -94,8 +98,6 @@ test('player: cannot change their own role, or write DM tables', async () => {
   assert.equal((upd.data ?? []).length, 0);
   const face = await player.client.from('campaign_faces').insert({ campaign_id: C.id, phase: 'x', slug: 'hacked-face', title: 'x' }).select();
   assert.ok(face.error || (face.data ?? []).length === 0);
-  const priv = await player.client.from('character_private').insert({ character_id: C.id, data: { tier: 'God' } }).select();
-  assert.ok(priv.error || (priv.data ?? []).length === 0);
   const mem = await outsider.client.from('memberships').insert({ user_id: outsider.id, campaign_id: C.id }).select();
   assert.ok(mem.error || (mem.data ?? []).length === 0, 'cannot join without a code');
 });
@@ -122,13 +124,13 @@ test('signed-out visitors get nothing from the API, except the public demo campa
 
 const playerRoutes = async () => {
   const sections = (await player.client.from('sections').select('slug').eq('campaign_id', C.id)).data.map((s) => s.slug);
-  return { sections, routes: [...sections.map((s) => `/c/${S}/${s}`), `/c/${S}/builder`, `/c/${S}/races?race=lorn`, `/c/${S}`, '/campaigns', '/characters', '/account'] };
+  return { sections, routes: [...sections.map((s) => `/c/${S}/${s}`), `/c/${S}/peoples?race=${RACE_IDS[0]}`, `/c/${S}`, '/campaigns', '/characters', '/account'] };
 };
 
 test('player: no campaign route delivers DM words, in HTML or in the page data', async () => {
   const { sections, routes } = await playerRoutes();
-  assert.deepEqual(sections.sort(), ['campaign', 'combat', 'overview', 'races', 'sheet']);
-  await player.client.from('characters').insert({ owner: player.id, campaign_id: C.id, data: { name: 'Leak Tester', race: 'corrin', cls: 'Fighter', level: 1, t: 1, ab: {} } });
+  assert.deepEqual(sections.sort(), ['campaign', 'combat', 'overview', 'peoples', 'sheet']);
+  await player.client.from('characters').insert({ owner: player.id, campaign_id: C.id, data: { ...blankV2(), name: 'Leak Tester', t: 1 } });
   for (const r of routes) {
     const html = await page(r, player.session);
     assert.ok(html.status === 200 || (r === `/c/${S}` && html.status >= 300 && html.status < 400), r + ' should load for a player');
@@ -137,11 +139,11 @@ test('player: no campaign route delivers DM words, in HTML or in the page data',
     assert.deepEqual(leaks(await res.text()), [], 'leak in page data of ' + r);
   }
   const overview = await page(`/c/${S}/overview`, player.session);
-  assert.ok(/To Kill God/.test(overview.text) && /Voth/.test(overview.text), 'player overview has the before wording');
+  assert.ok(overview.text.includes(BEFORE_TITLE) && overview.text.includes('Queen of Reeds'), 'player overview has the before wording');
 });
 
 test('player: DM routes are closed', async () => {
-  for (const r of [`/c/${S}/secrets`, `/c/${S}/sessions`, `/c/${S}/players`, `/c/${S}/session/-1`]) {
+  for (const r of [`/c/${S}/secrets`, `/c/${S}/sessions`, `/c/${S}/players`, `/c/${S}/session/0`]) {
     const res = await page(r, player.session);
     assert.equal(res.status, 404, r);
   }
@@ -165,19 +167,19 @@ test('no JavaScript or CSS bundle contains DM words or anything held back until 
 test('DM: sees everything, with the real title and a label on what players cannot see yet', async () => {
   const overview = await page(`/c/${S}/overview`, dm.session);
   assert.equal(overview.status, 200);
-  assert.ok(/The two gods/.test(overview.text) && /\bAdo\b/.test(overview.text));
-  assert.ok(overview.text.includes('To be a god') && overview.text.includes('To Kill God'), 'real title with the before title beside it');
-  assert.ok(overview.text.includes('Hidden from players until after session negative'));
-  assert.ok(overview.text.includes('Shown to players only before session negative'));
-  assert.ok(/<title>To be a god/.test(overview.text));
-  for (const r of ['secrets', 'divinity', 'factions', 'session/-1', 'players', 'manage']) assert.equal((await page(`/c/${S}/${r}`, dm.session)).status, 200, r);
-  const races = await page(`/c/${S}/races?race=sough`, dm.session);
-  assert.ok(races.text.includes('Voth used to burn back the Elder fields') && races.text.includes('Voth burns back the Elder fields'), 'the DM sees both histories');
+  assert.ok(overview.text.includes('DM only: what really happened') && overview.text.includes('Odrin Vale'));
+  assert.ok(overview.text.includes(AFTER_TITLE) && overview.text.includes(BEFORE_TITLE), 'real title with the before title beside it');
+  assert.ok(overview.text.includes(WORDS.afterLabel));
+  assert.ok(overview.text.includes(WORDS.beforeLabel));
+  assert.ok(overview.text.includes('<title>' + AFTER_TITLE));
+  for (const r of ['secrets', ...AFTER_TABS, 'session/0', 'players', 'manage']) assert.equal((await page(`/c/${S}/${r}`, dm.session)).status, 200, r);
+  const races = await page(`/c/${S}/peoples?race=reedfolk`, dm.session);
+  assert.ok(races.text.includes(lore('reedfolk', 'after').history) && races.text.includes(lore('reedfolk', 'before').history), 'the DM sees both histories');
   // the DM can use the real address too: it sends them to the current one
   const real = await page(`/c/${SLUG}/overview`, dm.session);
   assert.ok(real.status >= 300 && real.status < 400 && real.location.endsWith('/c/' + S));
   const hub = await page('/campaigns', dm.session);
-  assert.ok(hub.text.includes('To be a god') && hub.text.includes('To Kill God'));
+  assert.ok(hub.text.includes(AFTER_TITLE) && hub.text.includes(BEFORE_TITLE));
 });
 
 test('DM: "view as player" receives exactly the player version for the current phase', async () => {
@@ -186,14 +188,15 @@ test('DM: "view as player" receives exactly the player version for the current p
   assert.equal(res.status, 200);
   assert.deepEqual(leaks(res.text), []);
   assert.deepEqual(early(res.text), []);
-  assert.ok(/To Kill God/.test(res.text) && !/Hidden from players/.test(res.text));
-  for (const r of ['secrets', 'divinity', 'factions']) assert.equal((await page(`/c/${S}/${r}`, dm.session, cookie)).status, 404, r);
+  assert.ok(res.text.includes(BEFORE_TITLE) && !/Hidden from players/.test(res.text));
+  for (const r of ['secrets', ...AFTER_TABS]) assert.equal((await page(`/c/${S}/${r}`, dm.session, cookie)).status, 404, r);
 });
 
 // ------------------------------------------------------------------ signed out
 
 test('signed out: every page but the landing and sign-in pages redirects to sign-in', async () => {
-  for (const r of ['/campaigns', `/c/${S}`, `/c/${S}/overview`, `/c/${S}/media/v/human.mp4`, '/characters']) {
+  assert.equal((await page(`/c/${S}/media/v/reedfolk.jpg`, null)).status, 401, 'a picture is refused outright');
+  for (const r of ['/campaigns', `/c/${S}`, `/c/${S}/overview`, '/characters']) {
     const res = await page(r, null);
     assert.ok(res.status >= 300 && res.status < 400 && /sign-in/.test(res.location || ''), r);
   }
@@ -201,11 +204,11 @@ test('signed out: every page but the landing and sign-in pages redirects to sign
   assert.equal((await page('/sign-in', null)).status, 200);
 });
 
-// ------------------------------------------------------------------ phase and media
+// ------------------------------------------------------------------ stages and pictures
 
 test('phase "before": a player cannot obtain a working URL for any _after file', async () => {
   const afterFiles = (await admin.from('media').select('key, path').eq('campaign_id', C.id).eq('phase', 'after')).data;
-  assert.ok(afterFiles.length >= 8, 'seed has the _after files');
+  assert.ok(afterFiles.length >= 3, 'the fixture has its _after files');
   const rows = await player.client.from('media').select('path, phase').eq('campaign_id', C.id);
   assert.ok(rows.data.length > 0);
   assert.ok(!rows.data.some((r) => r.phase === 'after' || /_after\./.test(r.path)));
@@ -226,40 +229,33 @@ test('phase "before": a player cannot obtain a working URL for any _after file',
   }
   const list = await player.client.storage.from(BUCKET).list(C.id + '/v');
   assert.equal((list.data ?? []).length, 0);
-  const ok = await page(`/c/${S}/media/v/aarakocra.mp4`, player.session);
+  const ok = await page(`/c/${S}/media/v/kilnborn.jpg`, player.session);
   assert.equal(ok.status, 302);
   const file = await fetch(ok.location, { headers: { range: 'bytes=0-99' } });
   assert.ok(file.status === 200 || file.status === 206);
-  assert.equal((await page(`/c/${S}/media/v/human.mp4`, outsider.session)).status, 404);
+  assert.equal((await page(`/c/${S}/media/v/reedfolk.jpg`, outsider.session)).status, 404);
 });
-
-// ------------------------------------------------------------------ before session negative (items 20 and 21)
 
 test('phase "before": players get no after-only tabs, rows, title, or address', async () => {
   assert.equal(S, BEFORE_SLUG);
   // what the database gives a player directly
   const mine = await player.client.from('campaigns').select('*');
   assert.equal(mine.data.length, 1);
-  assert.deepEqual([mine.data[0].title, mine.data[0].slug], ['To Kill God', BEFORE_SLUG]);
+  assert.deepEqual([mine.data[0].title, mine.data[0].slug], [BEFORE_TITLE, BEFORE_SLUG]);
   assert.deepEqual(early(JSON.stringify(mine.data)), []);
   const tabs = (await player.client.from('sections').select('slug, title, phase')).data;
-  assert.ok(!tabs.some((t) => ['divinity', 'factions'].includes(t.slug) || t.phase === 'after'));
+  assert.ok(!tabs.some((t) => AFTER_TABS.includes(t.slug) || t.phase === 'after'));
   const content = (await player.client.from('content').select('*').eq('campaign_id', C.id)).data;
   assert.equal(content.filter((r) => r.phase === 'after').length, 0);
-  assert.equal(content.filter((r) => ['divinity', 'factions'].includes(r.section)).length, 0);
-  assert.equal(content.filter((r) => r.kind === 'faction' || r.kind === 'sheet-slot').length, 0, 'factions and the divinity form parts are not queryable');
+  assert.equal(content.filter((r) => AFTER_TABS.includes(r.section)).length, 0);
+  assert.equal(content.filter((r) => r.kind === 'faction').length, 0, 'factions are not queryable');
   assert.deepEqual(early(JSON.stringify(content)), [], 'player-readable content');
-  const rules = [];
-  for (let from = 0; ; from += 1000) { const { data } = await player.client.from('rules').select('*').eq('campaign_id', C.id).range(from, from + 999); rules.push(...data); if (data.length < 1000) break; }
-  assert.equal(rules.filter((r) => r.phase === 'after').length, 0);
-  assert.equal(rules.filter((r) => ['divine', 'sheet-private', 'party-labels'].includes(r.kind)).length, 0);
-  assert.deepEqual(early(JSON.stringify(rules)), [], 'player-readable rules');
   assert.deepEqual(early(JSON.stringify((await player.client.from('media').select('*')).data)), []);
   assert.equal((await player.client.rpc('campaign_alias', { p_slug: SLUG })).data, null, 'the real address is not confirmed to a player');
   assert.equal((await player.client.rpc('join_campaign', { p_code: await invite(C.id) })).data, BEFORE_SLUG);
 
   // what the site gives a player
-  for (const r of [`/c/${S}/divinity`, `/c/${S}/factions`, `/c/${SLUG}`, `/c/${SLUG}/overview`, `/c/${SLUG}/races`, `/c/${SLUG}/media/v/human.mp4`]) {
+  for (const r of [...AFTER_TABS.map((t) => `/c/${S}/${t}`), `/c/${SLUG}`, `/c/${SLUG}/overview`, `/c/${SLUG}/peoples`, `/c/${SLUG}/media/v/reedfolk.jpg`]) {
     assert.equal((await page(r, player.session)).status, 404, r + ' must be not-found for a player');
   }
   const { routes } = await playerRoutes();
@@ -269,103 +265,67 @@ test('phase "before": players get no after-only tabs, rows, title, or address', 
     const res = await fetch(SITE + r, { headers: { cookie: cookieFor(player.session), RSC: '1' }, redirect: 'manual' });
     assert.deepEqual(early(await res.text()), [], 'after-only words in page data of ' + r);
     if (r.startsWith('/c/') && html.status === 200) {
-      assert.ok(!/href="[^"]*\/(divinity|factions)"/.test(html.text), 'no Divinity or Factions in the tab bar of ' + r);
-      if (!r.includes('/builder')) assert.ok(/<title>To Kill God/.test(html.text), 'browser tab title on ' + r);
+      assert.ok(!new RegExp(`href="[^"]*/(${AFTER_TABS.join('|')})"`).test(html.text), 'no after-only tab in the tab bar of ' + r);
+      assert.ok(html.text.includes('<title>' + BEFORE_TITLE), 'browser tab title on ' + r);
     }
   }
   const hub = await page('/campaigns', player.session);
-  assert.ok(hub.text.includes('To Kill God') && hub.text.includes('Two hundred mortals have decided that is long enough.'));
+  assert.ok(hub.text.includes(BEFORE_TITLE) && hub.text.includes('This year the Queen of Reeds opens it herself.'));
   const overview = await page(`/c/${S}/overview`, player.session);
-  assert.ok(overview.text.includes('4 to 6 players. Level 15. One session of 3 to 4 hours. Tragic and epic.'));
-  assert.ok(!/Who holds power|The factions|The dead god/.test(overview.text));
+  assert.ok(overview.text.includes('For 3 to 5 players. Level 3.'));
+  assert.ok(!/The empty seat|Who holds the valley/.test(overview.text));
   const camp = await page(`/c/${S}/campaign`, player.session);
-  assert.ok(camp.text.includes('Session negative: To Kill God') && camp.text.includes('Table rules') && !camp.text.includes('The road to session one'));
-  // my character: no divinity block, domain field, or button; and the fields are not sent
-  const sheetRsc = await (await fetch(SITE + `/c/${S}/sheet`, { headers: { cookie: cookieFor(player.session), RSC: '1' } })).text();
-  assert.ok(sheetRsc.includes('Who you are') && !/Divinity|addDivine|data-k=\\?"(tier|spark|faith|domain)/.test(sheetRsc));
-  assert.ok(!/"(tier|spark|faith|domain)"/.test(sheetRsc), 'private sheet fields are not sent');
+  assert.ok(camp.text.includes('Opening night') && camp.text.includes('Table rules') && !camp.text.includes('The road ahead'));
 });
 
-test('phase "before": each of the twelve races shows the present-tense history, not the past-tense one', async () => {
-  const phased = seed.content.filter((r) => r.kind === 'race-phase');
-  const ids = seed.content.filter((r) => r.kind === 'race').map((r) => r.key);
-  assert.equal(ids.length, 12);
-  for (const id of ids) {
-    const now = phased.find((r) => r.key === id && r.phase === 'before').body;
-    const later = phased.find((r) => r.key === id && r.phase === 'after').body;
-    const res = await page(`/c/${S}/races?race=${id}`, player.session);
+test('phase "before": each race shows the present-tense history, not the past-tense one', async () => {
+  assert.equal(RACE_IDS.length, 3);
+  for (const id of RACE_IDS) {
+    const now = lore(id, 'before'), later = lore(id, 'after');
+    const res = await page(`/c/${S}/peoples?race=${id}`, player.session);
     assert.equal(res.status, 200);
-    assert.ok(res.text.includes('<h4>Under Voth </h4><p>' + now.voth + '</p>'), id + ': before history under "Under Voth"');
-    assert.ok(!res.text.includes(later.voth), id + ': past-tense history must not be sent');
+    assert.ok(res.text.includes('<h4>History </h4><p>' + now.history.replace(/'/g, '&#39;') + '</p>') || res.text.includes('<h4>History </h4><p>' + now.history + '</p>'), id + ': before history under "History"');
+    assert.ok(!res.text.includes(later.history), id + ': past-tense history must not be sent');
     if (later.now) assert.ok(!res.text.includes(later.now), id + ': "Now" must not be sent');
-    assert.ok(!res.text.includes(later.slayer), id + ': the god-slayer section must not be sent');
+    assert.ok(!res.text.includes(later.part), id + ': their part in the story must not be sent');
     for (const k of later.keys ?? []) if (!(now.keys ?? []).includes(k)) assert.ok(!res.text.includes(k), `${id}: key line "${k}" must not be sent`);
   }
 });
 
-// ------------------------------------------------------------------ builder (item 17)
-
-test('builder follows the phase: level 15, before lines, no after trait text or bonus hit points', async () => {
-  const read = async () => (await (await fetch(SITE + `/c/${S}/builder`, { headers: { cookie: cookieFor(player.session), RSC: '1' } })).text());
-  const b = await read();
-  assert.ok(b.includes('Your DM is running the opening one-shot at level 15.') && b.includes('"defaultLevel":15') && b.includes('"vitality":false'));
-  assert.ok(b.includes("Bird-folk who are god's eyes.") && !b.includes('dead god'));
-  assert.ok(!b.includes('This applies to Sough') && !b.includes('The campaign starts at level 1.'));
-  await setPhase('after');
-  try {
-    const a = await read();
-    assert.ok(a.includes('The campaign starts at level 1.') && a.includes('"defaultLevel":1') && a.includes('"vitality":true'));
-    assert.ok(a.includes("Bird-folk who were the dead god's eyes.") && a.includes('This applies to Sough god-slayers too.'));
-    const via = await page(`/c/${S}/media/v/aarakocra.mp4`, player.session);
-    assert.ok(/_after\./.test(via.location));
-  } finally { await setPhase('before'); }
-});
-
-// ------------------------------------------------------------------ the flip (item 22)
+// ------------------------------------------------------------------ the flip
 
 test('flip to "after": everything appears; flip back: it all hides again', async () => {
-  const mine = (await player.client.from('characters').select('id').eq('owner', player.id).limit(1)).data[0];
   await setPhase('after');
   try {
     assert.equal(S, SLUG);
     const c = (await player.client.from('campaigns').select('title, slug, tagline')).data[0];
-    assert.deepEqual([c.title, c.slug], ['To be a god', SLUG]);
-    assert.ok(c.tagline.startsWith('The dragon god of the universe is dead.'));
+    assert.deepEqual([c.title, c.slug], [AFTER_TITLE, SLUG]);
+    assert.ok(c.tagline.startsWith('The Queen of Reeds has vanished'));
     const tabs = (await player.client.from('sections').select('slug')).data.map((t) => t.slug).sort();
-    assert.deepEqual(tabs, ['campaign', 'combat', 'divinity', 'factions', 'overview', 'races', 'sheet']);
+    assert.deepEqual(tabs, ['campaign', 'combat', 'factions', 'overview', 'peoples', 'sheet', 'the-seat']);
     // the before address now redirects
     const old = await page(`/c/${BEFORE_SLUG}/overview`, player.session);
     assert.ok(old.status >= 300 && old.status < 400 && old.location.endsWith('/c/' + SLUG), 'before address redirects');
     const overview = await page(`/c/${S}/overview`, player.session);
-    assert.ok(/<title>To be a god/.test(overview.text) && overview.text.includes('The dead god') && overview.text.includes('Who holds power') && overview.text.includes('The Concord'));
-    assert.ok(!overview.text.includes('Two hundred mortals have decided') && !/Hidden from players|Shown to players/.test(overview.text));
+    assert.ok(overview.text.includes('<title>' + AFTER_TITLE) && overview.text.includes('The empty seat') && overview.text.includes('Who holds the valley') && overview.text.includes('The Reedwardens'));
+    assert.ok(!overview.text.includes('One evening in the valley') && !/Hidden from players|Shown to players/.test(overview.text));
     assert.deepEqual(leaks(overview.text), []);
-    for (const r of ['divinity', 'factions']) { const res = await page(`/c/${S}/${r}`, player.session); assert.equal(res.status, 200, r); assert.deepEqual(leaks(res.text), []); }
+    for (const r of AFTER_TABS) { const res = await page(`/c/${S}/${r}`, player.session); assert.equal(res.status, 200, r); assert.deepEqual(leaks(res.text), []); }
     const camp = await page(`/c/${S}/campaign`, player.session);
-    assert.ok(camp.text.includes('The road to session one') && !camp.text.includes('Session negative: To Kill God'));
-    const sough = await page(`/c/${S}/races?race=sough`, player.session);
-    assert.ok(sough.text.includes('Voth used to burn back the Elder fields') && !sough.text.includes('Voth burns back the Elder fields') && sough.text.includes('As god-slayers'));
-    // my character has its divinity block again, and the fields save and come back
-    const sheet = await (await fetch(SITE + `/c/${S}/sheet?c=${mine.id}`, { headers: { cookie: cookieFor(player.session), RSC: '1' } })).text();
-    assert.ok(sheet.includes('Divinity') && sheet.includes('addDivine'));
-    const cur = (await player.client.from('characters').select('data').eq('id', mine.id).single()).data.data;
-    await player.client.from('characters').update({ data: { ...cur, tier: 'Demigod', spark: 2, domain: 'Tides' } }).eq('id', mine.id);
-    const stored = (await player.client.from('character_private').select('data').eq('character_id', mine.id).single()).data.data;
-    assert.deepEqual([stored.tier, stored.spark, stored.domain], ['Demigod', 2, 'Tides']);
-    const plain = (await player.client.from('characters').select('data').eq('id', mine.id).single()).data.data;
-    assert.ok(!('tier' in plain) && !('spark' in plain), 'private fields are stored apart from the sheet');
+    assert.ok(camp.text.includes('The road ahead') && !camp.text.includes('Opening night'));
+    const reed = await page(`/c/${S}/peoples?race=reedfolk`, player.session);
+    assert.ok(reed.text.includes(lore('reedfolk', 'after').history) && !reed.text.includes(lore('reedfolk', 'before').history) && reed.text.includes('Their part in the story'));
+    // pictures follow the stage too
+    const via = await page(`/c/${S}/media/v/kilnborn.jpg`, player.session);
+    assert.ok(/_after\./.test(via.location));
   } finally { await setPhase('before'); }
 
-  // back to before: hidden again, and the stored values are kept but not readable by the player
+  // back to before: hidden again
   assert.equal(S, BEFORE_SLUG);
   assert.equal((await page(`/c/${SLUG}/overview`, player.session)).status, 404);
-  assert.equal((await page(`/c/${S}/divinity`, player.session)).status, 404);
+  for (const t of AFTER_TABS) assert.equal((await page(`/c/${S}/${t}`, player.session)).status, 404);
   assert.deepEqual(early((await page(`/c/${S}/overview`, player.session)).text), []);
-  assert.equal((await player.client.from('character_private').select('data')).data.length, 0);
-  // a save while it is hidden does not wipe what was stored
-  await player.client.from('characters').update({ data: { name: 'Leak Tester', race: 'corrin', cls: 'Fighter', level: 2, t: 2, ab: {}, tier: '', spark: '' } }).eq('id', mine.id);
-  const kept = (await dm.client.from('character_private').select('data').eq('character_id', mine.id).single()).data.data;
-  assert.deepEqual([kept.tier, kept.spark, kept.domain], ['Demigod', 2, 'Tides'], 'stored values are kept');
+  assert.ok(/_before\./.test((await page(`/c/${S}/media/v/kilnborn.jpg`, player.session)).location));
 });
 
 // ------------------------------------------------------------------ joining
@@ -376,7 +336,7 @@ test('a player with no membership sees no campaigns', async () => {
   for (const table of ['content', 'rules', 'media', 'sections']) assert.equal((await outsider.client.from(table).select('id').limit(5)).data.length, 0, table);
   const html = await page('/campaigns', outsider.session);
   assert.equal(html.status, 200);
-  assert.ok(!/To be a god|To Kill God/.test(html.text) && /not in a campaign yet/.test(html.text));
+  assert.ok(!html.text.includes(AFTER_TITLE) && !html.text.includes(BEFORE_TITLE) && /not in a campaign yet/.test(html.text));
   assert.equal((await page(`/c/${S}/overview`, outsider.session)).status, 404);
   assert.equal((await outsider.client.rpc('campaign_alias', { p_slug: BEFORE_SLUG })).data, null);
   const bad = await outsider.client.rpc('join_campaign', { p_code: 'NOPE1234' });
@@ -410,7 +370,7 @@ test('sign up, join by code, build a character, edit it: the DM sees it live', a
   const code = await invite(C.id, 1);
   assert.equal((await fresh.rpc('join_campaign', { p_code: code })).data, S);
   assert.equal((await fresh.from('campaigns').select('id')).data.length, 1);
-  assert.equal((await page(`/c/${S}/builder`, up.data.session)).status, 200);
+  assert.equal((await page(`/c/${S}/sheet`, up.data.session)).status, 200);
 
   const events = [];
   const dmLive = createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -423,20 +383,20 @@ test('sign up, join by code, build a character, edit it: the DM sees it live', a
   await ready;
   await wait(4000); // Realtime needs a moment after SUBSCRIBED before it delivers table changes
 
-  const ins = await fresh.from('characters').insert({ owner: up.data.user.id, campaign_id: C.id, data: { name: '', level: 1 }, builder: { race: 'corrin', cls: 'fighter', name: 'Brannoch' } }).select('id').single();
+  const ins = await fresh.from('characters').insert({ owner: up.data.user.id, campaign_id: C.id, data: { ...blankV2(), name: '' } }).select('id').single();
   assert.equal(ins.error, null);
-  const save = await fresh.from('characters').update({ data: { t: Date.now(), name: 'Brannoch', race: 'corrin', cls: 'Fighter', level: 15, hp: 120, hpMax: 120, ab: { str: 16 } } }).eq('id', ins.data.id).select('id');
+  const save = await fresh.from('characters').update({ data: { ...blankV2(), t: Date.now(), name: 'Brannoch', level: 3, hp: 24, hpMax: 24 } }).eq('id', ins.data.id).select('id');
   assert.equal(save.data.length, 1);
-  const edit = await fresh.from('characters').update({ data: { t: Date.now(), name: 'Brannoch', race: 'corrin', cls: 'Fighter', level: 15, hp: 77, hpMax: 120, ab: { str: 16 } } }).eq('id', ins.data.id).select('id');
+  const edit = await fresh.from('characters').update({ data: { ...blankV2(), t: Date.now(), name: 'Brannoch', level: 3, hp: 17, hpMax: 24 } }).eq('id', ins.data.id).select('id');
   assert.equal(edit.data.length, 1);
 
-  for (let i = 0; i < 100 && !events.some((e) => e.new?.data?.hp === 77); i++) await wait(250);
+  for (let i = 0; i < 100 && !events.some((e) => e.new?.data?.hp === 17); i++) await wait(250);
   await dmLive.removeAllChannels();
   assert.ok(events.some((e) => e.eventType === 'INSERT' && e.new.id === ins.data.id), 'DM received the new character live');
-  assert.ok(events.some((e) => e.eventType === 'UPDATE' && e.new.data.hp === 77), 'DM received the edit live, without a reload');
+  assert.ok(events.some((e) => e.eventType === 'UPDATE' && e.new.data.hp === 17), 'DM received the edit live, without a reload');
 
   const full = await dm.client.from('characters').select('data').eq('id', ins.data.id).single();
-  assert.equal(full.data.data.hp, 77);
+  assert.equal(full.data.data.hp, 17);
   const tab = await page(`/c/${S}/players`, dm.session);
   assert.equal(tab.status, 200);
   assert.ok(/Brannoch/.test(tab.text));
@@ -455,8 +415,8 @@ test('a player listening on Realtime does not receive other players\' sheets', a
       .subscribe((s) => { if (s === 'SUBSCRIBED') resolve(); if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') reject(new Error(s)); });
   });
   await wait(1500);
-  const row = await other.client.from('characters').insert({ owner: other.id, campaign_id: C.id, data: { name: 'Hidden', tier: 'Demigod', spark: 2 } }).select('id').single();
-  await other.client.from('characters').update({ data: { name: 'Hidden', tier: 'God', spark: 6 } }).eq('id', row.data.id);
+  const row = await other.client.from('characters').insert({ owner: other.id, campaign_id: C.id, data: { ...blankV2(), name: 'Hidden' } }).select('id').single();
+  await other.client.from('characters').update({ data: { ...blankV2(), name: 'Hidden', level: 2 } }).eq('id', row.data.id);
   await wait(4000);
   await spy.removeAllChannels();
   assert.ok(!events.some((e) => e.new && e.new.id === row.data.id), 'another player\'s sheet arrived over Realtime');
@@ -617,10 +577,10 @@ test('any account can create a campaign and is its DM; in other campaigns it is 
   assert.ok((await player.client.from('rules').insert({ campaign_id: mine.id, kind: 'class', key: 'evil', data: { feats: [[1, 'x', 'Free', { $fn: '()=>fetch("https://example.com")' }]] } }).select()).error, 'only the Head DM writes rules');
   assert.ok((await other.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id })).error, 'only the DM of the new campaign can copy rules into it');
   assert.ok((await player.client.rpc('copy_campaign_rules', { src: mine.id, dst: C.id })).error, 'and never into a campaign they do not run');
-  // the rules of "To be a god" are private to its owner: a player in it cannot copy them into their own campaign
+  // private rules stay with their owner: a player in a campaign cannot copy them into their own
   assert.ok((await player.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id })).error, 'private rules cannot be copied by a member');
   assert.equal((await admin.from('rules').select('id', { count: 'exact', head: true }).eq('campaign_id', mine.id)).count, 0);
-  { const b = await page(`/c/${mine.slug}/builder`, other.session); assert.ok(b.status >= 300 && b.status < 400 && b.location.endsWith("/sheet"), "a campaign without its own rule set uses the standard sheet"); }
+  assert.equal((await page(`/c/${mine.slug}/builder`, other.session)).status, 404, 'the old builder address is gone');
 
   // deleting: only the owner (or the Head DM); never someone else's campaign
   assert.ok((await other.client.rpc('delete_campaign', { c: mine.id })).error);

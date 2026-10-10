@@ -7,12 +7,10 @@ import { renderParty } from '@/islands/party';
 type Row = { id: string; owner: string; data: any; player?: string };
 
 // The DM's Players tab. Sheets update the moment a player changes theirs.
-// `labels` and the private fields come from the database and are only ever sent to the DM.
-export function PartyLive({ campaignId, initial, initialPrivate, labels, races, names }: {
-  campaignId: string; initial: Row[]; initialPrivate: Record<string, any>; labels: any; races: any[]; names: Record<string, string>;
+export function PartyLive({ campaignId, initial, races, names }: {
+  campaignId: string; initial: Row[]; races: any[]; names: Record<string, string>;
 }) {
   const [rows, setRows] = useState<Row[]>(initial);
-  const [priv, setPriv] = useState<Record<string, any>>(initialPrivate);
   const [ask, setAsk] = useState('');
   const [live, setLive] = useState(false);
 
@@ -20,11 +18,6 @@ export function PartyLive({ campaignId, initial, initialPrivate, labels, races, 
     const supabase = supabaseBrowser();
     let gone = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
-    // the private part of a sheet is stored apart from it, so fetch it when a sheet changes
-    const refreshPrivate = async (id: string) => {
-      const { data } = await supabase.from('character_private').select('data').eq('character_id', id).maybeSingle();
-      if (!gone && data) setPriv((p) => ({ ...p, [id]: data.data }));
-    };
     // Realtime checks row-level security with the DM's own token, so the token has to
     // be in place before the channel joins.
     (async () => {
@@ -35,7 +28,6 @@ export function PartyLive({ campaignId, initial, initialPrivate, labels, races, 
       channel = supabase
         .channel('party-' + campaignId)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'characters', filter: 'campaign_id=eq.' + campaignId }, (payload: any) => {
-          if (payload.eventType !== 'DELETE') refreshPrivate(payload.new.id);
           setRows((prev) => {
             if (payload.eventType === 'DELETE') return prev.filter((r) => r.id !== payload.old.id);
             const row = payload.new as Row;
@@ -54,8 +46,8 @@ export function PartyLive({ campaignId, initial, initialPrivate, labels, races, 
   }, [campaignId]);
 
   const html = useMemo(
-    () => renderParty(rows.map((r) => ({ ...r, data: { ...r.data, ...(priv[r.id] ?? {}) }, player: names[r.owner] || r.player })), races, ask, labels),
-    [rows, priv, races, ask, names, labels],
+    () => renderParty(rows.map((r) => ({ ...r, player: names[r.owner] || r.player })), races, ask),
+    [rows, races, ask, names],
   );
 
   async function onClick(e: React.MouseEvent<HTMLDivElement>) {

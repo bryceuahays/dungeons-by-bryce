@@ -88,8 +88,6 @@ test('the official entries work on a sheet, in the class table, and as stat bloc
 });
 
 test('a campaign chooses its rules version; existing campaigns keep the 2014 rules', async () => {
-  const tbg = await campaign();
-  assert.equal(tbg.settings.rules, '2014');
   const demo = (await admin.from('campaigns').select('settings').eq('is_demo', true).single()).data;
   assert.equal(demo.settings.rules, '2014');
   const c = await makeCampaign(pro, 'Rules Realm', { settings: { rules: '2024' } });

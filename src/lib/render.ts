@@ -6,8 +6,8 @@ import { videoSlot } from './video';
 // The templates below are the source sites' own render functions, fed from the database.
 //
 // opts.label is only passed for the DM. It turns a phase into the small note that marks
-// what players cannot see yet ("Hidden from players until after session negative") or
-// only see for now ("Shown to players only before session negative").
+// what players cannot see yet ("Hidden from players until after the fair") or
+// only see for now ("Shown to players only before the fair").
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type RenderOpts = { base: string; race?: string; label?: (phase: string | null | undefined) => string };
@@ -76,14 +76,14 @@ function raceDetail(r: any, shown: boolean, opts: RenderOpts) {
     ${sec('Look', r.look ? p(r.look) : '')}
     ${sec('Life cycle', r.life ? `<ul>${li(r.life)}</ul>` : '')}
     ${sec('Culture', culture.length ? `<ul>${li(culture)}</ul>` : '')}
-    ${sec('Under Voth', phasedText(r, 'voth', opts, p))}
+    ${sec('History', phasedText(r, 'history', opts, p))}
     ${sec('Now', r.now ? p(r.now) : '', own('now'))}
-    ${sec('As god-slayers', r.slayer ? p(r.slayer) : '', own('slayer'))}
+    ${sec('Their part in the story', r.part ? p(r.part) : '', own('part'))}
     ${r.dm ? `<div class="secret"><span class="tag">DM only</span><div class="sb"><ul>${li(r.dm)}</ul></div></div>` : ''}
     <h4>Traits</h4>
-    <ul class="traits"><li><b>Ability scores.</b> +2 to one and +1 to another.</li>
+    <ul class="traits">${r.asi ? `<li><b>Ability scores.</b> ${r.asi}</li>` : ''}
     ${(r.traits || []).map((t: string[]) => `<li><b>${t[0]}.</b> ${t[1]}${t[3] ? ' ' + note(opts, r._mainPhase) : ''}${t[2] ? ` <span class="src">${t[2]}.</span>` : ''}</li>`).join('')}
-    <li><b>Level 7.</b> ${r.up}</li></ul></div>`;
+    ${r.up ? `<li><b>Upgrade.</b> ${r.up}</li>` : ''}</ul></div>`;
 }
 
 function raceBrowser(R: any[], opts: RenderOpts) {
@@ -94,9 +94,9 @@ function raceBrowser(R: any[], opts: RenderOpts) {
     `</div><div id="raceDetail">${R.map((r) => raceDetail(r, r.id === sel, opts)).join('')}</div>`;
 }
 
-const upTable = (R: any[]) => '<div class="scroll"><table><tr><th>Race</th><th>Level 7 upgrade</th></tr>' + R.map((r) => `<tr><td>${r.name}</td><td>${r.up}</td></tr>`).join('') + '</table></div>';
+const upTable = (R: any[]) => '<div class="scroll"><table><tr><th>Race</th><th>Upgrade</th></tr>' + R.filter((r) => r.up).map((r) => `<tr><td>${r.name}</td><td>${r.up}</td></tr>`).join('') + '</table></div>';
 
-const DATA_KINDS = new Set(['race', 'race-phase', 'race-dm', 'faction', 'faction-dm', 'sheet-template', 'sheet-slot']);
+const DATA_KINDS = new Set(['race', 'race-phase', 'race-dm', 'faction', 'faction-dm']);
 
 export function renderBlock(r: ContentRow, lore: { races: any[]; factions: any[] }, opts: RenderOpts): string {
   const b = r.body || {};

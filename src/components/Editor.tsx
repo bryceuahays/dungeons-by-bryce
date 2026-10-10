@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState, useTransition } from 'react';
-import { deleteContentRow, duplicateContentRow, moveContentRow, saveContentRow, saveSessionBeat, saveSessionNotes } from '@/app/c/[slug]/actions';
+import { deleteContentRow, duplicateContentRow, moveContentRow, saveContentRow, saveSessionNotes } from '@/app/c/[slug]/actions';
 import type { ContentRow } from '@/lib/types';
 
 // ---------------------------------------------------------------- rich text
@@ -34,8 +34,8 @@ const LABELS: Record<string, string> = {
   n: 'Name', who: 'Who they are', want: 'What they want', members: 'Members', leader: 'Leader', res: 'Resources', resDm: 'Resources (DM addition)',
   idle: 'If the players do nothing', small: 'Small moves (one per line)', big: 'Big development', dm: 'DM notes (one per line)',
   id: 'Id (do not change once characters use it)', name: 'Name', pron: 'Pronunciation', kind: 'Origin', src: 'Source editions', color: 'Colour', size: 'Size', speed: 'Speed',
-  line: 'One-line summary', keys: 'Key points (one per line)', look: 'Look', life: 'Life cycle (one per line)', culture: 'Culture (one per line)', voth: 'Under Voth', now: 'Now',
-  slayer: 'Their part in the one-shot', traits: 'Traits (one per line: name | rule | source)', up: 'Level 7 upgrade', sug: 'Suggested lore', glyph: 'Glyph (SVG shapes)',
+  line: 'One-line summary', keys: 'Key points (one per line)', look: 'Look', life: 'Life cycle (one per line)', culture: 'Culture (one per line)', history: 'History', now: 'Now', asi: 'Ability scores',
+  part: 'Their part in the story', traits: 'Traits (one per line: name | rule | source)', up: 'Upgrade', sug: 'Suggested lore', glyph: 'Glyph (SVG shapes)',
 };
 
 function Fields({ value, onChange }: { value: Record<string, any>; onChange: (v: Record<string, any>) => void }) {
@@ -72,7 +72,7 @@ const KIND_LABEL: Record<string, string> = {
   hero: 'Page header', heading: 'Heading', html: 'Text', video: 'Video', plate: 'Card', secret: 'Secret box', table: 'Table', checklist: 'Checklist',
   'faction-table': 'Faction table (automatic)', 'faction-cards': 'Faction cards (automatic)', 'race-cards': 'Race cards (automatic)',
   'race-browser': 'Race browser (automatic)', 'upgrade-table': 'Upgrade table (automatic)',
-  race: 'Race entry', 'race-phase': 'Race entry: one phase', 'race-dm': 'Race entry: DM notes', 'sheet-slot': 'Character sheet form: part', faction: 'Faction entry', 'faction-dm': 'Faction entry: DM notes', 'sheet-template': 'Character sheet form',
+  race: 'Race entry', 'race-phase': 'Race entry: one phase', 'race-dm': 'Race entry: DM notes', faction: 'Faction entry', 'faction-dm': 'Faction entry: DM notes',
 };
 const AUTO = new Set(['faction-table', 'faction-cards', 'race-cards', 'race-browser', 'upgrade-table']);
 
@@ -168,24 +168,6 @@ export function ContentEditor({ slug, rows, phases, members = [], canName = fals
 }
 
 // ---------------------------------------------------------------- sessions
-
-export function BeatEditor({ slug, sessionId, beatId, label, html }: { slug: string; sessionId: string; beatId: string; label: string; html: string }) {
-  const [value, setValue] = useState(html);
-  const [msg, setMsg] = useState<{ error?: string; note?: string } | null>(null);
-  const [pending, start] = useTransition();
-  return (
-    <details className="ed dm">
-      <summary><b>{label}</b></summary>
-      <div style={{ marginTop: 10 }}>
-        <RichHtml value={value} onChange={setValue} />
-        <p className="row" style={{ marginTop: 10 }}>
-          <button className="act" disabled={pending} onClick={() => start(async () => setMsg(await saveSessionBeat(slug, sessionId, beatId, value)))}>Save</button>
-          {msg?.error ? <span className="err">{msg.error}</span> : null}{msg?.note ? <span className="okmsg">{msg.note}</span> : null}
-        </p>
-      </div>
-    </details>
-  );
-}
 
 export function SessionNotes({ slug, sessionId, notes }: { slug: string; sessionId: string; notes: string }) {
   const [value, setValue] = useState(notes);

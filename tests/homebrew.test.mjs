@@ -62,13 +62,13 @@ test('resource formulas, custom resources and "what changed" notices', () => {
   assert.equal(evalMax('half', { level: 5, mods }), 3);
   assert.equal(evalMax('7', { level: 1, mods }), 7);
   // a campaign's custom resource is a pool on every sheet; a homebrew race with effects applies them
-  const pool = { id: 'r1', type: 'resource', name: 'Divinity', source: 'homebrew', data: { max: 'prof', recharge: 'long' } };
+  const pool = { id: 'r1', type: 'resource', name: 'Favour', source: 'homebrew', data: { max: 'prof', recharge: 'long' } };
   const race = { id: 'h1', type: 'race', name: 'Mothfolk', source: 'homebrew', version: 3, change_note: 'Flight now starts at level 5', data: { speed: 30, effects: [{ t: 'ability', ab: 'dex', n: 2 }, { t: 'ability', ab: 'any', n: 1 }, { t: 'speed', mode: 'fly', n: 30, at: 5 }, { t: 'resource', name: 'Dust Cloud', max: 'prof', recharge: 'short' }] } };
   const at3 = derive({ ...blankV2(), level: 3, raceId: 'h1', anyAb: ['wis'], seen: { h1: 2 } }, [pool, race]);
   assert.equal(at3.scores.dex, 12);
   assert.equal(at3.scores.wis, 11, 'a +1 "of your choice" goes where the player put it');
   assert.equal(at3.speed.fly, undefined, 'not before its level');
-  assert.deepEqual(at3.resources.map((r) => [r.name, r.max]), [['Dust Cloud', 2], ['Divinity', 2]]);
+  assert.deepEqual(at3.resources.map((r) => [r.name, r.max]), [['Dust Cloud', 2], ['Favour', 2]]);
   assert.deepEqual(at3.changed, [{ id: 'h1', name: 'Mothfolk', version: 3, note: 'Flight now starts at level 5' }], 'the player is told what changed');
   const at5 = derive({ ...blankV2(), level: 5, raceId: 'h1', seen: { h1: 3 } }, [pool, race]);
   assert.equal(at5.speed.fly, 30);
@@ -208,8 +208,6 @@ test('a new campaign gets the standard sheet, with SRD and attached homebrew, an
   const sheet = await page(`/c/${slug}/sheet`, friend.session);
   assert.ok(sheet.status === 200 && sheet.text.includes('Vessa') && sheet.text.includes('Glassborn') && sheet.text.includes('Dragonborn') && sheet.text.includes('Short rest'));
   assert.ok(!sheet.text.includes('Unfinished Folk'), 'a draft entry is not sent to players');
-  for (const word of ['Swordmage', 'Warlord', 'Avenger', 'Aarakocra']) assert.ok(!sheet.text.includes(word), 'no private content from another campaign: ' + word);
   assert.equal((await page(`/c/${slug}/combat`, friend.session)).status, 200);
-  const builder = await page(`/c/${slug}/builder`, friend.session);
-  assert.ok(builder.status >= 300 && builder.status < 400 && builder.location.endsWith(`/c/${slug}/sheet`), 'the old builder address leads to the sheet');
+  assert.equal((await page(`/c/${slug}/builder`, friend.session)).status, 404, 'the old builder address is gone');
 });

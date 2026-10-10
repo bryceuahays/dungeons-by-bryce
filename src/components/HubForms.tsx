@@ -46,7 +46,7 @@ export function PasswordForm() {
   );
 }
 
-export function NewCampaignForm({ campaigns, pro, packs = [] }: { campaigns: { id: string; title: string }[]; pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[] }) {
+export function NewCampaignForm({ pro, packs = [] }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[] }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
   return (
     <form action={action}>
@@ -75,13 +75,7 @@ export function NewCampaignForm({ campaigns, pro, packs = [] }: { campaigns: { i
           </fieldset>
         ) : null}
         <label>Rules version<select name="rules" defaultValue={NEW_CAMPAIGN_RULES}>{Object.entries(RULES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
-        <label>Character sheet
-          <select name="copy" defaultValue="">
-            <option value="">The standard fifth edition sheet (SRD and your homebrew)</option>
-            {campaigns.map((c) => <option key={c.id} value={c.id}>Copy from {c.title}</option>)}
-          </select>
-        </label>
-        <p className="dim">Start empty and your players get the standard fifth edition sheet, with the SRD races and classes and any homebrew you attach. Or copy the character builder of another campaign you run.</p>
+        <p className="dim">Your players get the standard fifth edition sheet, with the SRD races and classes and any homebrew you attach.</p>
       </div>
       <Msg state={state} />
       <button type="submit" disabled={pending}>{pending ? 'Creating' : 'Create campaign'}</button>

@@ -52,14 +52,18 @@ test('SRD content is open to everyone; everything that existed before is private
   // every rule row that existed before the commercial build is private
   const notPrivate = await admin.from('rules').select('id', { count: 'exact', head: true }).neq('source', 'private');
   assert.equal(notPrivate.count, 0);
-  const priv = await admin.from('rules').select('id', { count: 'exact', head: true }).eq('campaign_id', C.id).eq('source', 'private');
-  assert.ok(priv.count > 300);
+  // and a new one is private unless something says otherwise
+  const made = await admin.from('rules').insert({ campaign_id: C.id, kind: 'class', key: 'test-default-' + Date.now(), data: {} }).select('id, source').single();
+  assert.equal(made.data.source, 'private');
+  await admin.from('rules').delete().eq('id', made.data.id);
 });
 
-test('private rules stay with their owner: a member cannot copy them, another DM cannot see them', async () => {
+test('private rules stay with their owner: a member cannot copy them, another DM cannot see them', async (t) => {
   await free.client.rpc('join_campaign', { p_code: await invite(C.id) });
   const mine = await newCampaign(free);
   assert.ok(!mine.error);
+  const rule = await admin.from('rules').insert({ campaign_id: C.id, kind: 'class', key: 'test-private-' + Date.now(), data: {} }).select('id').single();
+  t.after(() => admin.from('rules').delete().eq('id', rule.data.id));
   assert.ok((await free.client.rpc('copy_campaign_rules', { src: C.id, dst: mine.id })).error, 'a player in the campaign cannot copy its rules');
   assert.equal((await outsider.client.from('rules').select('id').eq('campaign_id', C.id).limit(5)).data.length, 0, 'an outside account sees none of them');
   assert.equal((await admin.from('rules').select('id', { count: 'exact', head: true }).eq('campaign_id', mine.id)).count, 0);

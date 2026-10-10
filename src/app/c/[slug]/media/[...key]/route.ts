@@ -8,7 +8,7 @@ import { VIEW_AS_PLAYER } from '@/lib/campaign';
 // and which phase the campaign is in. The bucket is private and players have no storage
 // access of their own, so this is the only way to reach a file.
 //
-// The key is phase-neutral (v/aarakocra.mp4). Which file it resolves to is decided here,
+// The key is phase-neutral (v/portrait.jpg). Which file it resolves to is decided here,
 // from the campaign's phase. A player cannot ask for the other phase.
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string; key: string[] }> }) {
   const { slug, key } = await params;

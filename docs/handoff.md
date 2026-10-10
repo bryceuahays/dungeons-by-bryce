@@ -1,12 +1,14 @@
 # Handoff: the commercial build
 
+> **Update, 9 October 2026:** Bryce's first campaign has been removed from the site and the code (see decisions 130 to 140). Anything below about its own character builder, its run sheet, its store drafts or "Make a publishable copy" for it no longer applies. The tests run against a made-up dummy campaign instead.
+
 > **Update, 6 October 2026:** the commercial build and the follow-up build went live on this date, at your request. Where this file says "not live yet" or "say put it live", that has happened. The roadmap board and how the team works are in `docs/board-setup.md`.
 
 Everything in the brief (phases 0 to 13) is built, on the `commercial` branch. The live site at https://dungeons-by-bryce.vercel.app still shows the old version. Nothing goes live until you say so.
 
 - **Preview of the new version:** https://dungeons-by-bryce-bp2e9bvjd-bryceuahays.vercel.app (Vercel asks you to be signed in to Vercel to open a preview; you are the only one who can.)
 - **Tests:** 66 automated tests pass, including the 27 that existed before, against a local copy of the site and the real database. A browser run-through of the new screens (desktop and phone size) also passes.
-- **Your data:** your account, "To be a god" (currently showing as "To Kill God"), "For the testing", your character and your run-sheet state are intact. One campaign was added to your account: the demo, "The Lantern Beneath".
+- **Your data:** your account, Bryce's first campaign, "For the testing", your character and your run-sheet state are intact. One campaign was added to your account: the demo, "The Lantern Beneath".
 - **Plan, decisions, later list:** `docs/commercial-plan.md`, `docs/decisions.md` (75 items), `TODO-LATER.md`.
 
 ## Two things to know before anything else
@@ -21,7 +23,7 @@ Everything in the brief (phases 0 to 13) is built, on the `commercial` branch. T
 | 0. Engine and content | Every rule has a source: `srd`, `homebrew` or `private`. All 435 existing rules are `private` and can no longer be copied by anyone else. An SRD core set ships with every account. `/legal` has the CC-BY-4.0 attribution and placeholders for Terms and Privacy. Public copy says "fifth edition compatible". |
 | 1. Multi-tenant | Already per campaign. Added invite links (`/join/CODE`) that take a new player through sign-up straight into the campaign. |
 | 2. Plans and billing | Free, Pro ($7 a month or $50 a year) and Founder ($150 once, 100 seats, counter shown). One entitlements module, one config file. Stripe Checkout, customer portal and webhooks, test mode only. On a downgrade nothing is deleted; extra campaigns become read-only. Upgrade page and prompts at each limit. |
-| 3. Homebrew builder | Homebrew in the hub bar. Nine kinds of entry; Quick, Guided and Advanced; clone from the SRD; effect building blocks that the sheet applies by itself; automatic class table; live preview; balance hint; versions with change notes; draft, playtest, live; packs with export and import; edition converter. A new standard fifth edition sheet for every campaign except "To be a god". |
+| 3. Homebrew builder | Homebrew in the hub bar. Nine kinds of entry; Quick, Guided and Advanced; clone from the SRD; effect building blocks that the sheet applies by itself; automatic class table; live preview; balance hint; versions with change notes; draft, playtest, live; packs with export and import; edition converter. A new standard fifth edition sheet for every campaign except Bryce's first campaign. |
 | 4. Secrets and reveals | Reveal stages for any campaign, forward and back with one click. Blocks and tabs for everyone, DM only, named players, one stage, or from a stage onward. Per-player secrets and private notes. "View as" any player at any stage. Reveal log and optional "newly revealed" feed. |
 | 5. Table tools | NPC tracker, DM access to any sheet (read-only with an edit switch), live initiative tracker with hidden enemies. |
 | 6. Story timeline | Banner on every campaign page; planned, hit and dropped beats; key beats with a checklist and overdue flag; personal beats; player-added beats and notes. |
@@ -44,7 +46,7 @@ Open the preview link above. Try these, signed in as yourself:
 - **Manage** on any campaign: Reveal stages, Preview ("View as"), Theme.
 - **Head DM**, then **Store and custom site requests**.
 - Sign out and look at the landing page, `/demo` and `/pricing`.
-- Open "To be a god" and check it looks and behaves as it did.
+- Open Bryce's first campaign and check it looks and behaves as it did.
 
 When you are happy, say **"put it live"** and I will merge the branch and deploy it.
 
@@ -95,7 +97,7 @@ Your friends had not made accounts when this was built, so there was nobody to g
 
 ### 8. Optional: put the demo in the store
 
-**Head DM**, then **Store and custom site requests**, then **Publish a campaign as a product**. Choose "The Lantern Beneath", give it a title and a price (0 makes it free), tick the preview pages, set Status to Live, and click **Freeze and publish**. "To be a god" cannot be published: it contains private rules, and the form will say so.
+**Head DM**, then **Store and custom site requests**, then **Publish a campaign as a product**. Choose "The Lantern Beneath", give it a title and a price (0 makes it free), tick the preview pages, set Status to Live, and click **Freeze and publish**. Bryce's first campaign cannot be published: it contains private rules, and the form will say so.
 
 ### 9. Feedback and request emails
 
@@ -195,13 +197,13 @@ Make a pack under **Homebrew**, then **Head DM**, **Store and custom site reques
 - **Make a product-ready copy of a campaign:** "Generate a framework" and "Make a publishable copy". Each makes a new campaign in your account to read and edit. Neither publishes anything.
 - **Publish a campaign as a product:** now has an Edition choice, and for a framework a box for its full edition's store address.
 
-**"To be a god" has two draft listings,** framework ($7) and full ($20), linked. Nothing is frozen and nothing is for sale. To publish when the campaign is finished:
-1. Click **Generate a framework** for it. Open the copy, read every tab, rename any tab whose name gives the story away, and check the "Divinity" entries it made under Homebrew (the size of the pool is a placeholder).
+**Bryce's first campaign has two draft listings,** framework ($7) and full ($20), linked. Nothing is frozen and nothing is for sale. To publish when the campaign is finished:
+1. Click **Generate a framework** for it. Open the copy, read every tab, rename any tab whose name gives the story away, and check the entries it made under Homebrew (the size of the pool is a placeholder).
 2. Click **Make a publishable copy** for it. This is needed because the campaign itself holds private rules and cannot go live. The copy leaves out the old character builder and the seven races from published material; buyers get the standard sheet. Read it through.
 3. Publish the publishable copy as the **Full edition** at the store address of the full draft, then publish the framework copy as the **Framework edition**, giving the full edition's address.
 4. Choose the preview tabs carefully: they are readable by anyone who can see the listing.
 
-**Spoiler protection:** your players in "To be a god" will never see its listing, preview or buy button while signed in. Signed-out visitors will not see it either while the campaign has players, since a signed-out visitor could be one of them. Everyone else who is signed in will.
+**Spoiler protection:** your players in Bryce's first campaign will never see its listing, preview or buy button while signed in. Signed-out visitors will not see it either while the campaign has players, since a signed-out visitor could be one of them. Everyone else who is signed in will.
 
 **What a buyer on the free plan gets** (also stated on every listing): everything delivered works and can be edited, and the campaign does not use up their one free campaign. Making new Pro-only things in it (new beats, new maps or hidden regions, more stages, blocks for named players, homebrew past their own three) shows the usual upgrade prompt.
 
@@ -229,10 +231,10 @@ Make a pack under **Homebrew**, then **Head DM**, **Store and custom site reques
 4. **A client needs an account** before you can deliver to them. The confirmation they see after requesting says so.
 5. **Payment links are yours to send.** The site can only email your own address until it has a sending domain.
 6. **For your lawyer:** the note in `docs/srd-import.md` about the dataset's README naming the OGL while the site relies on the CC-BY-4.0 release.
-7. **The example pictures on `/custom`** show "To Kill God" as your players see it today. If you would rather show something else, replace the three files in `public/custom/` or run `node scripts/screenshots-custom.mjs` after changing what it photographs.
+7. **The example pictures on `/custom`** show its first-stage title as your players see it today. If you would rather show something else, replace the three files in `public/custom/` or run `node scripts/screenshots-custom.mjs` after changing what it photographs.
 
 ## Not checked against the real thing
 
 - Stripe, as before: purchases, upgrades and commission payments were tested with signed test events, not a Stripe account.
 - The request form's email to you (same code path as feedback email, which works).
-- Generating a framework from "To be a god" itself. The generator is tested on a campaign built for the test; running it on the real one creates a campaign in your account, which is yours to do.
+- Generating a framework from Bryce's first campaign itself. The generator is tested on a campaign built for the test; running it on the real one creates a campaign in your account, which is yours to do.
