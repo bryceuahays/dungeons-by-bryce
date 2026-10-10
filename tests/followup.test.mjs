@@ -97,12 +97,17 @@ test('a campaign chooses its rules version; existing campaigns keep the 2014 rul
   const sheet = async () => (await page(`/c/${c.slug}/create?c=${made.data.id}`, free.session)).text;
   let html = await sheet();
   assert.ok(html.includes('Goliath') && !html.includes('Half-Elf'), '2024: the 5.2 species');
+  assert.ok(!html.includes('In both sets of rules'), '2024 only: nothing to choose between');
   await pro.client.from('campaigns').update({ settings: { rules: '2014' } }).eq('id', c.id);
   html = await sheet();
   assert.ok(html.includes('Half-Elf') && !html.includes('Goliath'), '2014: the 5.1 races');
   await pro.client.from('campaigns').update({ settings: { rules: 'both' } }).eq('id', c.id);
   html = await sheet();
   assert.ok(html.includes('Goliath') && html.includes('Half-Elf'), 'both: side by side');
+  // something that is in both sets of rules is listed once, and asks which version when it is picked
+  const cards = (name) => html.split(`<b>${name}</b>`).length - 1;
+  assert.equal(cards('Fighter'), 1, 'both: one Fighter card, not two');
+  assert.ok(html.includes('In both sets of rules. Tap to choose which.') && html.includes('2014 or 2024'), 'both: the card says there are two versions');
   // spells are listed without their long text; the text is fetched when a spell is opened
   assert.ok(html.includes('Fireball') && !html.includes('bright streak flashes'));
   const manage = await page(`/c/${c.slug}/manage`, pro.session);

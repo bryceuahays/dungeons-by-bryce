@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { ABILITIES, SKILLS, blankV2, derive, partsOf, pickKey, scaleAt, sgn, type Ability, type CharacterV2, type Entity } from '@/lib/rules/engine';
 import { LANGUAGE_GROUPS } from '@/config/proficiencies';
+import { yearOf } from '@/config/rules';
 import { pkgLine, type Pkg } from '@/lib/class-equip';
 import { guessChoice } from './ClassGives';
 import { isMarker } from './ClassFeatures';
@@ -37,6 +38,19 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
   const byId = useMemo(() => new Map(entities.map((e) => [e.id, e])), [entities]);
   const of = (t: string) => entities.filter((e) => e.type === t).sort((a, b) => a.name.localeCompare(b.name));
   const d = useMemo(() => derive(c, entities), [c, entities]);
+
+  // A campaign can play by the 2014 and the 2024 rules together, and then most official entries
+  // exist twice. Each is shown once. For a class, subclass, background or species the player is
+  // asked which version they want (a pop-up); in the long lists of feats and spells the version
+  // that goes with their class or species is used, and anything already picked stays.
+  const groupVersions = (list: Entity[]) => {
+    const groups = new Map<string, Entity[]>();
+    list.forEach((e) => { const k = e.source === 'srd' ? e.type + ':' + lc(e.name) : e.id; groups.set(k, [...(groups.get(k) ?? []), e]); });
+    return [...groups.values()].map((g) => g.sort((a, b) => String(b.srd_version ?? '').localeCompare(String(a.srd_version ?? ''))));   // newest first
+  };
+  const oneVersion = (list: Entity[], prefer: string | null | undefined, picked: string[] = []) =>
+    groupVersions(list).map((g) => g.find((e) => picked.includes(e.id)) ?? g.find((e) => e.srd_version === prefer) ?? g[0]);
+  const [ask, setAsk] = useState<VersionQuestion | null>(null);
 
   const flush = async () => {
     timer.current = null;
@@ -96,11 +110,12 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
       const opts: any[] = ch.options?.length ? ch.options : partsOf(e).find((x: any) => x.name === ft.name && x.choice?.options?.length)?.choice?.options ?? [];
       return opts.filter((o) => !Number(o.minLevel) || Number(o.minLevel) <= c.level).map((o) => [o.name, o.name, first(o.text, 140)]);
     }
-    if (from.startsWith('feat:')) return of('feat').filter((f) => lc(f.data.category) === lc(from.slice(5))).map((f) => [f.id, f.name, featLine(f)]);
+    const mine = picks[pickKey(e, ft)]?.v ?? [], mineVersion = e.srd_version ?? cls?.srd_version;
+    if (from.startsWith('feat:')) return oneVersion(of('feat').filter((f) => lc(f.data.category) === lc(from.slice(5))), mineVersion, mine).map((f) => [f.id, f.name, featLine(f)]);
     if (from === 'skills') return d.skills.filter((s) => s.proficient).map((s) => [s.name, s.name, '']);
     if (from === 'anyskill') return SKILL_NAMES.filter((n) => !d.skills.find((s) => s.name === n)?.proficient || (picks[pickKey(e, ft)]?.v ?? []).includes(n)).map((n) => [n, n, '']);
     if (from === 'weapons') return weapons.map((w) => [w.name, w.name, `${w.mastery}${w.cat ? ' · ' + w.cat : ''}`]);
-    if (from === 'spells') return spellsFor(ch).map((s) => [s.id, s.name, Number(s.data.level) ? `Level ${s.data.level} ${s.data.school ?? ''}` : `Cantrip ${s.data.school ?? ''}`]);
+    if (from === 'spells') return oneVersion(spellsFor(ch), mineVersion, mine).map((s) => [s.id, s.name, Number(s.data.level) ? `Level ${s.data.level} ${s.data.school ?? ''}` : `Cantrip ${s.data.school ?? ''}`]);
     return [];
   };
   const choiceParts = (e: Entity | undefined) => (e ? partsOf(e).filter((ft: any) => (Number(ft.level) || 1) <= c.level).map((ft: any) => ({ ft, ch: choiceOf(e, ft) })).filter((x: any) => x.ch && !isMarker(x.ft)) : []);
@@ -141,18 +156,25 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
   // ------------------------------------------------------------ the steps
   const cards = ({ type, value, onPick, line, list }: { type: string; value: string | null | undefined; onPick: (id: string) => void; line: (e: Entity) => string; list?: Entity[] }) => (
     <div className="cc-cards">
-      {(list ?? of(type)).map((e) => (
-        <button key={e.id} type="button" className={'cc-card' + (value === e.id ? ' on' : '')} aria-pressed={value === e.id} onClick={() => onPick(e.id)}>
-          <b>{e.name}</b>{e.source !== 'srd' ? <span className="chip">homebrew</span> : null}
-          <small>{line(e)}</small>
-        </button>
-      ))}
+      {groupVersions(list ?? of(type)).map((g) => {
+        const on = g.some((x) => x.id === value), e = g.find((x) => x.id === value) ?? g[0], two = g.length > 1;
+        return (
+          <button key={e.id} type="button" className={'cc-card' + (on ? ' on' : '')} aria-pressed={on} aria-haspopup={two ? 'dialog' : undefined}
+            onClick={() => (two ? setAsk({ versions: g, value, line, onPick }) : onPick(e.id))}>
+            <b>{e.name}</b>{e.source !== 'srd' ? <span className="chip">homebrew</span> : null}
+            {two ? <span className="chip">{on ? yearOf(e.srd_version) + ' rules' : g.map((x) => yearOf(x.srd_version)).sort().join(' or ')}</span> : null}
+            <small>{two && !on ? 'In both sets of rules. Tap to choose which.' : line(e)}</small>
+          </button>
+        );
+      })}
       {!of(type).length ? <p className="dim">Your DM has not made any available.</p> : null}
     </div>
   );
 
   const subLevel = cls ? Number((cls.data.features ?? []).find((f: any) => isMarker(f))?.level) || 3 : 3;
-  const subs = of('subclass').filter((s) => cls && (lc(s.data.parent) === lc(cls.name) || lc(s.data.parent) === lc(cls.data.baseClass)));
+  const subsAll = of('subclass').filter((s) => cls && (lc(s.data.parent) === lc(cls.name) || lc(s.data.parent) === lc(cls.data.baseClass)));
+  // an official class gets the subclasses of its own rules version (and any homebrew ones)
+  const subs = cls?.srd_version && subsAll.some((s) => s.srd_version === cls.srd_version) ? subsAll.filter((s) => s.source !== 'srd' || s.srd_version === cls.srd_version) : subsAll;
   const bgSkills = new Set<string>(bg?.data.skills ?? []);
 
   const classStep = (
@@ -360,7 +382,7 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
   // spells: cantrips and prepared spells from the class's list
   const lvl = Math.max(1, Math.min(20, c.level)) - 1;
   const maxSpell = d.casting ? d.casting.slots.length : 0;
-  const classSpells = of('spell').filter((s) => cls && (Array.isArray(cls.data.spellList) && cls.data.spellList.length ? cls.data.spellList.includes(s.id) : (s.data.classes ?? []).map(lc).includes(lc(cls.data.baseClass || cls.name))));
+  const classSpells = oneVersion(of('spell').filter((s) => cls && (Array.isArray(cls.data.spellList) && cls.data.spellList.length ? cls.data.spellList.includes(s.id) : (s.data.classes ?? []).map(lc).includes(lc(cls.data.baseClass || cls.name)))), cls?.srd_version, c.spells ?? []);
   const nCantrips = Number(casting?.cantrips?.[lvl]) || 0, nPrepared = Number(casting?.prepared?.[lvl]) || 0;
   const mySpells = (c.spells ?? []).map((id) => byId.get(id)).filter(Boolean) as Entity[];
   const haveC = mySpells.filter((s) => !Number(s.data.level)).length, haveP = mySpells.filter((s) => Number(s.data.level) > 0).length;
@@ -482,7 +504,30 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
           {todo.length ? <p className="dim">{todo.length} thing{todo.length > 1 ? 's' : ''} left to choose.</p> : <p className="dim">All chosen.</p>}
         </aside>
       </div>
+      {ask ? <VersionAsk key={ask.versions.map((e) => e.id).join()} ask={ask} onClose={() => setAsk(null)} /> : null}
     </div>
+  );
+}
+
+// "Which version?": asked when something the player picks exists in both sets of rules.
+type VersionQuestion = { versions: Entity[]; value: string | null | undefined; line: (e: Entity) => string; onPick: (id: string) => void };
+function VersionAsk({ ask, onClose }: { ask: VersionQuestion; onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const el = ref.current; if (el && !el.open) el.showModal(); }, []);
+  const name = ask.versions[0].name;
+  return (
+    <dialog ref={ref} className="popup cc-version" onClose={onClose} aria-label={`Which version of ${name}?`}>
+      <div className="popup-head"><h3>Which version of {name}?</h3><button type="button" className="quiet small-btn" onClick={() => ref.current?.close()}>Cancel</button></div>
+      <p className="dim">This campaign plays by the 2014 and the 2024 rules together, and {name} is in both. Choose the one you want. You can change it later by tapping {name} again.</p>
+      <div className="cc-cards">
+        {ask.versions.map((e) => (
+          <button key={e.id} type="button" className={'cc-card' + (ask.value === e.id ? ' on' : '')} aria-pressed={ask.value === e.id} onClick={() => { ask.onPick(e.id); ref.current?.close(); }}>
+            <b>{yearOf(e.srd_version)} rules</b>
+            <small>{ask.line(e)}</small>
+          </button>
+        ))}
+      </div>
+    </dialog>
   );
 }
 
