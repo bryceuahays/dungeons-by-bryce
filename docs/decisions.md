@@ -197,3 +197,6 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 153. **Upgrade prompts no longer appear,** because they only ever appeared in place of something that was blocked.
 154. **Test accounts always have limits applied** (a flag on the account), so the limits stay tested while they are off for everyone else.
 155. **No "Pro" tags on the tool choices in the new form,** since nothing is held back right now.
+156. **A character can be created outside any campaign,** from My characters: choose its system and the step-by-step creator opens. Its creator and sheet live at their own address, wear the default campaign look, and only its owner can open them.
+157. **Outside a campaign a character is offered the SRD for its system and its owner's own homebrew** (every entry they have made, drafts included, since it is their own). Homebrew that belongs to someone else's campaign comes with that campaign.
+158. **A character that uses your homebrew keeps the choice when it is added to a campaign,** but the campaign's sheet only knows the homebrew attached to that campaign. If the entry is not attached there, the sheet shows that choice as missing until the DM adds it.
