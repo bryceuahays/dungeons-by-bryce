@@ -1,10 +1,13 @@
 'use client';
 import Link from 'next/link';
-import { useActionState, useState, useTransition } from 'react';
-import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
+import { useActionState, useRef, useState, useTransition } from 'react';
+import { adminDeleteCampaign, changePassword, createCampaign, deleteMyCharacter, moveMyCharacter, feedbackDelete, feedbackEmailWaiting, feedbackSetDone, headReveal, joinCampaign, setComp, submitFeedback, updateAccount, type FormState } from '@/app/(hub)/actions';
 import { ThemeEditor } from './ThemeEditor';
 import { ConfirmButton } from './ConfirmButton';
-import { NEW_CAMPAIGN_RULES, RULES } from '@/config/rules';
+import { NEW_CAMPAIGN_RULES } from '@/config/rules';
+import { SYSTEMS } from '@/config/systems';
+import { GENRES } from '@/config/genres';
+import { TOOLS } from '@/config/tools';
 
 function Msg({ state }: { state: FormState }) {
   if (state?.error) return <p className="bad" role="alert">{state.error}</p>;
@@ -49,40 +52,96 @@ export function PasswordForm() {
 
 export function NewCampaignForm({ pro, packs = [], worlds = [], world = '' }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[]; worlds?: { id: string; name: string }[]; world?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
+  const [step, setStep] = useState(1);
+  const [need, setNeed] = useState('');
+  const form = useRef<HTMLFormElement>(null);
+  const go = (n: number) => { setStep(n); window.scrollTo({ top: 0 }); };
+  // the second step needs a world chosen on the first
+  const next = () => {
+    if (!String(new FormData(form.current ?? undefined).get('world') || '')) { setNeed('Choose the world this campaign belongs to.'); return; }
+    setNeed(''); go(2);
+  };
   return (
-    <form action={action}>
-      <div className="panel">
-        <label>Title<input name="title" maxLength={80} placeholder="Leave empty if your pasted text starts with # Title" /></label>
-        <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the title.<input name="slug" pattern="[a-z0-9][a-z0-9\-]{1,60}" placeholder="my-next-campaign" /></label>
-        <label>Tagline<textarea name="tagline" rows={2} maxLength={300} /></label>
-        {worlds.length ? <label>World<select name="world" defaultValue={world}><option value="">None (a campaign of its own)</option>{worlds.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label> : null}
-        {worlds.length ? <p className="dim">A campaign in a world plays by that world&apos;s rules and gets its homebrew (the rules version below is then ignored).</p> : null}
-      </div>
-      <h2>Paste your campaign (optional)</h2>
-      <div className="panel">
-        <p className="dim">If you already have your campaign written down, paste it here and the site will build the tabs, headings, cards, tables, and DM-only secrets for you. It needs a few simple marks so the site knows what is what. <Link href="/help/campaign-format" target="_blank">See how to format it</Link> (opens in a new tab, with an example you can copy).</p>
-        <label>Your campaign text<textarea name="paste" rows={10} spellCheck={false} placeholder={'# My campaign\n> One line about it.\n\n## Overview\nThe first paragraph…\n\n[secret: What is really going on]\nOnly you see this.\n[/secret]'} /></label>
-        <p className="dim">You can also leave this empty and add pages later, from the campaign&apos;s Manage page or the page editor.</p>
-      </div>
-      <h2>Look</h2>
-      <div className="panel">
-        <p className="dim">Each campaign has its own look. You can change it later on the campaign&apos;s Manage page, where you can also upload a background image.</p>
-        <ThemeEditor initial={null} pro={pro} />
-      </div>
-      <h2>Character rules</h2>
-      <div className="panel">
-        {packs.length ? (
+    <form action={action} ref={form}>
+      <div hidden={step !== 1}>
+        <h2>Step 1 of 2: Details</h2>
+        <div className="panel">
+          <label>Name<input name="title" maxLength={80} placeholder="Leave empty if your pasted text starts with # Title" /></label>
+          <label>Description<textarea name="tagline" rows={2} maxLength={300} placeholder="One or two lines about it." /></label>
+          <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the name.<input name="slug" pattern="[a-z0-9][a-z0-9\-]{1,60}" placeholder="my-next-campaign" /></label>
+          <label>World<select name="world" defaultValue={world} required onChange={() => setNeed('')}><option value="">Choose a world…</option>{worlds.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
+          <p className="dim">Every campaign belongs to a world and gets that world&apos;s homebrew. Need a new one? <Link href="/worlds">Make a world first</Link>.</p>
           <fieldset className="multi">
-            <legend>Add a homebrew pack (free with your account, and it does not count toward any limit)</legend>
-            {packs.map((p) => <label key={p.id} className="ckrow"><input type="checkbox" name="pack" value={p.id} defaultChecked={p.free} /> <span><b>{p.name}</b> <span className="dim">{p.description}</span></span></label>)}
+            <legend>System</legend>
+            {SYSTEMS.map((sys) => <label key={sys.id} className="ckrow"><input type="radio" name="system" value={sys.id} defaultChecked={sys.id === NEW_CAMPAIGN_RULES} style={{ flexShrink: 0 }} /> <span><b>{sys.name}</b> <span className="dim">{sys.what}</span></span></label>)}
           </fieldset>
-        ) : null}
-        <label>Rules version<select name="rules" defaultValue={NEW_CAMPAIGN_RULES}>{Object.entries(RULES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
-        <p className="dim">Your players get the standard fifth edition sheet, with the SRD races and classes and any homebrew you attach.</p>
+          <fieldset className="multi">
+            <legend>Genres (tick any that fit)</legend>
+            {GENRES.map((g) => <label key={g} className="ckrow"><input type="checkbox" name="genre" value={g} /> <span>{g}</span></label>)}
+          </fieldset>
+        </div>
+        {need ? <p className="bad" role="alert">{need}</p> : null}
+        <Msg state={state} />
+        <button type="button" onClick={next}>Next: hub and tools</button>
       </div>
-      <Msg state={state} />
-      <button type="submit" disabled={pending}>{pending ? 'Creating' : 'Create campaign'}</button>
+
+      <div hidden={step !== 2}>
+        <h2>Step 2 of 2: Hub and tools</h2>
+        <div className="panel">
+          <p className="dim">Your campaign starts with the standard hub: an Overview page, a Secrets page only you see, My character and Combat for your players, and Sessions and Players for you. You can add, rename and reorder pages later on its Manage page.</p>
+          <input type="hidden" name="tools_chosen" value="1" />
+          <fieldset className="multi">
+            <legend>Tools the hub starts with</legend>
+            {TOOLS.map((t) => <label key={t.id} className="ckrow"><input type="checkbox" name="tool" value={t.id} defaultChecked style={{ flexShrink: 0 }} /> <span><b>{t.name}</b> <span className="dim">{t.what}</span></span></label>)}
+          </fieldset>
+          <p className="dim">You can turn tools on and off later on the campaign&apos;s Manage page.</p>
+        </div>
+        <h2>Look</h2>
+        <div className="panel">
+          <p className="dim">Each campaign has its own look. You can change it later on the campaign&apos;s Manage page, where you can also upload a background image.</p>
+          <ThemeEditor initial={null} pro={pro} />
+        </div>
+        {packs.length ? (
+          <>
+            <h2>Homebrew packs</h2>
+            <div className="panel">
+              <fieldset className="multi">
+                <legend>Add a homebrew pack (free with your account, and it does not count toward any limit)</legend>
+                {packs.map((p) => <label key={p.id} className="ckrow"><input type="checkbox" name="pack" value={p.id} defaultChecked={p.free} /> <span><b>{p.name}</b> <span className="dim">{p.description}</span></span></label>)}
+              </fieldset>
+            </div>
+          </>
+        ) : null}
+        <h2>Paste your campaign (optional)</h2>
+        <div className="panel">
+          <p className="dim">If you already have your campaign written down, paste it here and the site will build the tabs, headings, cards, tables, and DM-only secrets for you. It needs a few simple marks so the site knows what is what. <Link href="/help/campaign-format" target="_blank">See how to format it</Link> (opens in a new tab, with an example you can copy).</p>
+          <label>Your campaign text<textarea name="paste" rows={10} spellCheck={false} placeholder={'# My campaign\n> One line about it.\n\n## Overview\nThe first paragraph…\n\n[secret: What is really going on]\nOnly you see this.\n[/secret]'} /></label>
+          <p className="dim">You can also leave this empty and add pages later, from the campaign&apos;s Manage page or the page editor.</p>
+        </div>
+        <Msg state={state} />
+        <p className="inline"><button type="button" className="quiet" onClick={() => go(1)}>Back to details</button><button type="submit" disabled={pending}>{pending ? 'Creating' : 'Create campaign'}</button></p>
+      </div>
     </form>
+  );
+}
+
+// Add a character to a campaign, or move it to another. The page passes only campaigns that
+// use the character's system.
+export function MoveCharacterForm({ id, inCampaign, options }: { id: string; inCampaign: boolean; options: { id: string; title: string }[] }) {
+  const [to, setTo] = useState('');
+  const [state, setState] = useState<FormState>(null);
+  const [pending, start] = useTransition();
+  if (!options.length && !inCampaign) return <span>No campaign you are in uses this system.</span>;
+  return (
+    <>
+      <select aria-label={inCampaign ? 'Move to another campaign' : 'Add to a campaign'} value={to} onChange={(e) => { setTo(e.target.value); setState(null); }}>
+        <option value="">{inCampaign ? 'Move to…' : 'Add to a campaign…'}</option>
+        {options.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+        {inCampaign ? <option value="none">No campaign</option> : null}
+      </select>
+      <button type="button" className="quiet small-btn" disabled={!to || pending} onClick={() => start(async () => { setState(await moveMyCharacter(id, to === 'none' ? null : to)); setTo(''); })}>{pending ? 'Moving' : inCampaign ? 'Move' : 'Add'}</button>
+      {state?.error ? <span className="bad" role="alert">{state.error}</span> : null}
+    </>
   );
 }
 

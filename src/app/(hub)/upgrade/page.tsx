@@ -12,7 +12,7 @@ export default async function Upgrade({ searchParams }: { searchParams: Promise<
   const { done } = await searchParams;
   const { supabase } = await requireViewer();
   const [plan, { data: seats }] = await Promise.all([getPlan(), supabase.rpc('founder_seats_left')]);
-  const current = plan.plan === 'founder' ? 'founder' : plan.pro ? 'pro' : 'free';
+  const current = plan.plan === 'founder' ? 'founder' : plan.paid ? 'pro' : 'free';
   const day = plan.until ? new Date(plan.until).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
   return (
     <>
@@ -24,7 +24,7 @@ export default async function Upgrade({ searchParams }: { searchParams: Promise<
           {plan.comp ? 'Your account has full access. Nothing to pay.'
             : plan.gift_until && !plan.plan ? `You have Pro until ${new Date(plan.gift_until).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}, included with your custom campaign.`
             : plan.plan === 'founder' ? 'You have founder lifetime access.'
-            : plan.pro ? `You are on Pro${plan.status === 'past_due' ? '. Your last payment did not go through; Stripe will try again' : ''}${day ? `. Your plan runs to ${day}` : ''}.`
+            : plan.paid ? `You are on Pro${plan.status === 'past_due' ? '. Your last payment did not go through; Stripe will try again' : ''}${day ? `. Your plan runs to ${day}` : ''}.`
             : `You are on the free plan: ${plan.campaigns} of ${FREE_LIMITS.campaigns} campaign and ${plan.homebrew} of ${FREE_LIMITS.homebrew} homebrew entries used.${plan.status === 'canceled' ? ' Your Pro plan has ended. Nothing was deleted: campaigns beyond the first can still be opened and read, and they unlock again on Pro.' : ''}`}
         </p>
         {plan.plan && plan.plan !== 'founder' && !plan.comp ? <PortalButton /> : null}

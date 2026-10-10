@@ -8,6 +8,9 @@ import { insertImported, removeCampaignFiles } from '@/lib/campaign-admin';
 import { emailFeedback } from '@/lib/mail';
 import { cleanTheme, presetOf } from '@/lib/theme';
 import { NEW_CAMPAIGN_RULES } from '@/config/rules';
+import { isSystem, systemOf } from '@/config/systems';
+import { cleanGenres } from '@/config/genres';
+import { cleanTools } from '@/config/tools';
 import { COMMISSION_STATUS, COMMISSION_TIERS } from '@/config/commissions';
 import { billingIsOn, createCheckout } from '@/lib/stripe';
 import { attachWorldEntries } from '@/lib/worlds';
@@ -63,6 +66,27 @@ export async function deleteMyCharacter(characterId: string): Promise<FormState>
   return { note: 'Deleted.' };
 }
 
+// Add one of your characters to a campaign, move it to another, or take it out (campaignId null).
+// Only campaigns you have joined or run, and only ones that use the character's system. The
+// database checks both again.
+export async function moveMyCharacter(characterId: string, campaignId: string | null): Promise<FormState> {
+  const { supabase, user } = await requireViewer();
+  const isId = (s: string) => /^[0-9a-f-]{36}$/.test(s);
+  if (!isId(characterId) || (campaignId !== null && !isId(campaignId))) return { error: 'Not found.' };
+  const { data: ch } = await supabase.from('characters').select('id, campaign_id, system').eq('id', characterId).eq('owner', user.id).maybeSingle();
+  if (!ch) return { error: 'That character is not yours.' };
+  if (campaignId) {
+    // row-level security: this only finds a campaign you are in or run
+    const { data: to } = await supabase.from('campaigns').select('id, settings').eq('id', campaignId).maybeSingle();
+    if (!to) return { error: 'You are not in that campaign.' };
+    if (ch.system && systemOf(to.settings) !== ch.system) return { error: 'That campaign uses a different system from this character.' };
+  }
+  const { data, error } = await supabase.from('characters').update({ campaign_id: campaignId }).eq('id', characterId).eq('owner', user.id).select('id');
+  if (error || !data?.length) return { error: /different system/.test(error?.message || '') ? 'That campaign uses a different system from this character.' : 'That character could not be moved.' };
+  revalidatePath('/', 'layout');
+  return { note: campaignId ? 'Moved.' : 'Taken out of its campaign.' };
+}
+
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 // Anyone can create a campaign. Whoever creates it is its DM.
@@ -82,14 +106,18 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
   try { chosen = JSON.parse(String(form.get('theme') || 'null')); } catch { chosen = null; }
   const theme = presetOf(chosen)?.theme ?? cleanTheme(chosen ?? { preset: 'slate' });
 
-  let rules = form.get('rules') === '2014' || form.get('rules') === 'both' ? String(form.get('rules')) : NEW_CAMPAIGN_RULES;
-  // started from a world's page: the campaign goes in that world (the database checks it is yours)
+  // every new campaign belongs to a world (the database checks the world is yours or a ready-made one)
   const world = String(form.get('world') || '');
   const worldId = /^[0-9a-f-]{36}$/.test(world) ? world : null;
-  // and plays by the world's rules
-  if (worldId) { const { data: w } = await supabase.from('worlds').select('rules').eq('id', worldId).maybeSingle(); if (w?.rules) rules = w.rules; }
-  const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme, settings: { rules }, ...(worldId ? { world_id: worldId } : {}) }).select('id').single();
+  if (!worldId) return { error: 'Choose the world this campaign belongs to (step 1).' };
+  // its system (which fifth edition rules it plays by), its genres, and the tools its hub starts with
+  const system = form.get('system') ?? form.get('rules');
+  const rules = isSystem(system) ? system : NEW_CAMPAIGN_RULES;
+  const genres = cleanGenres(form.getAll('genre'));
+  const tools = form.has('tools_chosen') ? cleanTools(form.getAll('tool')) : null;
+  const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme, settings: { rules, genres, ...(tools ? { tools } : {}) }, world_id: worldId }).select('id').single();
   if (error || !campaign) {
+    if (/not allowed/i.test(error?.message || '')) return { error: 'That world is not one of yours. Choose another (step 1).' };
     if (/upgrade:/i.test(error?.message || '')) return { error: 'The free plan runs one campaign, and you already have one. Pro runs as many as you like: see Plans in the bar above. Nothing you have made is affected.' };
     return { error: /duplicate|unique/i.test(error?.message || '') ? 'Another campaign already uses that web address. Choose a different one.' : 'The campaign could not be created.' };
   }
@@ -117,13 +145,15 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
     note = `?imported=${r.tabs}-${r.blocks}`;
   }
 
-  if (worldId) await attachWorldEntries(supabase, worldId, [id]);
+  await attachWorldEntries(supabase, worldId, [id]);
 
   // packs ticked on the form (the database checks the account may use each one)
   for (const p of form.getAll('pack').map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x)).slice(0, 10)) await supabase.rpc('attach_pack', { p, c: id });
 
   revalidatePath('/campaigns');
-  redirect('/c/' + slug + '/manage' + note);
+  revalidatePath('/worlds');
+  // back to the world it was made in, where it now appears in the list
+  redirect('/worlds/' + worldId + '?made=' + encodeURIComponent(slug) + (note ? '&' + note.slice(1) : ''));
 }
 
 // ---------------------------------------------------------------- feedback

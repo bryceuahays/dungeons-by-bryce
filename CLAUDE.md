@@ -124,6 +124,7 @@ Map pictures are served only through `src/lib/map-image.ts`, which paints hidden
 - In SQL: `is_pro`, `free_limit`, `campaign_feature` (may use), `campaign_can_create` (may make new), `campaign_writable`, `can_edit`, and the `*_gate` triggers, which raise `upgrade:<feature>`.
 - In pages: `src/lib/entitlements.ts` (`getPlan`, `can`, `campaignCan`, `campaignCanMake`, `remaining`, `upgradeNeeded`). In tools: `p.can` and `p.make`.
 - A bought campaign works fully for what was delivered on any plan; making new Pro-only things follows the owner's plan.
+- **Limits are switched off for now:** `ENFORCE_PLANS` in `src/config/plans.ts` is `false`, so the database answers yes to every check (`is_pro`) and nothing is refused. `has_pro` and `my_plan().paid` say what plan an account really has; use those for wording and prices. Test accounts have `profiles.always_enforce`, so the limits stay tested. Do not remove a check because limits are off.
 
 ### Store, packs and commissions
 - `src/lib/store.ts`: publish a campaign or pack (a frozen snapshot), deliver a purchase as an editable copy, upgrade from framework to full edition, generate a framework or a publishable copy. Prices and the subscriber discount are in `src/config/store.ts`.
@@ -131,6 +132,11 @@ Map pictures are served only through `src/lib/map-image.ts`, which paints hidden
 - Packs: `packs.official`, `packs.free`, `pack_owners`, `attach_pack()`. Official and bought entries do not count toward the free homebrew limit; clones do.
 - Commissions: tiers and switches in `src/config/commissions.ts`; statuses requested, accepted, declined, paid, in_progress, in_review, delivered; `deliver_commission()` transfers the campaign and starts the included Pro months.
 - Stripe is called over plain HTTPS in `src/lib/stripe.ts`; the webhook at `/api/stripe/webhook` verifies the signature.
+
+### Worlds, systems and tools
+- A world (`worlds`) holds campaigns (`campaigns.world_id`) and homebrew (`world_entities`). New campaigns must be in a world; older ones may have none.
+- A campaign's system is `settings.rules` (`src/config/systems.ts`); its genres are `settings.genres` (`src/config/genres.ts`); the tools its hub has are `settings.tools` (`hasTool`, `toolsOf` in `src/config/tools.ts`; no list means every tool).
+- A character has a `system` and may have no campaign. `characters_system` keeps the system in step and refuses a move to a campaign on another system.
 
 ### Other pieces
 - Themes: `src/config/themes.ts`, `src/lib/theme.ts`. Free accounts fall back to a default theme rather than failing.

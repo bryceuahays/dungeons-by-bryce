@@ -14,9 +14,14 @@ import { requireViewer } from './auth';
 //
 // Pages use these to decide what to show. The database enforces the same rules itself
 // (is_pro, campaign_feature, and the limit triggers), so skipping a page check gains nothing.
+//
+// Limits can be switched off altogether (ENFORCE_PLANS in src/config/plans.ts). The database
+// then answers `pro: true` for every account, so nothing here holds anything back; `paid`
+// still says what plan the account really has, for wording and for subscriber prices.
 
 export type Plan = {
-  pro: boolean;          // Pro, Founder, or an account given full access
+  pro: boolean;          // nothing is held back: Pro, Founder, full access, or limits are switched off
+  paid: boolean;         // really on Pro, Founder or full access (for wording and prices)
   comp: boolean;         // full access without paying (the Head DM, grandfathered friends)
   plan: 'pro_monthly' | 'pro_yearly' | 'founder' | null;
   status: string | null;
@@ -27,12 +32,12 @@ export type Plan = {
 };
 // pro: the campaign has every tool (its DM is on Pro, or it was bought or handed over, so what came with it works).
 // creator: its DM is on Pro, so NEW things of a Pro-only kind can be made in it.
-export type CampaignAccess = { pro: boolean; creator: boolean; writable: boolean };
+export type CampaignAccess = { pro: boolean; creator: boolean; writable: boolean; paid?: boolean };
 
 export const getPlan = cache(async (): Promise<Plan> => {
   const { supabase } = await requireViewer();
   const { data } = await supabase.rpc('my_plan');
-  return { pro: false, comp: false, plan: null, status: null, until: null, campaigns: 0, homebrew: 0, ...(data ?? {}) } as Plan;
+  return { pro: false, comp: false, plan: null, status: null, until: null, campaigns: 0, homebrew: 0, ...(data ?? {}), paid: !!(data?.paid ?? data?.pro) } as Plan;
 });
 
 export const can = (plan: Pick<Plan, 'pro'>, feature: Feature) => plan.pro || !FEATURES[feature].pro;

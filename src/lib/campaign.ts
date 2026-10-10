@@ -72,7 +72,7 @@ export const getCampaign = cache(async (slug: string) => {
   }
   const real = faces.find((f) => f.phase === '');
   // the plan of the DM who owns this campaign, and whether it can still be changed
-  const access: CampaignAccess = { pro: !!plan?.pro, creator: !!plan?.creator, writable: plan?.writable !== false };
+  const access: CampaignAccess = { pro: !!plan?.pro, creator: !!plan?.creator, writable: plan?.writable !== false, paid: !!(plan?.paid ?? plan?.pro) };
   return {
     access, canEdit: realDm && access.writable && !asPlayer,
     viewAs: preview ?? { player: null, stage: null }, realPhase,

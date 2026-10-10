@@ -106,6 +106,23 @@ export function RulesForm({ slug, value, options }: { slug: string; value: strin
   );
 }
 
+// Which table tools this campaign's hub has.
+export function ToolsForm({ slug, tools, on }: { slug: string; tools: { id: string; name: string; what: string }[]; on: string[] }) {
+  const [have, setHave] = useState(on);
+  const [msg, setMsg] = useState<ActionState>(null);
+  const [pending, start] = useTransition();
+  return (
+    <div>
+      <ul className="check">
+        {tools.map((t) => (
+          <li key={t.id}><label><input type="checkbox" checked={have.includes(t.id)} onChange={(e) => setHave(e.target.checked ? [...have, t.id] : have.filter((x) => x !== t.id))} /><span><b>{t.name}.</b> {t.what}</span></label></li>
+        ))}
+      </ul>
+      <p className="row" style={{ marginTop: 10 }}><button type="button" className="act" disabled={pending} onClick={() => start(async () => setMsg(await saveSetting(slug, 'tools', have)))}>Save</button> <Msg state={msg} /></p>
+    </div>
+  );
+}
+
 // The ordered list of reveal stages, one per line.
 export function StagesForm({ slug, stages, pro }: { slug: string; stages: { id: string; label: string }[]; pro: boolean }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveStages.bind(null, slug), null);

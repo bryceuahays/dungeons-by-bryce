@@ -179,3 +179,21 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 138. **The option to copy another campaign's character rules when creating a campaign was removed,** since there are no such rules left to copy.
 139. **The script that built the free originals pack from the campaign is gone.** The pack stays as it is and is edited by hand under Homebrew.
 140. **Old versions on GitHub still contain the campaign.** You chose not to rewrite the history. Anyone who already has a copy of the repository still has it.
+
+## Worlds, the two-step new campaign, character moves, and the plan switch (10 October 2026)
+
+141. **A campaign's system is its rules setting.** The three choices are the 2014 rules, the 2024 rules, or both. Nothing new is stored: it is the same setting the Manage page already had.
+142. **A new campaign must be in a world; existing ones without a world are left as they are.** The form requires it. The database does not, because the demo, the test campaign and older campaigns have none.
+143. **The ready-made world stays in the world dropdown,** marked "(ready-made)", so its "Start a campaign in this world" button keeps working.
+144. **The two steps are one page with a Next and a Back button,** not two addresses, so nothing typed on the first is lost on the second.
+145. **Step one has name, description, web address, world, system and genres. Step two has the tools, the look, homebrew packs and paste-your-campaign,** which you asked to keep.
+146. **A world no longer sets its campaigns' rules.** Each campaign has its own system. Putting a campaign in a world, or saving the world, no longer changes the campaign's rules.
+147. **Tools are a list on the campaign.** A campaign made before this has no list and keeps all nine. The DM can change the list under Manage, Table tools. A tool that is switched off is hidden, not deleted.
+148. **A character carries its system.** In a campaign it has that campaign's system; outside one it keeps the system it had. The Characters page offers only campaigns you are in or run that use the same system, and the database refuses anything else.
+149. **"No campaign" is one of the choices when moving a character,** which is how a character comes to have none.
+150. **Deleting a campaign still deletes its characters,** as before. I did not change that.
+151. **Plan limits are switched off with one setting,** `ENFORCE_PLANS` in `src/config/plans.ts`. The limits, the Pro-only list and every plan text are untouched. With it off the database answers "yes" to every limit check, so nothing is refused, on any page, including Homebrew and the store, without those pages being edited.
+152. **What the switch does not change:** the Plans page still says which plan an account is really on, the subscriber discount in the store still needs a real subscription, and the "Made with Dungeons by Bryce" footer still shows on campaigns whose DM is not really on Pro.
+153. **Upgrade prompts no longer appear,** because they only ever appeared in place of something that was blocked.
+154. **Test accounts always have limits applied** (a flag on the account), so the limits stay tested while they are off for everyone else.
+155. **No "Pro" tags on the tool choices in the new form,** since nothing is held back right now.
