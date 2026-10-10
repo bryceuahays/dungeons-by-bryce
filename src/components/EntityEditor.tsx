@@ -371,24 +371,27 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   const def = TYPES[initial.type];
   const [name, setName] = useState(initial.name);
   const [status, setStatus] = useState(initial.status);
+  // The full editors below are Advanced depth, which is Pro (the database refuses anything but Quick
+  // from a free account). A free account keeps the Quick form further down, as before.
+  const full = pro;
   // Classes are being reworked around the Advanced editor alone; Quick and Guided are hidden for them for now.
-  const onlyAdvanced = initial.type === 'class';
+  const onlyAdvanced = full && initial.type === 'class';
   // a subclass gets the same editor as on its class's Subclasses tab (Advanced only too)
-  const isSub = initial.type === 'subclass';
+  const isSub = full && initial.type === 'subclass';
   // a spell: its rules as fields, the same editor as the class's spell pop-up
-  const isSpell = initial.type === 'spell';
+  const isSpell = full && initial.type === 'spell';
   // a feat: its benefits as cards, built like a class's features
-  const isFeat = initial.type === 'feat';
+  const isFeat = full && initial.type === 'feat';
   // a race (species): its traits as cards, built like a class's features
-  const isRace = initial.type === 'race';
+  const isRace = full && initial.type === 'race';
   // a background: the 2024 recipe (abilities, Origin feat, skills, tools, equipment) as fields
-  const isBg = initial.type === 'background';
+  const isBg = full && initial.type === 'background';
   // an item: weapon, armor, gear or magic item fields
-  const isItem = initial.type === 'item';
+  const isItem = full && initial.type === 'item';
   // a monster: its stat block as fields
-  const isMonster = initial.type === 'monster';
+  const isMonster = full && initial.type === 'monster';
   // a custom resource: a pool every character has, and the ways to spend it
-  const isRes = initial.type === 'resource';
+  const isRes = full && initial.type === 'resource';
   const wide = onlyAdvanced || isSub || isSpell || isFeat || isRace || isBg || isItem || isMonster || isRes;
   const nameLabel = isSub ? 'Subclass name' : isSpell ? 'Spell name' : isFeat ? 'Feat name' : isRace ? 'Race or species name' : isBg ? 'Background name' : isItem ? 'Item name' : isMonster ? 'Monster name' : isRes ? 'Resource name' : 'Class name';
   const [depth, setDepth] = useState(wide ? 'advanced' : initial.depth);

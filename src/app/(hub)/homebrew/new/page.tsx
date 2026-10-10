@@ -29,7 +29,7 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>New {def.label.toLowerCase()}</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>
-      {type === 'class' || type === 'subclass' || type === 'spell' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' || type === 'monster' || type === 'resource' ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
+      {plan.pro && (type === 'class' || type === 'subclass' || type === 'spell' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' || type === 'monster' || type === 'resource') ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
       <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type, name: start?.name ?? '', status: 'draft', depth: 'quick', source: 'homebrew', data: startData(type, start, spells) }} />
     </>

@@ -168,7 +168,8 @@ test('builder pages: three depths, clone from the SRD, upgrade prompts at the fr
   const home = await page('/homebrew', pro.session);
   assert.ok(home.status === 200 && home.text.includes('Race or species') && home.text.includes('Custom resource') && home.text.includes('Packs'));
   const fresh = await page('/homebrew/new?type=race', pro.session);
-  assert.ok(fresh.status === 200 && ['Quick', 'Guided', 'Advanced', 'What your players see', 'Balance hint'].every((t) => fresh.text.includes(t)));
+  // Pro: the full editor (Advanced; Quick is marked as coming later)
+  assert.ok(fresh.status === 200 && ['Quick', 'Advanced', 'Race or species name', 'What your players see', 'Balance hint'].every((t) => fresh.text.includes(t)));
   const srdPage = await page('/homebrew/srd?type=spell', free.session);
   assert.ok(srdPage.status === 200 && srdPage.text.includes('Fireball') && srdPage.text.includes('2014 rules (SRD 5.1)'));
   const fb = /href="(\/homebrew\/[0-9a-f-]{36})"[^>]*><b>Fireball/.exec(srdPage.text);
@@ -202,12 +203,16 @@ test('a new campaign gets the standard sheet, with SRD and attached homebrew, an
   await pro.client.from('campaign_entities').insert([{ campaign_id: camp.data.id, entity_id: race.data.id }, { campaign_id: camp.data.id, entity_id: draft.data.id }]);
 
   const empty = await page(`/c/${slug}/sheet`, friend.session);
-  assert.ok(empty.status === 200 && empty.text.includes('Create a character'));
+  assert.ok(empty.status === 200 && empty.text.includes('Create new character'));
   const ch = await friend.client.from('characters').insert({ owner: friend.id, campaign_id: camp.data.id, data: { ...blankV2(), name: 'Vessa', raceId: race.data.id, race: 'Glassborn', level: 2 } }).select('id').single();
   assert.equal(ch.error, null);
   const sheet = await page(`/c/${slug}/sheet`, friend.session);
-  assert.ok(sheet.status === 200 && sheet.text.includes('Vessa') && sheet.text.includes('Glassborn') && sheet.text.includes('Dragonborn') && sheet.text.includes('Short rest'));
+  assert.ok(sheet.status === 200 && sheet.text.includes('Vessa') && sheet.text.includes('Glassborn') && sheet.text.includes('Short rest'));
   assert.ok(!sheet.text.includes('Unfinished Folk'), 'a draft entry is not sent to players');
+  // the choices are made in the character creator: the SRD and the attached homebrew, never a draft
+  const creator = await page(`/c/${slug}/create?c=${ch.data.id}`, friend.session);
+  assert.ok(creator.status === 200 && creator.text.includes('Dragonborn') && creator.text.includes('Glassborn'));
+  assert.ok(!creator.text.includes('Unfinished Folk'), 'a draft entry is not offered in the creator');
   for (const word of ['Swordmage', 'Warlord', 'Avenger', 'Aarakocra']) assert.ok(!sheet.text.includes(word), 'no private content from another campaign: ' + word);
   assert.equal((await page(`/c/${slug}/combat`, friend.session)).status, 200);
   const builder = await page(`/c/${slug}/builder`, friend.session);
