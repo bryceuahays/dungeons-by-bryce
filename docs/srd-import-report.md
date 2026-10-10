@@ -18,7 +18,7 @@ Written by `scripts/import-srd.mjs`. Source: `5e-bits/5e-srd-api` at `05c109ea1f
 | Rules reference text | 215 | 73 |
 | **Total** | **1517** | **1280** |
 
-This run: 2584 added, 213 replaced, 0 already up to date, 20 removed, 0 failed.
+This run: 0 added, 1170 replaced, 1627 already up to date, 0 removed, 0 failed.
 
 ## Failed to import
 
@@ -31,243 +31,1184 @@ Nothing failed.
 
 ## Entries marked `srd` that did not match the official SRD and were replaced
 
-- 5.1 race: Dwarf
-- 5.1 race: Elf
-- 5.1 race: Halfling
-- 5.1 race: Human
-- 5.1 race: Dragonborn
-- 5.1 race: Gnome
-- 5.1 race: Half-Elf
-- 5.1 race: Half-Orc
-- 5.1 race: Tiefling
-- 5.1 class: Barbarian
-- 5.1 class: Bard
-- 5.1 class: Cleric
-- 5.1 class: Druid
-- 5.1 class: Fighter
-- 5.1 class: Monk
-- 5.1 class: Paladin
-- 5.1 class: Ranger
-- 5.1 class: Rogue
-- 5.1 class: Sorcerer
-- 5.1 class: Warlock
-- 5.1 class: Wizard
-- 5.1 subclass: Champion
-- 5.1 subclass: Hunter
-- 5.1 subclass: Thief
-- 5.1 background: Acolyte
-- 5.1 feat: Grappler
-- 5.1 spell: Acid Splash
-- 5.1 spell: Aid
-- 5.1 spell: Banishment
-- 5.1 spell: Bless
-- 5.1 spell: Burning Hands
-- 5.1 spell: Chain Lightning
-- 5.1 spell: Charm Person
-- 5.1 spell: Chill Touch
-- 5.1 spell: Command
-- 5.1 spell: Cone of Cold
-- 5.1 spell: Counterspell
-- 5.1 spell: Cure Wounds
-- 5.1 spell: Dancing Lights
-- 5.1 spell: Darkness
-- 5.1 spell: Detect Magic
-- 5.1 spell: Dimension Door
-- 5.1 spell: Disguise Self
-- 5.1 spell: Disintegrate
-- 5.1 spell: Dispel Magic
-- 5.1 spell: Druidcraft
-- 5.1 spell: Earthquake
-- 5.1 spell: Eldritch Blast
-- 5.1 spell: Entangle
-- 5.1 spell: Faerie Fire
-- 5.1 spell: Feather Fall
-- 5.1 spell: Fire Bolt
-- 5.1 spell: Fire Storm
-- 5.1 spell: Fireball
-- 5.1 spell: Fly
-- 5.1 spell: Greater Invisibility
-- 5.1 spell: Greater Restoration
-- 5.1 spell: Guidance
-- 5.1 spell: Guiding Bolt
-- 5.1 spell: Haste
-- 5.1 spell: Heal
-- 5.1 spell: Healing Word
-- 5.1 spell: Hellish Rebuke
-- 5.1 spell: Hold Person
-- 5.1 spell: Hunter's Mark
-- 5.1 spell: Identify
-- 5.1 spell: Inflict Wounds
-- 5.1 spell: Invisibility
-- 5.1 spell: Lesser Restoration
-- 5.1 spell: Light
-- 5.1 spell: Lightning Bolt
-- 5.1 spell: Mage Armor
-- 5.1 spell: Mage Hand
-- 5.1 spell: Magic Missile
-- 5.1 spell: Mass Healing Word
-- 5.1 spell: Mending
-- 5.1 spell: Message
-- 5.1 spell: Meteor Swarm
-- 5.1 spell: Minor Illusion
-- 5.1 spell: Misty Step
-- 5.1 spell: Moonbeam
-- 5.1 spell: Pass without Trace
-- 5.1 spell: Poison Spray
-- 5.1 spell: Polymorph
-- 5.1 spell: Power Word Kill
-- 5.1 spell: Power Word Stun
-- 5.1 spell: Prestidigitation
-- 5.1 spell: Produce Flame
-- 5.1 spell: Raise Dead
-- 5.1 spell: Ray of Frost
-- 5.1 spell: Resistance
-- 5.1 spell: Resurrection
-- 5.1 spell: Revivify
-- 5.1 spell: Sacred Flame
-- 5.1 spell: Scorching Ray
-- 5.1 spell: Shatter
-- 5.1 spell: Shield
-- 5.1 spell: Shield of Faith
-- 5.1 spell: Shillelagh
-- 5.1 spell: Shocking Grasp
-- 5.1 spell: Silence
-- 5.1 spell: Sleep
-- 5.1 spell: Spare the Dying
-- 5.1 spell: Spirit Guardians
-- 5.1 spell: Spiritual Weapon
-- 5.1 spell: Teleport
-- 5.1 spell: Thaumaturgy
-- 5.1 spell: Thunderwave
-- 5.1 spell: True Resurrection
-- 5.1 spell: True Strike
-- 5.1 spell: Vicious Mockery
-- 5.1 spell: Wall of Fire
-- 5.1 spell: Wall of Force
-- 5.1 spell: Web
-- 5.1 spell: Wish
-- 5.1 item: Club
-- 5.1 item: Dagger
-- 5.1 item: Greatclub
-- 5.1 item: Handaxe
-- 5.1 item: Javelin
-- 5.1 item: Light hammer
-- 5.1 item: Mace
-- 5.1 item: Quarterstaff
-- 5.1 item: Sickle
-- 5.1 item: Spear
-- 5.1 item: Dart
-- 5.1 item: Shortbow
-- 5.1 item: Sling
-- 5.1 item: Battleaxe
-- 5.1 item: Flail
-- 5.1 item: Glaive
-- 5.1 item: Greataxe
-- 5.1 item: Greatsword
-- 5.1 item: Halberd
-- 5.1 item: Lance
-- 5.1 item: Longsword
-- 5.1 item: Maul
-- 5.1 item: Morningstar
-- 5.1 item: Pike
-- 5.1 item: Rapier
-- 5.1 item: Scimitar
-- 5.1 item: Shortsword
-- 5.1 item: Trident
-- 5.1 item: War pick
-- 5.1 item: Warhammer
-- 5.1 item: Whip
-- 5.1 item: Blowgun
-- 5.1 item: Longbow
-- 5.1 item: Net
-- 5.1 item: Padded armor
-- 5.1 item: Leather armor
-- 5.1 item: Studded leather armor
-- 5.1 item: Hide armor
-- 5.1 item: Half plate armor
-- 5.1 item: Splint armor
-- 5.1 item: Plate armor
-- 5.1 item: Shield
-- 5.1 item: Backpack
-- 5.1 item: Bedroll
-- 5.1 item: Component pouch
-- 5.1 item: Healer's kit
-- 5.1 item: Rations (1 day)
-- 5.1 item: Rope, hempen (50 feet)
-- 5.1 item: Tinderbox
-- 5.1 item: Torch
-- 5.1 item: Waterskin
-- 5.1 item: Thieves' tools
-- 5.1 item: Armor, +1
-- 5.1 item: Bag of Holding
-- 5.1 item: Boots of Elvenkind
-- 5.1 item: Cloak of Elvenkind
-- 5.1 item: Cloak of Protection
-- 5.1 item: Gauntlets of Ogre Power
-- 5.1 item: Immovable Rod
-- 5.1 item: Potion of healing
-- 5.1 item: Potion of Greater Healing
-- 5.1 item: Ring of Protection
-- 5.1 item: Wand of Magic Missiles
-- 5.1 item: Weapon, +1
-- 5.1 monster: Adult Red Dragon
-- 5.1 monster: Bandit
-- 5.1 monster: Basilisk
-- 5.1 monster: Brown Bear
-- 5.1 monster: Bugbear
-- 5.1 monster: Commoner
-- 5.1 monster: Cultist
-- 5.1 monster: Dire Wolf
-- 5.1 monster: Gelatinous Cube
-- 5.1 monster: Ghoul
-- 5.1 monster: Giant Rat
-- 5.1 monster: Giant Spider
-- 5.1 monster: Gnoll
-- 5.1 monster: Goblin
-- 5.1 monster: Griffon
-- 5.1 monster: Guard
-- 5.1 monster: Hill Giant
-- 5.1 monster: Hobgoblin
-- 5.1 monster: Kobold
-- 5.1 monster: Manticore
-- 5.1 monster: Mimic
-- 5.1 monster: Minotaur
-- 5.1 monster: Mummy
-- 5.1 monster: Ogre
-- 5.1 monster: Orc
-- 5.1 monster: Owlbear
-- 5.1 monster: Skeleton
-- 5.1 monster: Troll
-- 5.1 monster: Vampire Spawn
-- 5.1 monster: Wight
-- 5.1 monster: Wolf
-- 5.1 monster: Wyvern
-- 5.1 monster: Young Red Dragon
-- 5.1 monster: Zombie
+- 5.2 race: Dragonborn
+- 5.2 race: Dwarf
+- 5.2 race: Elf
+- 5.2 race: Gnome
+- 5.2 race: Goliath
+- 5.2 race: Halfling
+- 5.2 race: Human
+- 5.2 race: Orc
+- 5.2 race: Tiefling
+- 5.2 class: Barbarian
+- 5.2 class: Bard
+- 5.2 class: Cleric
+- 5.2 class: Druid
+- 5.2 class: Fighter
+- 5.2 class: Monk
+- 5.2 class: Paladin
+- 5.2 class: Ranger
+- 5.2 class: Rogue
+- 5.2 class: Sorcerer
+- 5.2 class: Warlock
+- 5.2 class: Wizard
+- 5.2 subclass: Life Domain
+- 5.2 subclass: Oath of Devotion
+- 5.2 subclass: Draconic Sorcery
+- 5.2 subclass: Fiend Patron
+- 5.2 background: Acolyte
+- 5.2 background: Criminal
+- 5.2 background: Sage
+- 5.2 background: Soldier
+- 5.2 feat: Alert
+- 5.2 feat: Magic Initiate
+- 5.2 feat: Savage Attacker
+- 5.2 feat: Skilled
+- 5.2 feat: Ability Score Improvement
+- 5.2 feat: Grappler
+- 5.2 feat: Archery
+- 5.2 feat: Defense
+- 5.2 feat: Great Weapon Fighting
+- 5.2 feat: Two Weapon Fighting
+- 5.2 feat: Boon of Combat Prowess
+- 5.2 feat: Boon of Dimensional Travel
+- 5.2 feat: Boon of Fate
+- 5.2 feat: Boon of Irresistible Offense
+- 5.2 feat: Boon of Spell Recall
+- 5.2 feat: Boon of the Night Spirit
+- 5.2 feat: Boon of Truesight
+- 5.2 spell: Acid Arrow
+- 5.2 spell: Acid Splash
+- 5.2 spell: Aid
+- 5.2 spell: Alarm
+- 5.2 spell: Alter Self
+- 5.2 spell: Animal Friendship
+- 5.2 spell: Animal Messenger
+- 5.2 spell: Animal Shapes
+- 5.2 spell: Animate Dead
+- 5.2 spell: Animate Objects
+- 5.2 spell: Antilife Shell
+- 5.2 spell: Antimagic Field
+- 5.2 spell: Antipathy/Sympathy
+- 5.2 spell: Arcane Eye
+- 5.2 spell: Arcane Hand
+- 5.2 spell: Arcane Lock
+- 5.2 spell: Arcane Sword
+- 5.2 spell: Arcanist's Magic Aura
+- 5.2 spell: Astral Projection
+- 5.2 spell: Augury
+- 5.2 spell: Aura of Life
+- 5.2 spell: Awaken
+- 5.2 spell: Bane
+- 5.2 spell: Banishment
+- 5.2 spell: Barkskin
+- 5.2 spell: Beacon of Hope
+- 5.2 spell: Befuddlement
+- 5.2 spell: Bestow Curse
+- 5.2 spell: Black Tentacles
+- 5.2 spell: Blade Barrier
+- 5.2 spell: Bless
+- 5.2 spell: Blight
+- 5.2 spell: Blindness/Deafness
+- 5.2 spell: Blink
+- 5.2 spell: Blur
+- 5.2 spell: Burning Hands
+- 5.2 spell: Call Lightning
+- 5.2 spell: Calm Emotions
+- 5.2 spell: Chain Lightning
+- 5.2 spell: Charm Monster
+- 5.2 spell: Charm Person
+- 5.2 spell: Chill Touch
+- 5.2 spell: Chromatic Orb
+- 5.2 spell: Circle of Death
+- 5.2 spell: Clairvoyance
+- 5.2 spell: Clone
+- 5.2 spell: Cloudkill
+- 5.2 spell: Color Spray
+- 5.2 spell: Command
+- 5.2 spell: Commune
+- 5.2 spell: Commune with Nature
+- 5.2 spell: Comprehend Languages
+- 5.2 spell: Compulsion
+- 5.2 spell: Cone of Cold
+- 5.2 spell: Confusion
+- 5.2 spell: Conjure Animals
+- 5.2 spell: Conjure Celestial
+- 5.2 spell: Conjure Elemental
+- 5.2 spell: Conjure Fey
+- 5.2 spell: Conjure Minor Elementals
+- 5.2 spell: Conjure Woodland Beings
+- 5.2 spell: Contact Other Plane
+- 5.2 spell: Contagion
+- 5.2 spell: Contingency
+- 5.2 spell: Continual Flame
+- 5.2 spell: Control Water
+- 5.2 spell: Control Weather
+- 5.2 spell: Counterspell
+- 5.2 spell: Create Food and Water
+- 5.2 spell: Create or Destroy Water
+- 5.2 spell: Create Undead
+- 5.2 spell: Creation
+- 5.2 spell: Cure Wounds
+- 5.2 spell: Dancing Lights
+- 5.2 spell: Darkness
+- 5.2 spell: Darkvision
+- 5.2 spell: Daylight
+- 5.2 spell: Death Ward
+- 5.2 spell: Delayed Blast Fireball
+- 5.2 spell: Demiplane
+- 5.2 spell: Detect Evil and Good
+- 5.2 spell: Detect Magic
+- 5.2 spell: Detect Poison and Disease
+- 5.2 spell: Detect Thoughts
+- 5.2 spell: Dimension Door
+- 5.2 spell: Disguise Self
+- 5.2 spell: Disintegrate
+- 5.2 spell: Dispel Evil and Good
+- 5.2 spell: Dispel Magic
+- 5.2 spell: Dissonant Whispers
+- 5.2 spell: Divination
+- 5.2 spell: Divine Favor
+- 5.2 spell: Divine Smite
+- 5.2 spell: Divine Word
+- 5.2 spell: Dominate Beast
+- 5.2 spell: Dominate Monster
+- 5.2 spell: Dominate Person
+- 5.2 spell: Dragon's Breath
+- 5.2 spell: Dream
+- 5.2 spell: Druidcraft
+- 5.2 spell: Earthquake
+- 5.2 spell: Eldritch Blast
+- 5.2 spell: Elementalism
+- 5.2 spell: Enhance Ability
+- 5.2 spell: Enlarge/Reduce
+- 5.2 spell: Ensnaring Strike
+- 5.2 spell: Entangle
+- 5.2 spell: Enthrall
+- 5.2 spell: Etherealness
+- 5.2 spell: Expeditious Retreat
+- 5.2 spell: Eyebite
+- 5.2 spell: Fabricate
+- 5.2 spell: Faerie Fire
+- 5.2 spell: Faithful Hound
+- 5.2 spell: False Life
+- 5.2 spell: Fear
+- 5.2 spell: Feather Fall
+- 5.2 spell: Find Familiar
+- 5.2 spell: Find Steed
+- 5.2 spell: Find the Path
+- 5.2 spell: Find Traps
+- 5.2 spell: Finger of Death
+- 5.2 spell: Fireball
+- 5.2 spell: Fire Bolt
+- 5.2 spell: Fire Shield
+- 5.2 spell: Fire Storm
+- 5.2 spell: Flame Blade
+- 5.2 spell: Flame Strike
+- 5.2 spell: Flaming Sphere
+- 5.2 spell: Flesh to Stone
+- 5.2 spell: Floating Disk
+- 5.2 spell: Fly
+- 5.2 spell: Fog Cloud
+- 5.2 spell: Forbiddance
+- 5.2 spell: Forcecage
+- 5.2 spell: Foresight
+- 5.2 spell: Freedom of Movement
+- 5.2 spell: Freezing Sphere
+- 5.2 spell: Gaseous Form
+- 5.2 spell: Gate
+- 5.2 spell: Geas
+- 5.2 spell: Gentle Repose
+- 5.2 spell: Giant Insect
+- 5.2 spell: Glibness
+- 5.2 spell: Globe of Invulnerability
+- 5.2 spell: Glyph of Warding
+- 5.2 spell: Goodberry
+- 5.2 spell: Grease
+- 5.2 spell: Greater Invisibility
+- 5.2 spell: Greater Restoration
+- 5.2 spell: Guardian of Faith
+- 5.2 spell: Guards and Wards
+- 5.2 spell: Guidance
+- 5.2 spell: Guiding Bolt
+- 5.2 spell: Gust of Wind
+- 5.2 spell: Hallow
+- 5.2 spell: Hallucinatory Terrain
+- 5.2 spell: Harm
+- 5.2 spell: Haste
+- 5.2 spell: Heal
+- 5.2 spell: Healing Word
+- 5.2 spell: Heat Metal
+- 5.2 spell: Hellish Rebuke
+- 5.2 spell: Heroes' Feast
+- 5.2 spell: Heroism
+- 5.2 spell: Hex
+- 5.2 spell: Hideous Laughter
+- 5.2 spell: Hold Monster
+- 5.2 spell: Hold Person
+- 5.2 spell: Holy Aura
+- 5.2 spell: Hunter's Mark
+- 5.2 spell: Hypnotic Pattern
+- 5.2 spell: Ice Knife
+- 5.2 spell: Ice Storm
+- 5.2 spell: Identify
+- 5.2 spell: Illusory Script
+- 5.2 spell: Imprisonment
+- 5.2 spell: Incendiary Cloud
+- 5.2 spell: Inflict Wounds
+- 5.2 spell: Insect Plague
+- 5.2 spell: Instant Summons
+- 5.2 spell: Irresistible Dance
+- 5.2 spell: Invisibility
+- 5.2 spell: Jump
+- 5.2 spell: Knock
+- 5.2 spell: Legend Lore
+- 5.2 spell: Lesser Restoration
+- 5.2 spell: Levitate
+- 5.2 spell: Light
+- 5.2 spell: Lightning Bolt
+- 5.2 spell: Locate Animals or Plants
+- 5.2 spell: Locate Creature
+- 5.2 spell: Locate Object
+- 5.2 spell: Longstrider
+- 5.2 spell: Mage Armor
+- 5.2 spell: Mage Hand
+- 5.2 spell: Magic Circle
+- 5.2 spell: Magic Jar
+- 5.2 spell: Magic Missile
+- 5.2 spell: Magic Mouth
+- 5.2 spell: Magic Weapon
+- 5.2 spell: Magnificent Mansion
+- 5.2 spell: Major Image
+- 5.2 spell: Mass Cure Wounds
+- 5.2 spell: Mass Heal
+- 5.2 spell: Mass Healing Word
+- 5.2 spell: Mass Suggestion
+- 5.2 spell: Maze
+- 5.2 spell: Meld into Stone
+- 5.2 spell: Mending
+- 5.2 spell: Message
+- 5.2 spell: Meteor Swarm
+- 5.2 spell: Mind Blank
+- 5.2 spell: Mind Spike
+- 5.2 spell: Minor Illusion
+- 5.2 spell: Mirage Arcane
+- 5.2 spell: Mirror Image
+- 5.2 spell: Mislead
+- 5.2 spell: Misty Step
+- 5.2 spell: Modify Memory
+- 5.2 spell: Moonbeam
+- 5.2 spell: Move Earth
+- 5.2 spell: Nondetection
+- 5.2 spell: Passwall
+- 5.2 spell: Pass without Trace
+- 5.2 spell: Phantasmal Force
+- 5.2 spell: Phantasmal Killer
+- 5.2 spell: Phantom Steed
+- 5.2 spell: Planar Ally
+- 5.2 spell: Planar Binding
+- 5.2 spell: Plane Shift
+- 5.2 spell: Plant Growth
+- 5.2 spell: Poison Spray
+- 5.2 spell: Polymorph
+- 5.2 spell: Power Word Heal
+- 5.2 spell: Power Word Kill
+- 5.2 spell: Power Word Stun
+- 5.2 spell: Prayer of Healing
+- 5.2 spell: Prestidigitation
+- 5.2 spell: Prismatic Spray
+- 5.2 spell: Prismatic Wall
+- 5.2 spell: Private Sanctum
+- 5.2 spell: Produce Flame
+- 5.2 spell: Programmed Illusion
+- 5.2 spell: Project Image
+- 5.2 spell: Protection from Energy
+- 5.2 spell: Protection from Evil and Good
+- 5.2 spell: Protection from Poison
+- 5.2 spell: Purify Food and Drink
+- 5.2 spell: Raise Dead
+- 5.2 spell: Ray of Enfeeblement
+- 5.2 spell: Ray of Frost
+- 5.2 spell: Regenerate
+- 5.2 spell: Ray of Sickness
+- 5.2 spell: Reincarnate
+- 5.2 spell: Remove Curse
+- 5.2 spell: Resilient Sphere
+- 5.2 spell: Resistance
+- 5.2 spell: Resurrection
+- 5.2 spell: Reverse Gravity
+- 5.2 spell: Revivify
+- 5.2 spell: Rope Trick
+- 5.2 spell: Sacred Flame
+- 5.2 spell: Sanctuary
+- 5.2 spell: Scorching Ray
+- 5.2 spell: Scrying
+- 5.2 spell: Searing Smite
+- 5.2 spell: Secret Chest
+- 5.2 spell: See Invisibility
+- 5.2 spell: Seeming
+- 5.2 spell: Sending
+- 5.2 spell: Sequester
+- 5.2 spell: Shapechange
+- 5.2 spell: Shatter
+- 5.2 spell: Shield
+- 5.2 spell: Shield of Faith
+- 5.2 spell: Shillelagh
+- 5.2 spell: Shining Smite
+- 5.2 spell: Shocking Grasp
+- 5.2 spell: Silence
+- 5.2 spell: Silent Image
+- 5.2 spell: Simulacrum
+- 5.2 spell: Sleep
+- 5.2 spell: Sleet Storm
+- 5.2 spell: Slow
+- 5.2 spell: Sorcerous Burst
+- 5.2 spell: Spare the Dying
+- 5.2 spell: Speak with Animals
+- 5.2 spell: Speak with Dead
+- 5.2 spell: Speak with Plants
+- 5.2 spell: Spider Climb
+- 5.2 spell: Spike Growth
+- 5.2 spell: Spirit Guardians
+- 5.2 spell: Spiritual Weapon
+- 5.2 spell: Starry Wisp
+- 5.2 spell: Stinking Cloud
+- 5.2 spell: Stone Shape
+- 5.2 spell: Stoneskin
+- 5.2 spell: Storm of Vengeance
+- 5.2 spell: Suggestion
+- 5.2 spell: Summon Dragon
+- 5.2 spell: Sunbeam
+- 5.2 spell: Sunburst
+- 5.2 spell: Symbol
+- 5.2 spell: Telekinesis
+- 5.2 spell: Telepathic Bond
+- 5.2 spell: Teleport
+- 5.2 spell: Teleportation Circle
+- 5.2 spell: Thaumaturgy
+- 5.2 spell: Thunderwave
+- 5.2 spell: Time Stop
+- 5.2 spell: Tiny Hut
+- 5.2 spell: Tongues
+- 5.2 spell: Transport via Plants
+- 5.2 spell: Tree Stride
+- 5.2 spell: True Polymorph
+- 5.2 spell: True Resurrection
+- 5.2 spell: True Seeing
+- 5.2 spell: True Strike
+- 5.2 spell: Tsunami
+- 5.2 spell: Unseen Servant
+- 5.2 spell: Vampiric Touch
+- 5.2 spell: Vicious Mockery
+- 5.2 spell: Vitriolic Sphere
+- 5.2 spell: Wall of Fire
+- 5.2 spell: Wall of Force
+- 5.2 spell: Wall of Ice
+- 5.2 spell: Wall of Stone
+- 5.2 spell: Wall of Thorns
+- 5.2 spell: Warding Bond
+- 5.2 spell: Water Breathing
+- 5.2 spell: Water Walk
+- 5.2 spell: Web
+- 5.2 spell: Weird
+- 5.2 spell: Wind Walk
+- 5.2 spell: Wind Wall
+- 5.2 spell: Wish
+- 5.2 spell: Word of Recall
+- 5.2 spell: Zone of Truth
+- 5.2 item: Acid
+- 5.2 item: Alchemist's Fire
+- 5.2 item: Alchemist's Supplies
+- 5.2 item: Amulet
+- 5.2 item: Antitoxin
+- 5.2 item: Arrows
+- 5.2 item: Backpack
+- 5.2 item: Bagpipes
+- 5.2 item: Ball bearings
+- 5.2 item: Barrel
+- 5.2 item: Basket
+- 5.2 item: Battleaxe
+- 5.2 item: Bedroll
+- 5.2 item: Bell
+- 5.2 item: Blanket
+- 5.2 item: Block and tackle
+- 5.2 item: Blowgun
+- 5.2 item: Book
+- 5.2 item: Bolts
+- 5.2 item: Bottle, Glass
+- 5.2 item: Breastplate
+- 5.2 item: Brewer's Supplies
+- 5.2 item: Bucket
+- 5.2 item: Bullets, Firearm
+- 5.2 item: Bullets, Sling
+- 5.2 item: Burglar's Pack
+- 5.2 item: Calligrapher's Supplies
+- 5.2 item: Caltrops
+- 5.2 item: Candle
+- 5.2 item: Carpenter's Tools
+- 5.2 item: Cartographer's Tools
+- 5.2 item: Case, Crossbow Bolt
+- 5.2 item: Case, Map or Scroll
+- 5.2 item: Chain
+- 5.2 item: Chain Mail
+- 5.2 item: Chain Shirt
+- 5.2 item: Chest
+- 5.2 item: Climber's Kit
+- 5.2 item: Clothes, Fine
+- 5.2 item: Clothes, Traveler's
+- 5.2 item: Club
+- 5.2 item: Cobbler's Tools
+- 5.2 item: Component Pouch
+- 5.2 item: Cook's Utensils
+- 5.2 item: Costume
+- 5.2 item: Crowbar
+- 5.2 item: Crystal
+- 5.2 item: Dagger
+- 5.2 item: Dart
+- 5.2 item: Dice
+- 5.2 item: Diplomat's Pack
+- 5.2 item: Disguise Kit
+- 5.2 item: Dragonchess
+- 5.2 item: Drum
+- 5.2 item: Dulcimer
+- 5.2 item: Dungeoneer's Pack
+- 5.2 item: Emblem
+- 5.2 item: Entertainer's Pack
+- 5.2 item: Explorer's Pack
+- 5.2 item: Flail
+- 5.2 item: Flask
+- 5.2 item: Flute
+- 5.2 item: Forgery Kit
+- 5.2 item: Glaive
+- 5.2 item: Glassblower's Tools
+- 5.2 item: Grappling Hook
+- 5.2 item: Greataxe
+- 5.2 item: Greatclub
+- 5.2 item: Greatsword
+- 5.2 item: Halberd
+- 5.2 item: Half-Plate Armor
+- 5.2 item: Hand Crossbow
+- 5.2 item: Handaxe
+- 5.2 item: Healer's Kit
+- 5.2 item: Heavy Crossbow
+- 5.2 item: Herbalism Kit
+- 5.2 item: Hide Armor
+- 5.2 item: Holy Water
+- 5.2 item: Horn
+- 5.2 item: Hunting Trap
+- 5.2 item: Ink
+- 5.2 item: Ink Pen
+- 5.2 item: Javelin
+- 5.2 item: Jeweler's Tools
+- 5.2 item: Jug
+- 5.2 item: Ladder
+- 5.2 item: Lamp
+- 5.2 item: Lance
+- 5.2 item: Lantern, Bullseye
+- 5.2 item: Lantern, Hooded
+- 5.2 item: Leather Armor
+- 5.2 item: Leatherworker's Tools
+- 5.2 item: Light Crossbow
+- 5.2 item: Light Hammer
+- 5.2 item: Lock
+- 5.2 item: Longbow
+- 5.2 item: Longsword
+- 5.2 item: Lute
+- 5.2 item: Lyre
+- 5.2 item: Mace
+- 5.2 item: Magnifying Glass
+- 5.2 item: Manacles
+- 5.2 item: Mason's Tools
+- 5.2 item: Map
+- 5.2 item: Mirror
+- 5.2 item: Maul
+- 5.2 item: Morningstar
+- 5.2 item: Musket
+- 5.2 item: Navigator's Tools
+- 5.2 item: Needles
+- 5.2 item: Net
+- 5.2 item: Oil
+- 5.2 item: Orb
+- 5.2 item: Padded Armor
+- 5.2 item: Painter's Supplies
+- 5.2 item: Pan flute
+- 5.2 item: Paper
+- 5.2 item: Parchment
+- 5.2 item: Perfume
+- 5.2 item: Pike
+- 5.2 item: Pistol
+- 5.2 item: Poisoner's Kit
+- 5.2 item: Plate Armor
+- 5.2 item: Playing Cards
+- 5.2 item: Poison, Basic
+- 5.2 item: Pole
+- 5.2 item: Pot, Iron
+- 5.2 item: Potion of Healing
+- 5.2 item: Potter's Tools
+- 5.2 item: Pouch
+- 5.2 item: Priest's Pack
+- 5.2 item: Quarterstaff
+- 5.2 item: Quiver
+- 5.2 item: Ram, Portable
+- 5.2 item: Rapier
+- 5.2 item: Rations
+- 5.2 item: Reliquary
+- 5.2 item: Ring Mail
+- 5.2 item: Robe
+- 5.2 item: Rod
+- 5.2 item: Rope
+- 5.2 item: Sack
+- 5.2 item: Scale Mail
+- 5.2 item: Scholar's Pack
+- 5.2 item: Scimitar
+- 5.2 item: Shawm
+- 5.2 item: Shield
+- 5.2 item: Shortbow
+- 5.2 item: Shortsword
+- 5.2 item: Shovel
+- 5.2 item: Sickle
+- 5.2 item: Signal Whistle
+- 5.2 item: Sling
+- 5.2 item: Smith's Tools
+- 5.2 item: Spear
+- 5.2 item: Spellbook
+- 5.2 item: Spell Scroll, Cantrip
+- 5.2 item: Spell Scroll, Level 1
+- 5.2 item: Spikes, Iron
+- 5.2 item: Splint Armor
+- 5.2 item: Sprig of Mistletoe
+- 5.2 item: Spyglass
+- 5.2 item: Staff
+- 5.2 item: String
+- 5.2 item: Studded Leather Armor
+- 5.2 item: Tent
+- 5.2 item: Thieves' Tools
+- 5.2 item: Three-Dragon Ante
+- 5.2 item: Tinderbox
+- 5.2 item: Tinker's Tools
+- 5.2 item: Torch
+- 5.2 item: Trident
+- 5.2 item: Vial
+- 5.2 item: Viol
+- 5.2 item: Wand
+- 5.2 item: Warhammer
+- 5.2 item: War Pick
+- 5.2 item: Waterskin
+- 5.2 item: Weaver's Tools
+- 5.2 item: Whip
+- 5.2 item: Woodcarver's Tools
+- 5.2 item: Yew Wand
+- 5.2 item: Adamantine Armor
+- 5.2 item: Ammunition
+- 5.2 item: Ammunition, +1
+- 5.2 item: Ammunition, +2
+- 5.2 item: Ammunition, +3
+- 5.2 item: Ammunition of Slaying
+- 5.2 item: Amulet of Health
+- 5.2 item: Amulet of Proof against Detection and Location
+- 5.2 item: Amulet of the Planes
+- 5.2 item: Animated Shield
+- 5.2 item: Apparatus of the Crab
+- 5.2 item: Armor
+- 5.2 item: Armor +1
+- 5.2 item: Armor +2
+- 5.2 item: Armor +3
+- 5.2 item: Armor of Invulnerability
+- 5.2 item: Armor of Resistance
+- 5.2 item: Armor of Vulnerability
+- 5.2 item: Arrow-Catching Shield
+- 5.2 item: Bag of Beans
+- 5.2 item: Bag of Devouring
+- 5.2 item: Bag of Holding
+- 5.2 item: Bag of Tricks
+- 5.2 item: Bead of Force
+- 5.2 item: Belt of Dwarvenkind
+- 5.2 item: Belt of Giant Strength
+- 5.2 item: Berserker Axe
+- 5.2 item: Boots of Elvenkind
+- 5.2 item: Boots of Levitation
+- 5.2 item: Boots of Speed
+- 5.2 item: Boots of Striding and Springing
+- 5.2 item: Boots of the Winterlands
+- 5.2 item: Bowl of Commanding Water Elementals
+- 5.2 item: Bracers of Archery
+- 5.2 item: Bracers of Defense
+- 5.2 item: Brazier of Commanding Fire Elementals
+- 5.2 item: Brooch of Shielding
+- 5.2 item: Broom of Flying
+- 5.2 item: Candle of Invocation
+- 5.2 item: Cape of the Mountebank
+- 5.2 item: Carpet of Flying
+- 5.2 item: Censer of Controlling Air Elementals
+- 5.2 item: Chime of Opening
+- 5.2 item: Circlet of Blasting
+- 5.2 item: Cloak of Arachnida
+- 5.2 item: Cloak of Displacement
+- 5.2 item: Cloak of Elvenkind
+- 5.2 item: Cloak of Protection
+- 5.2 item: Cloak of the Bat
+- 5.2 item: Cloak of the Manta Ray
+- 5.2 item: Crystal Ball
+- 5.2 item: Crystal Ball of Mind Reading
+- 5.2 item: Crystal Ball of Telepathy
+- 5.2 item: Crystal Ball of True Seeing
+- 5.2 item: Cube of Force
+- 5.2 item: Cubic Gate
+- 5.2 item: Dagger of Venom
+- 5.2 item: Dancing Sword
+- 5.2 item: Decanter of Endless Water
+- 5.2 item: Deck of Illusions
+- 5.2 item: Defender
+- 5.2 item: Demon Armor
+- 5.2 item: Dimensional Shackles
+- 5.2 item: Dragon Orb
+- 5.2 item: Dragon Scale Mail
+- 5.2 item: Dragon Slayer
+- 5.2 item: Dust of Disappearance
+- 5.2 item: Dust of Dryness
+- 5.2 item: Dust of Sneezing and Choking
+- 5.2 item: Dwarven Plate
+- 5.2 item: Dwarven Thrower
+- 5.2 item: Efficient Quiver
+- 5.2 item: Efreeti Bottle
+- 5.2 item: Elemental Gem
+- 5.2 item: Elven Chain
+- 5.2 item: Eversmoking Bottle
+- 5.2 item: Eyes of Charming
+- 5.2 item: Eyes of Minute Seeing
+- 5.2 item: Eyes of the Eagle
+- 5.2 item: Feather Token
+- 5.2 item: Figurine of Wondrous Power
+- 5.2 item: Flame Tongue
+- 5.2 item: Folding Boat
+- 5.2 item: Frost Brand
+- 5.2 item: Gauntlets of Ogre Power
+- 5.2 item: Gem of Brightness
+- 5.2 item: Gem of Seeing
+- 5.2 item: Giant Slayer
+- 5.2 item: Glamoured Studded Leather
+- 5.2 item: Gloves of Missile Snaring
+- 5.2 item: Gloves of Swimming and Climbing
+- 5.2 item: Goggles of Night
+- 5.2 item: Hammer of Thunderbolts
+- 5.2 item: Handy Haversack
+- 5.2 item: Hat of Disguise
+- 5.2 item: Headband of Intellect
+- 5.2 item: Helm of Brilliance
+- 5.2 item: Helm of Comprehending Languages
+- 5.2 item: Helm of Telepathy
+- 5.2 item: Helm of Teleportation
+- 5.2 item: Holy Avenger
+- 5.2 item: Horn of Blasting
+- 5.2 item: Horn of Valhalla
+- 5.2 item: Silver Horn of Valhalla
+- 5.2 item: Brass Horn of Valhalla
+- 5.2 item: Bronze Horn of Valhalla
+- 5.2 item: Iron Horn of Valhalla
+- 5.2 item: Horseshoes of a Zephyr
+- 5.2 item: Horseshoes of Speed
+- 5.2 item: Immovable Rod
+- 5.2 item: Instant Fortress
+- 5.2 item: Ioun Stone
+- 5.2 item: Iron Bands
+- 5.2 item: Iron Flask
+- 5.2 item: Javelin of Lightning
+- 5.2 item: Lantern of Revealing
+- 5.2 item: Luck Blade
+- 5.2 item: Mace of Disruption
+- 5.2 item: Mace of Smiting
+- 5.2 item: Mace of Terror
+- 5.2 item: Mantle of Spell Resistance
+- 5.2 item: Manual of Bodily Health
+- 5.2 item: Manual of Gainful Exercise
+- 5.2 item: Manual of Golems
+- 5.2 item: Manual of Quickness of Action
+- 5.2 item: Marvelous Pigments
+- 5.2 item: Medallion of Thoughts
+- 5.2 item: Mirror of Life Trapping
+- 5.2 item: Mithral Armor
+- 5.2 item: Mysterious Deck
+- 5.2 item: Necklace of Adaptation
+- 5.2 item: Necklace of Fireballs
+- 5.2 item: Necklace of Prayer Beads
+- 5.2 item: Nine Lives Stealer
+- 5.2 item: Oathbow
+- 5.2 item: Oil of Etherealness
+- 5.2 item: Oil of Sharpness
+- 5.2 item: Oil of Slipperiness
+- 5.2 item: Pearl of Power
+- 5.2 item: Periapt of Health
+- 5.2 item: Periapt of Proof against Poison
+- 5.2 item: Periapt of Wound Closure
+- 5.2 item: Philter of Love
+- 5.2 item: Pipes of Haunting
+- 5.2 item: Pipes of the Sewers
+- 5.2 item: Plate Armor of Etherealness
+- 5.2 item: Portable Hole
+- 5.2 item: Potion of Animal Friendship
+- 5.2 item: Potion of Clairvoyance
+- 5.2 item: Potion of Climbing
+- 5.2 item: Potion of Diminution
+- 5.2 item: Potion of Flying
+- 5.2 item: Potion of Growth
+- 5.2 item: Potions of Healing
+- 5.2 item: Potion of Gaseous Form
+- 5.2 item: Potion of Heroism
+- 5.2 item: Potion of Giant Strength
+- 5.2 item: Potion of Invisibility
+- 5.2 item: Potion of Mind Reading
+- 5.2 item: Potion of Poison
+- 5.2 item: Potion of Resistance
+- 5.2 item: Potion of Speed
+- 5.2 item: Potion of Water Breathing
+- 5.2 item: Ring of Animal Influence
+- 5.2 item: Ring of Djinni Summoning
+- 5.2 item: Ring of Elemental Command
+- 5.2 item: Ring of Evasion
+- 5.2 item: Ring of Feather Falling
+- 5.2 item: Ring of Free Action
+- 5.2 item: Ring of Invisibility
+- 5.2 item: Ring of Jumping
+- 5.2 item: Ring of Mind Shielding
+- 5.2 item: Ring of Protection
+- 5.2 item: Ring of Regeneration
+- 5.2 item: Ring of Resistance
+- 5.2 item: Ring of Shooting Stars
+- 5.2 item: Ring of Spell Storing
+- 5.2 item: Ring of Spell Turning
+- 5.2 item: Ring of Swimming
+- 5.2 item: Ring of Telekinesis
+- 5.2 item: Ring of the Ram
+- 5.2 item: Ring of Three Wishes
+- 5.2 item: Ring of Warmth
+- 5.2 item: Ring of Water Walking
+- 5.2 item: Ring of X-ray Vision
+- 5.2 item: Robe of Eyes
+- 5.2 item: Robe of Scintillating Colors
+- 5.2 item: Robe of Stars
+- 5.2 item: Robe of the Archmagi
+- 5.2 item: Robe of Useful Items
+- 5.2 item: Rod of Absorption
+- 5.2 item: Rod of Alertness
+- 5.2 item: Rod of Lordly Might
+- 5.2 item: Rod of Rulership
+- 5.2 item: Rod of Security
+- 5.2 item: Rope of Climbing
+- 5.2 item: Rope of Entanglement
+- 5.2 item: Scarab of Protection
+- 5.2 item: Scimitar of Speed
+- 5.2 item: Shield
+- 5.2 item: Shield +1
+- 5.2 item: Shield +2
+- 5.2 item: Shield +3
+- 5.2 item: Shield of Missile Attraction
+- 5.2 item: Slippers of Spider Climbing
+- 5.2 item: Sovereign Glue
+- 5.2 item: Spellguard Shield
+- 5.2 item: Spell Scroll
+- 5.2 item: Sphere of Annihilation
+- 5.2 item: Staff of Charming
+- 5.2 item: Staff of Fire
+- 5.2 item: Staff of Frost
+- 5.2 item: Staff of Healing
+- 5.2 item: Staff of Power
+- 5.2 item: Staff of Striking
+- 5.2 item: Staff of Swarming Insects
+- 5.2 item: Staff of the Magi
+- 5.2 item: Staff of the Python
+- 5.2 item: Staff of the Woodlands
+- 5.2 item: Staff of Thunder and Lightning
+- 5.2 item: Staff of Withering
+- 5.2 item: Stone of Controlling Earth Elementals
+- 5.2 item: Stone of Good Luck (Luckstone)
+- 5.2 item: Sun Blade
+- 5.2 item: Sword of Life Stealing
+- 5.2 item: Sword of Sharpness
+- 5.2 item: Sword of Wounding
+- 5.2 item: Talisman of Pure Good
+- 5.2 item: Talisman of the Sphere
+- 5.2 item: Talisman of Ultimate Evil
+- 5.2 item: Tome of Clear Thought
+- 5.2 item: Tome of Leadership and Influence
+- 5.2 item: Tome of Understanding
+- 5.2 item: Trident of Fish Command
+- 5.2 item: Universal Solvent
+- 5.2 item: Vicious Weapon
+- 5.2 item: Vorpal Sword
+- 5.2 item: Wand of Binding
+- 5.2 item: Wand of Enemy Detection
+- 5.2 item: Wand of Fear
+- 5.2 item: Wand of Fireballs
+- 5.2 item: Wand of Lightning Bolts
+- 5.2 item: Wand of Magic Detection
+- 5.2 item: Wand of Magic Missiles
+- 5.2 item: Wand of Paralysis
+- 5.2 item: Wand of Polymorph
+- 5.2 item: Wand of Secrets
+- 5.2 item: Wand of the War Mage
+- 5.2 item: Wand of the War Mage +1
+- 5.2 item: Wand of the War Mage +2
+- 5.2 item: Wand of the War Mage +3
+- 5.2 item: Wand of Web
+- 5.2 item: Wand of Wonder
+- 5.2 item: Weapon
+- 5.2 item: Weapon +1
+- 5.2 item: Weapon +2
+- 5.2 item: Weapon +3
+- 5.2 item: Weapon of Warning
+- 5.2 item: Well of Many Worlds
+- 5.2 item: Wind Fan
+- 5.2 item: Winged Boots
+- 5.2 item: Wings of Flying
+- 5.2 monster: Aboleth
+- 5.2 monster: Air Elemental
+- 5.2 monster: Animated Armor
+- 5.2 monster: Animated Flying Sword
+- 5.2 monster: Animated Rug of Smothering
+- 5.2 monster: Ankheg
+- 5.2 monster: Assassin
+- 5.2 monster: Awakened Shrub
+- 5.2 monster: Awakened Tree
+- 5.2 monster: Axe Beak
+- 5.2 monster: Azer Sentinel
+- 5.2 monster: Balor
+- 5.2 monster: Bandit
+- 5.2 monster: Bandit Captain
+- 5.2 monster: Barbed Devil
+- 5.2 monster: Basilisk
+- 5.2 monster: Bearded Devil
+- 5.2 monster: Behir
+- 5.2 monster: Berserker
+- 5.2 monster: Black Dragon Wyrmling
+- 5.2 monster: Young Black Dragon
+- 5.2 monster: Adult Black Dragon
+- 5.2 monster: Ancient Black Dragon
+- 5.2 monster: Black Pudding
+- 5.2 monster: Blink Dog
+- 5.2 monster: Blue Dragon Wyrmling
+- 5.2 monster: Young Blue Dragon
+- 5.2 monster: Adult Blue Dragon
+- 5.2 monster: Ancient Blue Dragon
+- 5.2 monster: Bone Devil
+- 5.2 monster: Brass Dragon Wyrmling
+- 5.2 monster: Young Brass Dragon
+- 5.2 monster: Adult Brass Dragon
+- 5.2 monster: Ancient Brass Dragon
+- 5.2 monster: Bronze Dragon Wyrmling
+- 5.2 monster: Young Bronze Dragon
+- 5.2 monster: Adult Bronze Dragon
+- 5.2 monster: Ancient Bronze Dragon
+- 5.2 monster: Bugbear Stalker
+- 5.2 monster: Bugbear Warrior
+- 5.2 monster: Bulette
+- 5.2 monster: Centaur Trooper
+- 5.2 monster: Chain Devil
+- 5.2 monster: Chimera
+- 5.2 monster: Chuul
+- 5.2 monster: Clay Golem
+- 5.2 monster: Cloaker
+- 5.2 monster: Cloud Giant
+- 5.2 monster: Cockatrice
+- 5.2 monster: Commoner
+- 5.2 monster: Copper Dragon Wyrmling
+- 5.2 monster: Young Copper Dragon
+- 5.2 monster: Adult Copper Dragon
+- 5.2 monster: Ancient Copper Dragon
+- 5.2 monster: Couatl
+- 5.2 monster: Swarm of Crawling Claws
+- 5.2 monster: Cultist
+- 5.2 monster: Cultist Fanatic
+- 5.2 monster: Darkmantle
+- 5.2 monster: Death Dog
+- 5.2 monster: Deva
+- 5.2 monster: Djinni
+- 5.2 monster: Doppelganger
+- 5.2 monster: Dragon Turtle
+- 5.2 monster: Dretch
+- 5.2 monster: Drider
+- 5.2 monster: Druid
+- 5.2 monster: Dryad
+- 5.2 monster: Earth Elemental
+- 5.2 monster: Efreeti
+- 5.2 monster: Erinyes
+- 5.2 monster: Ettercap
+- 5.2 monster: Ettin
+- 5.2 monster: Fire Elemental
+- 5.2 monster: Fire Giant
+- 5.2 monster: Flesh Golem
+- 5.2 monster: Frost Giant
+- 5.2 monster: Shrieker Fungus
+- 5.2 monster: Violet Fungus
+- 5.2 monster: Gargoyle
+- 5.2 monster: Gelatinous Cube
+- 5.2 monster: Ghast
+- 5.2 monster: Ghost
+- 5.2 monster: Ghoul
+- 5.2 monster: Gibbering Mouther
+- 5.2 monster: Glabrezu
+- 5.2 monster: Gladiator
+- 5.2 monster: Gnoll Warrior
+- 5.2 monster: Goblin Minion
+- 5.2 monster: Goblin Warrior
+- 5.2 monster: Goblin Boss
+- 5.2 monster: Gold Dragon Wyrmling
+- 5.2 monster: Young Gold Dragon
+- 5.2 monster: Adult Gold Dragon
+- 5.2 monster: Ancient Gold Dragon
+- 5.2 monster: Gorgon
+- 5.2 monster: Gray Ooze
+- 5.2 monster: Green Dragon Wyrmling
+- 5.2 monster: Young Green Dragon
+- 5.2 monster: Adult Green Dragon
+- 5.2 monster: Ancient Green Dragon
+- 5.2 monster: Green Hag
+- 5.2 monster: Grick
+- 5.2 monster: Griffon
+- 5.2 monster: Grimlock
+- 5.2 monster: Guardian Naga
+- 5.2 monster: Guard
+- 5.2 monster: Guard Captain
+- 5.2 monster: Half-Dragon
+- 5.2 monster: Harpy
+- 5.2 monster: Hell Hound
+- 5.2 monster: Hezrou
+- 5.2 monster: Hill Giant
+- 5.2 monster: Hippogriff
+- 5.2 monster: Hobgoblin Warrior
+- 5.2 monster: Hobgoblin Captain
+- 5.2 monster: Homunculus
+- 5.2 monster: Horned Devil
+- 5.2 monster: Hydra
+- 5.2 monster: Ice Devil
+- 5.2 monster: Imp
+- 5.2 monster: Incubus
+- 5.2 monster: Invisible Stalker
+- 5.2 monster: Iron Golem
+- 5.2 monster: Knight
+- 5.2 monster: Kobold Warrior
+- 5.2 monster: Kraken
+- 5.2 monster: Lamia
+- 5.2 monster: Lemure
+- 5.2 monster: Lich
+- 5.2 monster: Mage
+- 5.2 monster: Archmage
+- 5.2 monster: Magmin
+- 5.2 monster: Manticore
+- 5.2 monster: Marilith
+- 5.2 monster: Medusa
+- 5.2 monster: Dust Mephit
+- 5.2 monster: Ice Mephit
+- 5.2 monster: Magma Mephit
+- 5.2 monster: Steam Mephit
+- 5.2 monster: Merfolk Skirmisher
+- 5.2 monster: Merrow
+- 5.2 monster: Mimic
+- 5.2 monster: Minotaur of Baphomet
+- 5.2 monster: Mummy
+- 5.2 monster: Mummy Lord
+- 5.2 monster: Nalfeshnee
+- 5.2 monster: Night Hag
+- 5.2 monster: Nightmare
+- 5.2 monster: Noble
+- 5.2 monster: Ochre Jelly
+- 5.2 monster: Ogre
+- 5.2 monster: Oni
+- 5.2 monster: Otyugh
+- 5.2 monster: Owlbear
+- 5.2 monster: Pegasus
+- 5.2 monster: Phase Spider
+- 5.2 monster: Pirate
+- 5.2 monster: Pirate Captain
+- 5.2 monster: Pit Fiend
+- 5.2 monster: Planetar
+- 5.2 monster: Priest Acolyte
+- 5.2 monster: Priest
+- 5.2 monster: Pseudodragon
+- 5.2 monster: Purple Worm
+- 5.2 monster: Quasit
+- 5.2 monster: Rakshasa
+- 5.2 monster: Red Dragon Wyrmling
+- 5.2 monster: Young Red Dragon
+- 5.2 monster: Adult Red Dragon
+- 5.2 monster: Ancient Red Dragon
+- 5.2 monster: Remorhaz
+- 5.2 monster: Roc
+- 5.2 monster: Roper
+- 5.2 monster: Rust Monster
+- 5.2 monster: Sahuagin Warrior
+- 5.2 monster: Salamander
+- 5.2 monster: Satyr
+- 5.2 monster: Scout
+- 5.2 monster: Sea Hag
+- 5.2 monster: Shadow
+- 5.2 monster: Shambling Mound
+- 5.2 monster: Shield Guardian
+- 5.2 monster: Silver Dragon Wyrmling
+- 5.2 monster: Young Silver Dragon
+- 5.2 monster: Adult Silver Dragon
+- 5.2 monster: Ancient Silver Dragon
+- 5.2 monster: Skeleton
+- 5.2 monster: Warhorse Skeleton
+- 5.2 monster: Minotaur Skeleton
+- 5.2 monster: Solar
+- 5.2 monster: Specter
+- 5.2 monster: Sphinx of Wonder
+- 5.2 monster: Sphinx of Lore
+- 5.2 monster: Sphinx of Valor
+- 5.2 monster: Spirit Naga
+- 5.2 monster: Sprite
+- 5.2 monster: Spy
+- 5.2 monster: Stirge
+- 5.2 monster: Stone Giant
+- 5.2 monster: Stone Golem
+- 5.2 monster: Storm Giant
+- 5.2 monster: Succubus
+- 5.2 monster: Tarrasque
+- 5.2 monster: Tough
+- 5.2 monster: Tough Boss
+- 5.2 monster: Treant
+- 5.2 monster: Troll
+- 5.2 monster: Troll Limb
+- 5.2 monster: Unicorn
+- 5.2 monster: Vampire Familiar
+- 5.2 monster: Vampire Spawn
+- 5.2 monster: Vampire, Vampire Form
+- 5.2 monster: Vampire, Bat Form
+- 5.2 monster: Vampire, Mist Form
+- 5.2 monster: Vrock
+- 5.2 monster: Warrior Infantry
+- 5.2 monster: Warrior Veteran
+- 5.2 monster: Water Elemental
+- 5.2 monster: Werebear, Human Form
+- 5.2 monster: Werebear, Hybrid Form
+- 5.2 monster: Werebear, Bear Form
+- 5.2 monster: Wereboar, Human Form
+- 5.2 monster: Wereboar, Hybrid Form
+- 5.2 monster: Wereboar, Boar Form
+- 5.2 monster: Wererat, Human Form
+- 5.2 monster: Wererat, Hybrid Form
+- 5.2 monster: Wererat, Rat Form
+- 5.2 monster: Weretiger, Human Form
+- 5.2 monster: Weretiger, Hybrid Form
+- 5.2 monster: Weretiger, Tiger Form
+- 5.2 monster: Werewolf, Human Form
+- 5.2 monster: Werewolf, Hybrid Form
+- 5.2 monster: Werewolf, Wolf Form
+- 5.2 monster: White Dragon Wyrmling
+- 5.2 monster: Young White Dragon
+- 5.2 monster: Adult White Dragon
+- 5.2 monster: Ancient White Dragon
+- 5.2 monster: Wight
+- 5.2 monster: Will-o’-Wisp
+- 5.2 monster: Winter Wolf
+- 5.2 monster: Worg
+- 5.2 monster: Wraith
+- 5.2 monster: Wyvern
+- 5.2 monster: Xorn
+- 5.2 monster: Zombie
+- 5.2 monster: Ogre Zombie
+- 5.2 monster: Allosaurus
+- 5.2 monster: Ankylosaurus
+- 5.2 monster: Ape
+- 5.2 monster: Archelon
+- 5.2 monster: Baboon
+- 5.2 monster: Badger
+- 5.2 monster: Bat
+- 5.2 monster: Black Bear
+- 5.2 monster: Blood Hawk
+- 5.2 monster: Boar
+- 5.2 monster: Brown Bear
+- 5.2 monster: Camel
+- 5.2 monster: Cat
+- 5.2 monster: Constrictor Snake
+- 5.2 monster: Crab
+- 5.2 monster: Crocodile
+- 5.2 monster: Deer
+- 5.2 monster: Dire Wolf
+- 5.2 monster: Draft Horse
+- 5.2 monster: Eagle
+- 5.2 monster: Elephant
+- 5.2 monster: Elk
+- 5.2 monster: Flying Snake
+- 5.2 monster: Frog
+- 5.2 monster: Giant Ape
+- 5.2 monster: Giant Badger
+- 5.2 monster: Giant Bat
+- 5.2 monster: Giant Boar
+- 5.2 monster: Giant Centipede
+- 5.2 monster: Giant Constrictor Snake
+- 5.2 monster: Giant Crab
+- 5.2 monster: Giant Crocodile
+- 5.2 monster: Giant Eagle
+- 5.2 monster: Giant Elk
+- 5.2 monster: Giant Fire Beetle
+- 5.2 monster: Giant Frog
+- 5.2 monster: Giant Goat
+- 5.2 monster: Giant Hyena
+- 5.2 monster: Giant Lizard
+- 5.2 monster: Giant Octopus
+- 5.2 monster: Giant Owl
+- 5.2 monster: Giant Rat
+- 5.2 monster: Giant Scorpion
+- 5.2 monster: Giant Seahorse
+- 5.2 monster: Giant Shark
+- 5.2 monster: Giant Spider
+- 5.2 monster: Giant Toad
+- 5.2 monster: Giant Venomous Snake
+- 5.2 monster: Giant Vulture
+- 5.2 monster: Giant Wasp
+- 5.2 monster: Giant Weasel
+- 5.2 monster: Giant Wolf Spider
+- 5.2 monster: Goat
+- 5.2 monster: Hawk
+- 5.2 monster: Hippopotamus
+- 5.2 monster: Hunter Shark
+- 5.2 monster: Hyena
+- 5.2 monster: Jackal
+- 5.2 monster: Killer Whale
+- 5.2 monster: Lion
+- 5.2 monster: Lizard
+- 5.2 monster: Mammoth
+- 5.2 monster: Mastiff
+- 5.2 monster: Mule
+- 5.2 monster: Owl
+- 5.2 monster: Panther
+- 5.2 monster: Piranha
+- 5.2 monster: Plesiosaurus
+- 5.2 monster: Polar Bear
+- 5.2 monster: Pony
+- 5.2 monster: Pteranodon
+- 5.2 monster: Rat
+- 5.2 monster: Raven
+- 5.2 monster: Reef Shark
+- 5.2 monster: Rhinoceros
+- 5.2 monster: Riding Horse
+- 5.2 monster: Saber-Toothed Tiger
+- 5.2 monster: Scorpion
+- 5.2 monster: Seahorse
+- 5.2 monster: Spider
+- 5.2 monster: Swarm of Bats
+- 5.2 monster: Swarm of Insects
+- 5.2 monster: Swarm of Piranhas
+- 5.2 monster: Swarm of Rats
+- 5.2 monster: Swarm of Ravens
+- 5.2 monster: Swarm of Venomous Snakes
+- 5.2 monster: Tiger
+- 5.2 monster: Triceratops
+- 5.2 monster: Tyrannosaurus Rex
+- 5.2 monster: Venomous Snake
+- 5.2 monster: Vulture
+- 5.2 monster: Warhorse
+- 5.2 monster: Weasel
+- 5.2 monster: Wolf
 
 ## Entries marked `srd` that are not in the official SRD and were removed
 
-- 5.1 item: Light crossbow
-- 5.1 subclass: Path of the Berserker
-- 5.1 subclass: College of Lore
-- 5.1 subclass: Life Domain
-- 5.1 subclass: Circle of the Land
-- 5.1 subclass: Way of the Open Hand
-- 5.1 subclass: Oath of Devotion
-- 5.1 subclass: Draconic Bloodline
-- 5.1 subclass: The Fiend
-- 5.1 subclass: School of Evocation
-- 5.1 item: Chain shirt armor
-- 5.1 item: Scale mail armor
-- 5.1 item: Breastplate armor
-- 5.1 item: Ring mail armor
-- 5.1 item: Chain mail armor
-- 5.1 item: Hand crossbow
-- 5.1 item: Heavy crossbow
-- 5.1 item: Holy symbol
-- 5.1 item: Arcane focus (wand)
-- 5.1 item: Shield, +1
+None in this run.
 
 ## Names shared with homebrew or private entries (both kept)
 
-None.
+- race "Human" (SRD 5.1) and a homebrew entry of the same name: both kept
+- race "Dragonborn" (SRD 5.1) and a homebrew entry of the same name: both kept
+- race "Dragonborn" (SRD 5.2) and a homebrew entry of the same name: both kept
+- race "Human" (SRD 5.2) and a homebrew entry of the same name: both kept
