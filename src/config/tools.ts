@@ -13,3 +13,9 @@ export const TOOLS: { id: string; name: string; what: string; feature?: Feature;
   { id: 'log', name: 'Reveal log', what: 'Everything that has become visible to players, and the optional "newly revealed" feed.', players: 'What has opened up for you lately.' },
   { id: 'compendium', name: 'Compendium', what: 'The homebrew this campaign uses.', players: 'The homebrew this campaign uses.' },
 ];
+
+// Which tools a campaign's hub has (settings.tools, a list of ids). A campaign with no list is
+// one made before the choice existed: it keeps every tool.
+export const hasTool = (settings: { tools?: unknown } | null | undefined, id: string) => !Array.isArray(settings?.tools) || settings.tools.includes(id);
+export const toolsOf = (settings: { tools?: unknown } | null | undefined) => TOOLS.filter((t) => hasTool(settings, t.id));
+export const cleanTools = (list: unknown[]): string[] => TOOLS.map((t) => t.id).filter((id) => list.map(String).includes(id));

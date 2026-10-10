@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { AddSectionForm, CampaignForm, DeleteCampaignForm, ImportPagesForm, InviteForm, SectionRow } from '@/components/DmForms';
 import { BackgroundUploader } from '@/components/BackgroundUploader';
 import { previewAs, removeMember, revokeInvite, setCampaignBackground, setPhase, stepStage } from '../actions';
-import { RulesForm, SettingForm, StagesForm } from '@/components/DmForms';
+import { RulesForm, SettingForm, StagesForm, ToolsForm } from '@/components/DmForms';
+import { TOOLS, toolsOf } from '@/config/tools';
 import { RULES, rulesOf } from '@/config/rules';
 import { UpgradeHint } from '@/components/UpgradeHint';
 import { ThemeEditor } from '@/components/ThemeEditor';
@@ -139,6 +140,12 @@ export default async function Manage({ params, searchParams }: { params: Promise
         <div className="plate">
           <p>Which open rules this campaign uses. It decides which races or species, classes, spells and creatures your players and you can pick from. Characters keep whatever they already chose. Your own homebrew is always available whichever you choose.</p>
           <RulesForm slug={slug} value={rulesOf(campaign.settings)} options={Object.entries(RULES).map(([k, v]) => [k, v.label])} />
+        </div>
+
+        <h2 id="tools">Table tools</h2>
+        <div className="plate">
+          <p>The tools this campaign&apos;s hub has. Switching one off hides it for you and your players; nothing in it is deleted, and switching it back on brings it all back.</p>
+          <ToolsForm slug={slug} tools={TOOLS.map(({ id, name, what }) => ({ id, name, what }))} on={toolsOf(campaign.settings).map((t) => t.id)} />
         </div>
 
         <h2>Theme</h2>

@@ -8,7 +8,7 @@ import { discounted } from '@/config/store';
 //   * Pro subscribers, founders and accounts with full access get the subscriber discount
 export async function priceFor(supabase: SupabaseClient, userId: string, product: { id: string; edition?: string | null; price_cents: number }) {
   const { data: plan } = await supabase.rpc('my_plan');
-  const pro = !!plan?.pro;
+  const pro = !!(plan?.paid ?? plan?.pro);   // a real subscriber, not just "limits are switched off"
   let base = product.price_cents, upgradeInto: string | null = null, credit = 0;
   if (product.edition === 'full') {
     const { data: fw } = await supabase.from('products').select('id, price_cents').eq('full_product', product.id).eq('edition', 'framework').limit(1).maybeSingle();

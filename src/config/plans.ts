@@ -13,6 +13,11 @@ export const PRICES = {
   founder: { cents: 15000, label: '$150 once', interval: null },
 } as const;
 
+// Whether plan limits block anything. While this is false nobody is refused: every account
+// can use everything, and the limits and Pro-only list below are kept only as the wording
+// on the pricing and plans pages. Set it to true (and run sync-config) to switch them back on.
+export const ENFORCE_PLANS = false;
+
 // What a free DM gets before a limit is reached.
 export const FREE_LIMITS = { campaigns: 1, players: 5, homebrew: 3, maps: 1, stages: 2 } as const;
 
@@ -78,6 +83,7 @@ export const PLAN_COPY: Record<PlanId, { name: string; price: string; pitch: str
 
 // The copy the database keeps.
 export const dbPlanConfig = () => ({
+  enforce: ENFORCE_PLANS,
   limits: { ...FREE_LIMITS },
   pro_features: (Object.keys(FEATURES) as Feature[]).filter((f) => FEATURES[f].pro),
   founder: { ...FOUNDER },

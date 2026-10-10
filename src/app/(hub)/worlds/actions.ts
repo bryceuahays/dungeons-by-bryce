@@ -31,15 +31,12 @@ export async function copyWorld(fromId: string) {
   redirect(data ? '/worlds/' + data.id : '/worlds');
 }
 
-export async function saveWorld(id: string, w: { name: string; tagline: string; rules: string; data: any }): Promise<FormState> { // eslint-disable-line @typescript-eslint/no-explicit-any
+export async function saveWorld(id: string, w: { name: string; tagline: string; data: any }): Promise<FormState> { // eslint-disable-line @typescript-eslint/no-explicit-any
   const { supabase } = await requireViewer();
   const name = String(w.name || '').trim().slice(0, 80);
   if (!name) return { error: 'Give the world a name.' };
-  const { error } = await supabase.from('worlds').update({ name, tagline: String(w.tagline || '').slice(0, 300), rules: ['2014', '2024', 'both'].includes(w.rules) ? w.rules : '2024', data: w.data ?? {}, updated_at: new Date().toISOString() }).eq('id', id);
+  const { error } = await supabase.from('worlds').update({ name, tagline: String(w.tagline || '').slice(0, 300), data: w.data ?? {}, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) return { error: 'That did not save. Try again in a moment.' };
-  // its campaigns follow its rules
-  const { data: camps } = await supabase.from('campaigns').select('id, settings').eq('world_id', id);
-  for (const c of camps ?? []) if ((c.settings as any)?.rules !== w.rules) await supabase.from('campaigns').update({ settings: { ...((c.settings as any) ?? {}), rules: w.rules } }).eq('id', c.id); // eslint-disable-line @typescript-eslint/no-explicit-any
   revalidatePath('/worlds');
   return { note: 'Saved.' };
 }
@@ -58,12 +55,6 @@ export async function setCampaignWorld(campaignId: string, worldId: string | nul
   if (!isId(campaignId) || (worldId && !isId(worldId))) return { error: 'Not found.' };
   const { error } = await supabase.from('campaigns').update({ world_id: worldId }).eq('id', campaignId);
   if (error) return { error: 'That did not work. Only the campaign’s DM can move it.' };
-  // the campaign plays by its world's rules
-  if (worldId) {
-    const { data: w } = await supabase.from('worlds').select('rules').eq('id', worldId).maybeSingle();
-    const { data: c } = await supabase.from('campaigns').select('settings').eq('id', campaignId).maybeSingle();
-    if (w && c) await supabase.from('campaigns').update({ settings: { ...(c.settings ?? {}), rules: w.rules } }).eq('id', campaignId);
-  }
   if (worldId) await attachWorldEntries(supabase, worldId, [campaignId]);
   revalidatePath('/worlds');
   revalidatePath('/campaigns');

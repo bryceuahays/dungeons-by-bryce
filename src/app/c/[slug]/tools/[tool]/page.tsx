@@ -5,7 +5,7 @@ import { getCampaign, getSheetEntities, type CampaignCtx } from '@/lib/campaign'
 import { campaignCan, campaignCanMake } from '@/lib/entitlements';
 import { getEntries, getMembers } from '@/lib/entries';
 import { FEATURES, type Feature } from '@/config/plans';
-import { TOOLS } from '@/config/tools';
+import { TOOLS, hasTool } from '@/config/tools';
 import type { ToolProps } from '@/lib/entry-types';
 import { UpgradeHint } from '@/components/UpgradeHint';
 import { EntityCard } from '@/components/EntityCard';
@@ -47,6 +47,8 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
   const def = TOOLS.find((t) => t.id === tool);
   if (!def) notFound();
   const ctx = await getCampaign(slug);
+  // a tool that is not part of this campaign's hub is not there at all
+  if (!hasTool(ctx.campaign.settings, def.id)) notFound();
   const back = <p className="row" style={{ marginTop: 16 }}><Link className="act sm" href={`/c/${ctx.campaign.slug}/tools`}>All table tools</Link></p>;
   if (def.feature && !campaignCan(ctx.access, def.feature)) {
     return <div className="cs-guide"><div className="wrap"><h2>{def.name}</h2><p className="lede">{def.what}</p><UpgradeHint feature={def.feature} dm={ctx.realDm} />{back}</div></div>;

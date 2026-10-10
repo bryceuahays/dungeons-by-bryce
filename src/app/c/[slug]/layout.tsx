@@ -6,6 +6,7 @@ import { CampaignChrome } from '@/components/CampaignChrome';
 import Link from 'next/link';
 import { TimelineBanner } from '@/components/TimelineBanner';
 import { campaignCan } from '@/lib/entitlements';
+import { hasTool } from '@/config/tools';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -46,9 +47,9 @@ export default async function CampaignLayout({ children, params }: { children: R
         headView={ctx.headView ? campaign.id : null}
         readOnly={ctx.realDm && !ctx.access.writable}
       />
-      {campaignCan(ctx.access, 'timeline') ? <TimelineBanner ctx={ctx} /> : null}
+      {campaignCan(ctx.access, 'timeline') && hasTool(ctx.campaign.settings, 'timeline') ? <TimelineBanner ctx={ctx} /> : null}
       <div className="page">{children}</div>
-      {campaignCan(ctx.access, 'no_footer') ? null : <footer className="made">Made with <Link href="/">Dungeons by Bryce</Link></footer>}
+      {(ctx.access.paid ?? campaignCan(ctx.access, 'no_footer')) ? null : <footer className="made">Made with <Link href="/">Dungeons by Bryce</Link></footer>}
     </div>
   );
 }

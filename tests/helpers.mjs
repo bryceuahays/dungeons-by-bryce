@@ -28,6 +28,10 @@ export const anonClient = () => createClient(URL_, ANON, { auth: { persistSessio
 //   makeUser('head', { head: true })        a Head DM
 //   makeUser('free', { free: true })        an account on the free plan (the others are given full access,
 //                                           so tests written before plans existed still mean what they meant)
+//   makeUser('open', { free: true, unblocked: true })   a free account as real people have it while plan
+//                                           limits are switched off (src/config/plans.ts ENFORCE_PLANS)
+// Plan limits always apply to test accounts unless `unblocked` is passed, so the limits stay
+// tested whether or not they are switched on for everyone else.
 export async function makeUser(label, opts = {}) {
   const email = `${label}-${crypto.randomBytes(4).toString('hex')}${DOMAIN}`;
   const password = crypto.randomBytes(18).toString('base64url');
@@ -39,6 +43,10 @@ export async function makeUser(label, opts = {}) {
   }
   if (!opts.free && !opts.head) {
     const r = await admin.from('profiles').update({ comp: true }).eq('id', data.user.id);
+    if (r.error) throw r.error;
+  }
+  if (!opts.unblocked) {
+    const r = await admin.from('profiles').update({ always_enforce: true }).eq('id', data.user.id);
     if (r.error) throw r.error;
   }
   if (opts.dmOf) {

@@ -1,5 +1,6 @@
 import type { CampaignCtx } from '@/lib/campaign';
 import { campaignCan } from '@/lib/entitlements';
+import { hasTool } from '@/config/tools';
 import { getEntries } from '@/lib/entries';
 import { parseVideoUrl, videoFrame } from '@/lib/video';
 
@@ -7,7 +8,7 @@ import { parseVideoUrl, videoFrame } from '@/lib/video';
 // and what the party changed in the latest session. Each part is left out when empty.
 export async function HomeExtras({ ctx }: { ctx: CampaignCtx }) {
   const video = parseVideoUrl(ctx.campaign.settings?.video);
-  const cons = campaignCan(ctx.access, 'world') ? await getEntries(ctx, ['consequence']) : [];
+  const cons = campaignCan(ctx.access, 'world') && hasTool(ctx.campaign.settings, 'world') ? await getEntries(ctx, ['consequence']) : [];
   const latest = Math.max(0, ...cons.map((c) => Number(c.data.session) || 0));
   const since = cons.filter((c) => (Number(c.data.session) || 0) === latest);
   const hero = Number(ctx.campaign.theme?.hero) > 0 && campaignCan(ctx.access, 'themes');

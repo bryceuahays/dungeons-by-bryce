@@ -9,8 +9,10 @@ import { copyWorld } from '../actions';
 
 export const metadata = { title: 'World' };
 
-export default async function WorldPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function WorldPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ made?: string }> }) {
   const { id } = await params;
+  const { made } = await searchParams;
+  const note = made ? <div className="panel"><p className="good" role="status">Your campaign was created. It is in this world&apos;s list of campaigns below.</p></div> : null;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const { supabase, user } = await requireViewer();
   const { data: world } = await supabase.from('worlds').select('id, name, tagline, data, owner_id, official, rules').eq('id', id).maybeSingle();
@@ -27,7 +29,7 @@ export default async function WorldPage({ params }: { params: Promise<{ id: stri
   const all = camps ?? [];
   const inHere = all.filter((c) => c.world_id === id).map(named);
 
-  if (world.official) return <ReadyMade world={world} campaigns={inHere} />;
+  if (world.official) return <>{note}<ReadyMade world={world} campaigns={inHere} /></>;
 
   const [{ data: links }, { data: mine }] = await Promise.all([
     supabase.from('world_entities').select('entity_id, entities(id, name, type)').eq('world_id', id),
@@ -36,8 +38,9 @@ export default async function WorldPage({ params }: { params: Promise<{ id: stri
   return (
     <>
       <p><Link className="button quiet" href="/worlds">All my worlds</Link></p>
+      {note}
       <WorldEditor
-        world={{ id: world.id, name: world.name, tagline: world.tagline, rules: world.rules, data: world.data ?? {} }}
+        world={{ id: world.id, name: world.name, tagline: world.tagline, data: world.data ?? {} }}
         campaigns={inHere}
         others={all.filter((c) => c.world_id !== id).map((c) => ({ ...named(c), world: c.world_id ? worldName.get(c.world_id) : undefined }))}
         entries={(links ?? []).map((l: any) => l.entities).filter(Boolean).sort((a: any, b: any) => a.name.localeCompare(b.name))}
