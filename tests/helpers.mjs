@@ -15,7 +15,7 @@ export const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 export const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const SITE = (process.env.TEST_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
-export const SLUG = 'to-be-a-god';
+export const SLUG = 'the-hollow-crown';   // the dummy campaign's real address (tests/fixtures/dummy-campaign.mjs)
 export const BUCKET = 'campaign-media';
 export const DOMAIN = '@test.dungeons.invalid';
 

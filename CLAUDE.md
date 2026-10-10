@@ -24,15 +24,14 @@ The owner is Bryce (GitHub `bryceuahays`), who is also the site's one Head DM ac
 ```
 dungeons-by-bryce/
 ├── CLAUDE.md                     # This file
-├── BRIEF.md                      # The original build brief
 ├── TODO-LATER.md                 # Deferred work, each line linked to its issue
 ├── docs/                         # Plans, decisions, handoff, board setup, SRD import notes
 ├── .github/                      # Issue forms and the pull request template
-├── source/                       # Canon for Bryce's first campaign. Never rewrite.
-├── seed/                         # Seed data built from source/ (SRD download is gitignored)
+├── seed/                         # SRD seed data (the SRD download itself is gitignored)
 ├── scripts/                      # Seed, import, build and test helpers (run with node)
 ├── supabase/migrations/          # Database schema and row-level security, in file-name order
 ├── tests/                        # node --test suites that run against a built local site
+│   └── fixtures/                 # The dummy campaign the tests run against
 ├── public/                       # Static images
 ├── art/                          # Screenshots and working art (not deployed)
 └── src/
@@ -40,8 +39,8 @@ dungeons-by-bryce/
     ├── config/                   # Plans, themes, homebrew kinds, tools, rules versions, store, commissions
     ├── lib/                      # Server helpers: campaign reading, entitlements, store, stripe, mail, rules engine
     ├── components/               # React components (tools/ holds the table tools)
-    ├── islands/                  # Legacy sheet and builder scripts for the first campaign (some generated)
-    ├── styles/                   # Plain CSS (some generated from source/)
+    ├── islands/                  # The DM's party overview renderer
+    ├── styles/                   # Plain CSS
     └── app/
         ├── page.tsx              # Public landing page
         ├── (public)/             # pricing, store, custom, legal
@@ -70,7 +69,6 @@ These hold for every change, whatever else it does.
 - There is one Head DM account (the site owner). Everyone else is the DM of campaigns they own and a player in campaigns they join.
 - Database policies are per campaign (`is_campaign_dm(campaign_id)`). Never add a site-wide "is DM" check.
 - The Head DM does not see other DMs' content. They can read another DM's campaign only after unhiding it (`head_reveals`, `head_sees(campaign)`), and that access is read-only. In the app this is `ctx.headView`; editing tools are shown on `ctx.realDm`.
-- Character-builder rules for the first campaign contain runnable formulas and are writable only by the Head DM.
 
 ### Content sources
 - Every rules entry is `srd`, `homebrew` or `private`.
@@ -82,7 +80,7 @@ These hold for every change, whatever else it does.
 
 ### Data
 - Migrate existing data, never wipe it. Accounts, characters and campaigns must survive every change.
-- `source/` is canon for the first campaign. Do not rewrite, summarize or "improve" its text, rules or numbers.
+- A DM's campaign text is theirs. Do not rewrite, summarize or "improve" it.
 - Store no health or clinical information anywhere.
 
 ### Plans and money
@@ -94,8 +92,8 @@ These hold for every change, whatever else it does.
 - Never print, commit or log secrets. They live in `.env.local` (gitignored) and in Vercel environment variables.
 - The repository is private because the seed data contains DM secrets.
 
-### The first campaign's title
-Bryce's first campaign (slug `to-kill-god`) has a real title that its players do not learn until a later stage. Nothing that names it may appear in code that ships to the browser (a test checks the bundles), or in issues, pull requests or commit messages. Call it "Bryce's first campaign". Older docs use the real title; do not copy it forward.
+### Campaign content stays out of the code
+Nothing a DM wrote may be compiled into code that ships to the browser. A test reads the built bundles for words from the dummy campaign that only its DM, or only a later stage, may see.
 
 ### Phones
 Every screen must work well on a phone.
@@ -114,7 +112,7 @@ Each campaign has ordered, named stages (`campaigns.phases`, `campaigns.phase`).
 - `entities` holds SRD and homebrew rules: `source`, `srd_version` (5.1 or 5.2), `type`, `status` (draft, playtest, live), `depth`, `version`, `origin` (`own` or `product`). SRD rows have no owner.
 - A campaign's `settings.rules` is `2014`, `2024` or `both` (`src/config/rules.ts`).
 - `src/lib/rules/engine.ts` is the single place entries are applied to a character (`derive`), plus the class table and the balance hint. It is pure code with no database access.
-- The legacy `rules` table belongs to the first campaign only and is all `private`. `usesLegacySheet()` decides whether a campaign gets the legacy sheet (`src/islands/`) or the standard one (`src/components/Sheet5e.tsx`).
+- Every campaign uses the standard sheet (`src/components/Sheet5e.tsx`). The old `rules` and `character_private` tables are still in the database, empty; nothing in the app reads them, and any row in `rules` is treated as `private` by the store.
 
 ### Table tools
 Tools are rows of one `entries` table (kinds: npc, beat, note, map, region, pin, consequence, secret, clue, clock, encounter, zero, log) plus `entry_secrets` for the DM-only part. There is one visibility rule, written twice and kept in step: `entry_open()` in SQL, and `entryOpen()` in `src/lib/entry-types.ts` for the "view as" preview.
@@ -144,7 +142,6 @@ Map pictures are served only through `src/lib/map-image.ts`, which paints hidden
 - There is **one live Supabase database and no staging copy.** Local development, previews, tests and production all use it.
 - Schema and row-level security live in `supabase/migrations/`. Every table has RLS. Migrations are additive: they never drop or rewrite existing data.
 - Applying migrations changes the live site's database. Only Bryce does it, or a session he has told to in that session.
-- Generated files (`src/styles/{guide,builder,runsheet}.css`, `src/islands/*.gen.js`) are built from `source/` by `scripts/build-css.mjs` and `scripts/build-islands.mjs`. Do not edit them by hand.
 
 ## Development Commands
 
@@ -155,11 +152,10 @@ npm run typecheck      # tsc --noEmit
 npm run test:local     # Start the built site on port 3000, run every test, stop it
 npm test               # Run the tests against an already running site (TEST_SITE_URL picks it)
 npm run sync-config    # Copy src/config/plans.ts into the database
-npm run verify-seed    # Check the first campaign in the database against source/
+npm run seed-fixture   # Load or reset the dummy campaign the tests run against
 npm run fetch-srd      # Download the pinned SRD dataset (not stored in the repo)
 npm run import-srd     # Load both SRD versions (repeatable)
 npm run seed-demo      # Rebuild the public demo campaign
-npm run seed-originals # Rebuild the free "Bryce's Originals" pack and its report
 ```
 
 Environment variable names (values are never written down here): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_PASSWORD`, `NEXT_PUBLIC_SITE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `DM_EMAIL`.
@@ -167,6 +163,7 @@ Environment variable names (values are never written down here): `NEXT_PUBLIC_SU
 ## Testing
 
 - Run `npm run build && npm run test:local`. All tests must pass before anything is merged.
+- The tests run against a made-up dummy campaign (`tests/fixtures/dummy-campaign.mjs`, "The Harvest Fair", which becomes "The Hollow Crown" at its second stage). It lives in the Head DM's account, is not secret, and nobody plays in it. `npm run seed-fixture` puts it back if it is ever changed or deleted.
 - Tests create throwaway accounts on the live database and remove them afterwards. The run fails if any are left behind. Run tests only when the person asks, and never while someone else's migration is open.
 - Add tests for every new permission, visibility, entitlement and purchase rule. A change to a screen that breaks an existing test means the test is updated in the same pull request, not left failing.
 - `tests/helpers.mjs` has the shared helpers (`makeUser`, `campaign`, `invite`, `page`, `cleanup`).
@@ -207,6 +204,5 @@ Several people, each with their own Claude Code session, build in this repositor
 - `docs/board-setup.md`: how the team works, what is built, the shared files, and what can be built in parallel.
 - `docs/commercial-plan.md`: the plan for the commercial build.
 - `docs/srd-import.md` and `docs/srd-import-report.md`: SRD sources, licences and import counts.
-- `docs/originals-report.md`: what is in the free originals pack and what was left out.
+- `docs/originals-report.md`: what is in the free originals pack and what was left out. The pack is now maintained by hand under Homebrew.
 - `TODO-LATER.md`: deferred work and things only Bryce can do.
-- `BRIEF.md`, `DECISIONS.md`, `REPORT.md`, `PHASE-REPORT.md`: the original build, kept for history.

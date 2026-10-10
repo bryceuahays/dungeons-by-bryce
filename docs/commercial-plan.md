@@ -20,7 +20,7 @@ Written before any code changed, on the `commercial` branch. Choices made along 
 | `memberships`, `invites` | who has joined; invite codes |
 | `sections` | the tabs of a campaign |
 | `content` | every block on every page: `player` or `dm`, optional phase, hidden flag |
-| `rules` | the character builder's data for "To be a god" (races, classes, spells, gear) |
+| `rules` | the character builder's data for Bryce's first campaign (races, classes, spells, gear) |
 | `characters`, `character_private` | sheets; the fields a campaign holds back until a later phase |
 | `sessions` | run sheets (DM only) |
 | `media` | race videos and images, per phase |
@@ -28,9 +28,9 @@ Written before any code changed, on the `commercial` branch. Choices made along 
 
 **The before/after toggle.** A campaign has an ordered list of phases and a current phase. Tabs, blocks, builder rules, media, sheet fields and even the campaign's title and address can be tagged with a phase. The database holds back anything tagged for another phase. This is the seed of the reveal system in Phase 4.
 
-**Character sheets.** "To be a god" has its own builder and sheet, lifted from your original sites and driven by the `rules` table. They are specific to that campaign's rules (nineteen classes, twelve races, the divinity system).
+**Character sheets.** Bryce's first campaign has its own builder and sheet, lifted from your original sites and driven by the `rules` table. They are specific to that campaign's rules (nineteen classes, twelve races, the divinity system).
 
-**Theme.** A campaign's colours and fonts are stored as tokens on the campaign and applied as CSS variables. "To be a god" is one set of tokens plus a starfield.
+**Theme.** A campaign's colours and fonts are stored as tokens on the campaign and applied as CSS variables. Bryce's first campaign is one set of tokens plus a starfield.
 
 **What exists already from the brief:** per-campaign roles, invite codes, strict isolation between campaigns (tested), a site admin, deleting campaigns and characters, pasting a campaign in, uploaded backgrounds, feedback by email, a two-state reveal toggle, a "view as player" preview, DM view of every player's sheet.
 
@@ -44,7 +44,7 @@ Everything commercial: plans, billing, limits. Any rules content that is safe to
 2. **The branch is not put live.** All code stays on `commercial`. The live site keeps showing today's version until you say to merge.
 3. **The 5e SRD content is written into the repo by hand, as a core set.** Downloading a ready-made SRD data file needs your say-so, so this build ships a core set (all nine races, all twelve classes and their subclass, the background, the feat, armour and weapons, and a working set of spells and monsters) and a script that loads the full set once you approve a download.
 4. **Everything in the database today is marked `private`.** None of it is confirmed SRD text, and several classes are conversions from other editions.
-5. **Two rule systems side by side.** "To be a god" keeps its own builder and sheet untouched. Every other campaign uses a new, general fifth edition sheet driven by SRD and homebrew entries.
+5. **Two rule systems side by side.** Bryce's first campaign keeps its own builder and sheet untouched. Every other campaign uses a new, general fifth edition sheet driven by SRD and homebrew entries.
 6. **One general table for table tools.** NPCs, story beats, maps, regions, pins, clocks, clues, consequences and the initiative tracker all live in one `entries` table with one visibility rule (everyone, DM only, named players, from a stage, or when a linked beat happens), enforced by the database. DM-only parts of an entry live in a second table players cannot read.
 7. **Plan limits are enforced in the database too**, not only on the page, from one config file (`src/config/plans.ts`) that is copied into the database.
 8. **Stripe in test mode only.** The code refuses a live key.
@@ -59,7 +59,7 @@ Everything commercial: plans, billing, limits. Any rules content that is safe to
 
 **Phase 3. Homebrew builder.** `/homebrew`: nine entry types, Quick, Guided and Advanced depths over the same data, clone from SRD, effect building blocks that the new sheet applies, automatic class table, live preview, balance hint, versions with change notes, draft/playtest/live, packs with JSON export and import, attach to campaigns, edition converter.
 
-**Phase 4. Secrets and reveals.** Phases become named reveal stages any campaign can have. Blocks and tabs can be for everyone, DM only, named players, one stage, or from a stage onward. Per-player secrets and private notes. "View as" any player at any stage. Reveal log and an optional "newly revealed" feed. "To be a god" keeps its two stages and behaves as today.
+**Phase 4. Secrets and reveals.** Phases become named reveal stages any campaign can have. Blocks and tabs can be for everyone, DM only, named players, one stage, or from a stage onward. Per-player secrets and private notes. "View as" any player at any stage. Reveal log and an optional "newly revealed" feed. Bryce's first campaign keeps its two stages and behaves as today.
 
 **Phase 5. Table tools.** NPC tracker, DM access to any sheet (read-only with an edit switch), live initiative tracker with hidden enemies.
 

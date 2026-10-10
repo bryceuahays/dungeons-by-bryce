@@ -3,8 +3,6 @@ import { Cinzel, Inter } from 'next/font/google';
 import './globals.css';
 import '@/styles/campaign.css';
 import '@/styles/guide.css';
-import '@/styles/builder.css';
-import '@/styles/runsheet.css';
 import '@/styles/tools.css';
 import { NavProgress } from '@/components/NavProgress';
 

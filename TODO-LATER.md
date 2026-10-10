@@ -37,7 +37,7 @@ Not built in the commercial build, on purpose. Tick things off as they are done.
 - [ ] **Email for commission requests and feedback goes through Resend's shared sender.** A sending domain of your own would let the site email people other than you (receipts, invite emails). ([#56](https://github.com/bryceuahays/dungeons-by-bryce/issues/56))
 - [ ] **Invite by email.** Invites are links and codes you send yourself. ([#57](https://github.com/bryceuahays/dungeons-by-bryce/issues/57))
 - [ ] **Named-player visibility for attached homebrew and map regions** is in the database rules; the screens offer it for blocks, NPCs, beats and pins only. ([#58](https://github.com/bryceuahays/dungeons-by-bryce/issues/58))
-- [ ] **Homebrew effects on "To be a god" sheets.** Structured effects apply to the standard sheet. That campaign keeps its own sheet. ([#59](https://github.com/bryceuahays/dungeons-by-bryce/issues/59))
+- [x] **Homebrew effects on Bryce's first campaign sheets.** No longer needed: that campaign and its own sheet were removed, and every campaign uses the standard sheet. ([#59](https://github.com/bryceuahays/dungeons-by-bryce/issues/59))
 - [ ] **Items on the standard sheet.** Gear is a text box. Picking SRD or homebrew items into an inventory, with their effects applied, is not built. ([#54](https://github.com/bryceuahays/dungeons-by-bryce/issues/54))
 - [ ] **Multiclassing and choosing subclass features by option** on the standard sheet. ([#53](https://github.com/bryceuahays/dungeons-by-bryce/issues/53))
 - [ ] **Drawing tools for map regions beyond tap-to-outline** (freehand, rectangles, editing an outline after it is drawn). ([#60](https://github.com/bryceuahays/dungeons-by-bryce/issues/60))

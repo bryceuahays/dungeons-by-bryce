@@ -16,10 +16,10 @@ const log = (...a) => console.log(...a);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 await cleanup();
-const tbg = await campaign();
+const camp = await campaign();
 const user = await makeUser('maker');
-await user.client.rpc('join_campaign', { p_code: await invite(tbg.id) });
-await user.client.from('characters').insert({ owner: user.id, campaign_id: tbg.id, data: { t: 1, name: 'Soon Deleted', race: 'human', cls: 'Bard', level: 3, ab: {} } });
+await user.client.rpc('join_campaign', { p_code: await invite(camp.id) });
+await user.client.from('characters').insert({ owner: user.id, campaign_id: camp.id, data: { t: 1, name: 'Soon Deleted', race: 'human', cls: 'Bard', level: 3, ab: {} } });
 
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--hide-scrollbars'] });
 const ctx = await browser.createBrowserContext();

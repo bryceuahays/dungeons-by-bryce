@@ -122,7 +122,7 @@ export function derive(c: CharacterV2, entities: Entity[]) {
   const resist = [...new Set(of('resist').filter((x) => !x.immune).map((x) => x.v))];
   const immune = [...new Set(of('resist').filter((x) => x.immune).map((x) => x.v))];
   const resources = of('resource').map((x) => ({ name: x.name, recharge: x.recharge, max: evalMax(x.max, { level, mods }), from: x.from })).filter((r) => r.max > 0);
-  // a custom resource attached to the campaign (a Divinity pool, say) is a pool every character has
+  // a custom resource attached to the campaign (a pool of favour, say) is a pool every character has
   entities.filter((e) => e.type === 'resource' && e.source !== 'srd').forEach((e) => {
     const max = evalMax(e.data.max ?? '1', { level, mods });
     if (max > 0 && !resources.some((r) => r.name === e.name)) resources.push({ name: e.name, recharge: e.data.recharge ?? 'long', max, from: 'This campaign' });

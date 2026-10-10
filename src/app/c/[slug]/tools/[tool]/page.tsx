@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getCampaign, getSheetEntities, usesLegacySheet, type CampaignCtx } from '@/lib/campaign';
+import { getCampaign, getSheetEntities, type CampaignCtx } from '@/lib/campaign';
 import { campaignCan, campaignCanMake } from '@/lib/entitlements';
 import { getEntries, getMembers } from '@/lib/entries';
 import { FEATURES, type Feature } from '@/config/plans';
@@ -63,7 +63,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
       getEntries(ctx, ['encounter'], { secrets: true }),
       dm ? ctx.supabase.from('characters').select('id, owner, data').eq('campaign_id', ctx.campaign.id) : { data: [] },
       dm ? getSheetEntities(ctx, ['monster']) : [],
-      dm && !(await usesLegacySheet(ctx.campaign.id)) ? getSheetEntities(ctx, undefined, { liteSpells: true }) : [],
+      dm ? getSheetEntities(ctx, undefined, { liteSpells: true }) : [],
     ]);
     const names = Object.fromEntries(p.members.map((m) => [m.user_id, m.display_name]));
     body = <InitiativeTool {...p} initial={rows[0] ?? null} characters={(chars.data ?? []) as any[]} monsters={monsters as any[]} entities={entities as any[]} names={names} />;

@@ -1,12 +1,14 @@
 // The DM's party page: one full sheet per character.
-// Lifted from renderParty() in source/dm-hub/index.html. The sheets now come from the
-// database (and update live) instead of pasted character codes, and the wording of the
-// private block (LABELS) comes from the database too, so it is not in the code players download.
+// The sheets come from the database and update live.
 
-import { ABS as P_ABS, SKILLS as P_SK, esc as pesc, num as pnum, sgn as psgn } from './character';
+const ABS = [['str', 'Strength'], ['dex', 'Dexterity'], ['con', 'Constitution'], ['int', 'Intelligence'], ['wis', 'Wisdom'], ['cha', 'Charisma']];
+const SKILLS = [['Acrobatics', 'dex'], ['Animal Handling', 'wis'], ['Arcana', 'int'], ['Athletics', 'str'], ['Deception', 'cha'], ['History', 'int'], ['Insight', 'wis'], ['Intimidation', 'cha'], ['Investigation', 'int'], ['Medicine', 'wis'], ['Nature', 'int'], ['Perception', 'wis'], ['Performance', 'cha'], ['Persuasion', 'cha'], ['Religion', 'int'], ['Sleight of Hand', 'dex'], ['Stealth', 'dex'], ['Survival', 'wis']];
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = (v) => { const n = parseInt(v, 10); return isNaN(n) ? 0 : n; };
+const sgn = (n) => (n >= 0 ? '+' : '') + n;
+const P_ABS = ABS, P_SK = SKILLS, pesc = esc, pnum = num, psgn = sgn;
 
-export function renderParty(chars, RACES, askRemove, LABELS) {
-  const shown = (v, none) => (v === '' || v == null ? none : v);
+export function renderParty(chars, RACES, askRemove) {
   if (!chars.length) return '<div class="plate pc"><p>No characters yet. When a player builds or saves a character in this campaign, the full sheet appears here.</p></div>';
   const sorted = chars.slice().sort((a, b) => String(a.data.name || '').localeCompare(String(b.data.name || '')));
   return sorted.map((row) => {
@@ -21,7 +23,6 @@ export function renderParty(chars, RACES, askRemove, LABELS) {
       <div class="pstats"><div class="pstat"><b>${pnum(c.ac)}</b>Armor class</div><div class="pstat"><b>${pnum(c.hp)}<small style="font-size:1rem;color:var(--dim)">/${pnum(c.hpMax)}</small></b>Hit points</div><div class="pstat"><b class="sm">${pesc(c.speed || '')}</b>Speed</div><div class="pstat"><b>${psgn(m('dex'))}</b>Initiative</div><div class="pstat"><b>${10 + m('wis') + pb * pnum(sk.Perception)}</b>Passive Perception</div><div class="pstat"><b>${pnum(c.atk) || 1}</b>Attacks per action</div></div>
       <div class="pstats">${P_ABS.map(([k, n]) => `<div class="pstat"><b>${pnum(ab[k])}</b>${n}<br>${psgn(m(k))}, save ${psgn(m(k) + (sv[k] ? pb : 0))}</div>`).join('')}</div>
       <p class="kv"><b>Trained skills:</b> ${trained || 'none listed'}</p>
-      ${LABELS ? `<div class="secret"><span class="tag">${pesc(LABELS.title)}</span><div class="sb">${LABELS.fields.map((f) => `${pesc(f.label)}: ${pesc(shown(c[f.key], f.none))}.`).join(' ')}</div></div>` : ''}
       ${(card.go || card.sig || card.emg) ? `<p class="kv"><b>Go-to attack:</b> ${pesc(card.go)}</p><p class="kv"><b>Signature move:</b> ${pesc(card.sig)}</p><p class="kv"><b>Emergency button:</b> ${pesc(card.emg)}</p>` : ''}
       ${group('Attack', 'Attacks')}${group('Ability', 'Abilities')}${group('Spell', 'Spells')}${group('Item', 'Items')}${group('Other', 'Other')}
       ${c.gear ? `<details><summary>Gear</summary><p class="pre">${pesc(c.gear)}</p></details>` : ''}
