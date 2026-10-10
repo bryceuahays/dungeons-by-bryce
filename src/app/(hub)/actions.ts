@@ -14,6 +14,7 @@ import { cleanTools } from '@/config/tools';
 import { COMMISSION_STATUS, COMMISSION_TIERS } from '@/config/commissions';
 import { billingIsOn, createCheckout } from '@/lib/stripe';
 import { attachWorldEntries } from '@/lib/worlds';
+import { blankV2 } from '@/lib/rules/engine';
 
 export type FormState = { error?: string; note?: string } | null;
 
@@ -64,6 +65,18 @@ export async function deleteMyCharacter(characterId: string): Promise<FormState>
   if (error || !data?.length) return { error: 'That character could not be deleted.' };
   revalidatePath('/', 'layout');
   return { note: 'Deleted.' };
+}
+
+// A new character that is not in any campaign: it has the system chosen for it, and opens in
+// the step-by-step creator. It can be added to a campaign on that system later.
+export async function createMyCharacter(_: FormState, form: FormData): Promise<FormState> {
+  const { supabase, user, profile } = await requireViewer();
+  const system = form.get('system');
+  if (!isSystem(system)) return { error: 'Choose the system this character is for.' };
+  const { data: row, error } = await supabase.from('characters').insert({ owner: user.id, campaign_id: null, system, data: { ...blankV2(), player: profile.display_name, t: Date.now() } }).select('id').single();
+  if (error || !row) return { error: 'The character could not be created. Try again in a moment.' };
+  revalidatePath('/characters');
+  redirect('/characters/' + row.id + '/create');
 }
 
 // Add one of your characters to a campaign, move it to another, or take it out (campaignId null).

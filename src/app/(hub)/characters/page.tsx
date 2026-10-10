@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { requireViewer } from '@/lib/auth';
-import { DeleteCharacterButton, MoveCharacterForm } from '@/components/HubForms';
+import { DeleteCharacterButton, MoveCharacterForm, NewCharacterForm } from '@/components/HubForms';
 import { SYSTEMS, isSystem, systemName, systemOf } from '@/config/systems';
 
 export const metadata = { title: 'My characters' };
 
-// Every character you have made: its system, the campaign it is in (if any), and a way to
-// add it to a campaign or move it to another one that uses the same system.
+// Every character you have made: its system, the campaign it is in (if any), a way to add it
+// to a campaign or move it to another one that uses the same system, and a way to make a new
+// one outside any campaign.
 export default async function Characters({ searchParams }: { searchParams: Promise<{ system?: string }> }) {
   const { system: asked } = await searchParams;
   const { supabase, user } = await requireViewer();
@@ -50,7 +51,7 @@ export default async function Characters({ searchParams }: { searchParams: Promi
                     <li key={ch.id}>
                       <span>
                         <b>{d.name || 'Unnamed character'}</b> <span className="dim">{line}</span><br />
-                        <span className="dim">{systemName(ch.system)} · {c ? <><Link href={`/c/${c.slug}/sheet?c=${ch.id}`}>{titleOf(c)}</Link> · <Link href={`/c/${c.slug}/combat?c=${ch.id}`}>Combat</Link></> : ch.campaign_id ? 'Campaign no longer available' : 'Not in a campaign'}</span>
+                        <span className="dim">{systemName(ch.system)} · {c ? <><Link href={`/c/${c.slug}/sheet?c=${ch.id}`}>{titleOf(c)}</Link> · <Link href={`/c/${c.slug}/combat?c=${ch.id}`}>Combat</Link></> : ch.campaign_id ? 'Campaign no longer available' : <>Not in a campaign · <Link href={`/characters/${ch.id}`}>Sheet</Link> · <Link href={`/characters/${ch.id}/create`}>Creator</Link></>}</span>
                       </span>
                       <span className="dim rowend">
                         <MoveCharacterForm id={ch.id} inCampaign={!!ch.campaign_id} options={options} />
@@ -64,8 +65,10 @@ export default async function Characters({ searchParams }: { searchParams: Promi
           </div>
         </>
       ) : (
-        <div className="panel narrow"><p className="dim">You have not made a character yet. Open one of <Link href="/campaigns">your campaigns</Link> and choose My character.</p></div>
+        <div className="panel narrow"><p className="dim">You have not made a character yet. Create one below, or open one of <Link href="/campaigns">your campaigns</Link> and choose My character.</p></div>
       )}
+      <h2>Create a character</h2>
+      <NewCharacterForm />
     </>
   );
 }

@@ -29,7 +29,7 @@ const SKILL_NAMES = SKILLS.map(([n]) => n);
 const first = (s: string, n = 160) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n).replace(/\s\S*$/, '') + '…' : t; };
 const lc = (s: unknown) => String(s ?? '').toLowerCase().trim();
 
-export function CharacterCreator({ slug, character, entities, weapons, armors }: { slug: string; character: { id: string; data: any }; entities: Entity[]; weapons: Weapon[]; armors: Armor[] }) {
+export function CharacterCreator({ slug, done, character, entities, weapons, armors }: { slug: string; done?: string; character: { id: string; data: any }; entities: Entity[]; weapons: Weapon[]; armors: Armor[] }) {
   const router = useRouter();
   const [c, setC] = useState<CharacterV2>(() => ({ ...blankV2(), ...(character.data ?? {}), v: 2 }));
   const [state, setState] = useState('');
@@ -455,7 +455,7 @@ export function CharacterCreator({ slug, character, entities, weapons, armors }:
     latest.current = { ...latest.current, built: true, hp: null };
     setC(latest.current);
     if (timer.current) clearTimeout(timer.current);
-    if (await flush()) router.push(`/c/${slug}/sheet?c=${character.id}`);
+    if (await flush()) router.push(done ?? `/c/${slug}/sheet?c=${character.id}`);
     else setFinishing(false);
   };
   const reviewStep = (

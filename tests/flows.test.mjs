@@ -151,3 +151,37 @@ test('plan limits are switched off: a free account is not held back, and the wor
   const refused = await open.client.from('campaigns').insert({ slug: 'open-' + rnd(), title: 'One too many' }).select('id').single();
   assert.ok(/upgrade:/.test(refused.error?.message ?? ''), 'limits apply again when they are enforced');
 });
+
+test('a character can be made outside any campaign; only its owner opens it; it can then join a campaign on its system', async () => {
+  const made = await player.client.from('characters').insert({ owner: player.id, campaign_id: null, system: '2014', data: { ...blankV2(), name: 'Loner' } }).select('id, system, campaign_id').single();
+  assert.equal(made.error, null);
+  assert.deepEqual([made.data.system, made.data.campaign_id], ['2014', null], 'it keeps the system chosen for it');
+  const id = made.data.id;
+  assert.ok((await player.client.from('characters').insert({ owner: dm.id, campaign_id: null, system: '2014', data: {} }).select('id')).error, 'not in someone else\'s name');
+
+  const list = await page('/characters', player.session);
+  assert.ok(list.status === 200 && list.text.includes('Create a character') && list.text.includes('Create character'), 'the page offers to create one');
+  for (const s of SYSTEMS) assert.ok(list.text.includes(s.name), 'with a choice of system: ' + s.name);
+  assert.ok(list.text.includes('Loner') && list.text.includes('Not in a campaign') && list.text.includes(`href="/characters/${id}"`));
+
+  const sheet = await page(`/characters/${id}`, player.session);
+  assert.ok(sheet.status === 200 && sheet.text.includes('Loner') && sheet.text.includes('not in a campaign'));
+  const creator = await page(`/characters/${id}/create`, player.session);
+  assert.ok(creator.status === 200 && creator.text.includes('Half-Elf') && !creator.text.includes('Goliath'), 'the creator offers the SRD for its system');
+  // and its owner's own homebrew, never anyone else's
+  await player.client.from('entities').insert({ type: 'race', slug: 'mine-' + rnd(), name: 'Saltborn Kin', status: 'live', data: { speed: 30 } });
+  await dm.client.from('entities').insert({ type: 'race', slug: 'theirs-' + rnd(), name: 'Someone Elses Folk', status: 'live', data: { speed: 30 } });
+  const withBrew = await page(`/characters/${id}/create`, player.session);
+  assert.ok(withBrew.text.includes('Saltborn Kin') && !withBrew.text.includes('Someone Elses Folk'), 'own homebrew is offered; other people\'s is not');
+  assert.ok((await page(`/characters/${id}`, player.session)).status === 200);
+  for (const r of [`/characters/${id}`, `/characters/${id}/create`]) assert.equal((await page(r, dm.session)).status, 404, 'nobody else can open ' + r);
+  assert.equal(((await dm.client.from('characters').select('id').eq('id', id)).data ?? []).length, 0, 'or read it');
+
+  // added to a campaign on the same system, it is shown there instead
+  const home = await makeCampaign(dm, 'Old Rules Home', { rules: '2014' });
+  await join(home.id, player);
+  assert.ok((await page('/characters', player.session)).text.includes('>Old Rules Home</option>'));
+  assert.equal((await player.client.from('characters').update({ campaign_id: home.id }).eq('id', id).select('id')).data.length, 1);
+  const moved = await page(`/characters/${id}`, player.session);
+  assert.ok(moved.status >= 300 && moved.status < 400 && moved.location.includes(`/c/${home.slug}/sheet`), 'its sheet is now in the campaign');
+});
