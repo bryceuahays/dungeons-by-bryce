@@ -4,6 +4,7 @@ import { ABILITIES, evalMax } from '@/lib/rules/engine';
 import type { FeatOption } from './ClassGives';
 import { AmountInput, RECHARGE, amountOf, blankAmount, maxOf, type Amount } from './ClassFeatures';
 import { TraitCards, type Trait } from './TraitCards';
+import { useRules } from '@/features/systems/RulesContext';
 
 // A custom resource's own page, built like the class page: a pool every character in the campaign has
 // (a pool of favour, say), as fields the sheet can count down and refill.
@@ -39,6 +40,8 @@ export function amountByLevel(d: any) {
 }
 
 export function ResourcePage({ data, setData, feats, spellNames }: { data: any; setData: (d: any) => void; feats: FeatOption[]; spellNames: string[] }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, AB } = useRules();
   const amount: Amount = data.amount ?? amountOf(data.max ?? 'prof');
   const put = (p: any) => setData({ ...data, ...p });
   const unit = data.unit || 'point';

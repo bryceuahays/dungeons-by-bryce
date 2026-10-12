@@ -9,6 +9,7 @@ import { EntityCard } from './EntityCard';
 import { ALL_LANGUAGES, LANGUAGE_GROUPS, TOOL_GROUPS, WEAPONS } from '@/config/proficiencies';
 import { ABILITIES } from '@/lib/rules/engine';
 import { GrowsEditor } from './ClassFeatures';
+import { useRules } from '@/features/systems/RulesContext';
 
 // Two add-ons for a class feature, in plain language:
 //   Gives   - what the feature adds to the character sheet by itself. Stored as the feature's
@@ -60,6 +61,8 @@ export function GivesEditor({ effects, onChange, spellNames }: { effects: any[];
 }
 
 function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) => void; spellNames: string[] }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, SKILL_NAMES, DAMAGE_TYPES, CONDITIONS } = useRules();
   const set = (p: any) => onChange({ ...g, ...p });
   const num = (label: string, k: string, extra?: any) => <label>{label}<input type="number" value={g[k] ?? ''} {...extra} onChange={(e) => set({ [k]: e.target.value === '' ? '' : Number(e.target.value) })} /></label>;
   switch (g.t) {

@@ -27,6 +27,7 @@ import type { SpellOption } from '@/lib/class-spells';
 import type { FeatOption } from './ClassGives';
 import { ConfirmButton } from './ConfirmButton';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
+import { useRules } from '@/features/systems/RulesContext';
 
 const get = (o: any, path: string) => path.split('.').reduce((v, k) => (v == null ? v : v[k]), o);
 const set = (o: any, path: string, v: any): any => {
@@ -39,16 +40,18 @@ const AB = Object.fromEntries(ABILITIES) as Record<string, string>;
 
 // A class's primary ability as ticked abilities joined by "and" or "or". Stored as primaryAbs and
 // primaryJoin; `primary` keeps the readable text ("Strength or Dexterity") that the rest of the site shows.
-const primaryText = (abs: string[], join: string) => {
-  const names = ABILITIES.filter(([k]) => abs.includes(k)).map(([, l]) => l);
+const primaryText = (abs: string[], join: string, list: [string, string][] = ABILITIES) => {
+  const names = list.filter(([k]) => abs.includes(k)).map(([, l]) => l);
   return names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' ' + join + ' ' + names[names.length - 1];
 };
 function PrimaryAbility({ data, onChange, label, help }: { data: any; onChange: (d: any) => void; label: string; help: React.ReactNode }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES } = useRules();
   // entries saved before the checkboxes only have the text: read the abilities out of it
   const text = String(data.primary ?? '');
   const abs: string[] = data.primaryAbs ?? ABILITIES.filter(([, l]) => text.includes(l)).map(([k]) => k);
   const join: string = data.primaryJoin ?? (/ and /.test(text) ? 'and' : 'or');
-  const put = (a: string[], j: string) => onChange({ ...data, primaryAbs: a, primaryJoin: j, primary: primaryText(a, j) });
+  const put = (a: string[], j: string) => onChange({ ...data, primaryAbs: a, primaryJoin: j, primary: primaryText(a, j, ABILITIES) });
   return (
     <fieldset className="multi"><legend>{label}</legend>
       {help ? <p style={{ flexBasis: '100%', margin: '0 0 6px' }}>{help}</p> : null}
@@ -59,12 +62,17 @@ function PrimaryAbility({ data, onChange, label, help }: { data: any; onChange: 
           <label className="ckrow"><input type="radio" checked={join === 'and'} onChange={() => put(abs, 'and')} /> All of them (and)</label>
         </p>
       ) : null}
-      {abs.length ? <p className="dim" style={{ flexBasis: '100%', margin: '6px 0 0' }}>Players see: {primaryText(abs, join)}</p> : null}
+      {abs.length ? <p className="dim" style={{ flexBasis: '100%', margin: '6px 0 0' }}>Players see: {primaryText(abs, join, ABILITIES)}</p> : null}
     </fieldset>
   );
 }
 
 function FieldInput({ f, data, onChange }: { f: Field; data: any; onChange: (d: any) => void }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, AB } = useRules();
+  // a list of abilities (saving throws, spellcasting ability) offers the system's own
+  const isAbs = (f.options ?? []).some((o) => o) && (f.options ?? []).every((o) => ['', 'str', 'dex', 'con', 'int', 'wis', 'cha'].includes(o));
+  f = isAbs ? { ...f, options: [...((f.options ?? []).includes('') ? [''] : []), ...ABILITIES.map(([k]) => k)] } : f;
   const v = get(data, f.key) ?? f.def;
   const put = (nv: any) => onChange(set(data, f.key, nv));
   const help = f.help ? <span className="dim hint">{f.help}</span> : null;

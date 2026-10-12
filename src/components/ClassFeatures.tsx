@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ABILITIES, classTable } from '@/lib/rules/engine';
 import { ChoiceEditor, GIVEN, GivesEditor, UseEditor, guessChoice, guessUse, useLine, type FeatOption } from './ClassGives';
+import { useRules } from '@/features/systems/RulesContext';
 
 // A "subclass feature" marker: the class's own placeholder ("Paladin Subclass") saying that at this
 // level the character gets whatever their subclass gives. The subclasses fill these levels.
@@ -313,6 +314,8 @@ export function blankAmount(mode: Amount['mode'], was: Amount): Amount {
 }
 
 export function AmountInput({ a, onChange }: { a: Amount; onChange: (a: Amount) => void }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES } = useRules();
   switch (a.mode) {
     case 'fixed': return <label>Number<input type="number" min={0} value={a.n} onChange={(e) => onChange({ mode: 'fixed', n: Number(e.target.value) || 0 })} /></label>;
     case 'level': return <label>× level<input type="number" min={1} value={a.n} onChange={(e) => onChange({ mode: 'level', n: Number(e.target.value) || 1 })} /></label>;

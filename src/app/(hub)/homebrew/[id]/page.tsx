@@ -5,6 +5,8 @@ import { requireViewer } from '@/lib/auth';
 import { getPlan } from '@/lib/entitlements';
 import { TYPES } from '@/config/homebrew';
 import { EntityEditor } from '@/components/EntityEditor';
+import { RulesProvider } from '@/features/systems/RulesContext';
+import { editorRulesFor } from '@/features/systems/brew';
 import { EntityCard } from '@/components/EntityCard';
 import { CloneButton } from '@/components/BrewForms';
 import { loadClassOptions, loadFeatOptions, loadItemNames, loadSpellOptions, loadSubclassOptions } from '@/lib/class-spells';
@@ -62,8 +64,11 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
     <>
       {plan.pro && (e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' || e.type === 'resource') ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
       <div className="inline" style={{ marginBottom: 12 }}>{plan.pro && (e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' || e.type === 'resource') ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
+      {/* the game system this entry was made for: its abilities and skills in the editor */}
+      <RulesProvider value={(await editorRulesFor(supabase, user.id, e.data?.system ?? null))?.rules ?? null}>
       <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data }} />
+      </RulesProvider>
     </>
   );
 }

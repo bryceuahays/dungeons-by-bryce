@@ -291,3 +291,14 @@ export const AFFECTS: Record<SectionKey, [string, string][]> = {
     ['Initiative tool', 'XP for an encounter, legendary actions'],
   ],
 };
+
+// What a Homebrew editor needs from a system (see RulesContext.tsx).
+export function editorRules(sys: Sys) {
+  return {
+    abilities: sys.abilities.list.map((a) => [a.id, a.name] as [string, string]),
+    skills: sys.skills.list.map((s) => s.name),
+    damage: sys.combat.damage,
+    conditions: sys.combat.conditions.map((c) => c.name),
+    name: sys.name,
+  };
+}

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ABILITIES } from '@/lib/rules/engine';
 import { DAMAGE_TYPES } from '@/config/homebrew';
 import { CANTRIP_GROWS, CONDITIONS, DURATIONS, RANGES, SHAPES, UNITS, UPCASTS, blankRules, parseSpell, spellText } from '@/lib/spell-rules.mjs';
+import { useRules } from '@/features/systems/RulesContext';
 
 // A spell's rules as fields (data.rules, see src/lib/spell-rules.mjs), so the site can track them:
 // casting time, range, area, targets, components, duration, attack or save, damage, healing,
@@ -21,6 +22,8 @@ export function spellOut(data: any) {
 }
 
 export function SpellRulesEditor({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, DAMAGE_TYPES, CONDITIONS } = useRules();
   const r = rulesOf(data);
   const level = Number(data.level) || 0;
   const [reread, setReread] = useState(false);

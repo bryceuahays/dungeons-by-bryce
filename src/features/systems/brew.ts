@@ -3,7 +3,7 @@ import 'server-only';
 // that system (data.system); homebrew from before systems existed counts as the 2024 rules.
 import { cookies } from 'next/headers';
 import { loadSystem } from './data';
-import { presetOf } from './model';
+import { editorRules, presetOf } from './model';
 
 export const BREW_COOKIE = 'brew_system';
 const ok = (v: unknown): v is string => typeof v === 'string' && (v === '2014' || v === '2024' || /^[0-9a-f-]{36}$/.test(v));
@@ -36,4 +36,12 @@ export async function brewView(supabase: Parameters<typeof loadSystem>[0], userI
     label,
     plural: (type: string) => { const l = label(type); return /y$/i.test(l) && !/[aeiou]y$/i.test(l) ? l.slice(0, -1) + 'ies' : /(s|x|ch|sh)$/i.test(l) ? l + 'es' : l + 's'; },
   };
+}
+
+// The rules a Homebrew editor builds for: the entry's own system, or (for a new entry) the one
+// chosen on the Homebrew page. Only one of your own systems changes anything.
+export async function editorRulesFor(supabase: Parameters<typeof loadSystem>[0], userId: string, tag?: unknown) {
+  const chosen = tag === undefined ? await brewSystem() : systemOfEntry({ system: tag });
+  const custom = await loadSystem(supabase, chosen);
+  return custom && custom.ownerId === userId ? { rules: editorRules(custom), sys: custom } : null;
 }
