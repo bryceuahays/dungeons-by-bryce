@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Loading game systems on the server. A campaign with settings.system uses that saved system; one
 // without uses the ready-made rules of settings.rules, as before.
-import { resolve, type Sys } from './model';
+import { resolve, sheetSystem, type Sys } from './model';
 
 type Supa = { from: (t: string) => any };
 const isId = (s: unknown): s is string => typeof s === 'string' && /^[0-9a-f-]{36}$/.test(s);
@@ -41,3 +41,9 @@ export async function systemUsage(supabase: Supa, userId: string, base: string, 
   };
 }
 export type SystemUsage = Awaited<ReturnType<typeof systemUsage>>;
+
+// what the sheet and creator need from a campaign's custom system (null: the ready-made rules)
+export async function campaignSheetSystem(ctx: { supabase: Supa; campaign: { settings?: any } }) {
+  const sys = await campaignSystem(ctx);
+  return sys ? sheetSystem(sys) : null;
+}

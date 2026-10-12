@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import { getCampaign, getSheetEntities } from '@/lib/campaign';
 import { CharacterCreator } from '@/components/CharacterCreator';
+import { campaignSheetSystem } from '@/features/systems/data';
 
 export const metadata = { title: 'Create a character' };
 
@@ -17,9 +18,10 @@ export default async function Create({ params, searchParams }: { params: Promise
 
   const mine = row.data ?? {};
   const keepIds = [mine.raceId, mine.clsId, mine.subId, mine.bgId, ...(mine.feats ?? []), ...(mine.spells ?? [])].filter(Boolean) as string[];
-  const [all, items] = await Promise.all([
+  const [all, items, system] = await Promise.all([
     getSheetEntities(ctx, ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], { liteSpells: true, keep: keepIds }),
     getSheetEntities(ctx, ['item']),
+    campaignSheetSystem(ctx),
   ]);
   const hidden = new Set<string>(Array.isArray(ctx.campaign.settings?.hidden) ? ctx.campaign.settings!.hidden : []);
   const keep = new Set(keepIds);
@@ -30,7 +32,7 @@ export default async function Create({ params, searchParams }: { params: Promise
   return (
     <div className="cs-guide">
       <div className="wrap">
-        <CharacterCreator slug={slug} character={{ id: row.id, data: row.data }} entities={entities as any} weapons={weapons} armors={armors} />
+        <CharacterCreator slug={slug} character={{ id: row.id, data: row.data }} entities={entities as any} weapons={weapons} armors={armors} system={system} />
       </div>
     </div>
   );

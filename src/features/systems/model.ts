@@ -1,7 +1,8 @@
 // A game system: everything a DM can change about the rules, filled with fifth edition's values.
 // A saved system stores only the sections it changed (changesOf); the rest comes from its base (resolve).
-import { spellSlots } from '@/lib/rules/engine';
-import { DAMAGE_TYPES } from '@/config/homebrew';
+// relative imports with extensions, so the tests can load this file directly
+import { spellSlots } from '../../lib/rules/engine.ts';
+import { DAMAGE_TYPES } from '../../config/homebrew.ts';
 
 export type Ab = { id: string; abbr: string; name: string; desc: string; save: boolean };
 export type Skill = { id: string; name: string; ab: string; desc: string; passive: boolean };
@@ -172,6 +173,21 @@ export function engineSystem(sys: Sys) {
     jobs: sys.abilities.jobs, acBase: sys.combat.acBase,
   };
 }
+
+// What the character sheet and creator need from a system, small enough to send to the browser.
+export function sheetSystem(sys: Sys) {
+  const coins = sys.equipment.currencies.slice().sort((a, b) => b.rate - a.rate);
+  const main = coins.find((c) => c.rate <= 100) ?? coins[0];
+  return {
+    rules: engineSystem(sys), renames: sys.text.replace,
+    alignment: sys.details.alignment, alignments: sys.details.alignments, inspiration: sys.details.inspiration,
+    trackers: sys.trackers.list, health: sys.health, magic: sys.magic.on,
+    names: { species: sys.names.species, class: sys.names.class, subclass: sys.names.subclass, background: sys.names.background, feat: sys.names.feat },
+    money: main ? main.abbr.toUpperCase() : '', rests: { short: sys.rests.short, long: sys.rests.long },
+    creation: { ...sys.creation, min: sys.abilities.min, max: sys.abilities.max },
+  };
+}
+export type SheetSystem = ReturnType<typeof sheetSystem>;
 
 // Written text in a system: whole-word replacements (Intelligence -> Insanity), applied to the
 // string fields of the entries of the kinds each rename was ticked for.

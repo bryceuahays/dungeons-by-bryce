@@ -7,6 +7,8 @@ import { safeCssValue } from './sanitize';
 import type { Campaign, ContentRow, Section } from './types';
 import type { CampaignAccess } from './entitlements';
 import { RULES, rulesOf, type RulesChoice } from '@/config/rules';
+import { campaignSystem } from '@/features/systems/data';
+import { applyText } from '@/features/systems/model';
 
 export const VIEW_AS_PLAYER = 'dbb-view-as-player';
 // The preview cookie is "1" (any player, at the current stage) or JSON {p: player id, s: stage id}.
@@ -162,7 +164,12 @@ export async function getLore(ctx: CampaignCtx) {
 
 // What the standard sheet can draw on: the SRD, plus the homebrew attached to this
 // campaign that this viewer is allowed to see (row-level security decides).
+// A campaign playing a custom game system gets its renamed words in written text (src/features/systems).
 export async function getSheetEntities(ctx: CampaignCtx, types = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], opts: { liteSpells?: boolean; keep?: string[]; owner?: string } = {}) {
+  const [list, custom] = await Promise.all([sheetEntities(ctx, types, opts), campaignSystem(ctx)]);
+  return applyText(list, custom);
+}
+async function sheetEntities(ctx: CampaignCtx, types: string[], opts: { liteSpells?: boolean; keep?: string[]; owner?: string }) {
   const cols = 'id, type, name, source, srd_version, status, version, change_note, data';
   const versions = RULES[rulesOf(ctx.campaign.settings)].versions as readonly string[];
   // the SRD is large: it is read in pages, and (for the sheet) spells come without their

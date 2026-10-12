@@ -63,3 +63,23 @@ export async function findText(words: string[], base: string) {
   const { data } = await supabase.rpc('entity_text_hits', { words: list, versions: [base === '2014' ? '5.1' : '5.2'] });
   return (data ?? []) as { word: string; type: string; n: number; names: string[] }[];
 }
+
+// Which of your systems a campaign plays ('' for the ready-made rules it already has). The
+// campaign's rules become the system's base, so its characters and their moves follow.
+export async function setCampaignSystem(slug: string, systemId: string): Promise<{ error?: string; note?: string }> {
+  const { supabase, user } = await requireViewer();
+  const { data: c } = await supabase.from('campaigns').select('id, settings, owner_id').eq('slug', slug).maybeSingle();
+  if (!c || c.owner_id !== user.id) return { error: 'Only the campaign’s DM can change its system.' };
+  const { system: _old, ...rest } = (c.settings ?? {}) as Record<string, unknown>; // eslint-disable-line @typescript-eslint/no-unused-vars
+  let settings: Record<string, unknown> = rest;
+  if (systemId) {
+    if (!isId(systemId)) return { error: 'Not found.' };
+    const { data: s } = await supabase.from('game_systems').select('id, base').eq('id', systemId).eq('owner_id', user.id).maybeSingle();
+    if (!s) return { error: 'That system is not one of yours.' };
+    settings = { ...rest, system: s.id, rules: s.base };
+  }
+  const { error } = await supabase.from('campaigns').update({ settings }).eq('id', c.id);
+  if (error) return { error: 'That did not save.' };
+  revalidatePath('/c/' + slug, 'layout');
+  return { note: 'Saved.' };
+}

@@ -1,9 +1,10 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRouter } from 'next/navigation';
+import type { SheetSystem } from '@/features/systems/model';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
-import { ABILITIES, SKILLS, blankV2, derive, partsOf, pickKey, scaleAt, sgn, type Ability, type CharacterV2, type Entity } from '@/lib/rules/engine';
+import { ABILITIES as ABILITIES_5E, SKILLS as SKILLS_5E, blankV2, derive, partsOf, pickKey, scaleAt, sgn, type Ability, type CharacterV2, type Entity } from '@/lib/rules/engine';
 import { LANGUAGE_GROUPS } from '@/config/proficiencies';
 import { yearOf } from '@/config/rules';
 import { pkgLine, type Pkg } from '@/lib/class-equip';
@@ -20,16 +21,25 @@ import { SpellDetail } from './Sheet5e';
 
 type Weapon = { name: string; mastery: string; cat: string };
 type Armor = { name: string; type: string; base: number; dex: 'full' | 'max2' | 'none' };
-const AB = Object.fromEntries(ABILITIES) as Record<Ability, string>;
 // 4d6, dropping the lowest die
 const roll4d6 = () => { const dice = Array.from({ length: 4 }, () => 1 + Math.floor(Math.random() * 6)); return { dice, total: dice.reduce((a, b) => a + b, 0) - Math.min(...dice) }; };
-const COST: Record<number, number> = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
-const ALIGNMENTS = ['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil', 'Unaligned'];
-const SKILL_NAMES = SKILLS.map(([n]) => n);
+const COST_5E: Record<number, number> = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
+const ALIGNMENTS_5E = ['Lawful Good', 'Neutral Good', 'Chaotic Good', 'Lawful Neutral', 'Neutral', 'Chaotic Neutral', 'Lawful Evil', 'Neutral Evil', 'Chaotic Evil', 'Unaligned'];
 const first = (s: string, n = 160) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n).replace(/\s\S*$/, '') + '…' : t; };
 const lc = (s: unknown) => String(s ?? '').toLowerCase().trim();
 
-export function CharacterCreator({ slug, done, character, entities, weapons, armors }: { slug: string; done?: string; character: { id: string; data: any }; entities: Entity[]; weapons: Weapon[]; armors: Armor[] }) {
+// A campaign playing a custom game system (system) gets its abilities, score range, point buy, skills,
+// names and alignments, and no Spells step when the system has no magic.
+export function CharacterCreator({ slug, done, character, entities, weapons, armors, system }: { slug: string; done?: string; character: { id: string; data: any }; entities: Entity[]; weapons: Weapon[]; armors: Armor[]; system?: SheetSystem | null }) {
+  const ABILITIES = (system ? system.rules.abilities.map((a) => [a.key, a.label]) : ABILITIES_5E) as [Ability, string][];
+  const AB = Object.fromEntries(ABILITIES) as Record<Ability, string>;
+  const SKILL_NAMES = system ? system.rules.skills.map((x) => x.name) : SKILLS_5E.map(([n]) => n);
+  const COST: Record<number, number> = system?.creation.pointBuy ? Object.fromEntries(Object.entries(system.creation.costs).map(([k, v]) => [Number(k), Number(v)])) : COST_5E;
+  const BUDGET = system?.creation.budget ?? 27;
+  const BUY_MIN = Math.min(...Object.keys(COST).map(Number)), BUY_MAX = Math.max(...Object.keys(COST).map(Number));
+  const LOW = system?.creation.min ?? 3, HIGH = system?.creation.max ?? 18;
+  const ALIGNMENTS = system ? (system.alignment ? system.alignments : []) : ALIGNMENTS_5E;
+  const label = (step: string) => (system ? ({ Class: system.names.class, Background: system.names.background, Species: system.names.species } as Record<string, string>)[step] ?? step : step);
   const router = useRouter();
   const [c, setC] = useState<CharacterV2>(() => ({ ...blankV2(), ...(character.data ?? {}), v: 2 }));
   const [state, setState] = useState('');
@@ -37,7 +47,8 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const byId = useMemo(() => new Map(entities.map((e) => [e.id, e])), [entities]);
   const of = (t: string) => entities.filter((e) => e.type === t).sort((a, b) => a.name.localeCompare(b.name));
-  const d = useMemo(() => derive(c, entities), [c, entities]);
+  const d = useMemo(() => derive(c, entities, system?.rules), [c, entities, system]);
+  const abv = { ...Object.fromEntries(ABILITIES.map(([k]) => [k, 10])), ...c.ab } as Record<Ability, number>; // a new ability starts at 10
 
   // A campaign can play by the 2014 and the 2024 rules together, and then most official entries
   // exist twice. Each is shown once. For a class, subclass, background or species the player is
@@ -74,7 +85,7 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
   const bg = c.bgId ? byId.get(c.bgId) : undefined;
   const race = c.raceId ? byId.get(c.raceId) : undefined;
   const casting = cls?.data.casting?.kind && cls.data.casting.kind !== 'none' ? cls.data.casting : null;
-  const steps = ['Class', 'Background', 'Species', 'Abilities & Skills', 'Equipment', ...(casting ? ['Spells'] : []), 'Details', 'Review'];
+  const steps = ['Class', 'Background', 'Species', 'Abilities & Skills', 'Equipment', ...(casting && system?.magic !== false ? ['Spells'] : []), 'Details', 'Review'];
   const [step, setStep] = useState(0);
   const at = steps[Math.min(step, steps.length - 1)];
   const go = (i: number) => { setStep(Math.max(0, Math.min(steps.length - 1, i))); window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -265,9 +276,9 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
   // ability scores: rolled or chosen (3 to 18), or point buy
   // the way the player chose is remembered with the character
   const method: 'roll' | 'buy' = (c.picks ?? {})['ab:method']?.v?.[0] === 'buy' ? 'buy' : 'roll';
-  const setMethod = (m: 'roll' | 'buy') => up({ picks: { ...(latest.current.picks ?? {}), 'ab:method': { from: 'method', v: [m] } }, ...(m === 'buy' ? { ab: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 } } : {}) });
+  const setMethod = (m: 'roll' | 'buy') => up({ picks: { ...(latest.current.picks ?? {}), 'ab:method': { from: 'method', v: [m] } }, ...(m === 'buy' ? { ab: Object.fromEntries(ABILITIES.map(([k]) => [k, BUY_MIN])) as Record<Ability, number> } : {}) });
   const [rolls, setRolls] = useState<Record<string, number[]>>({});
-  const spent = ABILITIES.reduce((n, [k]) => n + (COST[c.ab[k]] ?? 99), 0);
+  const spent = ABILITIES.reduce((n, [k]) => n + (COST[abv[k]] ?? 99), 0);
   // every skill, with where its proficiency comes from; the class's picks are made here
   const skillFrom = (n: string) => (bgSkills.has(n) ? 'background' : (c.skills ?? []).includes(n) ? cls?.name ?? 'class' : d.skills.find((x) => x.name === n)?.proficient ? 'species or feat' : '');
   const classSkills = cls ? (Number(cls.data.skillCount) ? (
@@ -289,25 +300,25 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
   const abilityStep = (
     <>
       <p className="inline">
-        {([['roll', 'Roll or choose'], ['buy', 'Point buy']] as const).map(([k, l]) => (
+        {([['roll', 'Roll or choose'], ...(system && !system.creation.pointBuy ? [] : [['buy', 'Point buy']])] as ['roll' | 'buy', string][]).map(([k, l]) => (
           <button key={k} type="button" className={'small-btn' + (method === k ? '' : ' quiet')} onClick={() => { if (method !== k) setMethod(k); }}>{l}</button>
         ))}
-        {method === 'roll' ? <button type="button" className="small-btn" onClick={() => { const r = ABILITIES.map(() => roll4d6()); setRolls(Object.fromEntries(ABILITIES.map(([k], i) => [k, r[i].dice]))); up({ ab: Object.fromEntries(ABILITIES.map(([k], i) => [k, r[i].total])) as Record<Ability, number> }); }}>Roll all six</button> : null}
+        {method === 'roll' ? <button type="button" className="small-btn" onClick={() => { const r = ABILITIES.map(() => roll4d6()); setRolls(Object.fromEntries(ABILITIES.map(([k], i) => [k, r[i].dice]))); up({ ab: Object.fromEntries(ABILITIES.map(([k], i) => [k, r[i].total])) as Record<Ability, number> }); }}>Roll them all</button> : null}
       </p>
-      <p className="dim">{method === 'buy' ? `Every score starts at 8; raising one costs points (up to 15). ${27 - spent} of 27 points left.` : 'Roll 4d6 and drop the lowest die for each ability (here, or with real dice), or pick the scores your DM gave you.'}</p>
+      <p className="dim">{method === 'buy' ? `Every score starts at ${BUY_MIN}; raising one costs points (up to ${BUY_MAX}). ${BUDGET - spent} of ${BUDGET} points left.` : 'Roll 4d6 and drop the lowest die for each ability (here, or with real dice), or pick the scores your DM gave you.'}</p>
       {cls?.data.primary ? <p className="dim">Tip: {cls.name}s rely most on {cls.data.primary}.</p> : null}
       <div className="cc-abs">
         {ABILITIES.map(([k, label]) => {
-          const bonus = d.scores[k] - c.ab[k];
+          const bonus = d.scores[k] - abv[k];
           return (
             <div key={k} className="cc-ab">
               <b>{label}</b>
               {method === 'buy' ? (
-                <span className="s5-hp"><button type="button" disabled={c.ab[k] <= 8} onClick={() => up({ ab: { ...c.ab, [k]: c.ab[k] - 1 } })}>−</button><b>{c.ab[k]}</b><button type="button" disabled={c.ab[k] >= 15 || spent - (COST[c.ab[k]] ?? 0) + (COST[c.ab[k] + 1] ?? 99) > 27} onClick={() => up({ ab: { ...c.ab, [k]: c.ab[k] + 1 } })}>+</button></span>
+                <span className="s5-hp"><button type="button" disabled={abv[k] <= BUY_MIN} onClick={() => up({ ab: { ...abv, [k]: abv[k] - 1 } })}>−</button><b>{abv[k]}</b><button type="button" disabled={abv[k] >= BUY_MAX || spent - (COST[abv[k]] ?? 0) + (COST[abv[k] + 1] ?? 99) > BUDGET} onClick={() => up({ ab: { ...abv, [k]: abv[k] + 1 } })}>+</button></span>
               ) : (
                 <span className="cc-roll">
-                  <select value={c.ab[k]} aria-label={label} onChange={(e) => { setRolls({ ...rolls, [k]: [] }); up({ ab: { ...c.ab, [k]: Number(e.target.value) } }); }}>{Array.from({ length: 16 }, (_, i) => i + 3).map((v) => <option key={v} value={v}>{v}</option>)}{c.ab[k] > 18 ? <option value={c.ab[k]}>{c.ab[k]}</option> : null}</select>
-                  <button type="button" className="quiet small-btn" title="Roll 4d6, drop the lowest" onClick={() => { const r = roll4d6(); setRolls({ ...rolls, [k]: r.dice }); up({ ab: { ...c.ab, [k]: r.total } }); }}>Roll</button>
+                  <select value={abv[k]} aria-label={label} onChange={(e) => { setRolls({ ...rolls, [k]: [] }); up({ ab: { ...abv, [k]: Number(e.target.value) } }); }}>{Array.from({ length: Math.max(1, HIGH - LOW + 1) }, (_, i) => i + LOW).map((v) => <option key={v} value={v}>{v}</option>)}{abv[k] > HIGH ? <option value={abv[k]}>{abv[k]}</option> : null}</select>
+                  <button type="button" className="quiet small-btn" title="Roll 4d6, drop the lowest" onClick={() => { const r = roll4d6(); setRolls({ ...rolls, [k]: r.dice }); up({ ab: { ...abv, [k]: r.total } }); }}>Roll</button>
                 </span>
               )}
               {rolls[k]?.length ? <small className="dim">rolled {rolls[k].map((x, i) => (i === rolls[k].indexOf(Math.min(...rolls[k])) ? `(${x})` : x)).join(' ')}</small> : null}
@@ -322,7 +333,7 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
       <h3>Skills</h3>
       {classSkills}
       <div className="cc-skills">
-        {d.skills.map((x) => <div key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name} <small>{AB[x.ability].slice(0, 3)}{skillFrom(x.name) ? ' · ' + skillFrom(x.name) : ''}{x.expert ? ' · expertise' : ''}</small></div>)}
+        {d.skills.map((x) => <div key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name} <small>{(AB[x.ability] ?? '—').slice(0, 3)}{skillFrom(x.name) ? ' · ' + skillFrom(x.name) : ''}{x.expert ? ' · expertise' : ''}</small></div>)}
       </div>
     </>
   );
@@ -410,7 +421,7 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
     <>
       <div className="cc-row">
         <label className="f">Character name<input value={c.name} maxLength={80} onChange={(e) => up({ name: e.target.value })} placeholder="What everyone calls them" /></label>
-        <label className="f">Alignment<select value={c.alignment ?? ''} onChange={(e) => up({ alignment: e.target.value })}><option value="">Choose…</option>{ALIGNMENTS.map((a) => <option key={a}>{a}</option>)}</select></label>
+        {ALIGNMENTS.length ? <label className="f">Alignment<select value={c.alignment ?? ''} onChange={(e) => up({ alignment: e.target.value })}><option value="">Choose…</option>{ALIGNMENTS.map((a) => <option key={a}>{a}</option>)}</select></label> : null}
       </div>
       <fieldset className="cc-choice">
         <legend>Languages <span className={'chip' + (langs.length >= 3 ? ' done' : '')}>{langs.length}/3</span></legend>
@@ -437,17 +448,17 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
   if (!race) todo.push(['Species', 'Choose a species.']);
   const stepOf = (e: Entity) => (e.type === 'race' ? 'Species' : e.type === 'background' ? 'Background' : e.type === 'feat' ? (e.name.toLowerCase() === lc(bg?.data.feat?.name) ? 'Background' : 'Species') : 'Class');
   d.chosen.forEach((e) => choiceParts(e).forEach(({ ft, ch }: any) => { if ((picks[pickKey(e, ft)]?.v ?? []).length < countOf(ft, ch) && optionsFor(e, ft, ch).length) todo.push([stepOf(e), `${e.name}: choose ${ft.name}.`]); }));
-  if (method === 'buy' && spent > 27) todo.push(['Abilities & Skills', 'You spent more than 27 points.']);
+  if (method === 'buy' && spent > BUDGET) todo.push(['Abilities & Skills', `You spent more than ${BUDGET} points.`]);
   if (pkgs(cls).length && equip === undefined) todo.push(['Equipment', 'Choose your class equipment.']);
   if (pkgs(bg).length && equipBg === undefined) todo.push(['Equipment', 'Choose your background equipment.']);
   if (casting && nCantrips && haveC < nCantrips) todo.push(['Spells', `Choose ${nCantrips - haveC} more cantrip${nCantrips - haveC > 1 ? 's' : ''}.`]);
   if (casting && nPrepared && haveP < nPrepared) todo.push(['Spells', `Choose ${nPrepared - haveP} more spell${nPrepared - haveP > 1 ? 's' : ''}.`]);
   if (!c.name.trim()) todo.push(['Details', 'Give your character a name.']);
   if (langs.length < 3) todo.push(['Details', 'Choose your languages.']);
-  if (!c.alignment) todo.push(['Details', 'Choose an alignment.']);
+  if (ALIGNMENTS.length && !c.alignment) todo.push(['Details', 'Choose an alignment.']);
   if (!(c.appearance ?? '').trim()) todo.push(['Details', 'Describe what they look like.']);
   if (!(c.backstory ?? '').trim()) todo.push(['Details', 'Write a little of their story.']);
-  if (method === 'roll' && ABILITIES.every(([k]) => c.ab[k] === 10)) todo.push(['Abilities & Skills', 'Roll or choose your ability scores.']);
+  if (method === 'roll' && ABILITIES.every(([k]) => abv[k] === 10)) todo.push(['Abilities & Skills', 'Roll or choose your ability scores.']);
 
   const [finishing, setFinishing] = useState(false);
   const finish = async () => {
@@ -461,7 +472,7 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
   const reviewStep = (
     <>
       {todo.length ? (
-        <div className="cc-detail"><h3>Still to do</h3><ul>{todo.map(([s, t], i) => <li key={i}><button type="button" className="linkish" onClick={() => go(steps.indexOf(s))}>{s}</button>: {t}</li>)}</ul><p className="dim">You can finish anyway and fill these in on your sheet.</p></div>
+        <div className="cc-detail"><h3>Still to do</h3><ul>{todo.map(([s, t], i) => <li key={i}><button type="button" className="linkish" onClick={() => go(steps.indexOf(s))}>{label(s)}</button>: {t}</li>)}</ul><p className="dim">You can finish anyway and fill these in on your sheet.</p></div>
       ) : <p className="dim">Everything is chosen.</p>}
       <div className="cc-detail">
         <h3>{c.name || 'Unnamed character'} <small className="dim">Level {d.level} {race?.name} {cls?.name}{c.subId ? ` (${byId.get(c.subId)?.name})` : ''}</small></h3>
@@ -484,22 +495,22 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
     <div className="cc">
       <h2>Create your character <small className="dim" role="status">{state}</small></h2>
       <nav className="cc-steps" aria-label="Steps">
-        {steps.map((s, i) => <button key={s} type="button" aria-current={at === s ? 'step' : undefined} className={'cc-step' + (at === s ? ' on' : '') + (s !== 'Review' && !left(s) ? ' ok' : '')} onClick={() => go(i)}><span>{i + 1}</span>{s}</button>)}
+        {steps.map((s, i) => <button key={s} type="button" aria-current={at === s ? 'step' : undefined} className={'cc-step' + (at === s ? ' on' : '') + (s !== 'Review' && !left(s) ? ' ok' : '')} onClick={() => go(i)}><span>{i + 1}</span>{label(s)}</button>)}
       </nav>
       <div className="cc-main">
         <div className="cc-body">
-          <h3 className="cc-title">{at === 'Class' ? 'Choose a class' : at === 'Background' ? 'Choose a background' : at === 'Species' ? 'Choose a species' : at === 'Abilities & Skills' ? 'Ability scores and skills' : at === 'Equipment' ? 'Choose your starting equipment' : at === 'Spells' ? 'Choose your spells' : at === 'Details' ? 'Who are they?' : 'Review'}</h3>
+          <h3 className="cc-title">{at === 'Class' ? 'Choose a ' + label('Class').toLowerCase() : at === 'Background' ? 'Choose a ' + label('Background').toLowerCase() : at === 'Species' ? 'Choose a ' + label('Species').toLowerCase() : at === 'Abilities & Skills' ? 'Ability scores and skills' : at === 'Equipment' ? 'Choose your starting equipment' : at === 'Spells' ? 'Choose your spells' : at === 'Details' ? 'Who are they?' : 'Review'}</h3>
           {body[at]}
           <p className="cc-nav">
-            {step > 0 ? <button type="button" className="quiet" onClick={() => go(step - 1)}>← {steps[step - 1]}</button> : <span />}
-            {at !== 'Review' ? <button type="button" onClick={() => go(step + 1)}>{steps[step + 1]} →</button> : null}
+            {step > 0 ? <button type="button" className="quiet" onClick={() => go(step - 1)}>← {label(steps[step - 1])}</button> : <span />}
+            {at !== 'Review' ? <button type="button" onClick={() => go(step + 1)}>{label(steps[step + 1])} →</button> : null}
           </p>
         </div>
         <aside className="cc-side">
           <b className="cc-name">{c.name || 'Unnamed'}</b>
           <small>Level {d.level} {race?.name ?? ''} {cls?.name ?? ''}</small>
           {bg ? <small>{bg.name}</small> : null}
-          <div className="cc-mini">{ABILITIES.map(([k]) => <span key={k}><small>{k.toUpperCase()}</small><b>{d.scores[k]}</b><small>{sgn(d.mods[k])}</small></span>)}</div>
+          <div className="cc-mini">{ABILITIES.map(([k]) => <span key={k}><small>{system?.rules.abilities.find((a) => a.key === k)?.abbr ?? k.toUpperCase()}</small><b>{d.scores[k]}</b><small>{sgn(d.mods[k])}</small></span>)}</div>
           <p className="kv"><b>HP</b> {d.hpMax} · <b>AC</b> {d.ac} · <b>Speed</b> {d.speed.walk}</p>
           {todo.length ? <p className="dim">{todo.length} thing{todo.length > 1 ? 's' : ''} left to choose.</p> : <p className="dim">All chosen.</p>}
         </aside>

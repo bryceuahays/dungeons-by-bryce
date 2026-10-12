@@ -132,7 +132,10 @@ export async function saveSetting(slug: string, key: 'feed' | 'session' | 'video
   const { data: c } = await supabase.from('campaigns').select('id, settings').eq('slug', slug).maybeSingle();
   if (!c) return { error: 'Campaign not found.' };
   const v = key === 'tools' ? cleanTools(Array.isArray(value) ? value : []) : key === 'rules' ? (value === '2024' || value === 'both' ? value : '2014') : key === 'feed' || key === 'timeline' ? !!value : key === 'session' ? Math.max(0, Math.min(999, Number(value) || 0)) : String(value || '').slice(0, 300);
-  const { error } = await supabase.from('campaigns').update({ settings: { ...(c.settings ?? {}), [key]: v } }).eq('id', c.id);
+  // changing the rules version leaves a custom system built on the old one (src/features/systems)
+  const { system, ...kept } = (c.settings ?? {}) as Record<string, unknown>;
+  const base = key === 'rules' && system && v !== kept.rules ? kept : { ...kept, ...(system ? { system } : {}) };
+  const { error } = await supabase.from('campaigns').update({ settings: { ...base, [key]: v } }).eq('id', c.id);
   if (error) return { error: 'That did not save.' };
   fresh(slug);
   return { note: 'Saved.' };

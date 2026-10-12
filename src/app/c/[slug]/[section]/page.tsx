@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCampaign, getContent, getLore, getSheetEntities, phaseLabel, type CampaignCtx } from '@/lib/campaign';
 import { Sheet5e } from '@/components/Sheet5e';
+import { campaignSheetSystem } from '@/features/systems/data';
 import { renderSection, esc } from '@/lib/render';
 import { cleanContent } from '@/lib/sanitize';
 import { embedVideos } from '@/lib/video';
@@ -78,7 +79,7 @@ async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: str
   const chars = await myCharacters(ctx);
   // what these characters already use stays, even if homebrew has since replaced it
   const used = chars.flatMap((c) => { const d = c.data ?? {}; return [d.raceId, d.clsId, d.subId, d.bgId, ...(d.feats ?? []), ...(d.spells ?? [])].filter(Boolean) as string[]; });
-  const [entities, party] = await Promise.all([getSheetEntities(ctx, undefined, { liteSpells: true, keep: used }), ctx.supabase.rpc('party_cards', { c: ctx.campaign.id })]);
+  const [entities, party, system] = await Promise.all([getSheetEntities(ctx, undefined, { liteSpells: true, keep: used }), ctx.supabase.rpc('party_cards', { c: ctx.campaign.id }), campaignSheetSystem(ctx)]);
   const current = chars.find((c) => c.id === pick) ?? chars[0];
   // characters you made in the other campaigns of this campaign's world, which can be brought in
   const worldId = (ctx.campaign as any).world_id as string | null;
@@ -110,7 +111,7 @@ async function StandardSheet({ ctx, pick, play }: { ctx: CampaignCtx; pick?: str
       <div className="wrap">
         {play ? <CharacterPicker slug={slug} tab="combat" chars={chars} current={current} /> : chooser}
         {!play ? <p className="row"><Link className="act sm" href={`/c/${slug}/create?c=${current.id}`}>{current.data?.built ? 'Change it in the character creator' : 'Continue in the character creator'}</Link></p> : null}
-        <Sheet5e key={current.id} character={{ id: current.id, data: current.data }} entities={entities} play={play} />
+        <Sheet5e key={current.id} character={{ id: current.id, data: current.data }} entities={entities} play={play} system={system} />
         {play ? <p className="row"><Link className="act" href={`/c/${slug}/sheet?c=${current.id}`}>Open the full sheet</Link></p> : (
           <>
             <h2>The party</h2>
@@ -165,8 +166,8 @@ async function OpenSheet({ ctx, id }: { ctx: CampaignCtx; id: string }) {
   const { data: ch } = await ctx.supabase.from('characters').select('id, owner, campaign_id, data, builder, updated_at').eq('id', id).eq('campaign_id', ctx.campaign.id).maybeSingle();
   if (!ch) return <p className="who">That character is not in this campaign.</p>;
   const back = <p className="row"><Link className="act sm" href={`/c/${ctx.campaign.slug}/players`}>Back to all players</Link></p>;
-  const entities = await getSheetEntities(ctx, undefined, { liteSpells: true });
-  return <>{back}<SheetAccess name={ch.data?.name || 'this character'} canEdit={ctx.canEdit}><Sheet5e character={{ id: ch.id, data: ch.data }} entities={entities} /></SheetAccess></>;
+  const [entities, system] = await Promise.all([getSheetEntities(ctx, undefined, { liteSpells: true }), campaignSheetSystem(ctx)]);
+  return <>{back}<SheetAccess name={ch.data?.name || 'this character'} canEdit={ctx.canEdit}><Sheet5e character={{ id: ch.id, data: ch.data }} entities={entities} system={system} /></SheetAccess></>;
 }
 
 // The Players tab's list of what players can pick (everything a character is made from).

@@ -2,19 +2,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
-import { ABILITIES, blankV2, derive, sgn, type Ability, type CharacterV2, type Entity } from '@/lib/rules/engine';
+import { blankV2, derive, sgn, type Ability, type CharacterV2, type Entity } from '@/lib/rules/engine';
+import { renameText, type SheetSystem, type TextRename } from '@/features/systems/model';
 import { EntityCard } from './EntityCard';
 
 // A spell on the sheet. The long text of SRD spells is not sent with the page (there are
-// hundreds); it is fetched the first time a spell is opened.
-export function SpellDetail({ entity }: { entity: Entity }) {
+// hundreds); it is fetched the first time a spell is opened. A custom system's renamed words
+// (renames) are applied to it as it arrives.
+export function SpellDetail({ entity, renames = [] }: { entity: Entity; renames?: TextRename[] }) {
   const [data, setData] = useState<any>(entity.data._lite ? null : entity.data);
   useEffect(() => {
     if (data) return;
     let gone = false;
-    supabaseBrowser().from('entities').select('data').eq('id', entity.id).maybeSingle().then(({ data: row }: { data: { data: unknown } | null }) => { if (!gone && row) setData(row.data); });
+    supabaseBrowser().from('entities').select('data').eq('id', entity.id).maybeSingle().then(({ data: row }: { data: { data: unknown } | null }) => { if (!gone && row) setData(renameText(row.data, renames.filter((r) => r.types.includes('spell')))); });
     return () => { gone = true; };
-  }, [entity.id, data]);
+  }, [entity.id, data, renames]);
   return data ? <EntityCard type="spell" name={entity.name} source={entity.source} data={data} compact /> : <p className="who">Loading…</p>;
 }
 
@@ -22,12 +24,16 @@ export function SpellDetail({ entity }: { entity: Entity }) {
 // The standard fifth edition character sheet. Choices (race, class, level, scores) are
 // typed in; everything else is worked out from the SRD and homebrew entries the
 // campaign uses, so a structured effect on an entry shows up here by itself.
-export function Sheet5e({ character, entities, readOnly = false, play = false }: { character: { id: string; data: any }; entities: Entity[]; readOnly?: boolean; play?: boolean }) {
+// A campaign playing a custom game system (system) shows its abilities, skills, trackers and names.
+export function Sheet5e({ character, entities, readOnly = false, play = false, system }: { character: { id: string; data: any }; entities: Entity[]; readOnly?: boolean; play?: boolean; system?: SheetSystem | null }) {
   const [c, setC] = useState<CharacterV2>(() => ({ ...blankV2(), ...(character.data ?? {}), v: 2 }));
   const [state, setState] = useState('');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(c);
-  const d = useMemo(() => derive(c, entities), [c, entities]);
+  const d = useMemo(() => derive(c, entities, system?.rules), [c, entities, system]);
+  const names = system?.names ?? { species: 'Species', class: 'Class', subclass: 'Subclass', background: 'Background', feat: 'Feat' };
+  const wounds = system?.health.kind === 'wounds';
+  const renames = system?.renames ?? [];
 
   const flush = async () => {
     timer.current = null;
@@ -57,8 +63,13 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
       if (kind === 'long' ? r.recharge !== 'none' : r.recharge === 'short') delete nu[r.name];
       else if (kind === 'short' && r.recharge === 'short1' && nu[r.name]) nu[r.name] = Math.max(0, Number(nu[r.name]) - 1);
     });
-    up({ used: nu, ...(kind === 'long' || d.casting?.shortRest ? { slotsUsed: {} } : {}), ...(kind === 'long' ? { hp: d.hpMax, temp: 0 } : {}) });
+    // a custom system's trackers refill on the rest they say (a long rest also does a short rest's)
+    const tr = { ...((c as any).trackers ?? {}) };
+    (system?.trackers ?? []).forEach((t) => { if (t.refill === kind || (kind === 'long' && t.refill === 'short')) delete tr[t.id]; });
+    up({ used: nu, ...(kind === 'long' || d.casting?.shortRest ? { slotsUsed: {} } : {}), ...(kind === 'long' ? { hp: d.hpMax, temp: 0, ...({ wounds: 0 } as any) } : {}), ...({ trackers: tr } as any) });
   };
+  const trackers = ((c as any).trackers ?? {}) as Record<string, number>; // how much of each is spent
+  const woundsTaken = Number((c as any).wounds) || 0;
   const known = (c.spells ?? []).map((id) => entities.find((e) => e.id === id)).filter(Boolean) as Entity[];
   const grantedSpells = d.granted.map((g) => ({ ...g, entity: entities.find((e) => e.type === 'spell' && e.name.toLowerCase() === g.name.toLowerCase()) }));
   const hp = c.hp ?? d.hpMax;
@@ -68,22 +79,41 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
   const vitals = (
     <section className="s5-block">
       <div className="s5-stats">
-        <label className="s5-stat">Hit points<span className="s5-hp"><button type="button" onClick={() => up({ hp: Math.max(0, hp - 1) })} aria-label="Lose 1 hit point">−</button><input type="number" value={hp} onChange={(e) => up({ hp: Number(e.target.value) })} aria-label="Current hit points" /><button type="button" onClick={() => up({ hp: Math.min(d.hpMax, hp + 1) })} aria-label="Gain 1 hit point">+</button></span><small>of {d.hpMax}</small></label>
-        <label className="s5-stat">Temporary<input type="number" value={c.temp ?? 0} onChange={(e) => up({ temp: Number(e.target.value) })} /></label>
+        {wounds ? (
+          <div className="s5-stat">Wounds<span className="s5-pips">{Array.from({ length: system!.health.wounds }, (_, i) => <button type="button" key={i} aria-pressed={i < woundsTaken} aria-label={`Wound ${i + 1}${i < woundsTaken ? ', taken' : ''}`} onClick={() => up({ wounds: i < woundsTaken ? i : i + 1 } as any)} />)}</span><small>{woundsTaken} of {system!.health.wounds}</small></div>
+        ) : (
+          <>
+            <label className="s5-stat">Hit points<span className="s5-hp"><button type="button" onClick={() => up({ hp: Math.max(0, hp - 1) })} aria-label="Lose 1 hit point">−</button><input type="number" value={hp} onChange={(e) => up({ hp: Number(e.target.value) })} aria-label="Current hit points" /><button type="button" onClick={() => up({ hp: Math.min(d.hpMax, hp + 1) })} aria-label="Gain 1 hit point">+</button></span><small>of {d.hpMax}</small></label>
+            {system?.health.temp === false ? null : <label className="s5-stat">Temporary<input type="number" value={c.temp ?? 0} onChange={(e) => up({ temp: Number(e.target.value) })} /></label>}
+          </>
+        )}
         <div className="s5-stat">Armor class<b>{d.ac}</b></div>
         <div className="s5-stat">Initiative<b>{sgn(d.initiative)}</b></div>
         <div className="s5-stat">Speed<b>{d.speed.walk} ft</b><small>{Object.entries(d.speed).filter(([k]) => k !== 'walk').map(([k, v]) => `${k} ${v}`).join(', ')}</small></div>
-        <div className="s5-stat">Proficiency<b>+{d.prof}</b></div>
-        <div className="s5-stat">Passive Perception<b>{d.passive}</b></div>
-        <div className="s5-stat">Hit dice<b>{d.level}d{d.hd}</b></div>
+        {system?.rules.prof === 'none' ? null : <div className="s5-stat">Proficiency<b>+{d.prof}</b></div>}
+        {(system ? d.passives : [{ name: 'Perception', value: d.passive }]).map((p) => <div key={p.name} className="s5-stat">Passive {p.name}<b>{p.value}</b></div>)}
+        {wounds ? null : <div className="s5-stat">Hit dice<b>{d.level}d{d.hd}</b></div>}
+        {system && system.inspiration !== 'off' ? <label className="s5-stat">{system.inspiration === 'heroic' ? 'Heroic Inspiration' : 'Inspiration'}<input type="checkbox" checked={!!(c as any).inspired} onChange={(e) => up({ inspired: e.target.checked } as any)} /></label> : null}
       </div>
-      <p className="row"><button type="button" className="act sm" onClick={() => rest('short')}>Short rest</button><button type="button" className="act sm" onClick={() => rest('long')}>Long rest</button><span className="who" role="status">{readOnly ? 'Read-only' : state}</span></p>
+      <p className="row">{system?.rests.short === false ? null : <button type="button" className="act sm" onClick={() => rest('short')}>Short rest</button>}{system?.rests.long === false ? null : <button type="button" className="act sm" onClick={() => rest('long')}>Long rest</button>}<span className="who" role="status">{readOnly ? 'Read-only' : state}</span></p>
     </section>
   );
 
-  const resources = d.resources.length || d.scales.length ? (
+  const resources = d.resources.length || d.scales.length || system?.trackers.length ? (
     <section className="s5-block">
       <h3>Resources</h3>
+      {(system?.trackers ?? []).map((t) => {
+        const u = Math.min(t.max, trackers[t.id] ?? 0);
+        const set = (n: number) => up({ trackers: { ...trackers, [t.id]: Math.max(0, Math.min(t.max, n)) } } as any);
+        return (
+          <div key={t.id} className="s5-res" title={t.desc}>
+            <span><b>{t.name}</b> <small>{t.refill === 'never' ? 'the DM changes it' : 'back on a ' + t.refill + ' rest'}</small></span>
+            {t.look === 'bar'
+              ? <span className="s5-hp"><button type="button" onClick={() => set(u + 1)} aria-label={'Lose one ' + t.name}>−</button><b>{t.max - u} / {t.max}</b><button type="button" onClick={() => set(u - 1)} aria-label={'Regain one ' + t.name}>+</button></span>
+              : <span className="s5-pips">{Array.from({ length: t.max }, (_, i) => <button type="button" key={i} aria-pressed={i < u} aria-label={`${t.name} ${i + 1}${i < u ? ', marked' : ''}`} onClick={() => set(i < u ? i : i + 1)} />)}</span>}
+          </div>
+        );
+      })}
       {d.resources.map((r) => {
         const u = Math.min(r.max, used[r.name] ?? 0), big = r.max > 12;
         return (
@@ -99,10 +129,10 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
     </section>
   ) : null;
 
-  const magic = d.casting || grantedSpells.length ? (
+  const magic = system?.magic !== false && (d.casting || grantedSpells.length) ? (
     <section className="s5-block">
       <h3>Spells</h3>
-      {d.casting ? <p className="kv"><b>Save DC</b> {d.casting.dc} · <b>Attack</b> {sgn(d.casting.attack)} · <b>Ability</b> {Object.fromEntries(ABILITIES)[d.casting.ability]}</p> : null}
+      {d.casting ? <p className="kv"><b>Save DC</b> {d.casting.dc} · <b>Attack</b> {sgn(d.casting.attack)} · <b>Ability</b> {d.abilities.find((a) => a.key === d.casting!.ability)?.label ?? d.casting.ability}</p> : null}
       {d.casting ? d.casting.slots.map((n, i) => (n ? (
         <div key={i} className="s5-res"><span><b>Level {i + 1} slots</b></span>
           <span className="s5-pips">{Array.from({ length: n }, (_, k) => { const u = Math.min(n, slotsUsed[i + 1] ?? 0); return <button type="button" key={k} aria-pressed={k < u} aria-label={`Level ${i + 1} slot ${k + 1}${k < u ? ', spent' : ''}`} onClick={() => up({ slotsUsed: { ...slotsUsed, [i + 1]: k < u ? k : k + 1 } })} />; })}</span>
@@ -110,7 +140,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
       {[...grantedSpells.map((g) => ({ key: 'g' + g.name, name: g.name, from: g.from, entity: g.entity, id: null as string | null })), ...known.map((s) => ({ key: s.id, name: s.name, from: '', entity: s, id: s.id }))].map((s) => (
         <details key={s.key} className="s5-item" onToggle={(e) => { if ((e.target as HTMLDetailsElement).open) setOpened((o) => (o.includes(s.key) ? o : [...o, s.key])); }}>
           <summary><b>{s.name}</b> <small>{s.entity ? (Number(s.entity.data.level) ? 'level ' + s.entity.data.level : 'cantrip') : ''}{s.from ? ' · from ' + s.from : ''}</small></summary>
-          {s.entity ? (opened.includes(s.key) ? <SpellDetail entity={s.entity} /> : null) : <p className="who">Ask your DM for the details of this spell.</p>}
+          {s.entity ? (opened.includes(s.key) ? <SpellDetail entity={s.entity} renames={renames} /> : null) : <p className="who">Ask your DM for the details of this spell.</p>}
         </details>
       ))}
     </section>
@@ -122,11 +152,11 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
   const identity = (
     <section className="s5-block">
       <div className="s5-facts">
-        {fact('Species', d.race?.name)}
-        {fact('Class', d.cls ? `${d.cls.name} ${d.level}${c.subId ? ' (' + (entities.find((e) => e.id === c.subId)?.name ?? '') + ')' : ''}` : '')}
-        {fact('Background', c.bgId ? entities.find((e) => e.id === c.bgId)?.name : '')}
-        {fact('Alignment', c.alignment)}
-        {fact('Feats', d.chosen.filter((e) => e.type === 'feat').map((e) => e.name).join(', '))}
+        {fact(names.species, d.race?.name)}
+        {fact(names.class, d.cls ? `${d.cls.name} ${d.level}${c.subId ? ' (' + (entities.find((e) => e.id === c.subId)?.name ?? '') + ')' : ''}` : '')}
+        {fact(names.background, c.bgId ? entities.find((e) => e.id === c.bgId)?.name : '')}
+        {system?.alignment === false ? null : fact('Alignment', c.alignment)}
+        {fact(names.feat + 's', d.chosen.filter((e) => e.type === 'feat').map((e) => e.name).join(', '))}
       </div>
     </section>
   );
@@ -135,15 +165,15 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
     <section className="s5-block">
       <h3>Abilities</h3>
       <div className="s5-abs">
-        {ABILITIES.map(([k, label]) => (
-          <div key={k} className="s5-ab">{label}<b>{sgn(d.mods[k])}</b><small>score {d.scores[k]}</small></div>
+        {d.abilities.map(({ key, label }) => (
+          <div key={key} className="s5-ab">{label}<b>{system?.rules.mod === 'none' ? d.scores[key as Ability] : sgn(d.mods[key as Ability])}</b><small>score {d.scores[key as Ability]}</small></div>
         ))}
       </div>
       <h3>Saving throws</h3>
       <p className="s5-chips">{d.saves.map((x) => <span key={x.key} className={x.proficient ? 'on' : ''}>{x.label.slice(0, 3)} {sgn(x.bonus)}</span>)}</p>
       <h3>Skills</h3>
       <div className="s5-skills">
-        {d.skills.map((x) => <span key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name}{x.expert ? ' (expertise)' : ''}</span>)}
+        {d.skills.map((x) => <span key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name}{system ? <small> ({d.abilities.find((a) => a.key === x.ability)?.abbr ?? '—'})</small> : null}{x.expert ? ' (expertise)' : ''}</span>)}
       </div>
     </section>
   );
@@ -170,7 +200,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false }:
     <section className="s5-block">
       {c.appearance ? <p className="kv"><b>Looks:</b> {c.appearance}</p> : null}
       {c.backstory ? <p className="kv" style={{ whiteSpace: 'pre-line' }}><b>Story:</b> {c.backstory}</p> : null}
-      {c.gp ? <p className="kv"><b>Gold:</b> {c.gp} GP</p> : null}
+      {c.gp ? <p className="kv"><b>Money:</b> {c.gp} {system?.money || 'GP'}</p> : null}
       <div className="fields">
         <label className="f">Gear<textarea rows={5} value={c.gear ?? ''} onChange={(e) => up({ gear: e.target.value })} /></label>
         <label className="f">Notes<textarea rows={5} value={c.notes ?? ''} onChange={(e) => up({ notes: e.target.value })} /></label>

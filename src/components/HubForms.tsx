@@ -50,7 +50,7 @@ export function PasswordForm() {
   );
 }
 
-export function NewCampaignForm({ pro, packs = [], worlds = [], world = '' }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[]; worlds?: { id: string; name: string }[]; world?: string }) {
+export function NewCampaignForm({ pro, packs = [], worlds = [], world = '', systems = [] }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[]; worlds?: { id: string; name: string }[]; world?: string; systems?: { id: string; name: string; base: string }[] }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
   const [step, setStep] = useState(1);
   const [need, setNeed] = useState('');
@@ -74,6 +74,8 @@ export function NewCampaignForm({ pro, packs = [], worlds = [], world = '' }: { 
           <fieldset className="multi">
             <legend>System</legend>
             {SYSTEMS.map((sys) => <label key={sys.id} className="ckrow"><input type="radio" name="system" value={sys.id} defaultChecked={sys.id === NEW_CAMPAIGN_RULES} style={{ flexShrink: 0 }} /> <span><b>{sys.name}</b> <span className="dim">{sys.what}</span></span></label>)}
+            {systems.map((s) => <label key={s.id} className="ckrow"><input type="radio" name="system" value={'custom:' + s.id} style={{ flexShrink: 0 }} /> <span><b>{s.name}</b> <span className="dim">Your own system, built on Fifth Edition {s.base}.</span></span></label>)}
+            <p className="dim">Make your own under <Link href="/homebrew/systems">Homebrew → Game systems</Link>.</p>
           </fieldset>
           <fieldset className="multi">
             <legend>Genres (tick any that fit)</legend>
