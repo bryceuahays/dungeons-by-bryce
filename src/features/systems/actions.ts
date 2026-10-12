@@ -83,3 +83,11 @@ export async function setCampaignSystem(slug: string, systemId: string): Promise
   revalidatePath('/c/' + slug, 'layout');
   return { note: 'Saved.' };
 }
+
+// The system the Homebrew page shows (and new homebrew is made for).
+export async function setBrewSystem(value: string) {
+  const { cookies } = await import('next/headers');
+  if (value !== '2014' && value !== '2024' && !isId(value)) return;
+  (await cookies()).set('brew_system', value, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+  revalidatePath('/homebrew');
+}

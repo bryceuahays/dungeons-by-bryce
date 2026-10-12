@@ -95,3 +95,8 @@
 .gsm-dialog.sm-wide{max-width:640px;max-height:85vh;overflow-y:auto}
 .sm-rename{border-top:1px solid var(--h-line);padding-top:6px;margin-top:6px}
 .sm-rename p{margin:4px 0}
+/* the System dropdown on the Homebrew page */
+.brew-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.brew-system{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.hub .brew-system label{margin:0;min-width:260px}
+.brew-system-links{font-size:.85rem}
