@@ -375,6 +375,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
   srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[]; subclasses?: SubclassOption[]; classes?: ClassOption[]; items?: string[];
 }) {
+  const { CARD } = useRules(); // the game system's abilities, for the cards shown here
   const router = useRouter();
   const def = TYPES[initial.type];
   const [name, setName] = useState(initial.name);
@@ -613,7 +614,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               {tab === 'Player' ? (
                 <>
                   <p className="dim">A mock-up of what a player sees when they choose this class. Once there is a character creator, this will match it.</p>
-                  <EntityCard type={initial.type} name={name} status={status} data={data} />
+                  <EntityCard abilities={CARD} type={initial.type} name={name} status={status} data={data} />
                 </>
               ) : null}
             </>
@@ -699,7 +700,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       <aside className="brew-side" hidden={onlyAdvanced && tab === 'Player'}>
         <div className="panel">
           <h3>{isSub && parent ? 'Features by level' : onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' || tab === 'Subclasses' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
-          {isSub && parent ? <div className="ecard"><FeatureTable data={withSubclass(parent.data, subOut(data).features)} /></div> : onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={isSpell ? spellOut(data) : isFeat ? featOut(data) : isRace ? raceOut(data) : isBg ? backgroundOut(data) : isItem ? itemOut(data) : isMonster ? monsterOut(data) : isRes ? resourceOut(data) : data} />}
+          {isSub && parent ? <div className="ecard"><FeatureTable data={withSubclass(parent.data, subOut(data).features)} /></div> : onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard abilities={CARD} type={initial.type} name={name} status={status} data={isSpell ? spellOut(data) : isFeat ? featOut(data) : isRace ? raceOut(data) : isBg ? backgroundOut(data) : isItem ? itemOut(data) : isMonster ? monsterOut(data) : isRes ? resourceOut(data) : data} />}
         </div>
         {onlyAdvanced && tab === 'Spells' && data.casting?.kind && data.casting.kind !== 'none' ? (
           <div className="panel">

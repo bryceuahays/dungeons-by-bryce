@@ -300,5 +300,6 @@ export function editorRules(sys: Sys) {
     damage: sys.combat.damage,
     conditions: sys.combat.conditions.map((c) => c.name),
     name: sys.name,
+    card: sys.abilities.list.map((a) => ({ key: a.id, label: a.name, abbr: a.abbr })), // for EntityCard
   };
 }

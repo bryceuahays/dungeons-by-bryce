@@ -4,12 +4,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { blankV2, derive, sgn, type Ability, type CharacterV2, type Entity } from '@/lib/rules/engine';
 import { renameText, type SheetSystem, type TextRename } from '@/features/systems/model';
-import { EntityCard } from './EntityCard';
+import { EntityCard, type CardAbility } from './EntityCard';
 
 // A spell on the sheet. The long text of SRD spells is not sent with the page (there are
 // hundreds); it is fetched the first time a spell is opened. A custom system's renamed words
 // (renames) are applied to it as it arrives.
-export function SpellDetail({ entity, renames = [] }: { entity: Entity; renames?: TextRename[] }) {
+export function SpellDetail({ entity, renames = [], abilities }: { entity: Entity; renames?: TextRename[]; abilities?: CardAbility[] | null }) {
   const [data, setData] = useState<any>(entity.data._lite ? null : entity.data);
   useEffect(() => {
     if (data) return;
@@ -17,7 +17,7 @@ export function SpellDetail({ entity, renames = [] }: { entity: Entity; renames?
     supabaseBrowser().from('entities').select('data').eq('id', entity.id).maybeSingle().then(({ data: row }: { data: { data: unknown } | null }) => { if (!gone && row) setData(renameText(row.data, renames.filter((r) => r.types.includes('spell')))); });
     return () => { gone = true; };
   }, [entity.id, data, renames]);
-  return data ? <EntityCard type="spell" name={entity.name} source={entity.source} data={data} compact /> : <p className="who">Loading…</p>;
+  return data ? <EntityCard type="spell" name={entity.name} source={entity.source} data={data} compact abilities={abilities} /> : <p className="who">Loading…</p>;
 }
 
 
@@ -140,7 +140,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
       {[...grantedSpells.map((g) => ({ key: 'g' + g.name, name: g.name, from: g.from, entity: g.entity, id: null as string | null })), ...known.map((s) => ({ key: s.id, name: s.name, from: '', entity: s, id: s.id }))].map((s) => (
         <details key={s.key} className="s5-item" onToggle={(e) => { if ((e.target as HTMLDetailsElement).open) setOpened((o) => (o.includes(s.key) ? o : [...o, s.key])); }}>
           <summary><b>{s.name}</b> <small>{s.entity ? (Number(s.entity.data.level) ? 'level ' + s.entity.data.level : 'cantrip') : ''}{s.from ? ' · from ' + s.from : ''}</small></summary>
-          {s.entity ? (opened.includes(s.key) ? <SpellDetail entity={s.entity} renames={renames} /> : null) : <p className="who">Ask your DM for the details of this spell.</p>}
+          {s.entity ? (opened.includes(s.key) ? <SpellDetail entity={s.entity} renames={renames} abilities={system?.rules.abilities} /> : null) : <p className="who">Ask your DM for the details of this spell.</p>}
         </details>
       ))}
     </section>

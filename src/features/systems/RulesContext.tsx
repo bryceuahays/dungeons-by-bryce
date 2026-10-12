@@ -6,7 +6,7 @@ import { ABILITIES as ABILITIES_5E } from '@/lib/rules/engine';
 import { DAMAGE_TYPES as DAMAGE_5E, SKILL_NAMES as SKILLS_5E } from '@/config/homebrew';
 import { CONDITIONS as CONDITIONS_5E } from '@/lib/spell-rules.mjs';
 
-export type EditorRules = { abilities: [string, string][]; skills: string[]; damage: string[]; conditions: string[]; name: string };
+export type EditorRules = { abilities: [string, string][]; skills: string[]; damage: string[]; conditions: string[]; name: string; card?: { key: string; label: string; abbr: string }[] };
 const Ctx = createContext<EditorRules | null>(null);
 
 export function RulesProvider({ value, children }: { value: EditorRules | null; children: ReactNode }) {
@@ -24,5 +24,6 @@ export function useRules() {
     DAMAGE_TYPES: r?.damage ?? DAMAGE_5E,
     CONDITIONS: r?.conditions ?? (CONDITIONS_5E as string[]),
     systemName: r?.name ?? '',
+    CARD: r?.card ?? null, // abilities for EntityCard (null: fifth edition's)
   };
 }

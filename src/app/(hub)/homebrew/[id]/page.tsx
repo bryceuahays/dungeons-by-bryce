@@ -18,13 +18,15 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const { supabase, user } = await requireViewer();
   const { data: e } = await supabase.from('entities').select('*').eq('id', id).maybeSingle();
+  // the game system this entry was made for: its abilities and skills in the editor and on the card
+  const er = e ? await editorRulesFor(supabase, user.id, e.data?.system ?? null) : null;
   if (!e) notFound();
   // an SRD entry, or one shared with you through a campaign: read it, clone it (unless it is private)
   if (e.owner_id !== user.id) {
     return (
       <>
         <h1>{e.name}</h1>
-        <div className="panel"><EntityCard type={e.type} name={e.name} source={e.source} status={e.status} data={e.data} /></div>
+        <div className="panel"><EntityCard type={e.type} name={e.name} source={e.source} status={e.status} data={e.data} abilities={er?.rules.card} /></div>
         {e.source === 'srd' ? <p className="dim">From the System Reference Document {e.srd_version} ({e.srd_version === '5.2' ? '2024' : '2014'} rules), CC-BY-4.0. <Link href="/legal">Licence</Link>.</p> : null}
         <div className="inline" style={{ marginBottom: 12 }}>{e.source !== 'private' && TYPES[e.type] ? <CloneButton id={e.id} /> : null}<Link className="button quiet" href={e.source === 'srd' ? `/homebrew/srd?type=${e.type}&v=${e.srd_version}` : '/homebrew'}>Back</Link></div>
       </>
@@ -64,8 +66,7 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
     <>
       {plan.pro && (e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' || e.type === 'resource') ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
       <div className="inline" style={{ marginBottom: 12 }}>{plan.pro && (e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' || e.type === 'resource') ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
-      {/* the game system this entry was made for: its abilities and skills in the editor */}
-      <RulesProvider value={(await editorRulesFor(supabase, user.id, e.data?.system ?? null))?.rules ?? null}>
+      <RulesProvider value={er?.rules ?? null}>
       <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data }} />
       </RulesProvider>

@@ -14,6 +14,7 @@ import { InitiativeTool } from '@/components/tools/Initiative';
 import { TimelineTool } from '@/components/tools/Timeline';
 import { MapsTool } from '@/components/tools/Maps';
 import { LogTool, NotesTool, WorldTool, ZeroTool } from '@/components/tools/Simple';
+import { campaignSheetSystem } from '@/features/systems/data';
 
 export async function generateMetadata({ params }: { params: Promise<{ tool: string }> }) {
   const { tool } = await params;
@@ -54,12 +55,14 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
     return <div className="cs-guide"><div className="wrap"><h2>{def.name}</h2><p className="lede">{def.what}</p><UpgradeHint feature={def.feature} dm={ctx.realDm} />{back}</div></div>;
   }
   const p = await toolProps(ctx);
+  // a campaign playing a custom game system: its abilities on stat blocks and cards, and on the sheet
+  const system = await campaignSheetSystem(ctx);
   const dm = ctx.isDm;
   let body: React.ReactNode = null;
 
   if (tool === 'npcs') {
     const [rows, monsters, cons] = await Promise.all([getEntries(ctx, ['npc'], { secrets: true }), dm ? getSheetEntities(ctx, ['monster']) : [], campaignCan(ctx.access, 'world') ? getEntries(ctx, ['consequence']) : []]);
-    body = <NpcTool {...p} initial={rows} monsters={(monsters as any[]).map((m) => ({ id: m.id, name: m.name, source: m.source, data: m.data }))} consequences={cons} />;
+    body = <NpcTool {...p} system={system} initial={rows} monsters={(monsters as any[]).map((m) => ({ id: m.id, name: m.name, source: m.source, data: m.data }))} consequences={cons} />;
   } else if (tool === 'initiative') {
     const [rows, chars, monsters, entities] = await Promise.all([
       getEntries(ctx, ['encounter'], { secrets: true }),
@@ -68,7 +71,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
       dm ? getSheetEntities(ctx, undefined, { liteSpells: true }) : [],
     ]);
     const names = Object.fromEntries(p.members.map((m) => [m.user_id, m.display_name]));
-    body = <InitiativeTool {...p} initial={rows[0] ?? null} characters={(chars.data ?? []) as any[]} monsters={monsters as any[]} entities={entities as any[]} names={names} />;
+    body = <InitiativeTool {...p} system={system} initial={rows[0] ?? null} characters={(chars.data ?? []) as any[]} monsters={monsters as any[]} entities={entities as any[]} names={names} />;
   } else if (tool === 'timeline') {
     const [rows, npcs] = await Promise.all([getEntries(ctx, ['beat', 'note']), dm ? getEntries(ctx, ['npc']) : []]);
     body = <TimelineTool {...p} initial={rows} npcs={npcs.map((n) => ({ id: n.id, title: n.title }))} />;
@@ -97,7 +100,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
       <div className="wrap">
         <h2>Compendium</h2>
         <p className="lede">The homebrew this campaign uses. The standard fifth edition rules are in <Link href="/homebrew/srd">the SRD</Link>.</p>
-        {brew.length ? <div className="grid g2">{brew.map((e) => <div key={e.id} className="plate"><EntityCard type={e.type} name={e.name} source={e.source} status={e.status} data={e.data} /></div>)}</div>
+        {brew.length ? <div className="grid g2">{brew.map((e) => <div key={e.id} className="plate"><EntityCard type={e.type} name={e.name} source={e.source} status={e.status} data={e.data} abilities={system?.rules.abilities} /></div>)}</div>
           : <p className="who">{dm ? 'No homebrew is attached to this campaign yet. Open an entry under Homebrew in the hub and tick this campaign.' : 'This campaign uses the standard rules only.'}</p>}
       </div>
     );

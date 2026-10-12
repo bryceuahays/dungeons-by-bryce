@@ -352,6 +352,7 @@ export function useLine(u: Use | null) {
 }
 
 export function GiveSpell({ name, onChange, spellNames }: { name: string; onChange: (name: string) => void; spellNames: string[] }) {
+  const { CARD } = useRules(); // the game system's abilities, for the cards shown here
   const tools = useContext(SpellTools);
   const [read, setRead] = useState<any>(null);
   const [making, setMaking] = useState(false);
@@ -370,7 +371,7 @@ export function GiveSpell({ name, onChange, spellNames }: { name: string; onChan
         {!known ? <button type="button" className="quiet small-btn" onClick={() => setMaking(true)}>{name.trim() ? 'Create this spell' : 'Create a new spell'}</button> : null}
         {name.trim() && !known ? <span className="bad hint">Not in the SRD or your homebrew yet.</span> : null}
       </span>
-      {read ? <div className="spell-read">{read === 'missing' ? <p className="dim">This spell does not exist yet. Use &quot;Create a new spell&quot; to make it.</p> : <EntityCard type="spell" name={read.name} source={read.source} data={read.data} />}</div> : null}
+      {read ? <div className="spell-read">{read === 'missing' ? <p className="dim">This spell does not exist yet. Use &quot;Create a new spell&quot; to make it.</p> : <EntityCard abilities={CARD} type="spell" name={read.name} source={read.source} data={read.data} />}</div> : null}
       {making ? <SpellPopup id={null} startName={name.trim()} pro={tools.pro} onClose={() => setMaking(false)} onDeleted={() => setMaking(false)} onSaved={(s) => { tools.onSpellSaved(s); onChange(s.name); setMaking(false); }} /> : null}
     </div>
   );

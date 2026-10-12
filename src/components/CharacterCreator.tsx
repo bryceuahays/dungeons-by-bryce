@@ -90,7 +90,7 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
   const at = steps[Math.min(step, steps.length - 1)];
   const go = (i: number) => { setStep(Math.max(0, Math.min(steps.length - 1, i))); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
-  const readSpell = (id: string) => { const e = byId.get(id); return e ? <SpellDetail entity={e} /> : null; };
+  const readSpell = (id: string) => { const e = byId.get(id); return e ? <SpellDetail renames={system?.renames} abilities={system?.rules.abilities} entity={e} /> : null; };
 
   // ------------------------------------------------------------ choices inside features
   const picks = c.picks ?? {};
@@ -210,7 +210,7 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
               {choices(c.subId ? byId.get(c.subId) : undefined)}
             </>
           ) : <p className="dim">You choose your subclass at level {subLevel}.</p>}
-          <details><summary>Everything {cls.name}s get</summary><EntityCard type="class" name={cls.name} source={cls.source} data={cls.data} compact /></details>
+          <details><summary>Everything {cls.name}s get</summary><EntityCard abilities={system?.rules.abilities} type="class" name={cls.name} source={cls.source} data={cls.data} compact /></details>
         </div>
       ) : null}
     </>
