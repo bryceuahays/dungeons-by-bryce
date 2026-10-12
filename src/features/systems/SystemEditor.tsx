@@ -1,71 +1,123 @@
 'use client';
-// MOCK-UP ONLY: the full System Editor. Sections on the left, the editor in the middle, a live
-// preview and the pages each section changes on the right, and saving at the bottom.
-// Sample data; nothing is read or saved.
+// The System editor: sections on the left, the editor in the middle, a live preview and the pages
+// each section changes on the right, saving at the bottom. Renaming something offers to change the
+// word in written text too (findText); saving over a system that campaigns play asks first.
 import { useMemo, useState } from 'react';
-import { AFFECTS, FIFTH, FIFTH_2014, JOBS, SECTIONS, type SectionKey, type Sys } from './fifth';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { AFFECTS, JOBS, SECTIONS, type SectionKey, type Sys, type TextRename } from './model';
+import { createSystem, findText, updateSystem } from './actions';
+import type { SystemUsage } from './data';
 import * as S from './sections';
-import './system-mock.css';
+import './systems.css';
 
-// a DM's own system, to show saving over one that campaigns use
-const GRIM: Sys = {
-  ...FIFTH, name: 'Grimdark Fifth',
-  abilities: { ...FIFTH.abilities, list: FIFTH.abilities.list.map((a) => (a.id === 'str' ? { ...a, abbr: 'MIG', name: 'Might' } : a)) },
-  health: { ...FIFTH.health, kind: 'wounds' },
-  details: { ...FIFTH.details, alignment: false },
-  trackers: { list: [{ id: 'sanity', name: 'Sanity', max: 50, look: 'bar', refill: 'never', desc: 'Drops when facing horrors.' }] },
-  names: { ...FIFTH.names, species: 'Ancestry' },
-};
-const STARTS: { id: string; label: string; sys: Sys; mine?: boolean; campaigns?: string[] }[] = [
-  { id: '2024', label: 'Fifth Edition (2024), ready-made', sys: FIFTH },
-  { id: '2014', label: 'Fifth Edition (2014), ready-made', sys: FIFTH_2014 },
-  { id: 'grim', label: 'Grimdark Fifth, yours (used by 2 campaigns)', sys: GRIM, mine: true, campaigns: ['The Ashen Road', 'Night Market'] },
-];
-// sample homebrew and characters, so "what this affects" has something real-looking to count
-const CLASSES = [{ name: 'Bard', cast: 'cha', saves: ['dex', 'cha'] }, { name: 'Cleric', cast: 'wis', saves: ['wis', 'cha'] }, { name: 'Fighter', cast: '', saves: ['str', 'con'] }, { name: 'Rogue', cast: '', saves: ['dex', 'int'] }, { name: 'Wizard', cast: 'int', saves: ['int', 'wis'] }, { name: 'Hex Knight (your homebrew)', cast: 'cha', saves: ['con', 'cha'] }];
-const CHARACTERS = ['Brannoc', 'Mira'];
 const SCORES: Record<string, number> = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 };
 const MONSTER: Record<string, number> = { str: 12, dex: 14, con: 12, int: 10, wis: 10, cha: 8 };
+const KIND_LABEL: Record<string, string> = { spell: 'spells', class: 'classes', subclass: 'subclasses', feat: 'feats', race: 'species', background: 'backgrounds', item: 'items', monster: 'monsters', resource: 'custom resources' };
 
 type Impact = { key: string; text: string; fix?: { label: string; options: [string, string][]; apply?: (v: string) => void } };
+type Rename = { from: string; to: string; search: string };
+type Hits = Record<string, { type: string; n: number; names: string[] }[]>;
 
-export function SystemEditorMock() {
-  const [startId, setStartId] = useState('2024');
-  const start = STARTS.find((s) => s.id === startId)!;
-  const [sys, setSys] = useState<Sys>(FIFTH);
+// what was renamed since the last save: abilities, skills, conditions and the names of things
+function renamesOf(a: Sys, b: Sys): Rename[] {
+  const out: { from: string; to: string }[] = [];
+  const pair = (from: string, to: string) => { if (from.trim() && to.trim() && from !== to) out.push({ from: from.trim(), to: to.trim() }); };
+  for (const x of b.abilities.list) { const y = a.abilities.list.find((z) => z.id === x.id); if (y) pair(y.name, x.name); }
+  for (const x of b.skills.list) { const y = a.skills.list.find((z) => z.id === x.id); if (y) pair(y.name, x.name); }
+  if (a.combat.conditions.length === b.combat.conditions.length) b.combat.conditions.forEach((x, i) => pair(a.combat.conditions[i].name, x.name));
+  for (const k of ['species', 'class', 'subclass', 'background', 'feat', 'spell'] as const) pair(a.names[k], b.names[k]);
+  // a word renamed again (Intelligence, then Insanity, then Madness) is still "Intelligence" in the text
+  return out.map((r) => ({ ...r, search: b.text.replace.find((x) => x.to === r.from)?.from ?? r.from }));
+}
+// the system with the ticked text renames added to it
+function withRenames(sys: Sys, picked: TextRename[]): Sys {
+  let list = [...sys.text.replace];
+  for (const r of picked.filter((x) => x.types.length)) {
+    const chain = list.find((x) => x.to === r.from);
+    list = chain ? list.map((x) => (x === chain ? { ...x, to: r.to, types: [...new Set([...x.types, ...r.types])] } : x)) : [...list.filter((x) => x.from !== r.from), r];
+  }
+  return { ...sys, text: { replace: list.filter((x) => x.from !== x.to) } };
+}
+
+export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: string | null; mine: boolean; usage: SystemUsage }) {
+  const router = useRouter();
+  const [sys, setSys] = useState<Sys>(start);
+  const [saved, setSavedSys] = useState<Sys>(start); // as last saved, to compare with
+  const [name, setName] = useState(mine ? start.name : start.name + ' (my version)');
+  const [copyName, setCopyName] = useState('');
   const [section, setSection] = useState<SectionKey>('abilities');
   const [tab, setTab] = useState<'preview' | 'affects'>('preview');
   const [fixes, setFixes] = useState<Record<string, string>>({});
   const [showImpacts, setShowImpacts] = useState(false);
-  const [popup, setPopup] = useState(false);
-  const [saved, setSaved] = useState('');
-  const [newName, setNewName] = useState('');
+  const [dialog, setDialog] = useState<null | { how: 'over' | 'copy'; stage: 'renames' | 'campaigns'; pending: Sys }>(null);
+  const [renames, setRenames] = useState<Rename[]>([]);
+  const [hits, setHits] = useState<Hits>({});
+  const [ticks, setTicks] = useState<Record<string, string[]>>({});
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
 
-  const begin = (id: string) => { const s = STARTS.find((x) => x.id === id)!; setStartId(id); setSys(s.sys); setFixes({}); setSaved(''); };
-  const set = <K extends SectionKey>(k: K) => (patch: Partial<Sys[K]>) => setSys((s) => ({ ...s, [k]: { ...s[k], ...patch } }));
-  const changed = (k: SectionKey) => JSON.stringify(sys[k]) !== JSON.stringify(start.sys[k]);
+  const set = <K extends SectionKey>(k: K) => (patch: Partial<Sys[K]>) => { setMsg(''); setSys((s) => ({ ...s, [k]: { ...s[k], ...patch } })); };
+  const changed = (k: SectionKey) => JSON.stringify(sys[k]) !== JSON.stringify(saved[k]);
   const changedSections = SECTIONS.filter((s) => changed(s.key));
-  const impacts = useMemo(() => impactsOf(start.sys, sys, !!start.mine, setSys), [start, sys]);
-  const save = (how: string) => { setSaved(how); setPopup(false); };
+  const dirty = changedSections.length > 0 || (mine && name !== saved.name);
+  const impacts = useMemo(() => impactsOf(saved, sys, usage, setSys), [saved, sys, usage]);
+
+  // 1. renamed something? offer to change the written text  2. used by campaigns? ask  3. save
+  const begin = async (how: 'over' | 'copy') => {
+    const list = renamesOf(saved, sys);
+    if (!list.length) return next(how, sys);
+    setBusy(true);
+    const found = await findText(list.map((r) => r.search), sys.base);
+    setBusy(false);
+    const byWord: Hits = {};
+    for (const h of found) (byWord[h.word] ??= []).push({ type: h.type, n: Number(h.n), names: h.names });
+    setRenames(list); setHits(byWord);
+    setTicks(Object.fromEntries(list.map((r) => [r.from, (byWord[r.search] ?? []).map((h) => h.type)])));
+    setDialog({ how, stage: 'renames', pending: sys });
+  };
+  const next = (how: 'over' | 'copy', s: Sys) => {
+    if (how === 'over' && usage.campaigns.length) return setDialog({ how, stage: 'campaigns', pending: s });
+    return commit(how, s);
+  };
+  const commit = async (how: 'over' | 'copy', s: Sys) => {
+    setDialog(null); setBusy(true); setMsg('');
+    const res = how === 'over' && id ? await updateSystem(id, s, name) : await createSystem(s, (mine ? copyName || name + ' (copy)' : name));
+    setBusy(false);
+    if (res.error) return setMsg(res.error);
+    if (how === 'over' && id) { setSys(s); setSavedSys({ ...s, name }); setFixes({}); setMsg('Saved.'); router.refresh(); return; }
+    router.push('/homebrew/systems/' + res.id);
+  };
+  const confirmRenames = (apply: boolean) => {
+    if (!dialog) return;
+    const s = apply ? withRenames(dialog.pending, renames.map((r) => ({ from: r.search, to: r.to, types: ticks[r.from] ?? [] }))) : dialog.pending;
+    setSys(s);
+    next(dialog.how, s);
+  };
 
   const Section = { abilities: S.Abilities, skills: S.Skills, proficiency: S.Proficiency, creation: S.Creation, leveling: S.Leveling, health: S.Health, rests: S.Rests, combat: S.Combat, magic: S.Magic, equipment: S.Equipment, details: S.Details, trackers: S.Trackers, names: S.Names, monsters: S.Monsters }[section] as (p: { v: unknown; set: (p: unknown) => void; sys: Sys }) => React.ReactNode;
 
   return (
     <div className="sm">
-      <p className="gsm-banner">Mock-up: sample data, nothing is saved. Click through every section and see what it would change.</p>
+      <p><Link href="/homebrew/systems">← All systems</Link></p>
       <div className="sm-head">
-        <h1>System editor</h1>
-        <label className="sm-start">Customizing<select value={startId} onChange={(e) => begin(e.target.value)}>{STARTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
+        <label className="sm-name">System name<input value={name} maxLength={80} onChange={(e) => { setName(e.target.value); setMsg(''); }} /></label>
+        <p className="dim">Built on Fifth Edition ({sys.base}).{usage.campaigns.length ? ` Used by ${usage.campaigns.map((c) => c.title).join(', ')}.` : ''}</p>
       </div>
-      <p className="dim">{start.mine ? 'Your own system. It is built on Fifth Edition (2024): anything not changed here, homebrew included, comes from there.' : 'A ready-made system. Change anything; it is saved as your own new system, and anything you do not change stays as published.'}</p>
+      <p className="dim">{mine ? 'Anything not changed here, homebrew included, comes from the ready-made rules it is built on.' : 'A ready-made system. Change anything, then save it as your own new system; what you do not change stays as published.'}</p>
 
       <div className="sm-layout">
         <nav className="sm-nav" aria-label="Sections">
           {SECTIONS.map((s, i) => (
             <button key={s.key} type="button" className={'sm-navbtn' + (section === s.key ? ' on' : '')} onClick={() => setSection(s.key)}>
-              <span className="sm-num">{i + 1}</span>{s.label}{changed(s.key) ? <span className="sm-dot" title="Changed" /> : null}
+              <span className="sm-num">{i + 1}</span>{s.label}{changed(s.key) ? <span className="sm-dot" title="Changed, not saved yet" /> : null}
             </button>
           ))}
+          {sys.text.replace.length ? (
+            <div className="sm-renames"><b>Words changed in written text</b>
+              <ul>{sys.text.replace.map((r) => <li key={r.from}>{r.from} → {r.to} <small className="dim">({r.types.map((t) => KIND_LABEL[t] ?? t).join(', ')})</small> <button type="button" className="quiet small-btn" onClick={() => setSys((s) => ({ ...s, text: { replace: s.text.replace.filter((x) => x !== r) } }))} aria-label={'Stop replacing ' + r.from}>✕</button></li>)}</ul>
+            </div>
+          ) : null}
         </nav>
 
         <main className="sm-mid">
@@ -89,13 +141,17 @@ export function SystemEditorMock() {
 
       <div className="sm-savebar">
         <div className="sm-saveinfo">
-          {saved ? <b className="sm-ok">Saved: {saved}</b> : changedSections.length ? <span><b>{changedSections.length}</b> {changedSections.length === 1 ? 'section' : 'sections'} changed: {changedSections.map((s) => s.label).join(', ')}</span> : <span className="dim">No changes yet</span>}
+          {msg ? <b className={msg === 'Saved.' ? 'sm-ok' : 'sm-err'}>{msg}</b> : changedSections.length ? <span><b>{changedSections.length}</b> {changedSections.length === 1 ? 'section' : 'sections'} changed: {changedSections.map((s) => s.label).join(', ')}</span> : <span className="dim">{dirty ? 'Name changed' : 'No unsaved changes'}</span>}
           {impacts.length ? <button type="button" className="sm-impbtn" onClick={() => setShowImpacts(!showImpacts)}>What this affects ({impacts.length}) {showImpacts ? '▾' : '▸'}</button> : null}
         </div>
         <div className="sm-savebtns">
-          {start.mine ? <button type="button" disabled={!changedSections.length} onClick={() => (start.campaigns?.length ? setPopup(true) : save('over ' + start.sys.name))}>Save over {start.sys.name}</button> : null}
-          <input aria-label="New system name" value={newName} placeholder={start.sys.name + ' (my version)'} onChange={(e) => setNewName(e.target.value)} />
-          <button type="button" className={start.mine ? 'quiet' : ''} disabled={!changedSections.length} onClick={() => save('as a new system, ' + (newName || start.sys.name + ' (my version)'))}>{start.mine ? 'Save as a new copy' : 'Save as a new system'}</button>
+          {mine ? (
+            <>
+              <button type="button" disabled={!dirty || busy} onClick={() => begin('over')}>Save over {saved.name}</button>
+              <input aria-label="Name for the copy" value={copyName} placeholder={name + ' (copy)'} onChange={(e) => setCopyName(e.target.value)} />
+              <button type="button" className="quiet" disabled={busy} onClick={() => begin('copy')}>Save as a new copy</button>
+            </>
+          ) : <button type="button" disabled={busy || !name.trim()} onClick={() => begin('copy')}>Save as a new system</button>}
         </div>
         {showImpacts && impacts.length ? (
           <div className="sm-impacts">
@@ -115,16 +171,45 @@ export function SystemEditorMock() {
         ) : null}
       </div>
 
-      {popup ? (
-        <div className="gsm-overlay" role="dialog" aria-modal="true" aria-label="This system is used elsewhere">
+      {dialog?.stage === 'renames' ? (
+        <div className="gsm-overlay" role="dialog" aria-modal="true" aria-label="Change the written text too?">
+          <div className="gsm-dialog sm-wide">
+            <h3>Change the written text too?</h3>
+            <p className="dim">Everything linked (sheets, pickers, stat blocks) uses the new names already. Descriptions are written out in words, so tick where the old word should be replaced. Official entries stay as published; your system shows them with the new word.</p>
+            {renames.map((r) => {
+              const found = hits[r.search] ?? [];
+              const on = ticks[r.from] ?? [];
+              return (
+                <div key={r.from} className="sm-rename">
+                  <p><b>{r.search}</b> → <b>{r.to}</b></p>
+                  {found.length ? found.map((h) => (
+                    <label key={h.type} className="sm-tog">
+                      <input type="checkbox" checked={on.includes(h.type)} onChange={(e) => setTicks({ ...ticks, [r.from]: e.target.checked ? [...on, h.type] : on.filter((t) => t !== h.type) })} />
+                      <span>{h.n} {KIND_LABEL[h.type] ?? h.type} <small className="dim">({h.names.join(', ')}{h.n > h.names.length ? ', …' : ''})</small></span>
+                    </label>
+                  )) : <p className="dim">Not found in any written text.</p>}
+                </div>
+              );
+            })}
+            <p className="inline">
+              <button type="button" onClick={() => confirmRenames(true)}>Change the ticked text</button>{' '}
+              <button type="button" className="quiet" onClick={() => confirmRenames(false)}>Leave the text alone</button>{' '}
+              <button type="button" className="quiet" onClick={() => setDialog(null)}>Cancel</button>
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {dialog?.stage === 'campaigns' ? (
+        <div className="gsm-overlay" role="dialog" aria-modal="true" aria-label="This system is used by campaigns">
           <div className="gsm-dialog">
-            <h3>{start.sys.name} is used by {start.campaigns!.length} campaigns</h3>
-            <ul>{start.campaigns!.map((c) => <li key={c}>{c}</li>)}</ul>
+            <h3>{saved.name} is used by {usage.campaigns.length} {usage.campaigns.length === 1 ? 'campaign' : 'campaigns'}</h3>
+            <ul>{usage.campaigns.map((c) => <li key={c.id}>{c.title}</li>)}</ul>
             <p className="dim">Change it everywhere, or leave those campaigns as they are and save your changes as a copy.</p>
             <p className="inline">
-              <button type="button" onClick={() => save('over ' + start.sys.name + ', all campaigns changed')}>Change it for all</button>{' '}
-              <button type="button" className="quiet" onClick={() => save('as a copy, ' + start.sys.name + ' (copy)')}>Save as a copy instead</button>{' '}
-              <button type="button" className="quiet" onClick={() => setPopup(false)}>Cancel</button>
+              <button type="button" onClick={() => commit('over', dialog.pending)}>Change it for all</button>{' '}
+              <button type="button" className="quiet" onClick={() => commit('copy', dialog.pending)}>Save as a copy instead</button>{' '}
+              <button type="button" className="quiet" onClick={() => setDialog(null)}>Cancel</button>
             </p>
           </div>
         </div>
@@ -135,7 +220,11 @@ export function SystemEditorMock() {
 
 // ---------------------------------------------------------------- what a change affects
 
-function impactsOf(from: Sys, to: Sys, inUse: boolean, setSys: (f: (s: Sys) => Sys) => void): Impact[] {
+function impactsOf(from: Sys, to: Sys, use: SystemUsage, setSys: (f: (s: Sys) => Sys) => void): Impact[] {
+  const CLASSES = use.classes;
+  const CHARACTERS = use.characters;
+  const inUse = CHARACTERS.length > 0;
+  const casters = CLASSES.filter((c) => c.cast).map((c) => c.name);
   const out: Impact[] = [];
   const has = (id: string) => to.abilities.list.some((a) => a.id === id);
   const abOptions: [string, string][] = to.abilities.list.map((a) => [a.id, 'Use ' + a.name]);
@@ -150,7 +239,7 @@ function impactsOf(from: Sys, to: Sys, inUse: boolean, setSys: (f: (s: Sys) => S
     const saves = CLASSES.filter((c) => c.saves.includes(a.id));
     if (saves.length) out.push({ key: 'save-' + a.id, text: `${saves.length} classes give a ${a.name} saving throw (${saves.map((c) => c.name).join(', ')}). They will give one save fewer.`, fix: { label: 'Swap it for…', options: abOptions } });
     out.push({ key: 'mon-' + a.id, text: `Monster stat blocks lose their ${a.name} score; spells that call for a ${a.name} save need another one.`, fix: { label: 'Spells use…', options: abOptions } });
-    if (inUse) out.push({ key: 'ch-' + a.id, text: `${CHARACTERS.join(' and ')} have a ${a.name} score; it will be dropped from their sheets.` });
+    if (inUse) out.push({ key: 'ch-' + a.id, text: `${CHARACTERS.length} ${CHARACTERS.length === 1 ? 'character has' : 'characters have'} a ${a.name} score (${CHARACTERS.slice(0, 5).join(', ')}${CHARACTERS.length > 5 ? ', …' : ''}); it stays saved but no longer shows on their sheets.` });
   }
   // a job with no ability, even without a removal
   for (const j of JOBS) if (!to.abilities.jobs[j.key] || !has(to.abilities.jobs[j.key])) {
@@ -158,7 +247,7 @@ function impactsOf(from: Sys, to: Sys, inUse: boolean, setSys: (f: (s: Sys) => S
   }
   for (const s of from.skills.list.filter((x) => !to.skills.list.some((y) => y.id === x.id))) out.push({ key: 'skill-' + s.id, text: `${s.name} removed: classes and backgrounds that offer it will offer one skill fewer${inUse ? ', and characters lose it' : ''}.`, fix: { label: 'Replace it with…', options: to.skills.list.map((x) => [x.id, x.name]) } });
   if (from.abilities.list.length !== to.abilities.list.length && to.creation.array && to.creation.arrayValues.length !== to.abilities.list.length) out.push({ key: 'array', text: `The standard array has ${to.creation.arrayValues.length} numbers for ${to.abilities.list.length} abilities.`, fix: { label: 'Fix it', options: [['fit', `Make it ${to.abilities.list.length} numbers`]], apply: () => setSys((s) => ({ ...s, creation: { ...s.creation, arrayValues: Array.from({ length: s.abilities.list.length }, (_, i) => s.creation.arrayValues[i] ?? 10) } })) } });
-  if (from.magic.on && !to.magic.on) out.push({ key: 'magic', text: `Magic is off: Bard, Cleric, Wizard and Hex Knight lose spellcasting; Spell homebrew is hidden (not deleted)${inUse ? '; Mira (Wizard) loses her spells' : ''}.` });
+  if (from.magic.on && !to.magic.on) out.push({ key: 'magic', text: `Magic is off: ${casters.length} classes lose spellcasting (${casters.slice(0, 6).join(', ')}${casters.length > 6 ? ', …' : ''}); spell homebrew is hidden, not deleted${inUse ? '; characters lose their spells and slots' : ''}.` });
   else if (from.magic.on && to.magic.on && from.magic.kind !== to.magic.kind) out.push({ key: 'mana', text: `Casters switch to ${to.magic.kind === 'mana' ? 'mana points' : 'spell slots'}.`, fix: { label: 'Convert how?', options: [['auto', 'Work it out from each class’s slots'], ['manual', 'I will set each class']] } });
   if (from.magic.levels > to.magic.levels && to.magic.on) out.push({ key: 'splv', text: `Spells above level ${to.magic.levels} can no longer be cast.`, fix: { label: 'Those spells…', options: [['cap', `Become level ${to.magic.levels}`], ['hide', 'Are hidden']] } });
   if (to.leveling.kind !== 'none' && to.leveling.maxLevel < from.leveling.maxLevel) out.push({ key: 'maxlv', text: `Class features above level ${to.leveling.maxLevel} can no longer be reached.` });

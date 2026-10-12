@@ -6,6 +6,20 @@
 export type Ability = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
 export const ABILITIES: [Ability, string][] = [['str', 'Strength'], ['dex', 'Dexterity'], ['con', 'Constitution'], ['int', 'Intelligence'], ['wis', 'Wisdom'], ['cha', 'Charisma']];
 export const SKILLS: [string, Ability][] = [['Acrobatics', 'dex'], ['Animal Handling', 'wis'], ['Arcana', 'int'], ['Athletics', 'str'], ['Deception', 'cha'], ['History', 'int'], ['Insight', 'wis'], ['Intimidation', 'cha'], ['Investigation', 'int'], ['Medicine', 'wis'], ['Nature', 'int'], ['Perception', 'wis'], ['Performance', 'cha'], ['Persuasion', 'cha'], ['Religion', 'int'], ['Sleight of Hand', 'dex'], ['Stealth', 'dex'], ['Survival', 'wis']];
+// The parts of a game system the engine works from (a DM's own system is built by engineSystem in
+// src/features/systems/model.ts). Jobs say which ability does what: toughness for hit points,
+// agility for initiative and Armor Class, and so on. Fifth edition is the default.
+export type RulesSystem = {
+  abilities: { key: string; label: string; abbr: string; save: boolean }[];
+  skills: { name: string; ab: string; passive: boolean }[];
+  mod: 'half' | 'score' | 'none'; prof: number[] | 'none' | null; maxLevel: number; // prof: by level; null is the standard table
+  jobs: { toughness: string; agility: string; might: string; awareness: string }; acBase: number;
+};
+export const FIFTH_RULES: RulesSystem = {
+  abilities: ABILITIES.map(([key, label]) => ({ key, label, abbr: key.toUpperCase(), save: true })),
+  skills: SKILLS.map(([name, ab]) => ({ name, ab, passive: name === 'Perception' })),
+  mod: 'half', prof: null, maxLevel: 20, jobs: { toughness: 'con', agility: 'dex', might: 'str', awareness: 'wis' }, acBase: 10,
+};
 export const ENTITY_TYPES = ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'item', 'monster', 'resource'] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
@@ -132,8 +146,8 @@ export function chosenOf(c: CharacterV2, entities: Entity[]) {
 }
 
 // Everything the sheet shows that is worked out rather than typed in.
-export function derive(c: CharacterV2, entities: Entity[]) {
-  const level = Math.max(1, Math.min(20, Number(c.level) || 1));
+export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FIFTH_RULES) {
+  const level = Math.max(1, Math.min(sys.maxLevel, Number(c.level) || 1));
   const byId = new Map(entities.map((e) => [e.id, e]));
   const chosen = chosenOf(c, entities);
   const cls = c.clsId ? byId.get(c.clsId) : undefined;
@@ -163,7 +177,8 @@ export function derive(c: CharacterV2, entities: Entity[]) {
     });
   }
 
-  const scores = { ...c.ab } as Record<Ability, number>;
+  // the system's abilities; one a character has no score in yet counts as 10
+  const scores = Object.fromEntries(sys.abilities.map((a) => [a.key, Number((c.ab as Record<string, number>)?.[a.key] ?? 10)])) as Record<Ability, number>;
   let anyIndex = 0;
   const perEntry: Record<string, number> = {};
   const of = <T extends Effect['t']>(t: T) => effects.filter((x) => x.t === t) as (Extract<Effect, { t: T }> & { from: string })[];
@@ -173,19 +188,22 @@ export function derive(c: CharacterV2, entities: Entity[]) {
     const target = (x.ab === 'any' ? (own ? own[perEntry[(x as any).eid] = (perEntry[(x as any).eid] ?? -1) + 1] : (c.anyAb ?? [])[anyIndex++]) : x.ab) as Ability | undefined;
     if (target && target in scores) scores[target] = Math.min(x.max ? Number(x.max) : 99, Number(scores[target]) + Number(x.n));
   }
-  const mods = Object.fromEntries(ABILITIES.map(([k]) => [k, mod(scores[k])])) as Record<Ability, number>;
-  const prof = classProf(cls?.data, level);
+  const modOf = (s: number) => (sys.mod === 'score' ? Number(s) : sys.mod === 'none' ? 0 : mod(s));
+  const mods = Object.fromEntries(sys.abilities.map((a) => [a.key, modOf(scores[a.key as Ability])])) as Record<Ability, number>;
+  // the ability doing a job (toughness, agility...); none set means no modifier
+  const jobMod = (j: keyof RulesSystem['jobs']) => mods[sys.jobs[j] as Ability] ?? 0;
+  const prof = sys.prof === 'none' ? 0 : sys.prof && !cls?.data?.profChart ? Number(sys.prof[level - 1]) || 0 : classProf(cls?.data, level);
 
   const profs = { skill: new Set<string>(c.skills ?? []), save: new Set<string>(), armor: new Set<string>(), weapon: new Set<string>(), tool: new Set<string>(), language: new Set<string>() };
   of('prof').forEach((x) => profs[x.kind]?.add(x.v));
-  const SKILL_NAMES = new Set(SKILLS.map(([n]) => n));
+  const SKILL_NAMES = new Set(sys.skills.map((s) => s.name));
   picked.filter((p) => p.from === 'anyskill').forEach((p) => p.v.forEach((v) => (SKILL_NAMES.has(v) ? profs.skill : profs.tool).add(v)));
   (c.langs ?? []).forEach((l) => profs.language.add(l));
   const expert = new Set([...(c.expert ?? []), ...picked.filter((p) => p.from === 'skills').flatMap((p) => p.v)]);
   // flat bonuses that always apply (Alert's Proficiency Bonus to Initiative, a +1 to saving throws); ones with a 'when' are situational
   const bonusTo = (roll: string) => of('bonus').filter((x) => x.roll === roll && !x.when).reduce((n, x) => n + (x.amount === 'prof' ? prof : typeof x.amount === 'string' && x.amount in mods ? mods[x.amount as Ability] : Number(x.amount) || 0), 0);
-  const saves = ABILITIES.map(([k, label]) => ({ key: k, label, proficient: profs.save.has(k), bonus: mods[k] + (profs.save.has(k) ? prof : 0) + bonusTo('save') }));
-  const skills = SKILLS.map(([name, a]) => ({ name, ability: a, proficient: profs.skill.has(name), expert: expert.has(name), bonus: mods[a] + (profs.skill.has(name) ? prof * (expert.has(name) ? 2 : 1) : 0) }));
+  const saves = sys.abilities.filter((a) => a.save).map(({ key, label }) => ({ key: key as Ability, label, proficient: profs.save.has(key), bonus: (mods[key as Ability] ?? 0) + (profs.save.has(key) ? prof : 0) + bonusTo('save') }));
+  const skills = sys.skills.map(({ name, ab: a, passive }) => ({ name, ability: a as Ability, passive, proficient: profs.skill.has(name), expert: expert.has(name), bonus: (mods[a as Ability] ?? 0) + (profs.skill.has(name) ? prof * (expert.has(name) ? 2 : 1) : 0) }));
 
   const race = c.raceId ? byId.get(c.raceId) : undefined;
   const speed: Record<string, number> = { walk: Number(race?.data.speed) || 30 };
@@ -208,11 +226,13 @@ export function derive(c: CharacterV2, entities: Entity[]) {
 
   const hd = Number(cls?.data.hd) || 8;
   const hpPerLevel = of('hp').reduce((n, x) => n + Number(x.n), 0);
-  const hpAuto = hd + mods.con + (level - 1) * (Math.floor(hd / 2) + 1 + mods.con) + hpPerLevel * level;
+  const tough = jobMod('toughness');
+  const hpAuto = hd + tough + (level - 1) * (Math.floor(hd / 2) + 1 + tough) + hpPerLevel * level;
   const hpMax = c.hpMax != null && c.hpMax !== ('' as any) ? Number(c.hpMax) : Math.max(1, hpAuto);
   const acBonus = of('ac').reduce((n, x) => n + Number(x.n), 0);
   // armor worn: its base plus Dexterity (all of it, at most 2, or none)
-  const worn = c.armor && Number(c.armor.base) ? Number(c.armor.base) + (c.armor.dex === 'none' ? 0 : c.armor.dex === 'max2' ? Math.min(2, mods.dex) : mods.dex) : 10 + mods.dex;
+  const agile = jobMod('agility');
+  const worn = c.armor && Number(c.armor.base) ? Number(c.armor.base) + (c.armor.dex === 'none' ? 0 : c.armor.dex === 'max2' ? Math.min(2, agile) : agile) : sys.acBase + agile;
   const ac = (c.acBase != null && c.acBase !== ('' as any) ? Number(c.acBase) : worn) + acBonus + (c.shield ? 2 : 0);
 
   const cast = cls?.data.casting && cls.data.casting.kind && cls.data.casting.kind !== 'none' ? cls.data.casting : null;
@@ -222,7 +242,7 @@ export function derive(c: CharacterV2, entities: Entity[]) {
   // entries that changed since this character last looked at them
   const changed = chosen.filter((e) => e.source !== 'srd' && (e.version ?? 1) > ((c.seen ?? {})[e.id] ?? 1)).map((e) => ({ id: e.id, name: e.name, version: e.version ?? 1, note: e.change_note ?? '' }));
 
-  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: mods.dex + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? 0), casting, changed, cls, race, chosen };
+  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: agile + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? skills.find((s) => s.passive)?.bonus ?? 0), passives: skills.filter((s) => s.passive).map((s) => ({ name: s.name, value: 10 + s.bonus })), abilities: sys.abilities, casting, changed, cls, race, chosen };
 }
 
 // ---------------------------------------------------------------- class table (levels 1 to 20)

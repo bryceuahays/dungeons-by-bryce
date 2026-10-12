@@ -1,5 +1,5 @@
-// MOCK-UP ONLY: everything a game system could set, filled with fifth edition's values.
-// The real System Editor will store only what a DM changes on top of one of these.
+// A game system: everything a DM can change about the rules, filled with fifth edition's values.
+// A saved system stores only the sections it changed (changesOf); the rest comes from its base (resolve).
 import { spellSlots } from '@/lib/rules/engine';
 import { DAMAGE_TYPES } from '@/config/homebrew';
 
@@ -33,8 +33,11 @@ export type Sys = {
   trackers: { list: Tracker[] };
   names: { species: string; class: string; subclass: string; background: string; feat: string; spell: string; kinds: Record<string, boolean> };
   monsters: { cr: boolean; crXp: [string, number][]; legendary: boolean; lair: boolean };
+  // words replaced in written text (spell and feature descriptions) when something is renamed
+  text: { replace: TextRename[] };
 };
-export type SectionKey = Exclude<keyof Sys, 'name' | 'base'>;
+export type TextRename = { from: string; to: string; types: string[] };
+export type SectionKey = Exclude<keyof Sys, 'name' | 'base' | 'text'>;
 
 const ab = (id: string, abbr: string, name: string, desc: string): Ab => ({ id, abbr, name, desc, save: true });
 const sk = (name: string, a: string, desc: string, passive = false): Skill => ({ id: name.toLowerCase().replace(/\W+/g, '-'), name, ab: a, desc, passive });
@@ -120,6 +123,7 @@ export const FIFTH: Sys = {
     cr: true, legendary: true, lair: true,
     crXp: [['0', 10], ['1/8', 25], ['1/4', 50], ['1/2', 100], ['1', 200], ['2', 450], ['3', 700], ['4', 1100], ['5', 1800], ['6', 2300], ['7', 2900], ['8', 3900], ['9', 5000], ['10', 5900], ['11', 7200], ['12', 8400], ['13', 10000], ['14', 11500], ['15', 13000], ['16', 15000], ['17', 18000], ['18', 20000], ['19', 22000], ['20', 25000]],
   },
+  text: { replace: [] },
 };
 
 // The 2014 rules differ from 2024 here in what a system sets (the rest is content: classes, spells...).
@@ -138,6 +142,51 @@ export const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: 'equipment', label: 'Equipment and money' }, { key: 'details', label: 'Character details' }, { key: 'trackers', label: 'Trackers' },
   { key: 'names', label: 'Names of things' }, { key: 'monsters', label: 'Monsters' },
 ];
+
+// ---------------------------------------------------------------- saved systems
+
+export type Base = '2014' | '2024';
+export const presetOf = (base: string | null | undefined): Sys => (base === '2014' ? FIFTH_2014 : FIFTH);
+const CHANGEABLE: (SectionKey | 'text')[] = [...SECTIONS.map((s) => s.key), 'text'];
+// what a saved system stores: the sections that differ from its base
+export function changesOf(sys: Sys): Partial<Sys> {
+  const base = presetOf(sys.base);
+  return Object.fromEntries(CHANGEABLE.filter((k) => JSON.stringify(sys[k]) !== JSON.stringify(base[k])).map((k) => [k, sys[k]])) as Partial<Sys>;
+}
+// a saved system put back together: its base, with its changes on top
+export function resolve(row: { name?: string; base?: string | null; changes?: unknown } | null | undefined): Sys {
+  const base = presetOf(row?.base);
+  const ch = (row?.changes && typeof row.changes === 'object' ? row.changes : {}) as Record<string, unknown>;
+  const out: Sys = { ...base, name: row?.name || base.name };
+  for (const k of CHANGEABLE) if (ch[k] && typeof ch[k] === 'object') (out as Record<string, unknown>)[k] = { ...(base[k] as object), ...(ch[k] as object) };
+  return out;
+}
+
+// what the rules engine needs from a system (see RulesSystem in src/lib/rules/engine.ts)
+export function engineSystem(sys: Sys) {
+  return {
+    abilities: sys.abilities.list.map((a) => ({ key: a.id, label: a.name, abbr: a.abbr, save: a.save })),
+    skills: sys.skills.list.map((s) => ({ name: s.name, ab: s.ab, passive: s.passive })),
+    mod: sys.abilities.mod, prof: sys.proficiency.on ? sys.proficiency.table : ('none' as const),
+    maxLevel: sys.leveling.kind === 'none' ? 1 : sys.leveling.maxLevel,
+    jobs: sys.abilities.jobs, acBase: sys.combat.acBase,
+  };
+}
+
+// Written text in a system: whole-word replacements (Intelligence -> Insanity), applied to the
+// string fields of the entries of the kinds each rename was ticked for.
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function renameText<T>(value: T, renames: TextRename[]): T {
+  if (!renames.length) return value;
+  const rx = renames.map((r) => [new RegExp(`\\b${esc(r.from)}\\b`, 'g'), r.to] as const);
+  const walk = (v: unknown): unknown => (typeof v === 'string' ? rx.reduce((s, [re, to]) => s.replace(re, to), v) : Array.isArray(v) ? v.map(walk) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)])) : v);
+  return walk(value) as T;
+}
+export function applyText<E extends { type: string; data: unknown }>(entities: E[], sys: Sys | null | undefined): E[] {
+  const list = sys?.text?.replace ?? [];
+  if (!list.length) return entities;
+  return entities.map((e) => { const r = list.filter((x) => x.types.includes(e.type)); return r.length ? { ...e, data: renameText(e.data, r) } : e; });
+}
 
 // Which pages each section changes, and how. Shown on the Affects tab.
 export const AFFECTS: Record<SectionKey, [string, string][]> = {

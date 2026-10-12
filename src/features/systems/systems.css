@@ -87,3 +87,11 @@
 .gsm-overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(0,0,0,.6);padding:16px}
 .gsm-dialog{max-width:480px;width:100%;border:1px solid var(--h-accent);border-radius:14px;padding:18px 22px;background:var(--h-panel)}
 .gsm-dialog h3{margin-top:0}
+.hub .sm-name{min-width:min(420px,100%);margin:0}
+.hub .sm-name input{font-family:var(--h-title);font-size:1.4rem}
+.sm-err{color:var(--h-bad)}
+.sm-renames{margin-top:14px;font-size:.85rem;border-top:1px solid var(--h-line);padding-top:10px}
+.sm-renames ul{padding-left:16px;margin:4px 0}
+.gsm-dialog.sm-wide{max-width:640px;max-height:85vh;overflow-y:auto}
+.sm-rename{border-top:1px solid var(--h-line);padding-top:6px;margin-top:6px}
+.sm-rename p{margin:4px 0}

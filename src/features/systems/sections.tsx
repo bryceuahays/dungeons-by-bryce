@@ -1,7 +1,7 @@
 'use client';
 // MOCK-UP ONLY: the editor for each section of a game system.
 import { useState } from 'react';
-import { JOBS, type Sys, type SectionKey, type Ab, type Skill } from './fifth';
+import { JOBS, type Sys, type SectionKey, type Ab, type Skill } from './model';
 
 type Props<K extends SectionKey> = { v: Sys[K]; set: (patch: Partial<Sys[K]>) => void; sys: Sys };
 
