@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { FLAGS, FLAG_NAMES, flagOn, flagsFor, withSwitches } from '../src/config/flags.ts';
-import { ROOT, admin, anonClient, cleanup, makeUser, page } from './helpers.mjs';
+import { ROOT, SITE, admin, anonClient, cleanup, makeUser, page } from './helpers.mjs';
 
 const ordinary = { role: 'player', test: false };
 const head = { role: 'head' };
@@ -158,7 +158,8 @@ test('the Head DM\'s flags screen lists every flag, and nobody else reaches it',
   for (const session of [plain.session, null]) {
     const r = await page('/admin/flags', session);
     assert.ok(r.status >= 300 && r.status < 400, 'sent away');
-    assert.ok(!/admin/.test(r.location ?? ''), 'not to another Head DM page');
+    // (a signed-out visitor goes to /sign-in?next=/admin/flags, so look at the page, not the whole address)
+    assert.equal(new URL(r.location ?? '', SITE).pathname, session ? '/campaigns' : '/sign-in', 'not to another Head DM page');
     assert.equal(r.text, '');
   }
 });
