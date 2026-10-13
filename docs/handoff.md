@@ -238,3 +238,11 @@ Make a pack under **Homebrew**, then **Head DM**, **Store and custom site reques
 - Stripe, as before: purchases, upgrades and commission payments were tested with signed test events, not a Stripe account.
 - The request form's email to you (same code path as feedback email, which works).
 - Generating a framework from Bryce's first campaign itself. The generator is tested on a campaign built for the test; running it on the real one creates a campaign in your account, which is yours to do.
+
+## Hub redesign mockups and design system (13 October 2026, issue #81)
+
+**What was added:** `docs/design/` holds a picture of every version 2 hub screen, each screen's source, and the design system new pages follow (`design-system.md`, `tokens.json`). `docs/design/README.md` maps every screen to what already exists in the app and what is new.
+
+**Where it is in the UI:** nowhere yet. These are the pictures each new page is built from, one page at a time.
+
+**What you need to do by hand:** review and merge the pull request. Decide the name of the new DM-only overview page, since "Secrets" is already the name of a table tool.

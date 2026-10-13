@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Live Session</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1400px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 12px 24px; background: #1E1716; border-bottom: 1px solid #5A2E2A">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px">
+<a href="WelcomeDM.dc.html" style="font-size: 14px">← Hub</a>
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: #F5C2B3"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 50%; background: #E8957D"></span>LIVE</span>
+<span style="font-family: Spectral, Georgia, serif; font-size: 22px; font-weight: 600">Session 4 · [Campaign name]</span>
+<span style="font-size: 14px; color: #A9A396; font-variant-numeric: tabular-nums">1:42:10</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<a href="CombatDM.dc.html" style="min-height: 44px; padding: 0 14px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px; text-decoration: none; display: flex; align-items: center">Start combat</a>
+<button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Take a break</button>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #E8957D; color: #1F0F0A; border: none; font-size: 14px; font-weight: 600">End session and draft recap</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px; flex: 1">
+
+<section aria-label="Party at a glance" style="flex: 1 1 280px; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Party at a glance</h2>
+<sc-for list="{{party}}" as="p" hint-placeholder-count="3">
+<article style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="font-weight: 600">{{p.name}}</span><span style="{{p.hereStyle}}">{{p.here}}</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 13px"><span style="color: #A9A396">HP</span><span style="font-weight: 600">{{p.hp}}</span></div>
+<div style="height: 6px; border-radius: 3px; background: #2E3341; overflow: hidden"><div style="{{p.bar}}"></div></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; text-align: center; font-size: 12px">
+<div style="background: #20232C; border-radius: 8px; padding: 4px"><div style="color: #A9A396">AC</div><div style="font-size: 15px; font-weight: 600">[#]</div></div>
+<div style="background: #20232C; border-radius: 8px; padding: 4px"><div style="color: #A9A396">Passive Perc.</div><div style="font-size: 15px; font-weight: 600">{{p.pp}}</div></div>
+<div style="background: #20232C; border-radius: 8px; padding: 4px"><div style="color: #A9A396">Spell DC</div><div style="font-size: 15px; font-weight: 600">[#]</div></div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><sc-for list="{{p.conds}}" as="c" hint-placeholder-count="1"><span style="font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; color: #F5C2B3; background: #3A231C">{{c}}</span></sc-for><button type="button" onClick="{{p.toggle}}" aria-pressed="{{p.insp}}" style="{{p.inspStyle}}">Inspiration</button></div>
+</article>
+</sc-for>
+</section>
+
+<div style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<section aria-label="Current scene" style="background: #1B1E26; border: 1px solid #5A4A26; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+<div><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #E0AE52">Scene 2 of 4</span><h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 26px; font-weight: 600">[Scene name] · <a href="Map.dc.html">[Ruins]</a></h2></div>
+<div style="display: flex; gap: 6px"><button type="button" style="min-height: 40px; padding: 0 12px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 13px">← Prev scene</button><button type="button" style="min-height: 40px; padding: 0 12px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 13px">Next scene →</button></div>
+</div>
+<div style="padding: 12px 14px; border-radius: 10px; background: #2A2618; font-family: Spectral, Georgia, serif; font-size: 17px; color: #EDE3C8">[Read-aloud text for this scene.]</div>
+<div style="padding: 10px 12px; border-radius: 10px; background: #1E1A28; border: 1px dashed #7A68A3; font-size: 14px; color: #D6CBEF">Your prep notes: [what's here, what the NPCs want, how it can go]</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px"><span style="color: #A9A396">In this scene:</span><a href="NPCs.dc.html">[NPC name]</a><span style="color: #A9A396">·</span><a href="NPCs.dc.html">[NPC name]</a><span style="color: #A9A396">·</span><span>[Encounter name]</span></div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px">
+<section aria-label="Reveals for this session" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #C9B8EC">Ready to reveal</h2>
+<sc-for list="{{reveals}}" as="r" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: #1E1A28; border: 1px dashed #7A68A3">
+<span style="min-width: 0"><span style="display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #C9B8EC">{{r.type}}</span><span style="display: block; font-size: 14px">{{r.name}}</span><span style="display: block; font-size: 12px; color: #A9A396">{{r.to}}</span></span>
+<button type="button" style="min-height: 40px; padding: 0 12px; border-radius: 8px; background: #B39DDB; color: #160F24; border: none; font-size: 13px; font-weight: 600; white-space: nowrap">Reveal</button>
+</div>
+</sc-for>
+</section>
+<section aria-label="Handouts" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Handouts</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{handouts}}" as="h" hint-placeholder-count="4">
+<div style="border-radius: 10px; overflow: hidden; background: #20232C; border: 1px solid #2E3341">
+<div style="height: 64px; background: #232733; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #8E8879">{{h.kind}}</div>
+<button type="button" style="width: 100%; min-height: 40px; border: none; border-top: 1px solid #2E3341; background: transparent; color: #E0AE52; font-size: 13px; font-weight: 600">Show {{h.to}}</button>
+</div>
+</sc-for>
+</div>
+</section>
+</div>
+
+<section aria-label="Session notes" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px"><label for="live-notes" style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Session notes</label><span style="font-size: 12px; color: #A9A396">Becomes your recap draft when you end the session</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{tags}}" as="t" hint-placeholder-count="5"><button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 999px; background: #20232C; color: #CFC8B8; border: 1px solid #3A4050; font-size: 13px">+ {{t}}</button></sc-for>
+</div>
+<textarea id="live-notes" rows="4" style="padding: 10px 12px; border-radius: 10px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit; font-size: 14px; resize: vertical">1:05  Met [NPC name]
+1:31  Found [Map fragment] (logged to Party loot)
+1:40  </textarea>
+</section>
+</div>
+
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section aria-label="Dice feed" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Dice</h2><span style="font-size: 12px; color: #A9A396">Including private rolls</span></div>
+<sc-for list="{{rolls}}" as="d" hint-placeholder-count="4">
+<div style="{{d.style}}"><span style="min-width: 0"><span style="display: block; font-size: 12px; color: #A9A396">{{d.who}}</span><span style="display: block; font-size: 14px">{{d.what}}</span></span><span style="font-family: Spectral, Georgia, serif; font-size: 22px; font-weight: 600">{{d.total}}</span></div>
+</sc-for>
+<div style="display: flex; gap: 6px"><button type="button" style="flex: 1; min-height: 44px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 13px; font-weight: 600">Hidden d20</button><button type="button" style="flex: 1; min-height: 44px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 13px; font-weight: 600">Ask for a roll…</button></div>
+</section>
+<section aria-label="Player messages" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Whispers from players</h2>
+<div style="padding: 10px 12px; border-radius: 10px; background: #2A2618; border: 1px solid #5A4A26; font-size: 14px"><span style="display: block; font-size: 12px; color: #A9A396">[Player character 3] · just now</span>[I want to secretly pocket the amulet.]</div>
+<div style="display: flex; gap: 6px"><button type="button" style="flex: 1; min-height: 40px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 13px">Reply privately</button><button type="button" style="flex: 1; min-height: 40px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 13px">Ask for Sleight of Hand</button></div>
+</section>
+<section aria-label="Initiative" style="background: #1B1E26; border: 1px dashed #4A4F5E; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 6px; color: #A9A396; font-size: 14px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase">Initiative</h2>
+No fight right now. Start combat and the tracker shows up here.
+</section>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { insp: { 1: true } }; }
+  renderVals() {
+    var self = this;
+    var pill = 'font-size: 12px; font-weight: 600; ';
+    var party = [
+      { name: '[Player character 1]', hp: '24 / 31', pct: 77, pp: 13, conds: ['Poisoned'], here: true },
+      { name: '[Player character 2]', hp: '19 / 19', pct: 100, pp: 11, conds: [], here: true },
+      { name: '[Player character 3]', hp: '12 / 28', pct: 43, pp: 15, conds: [], here: false }
+    ].map(function (p, i) {
+      var on = !!self.state.insp[i];
+      return {
+        name: p.name, hp: p.hp, pp: p.pp, conds: p.conds,
+        here: p.here ? 'At the table' : 'Absent', hereStyle: pill + (p.here ? 'color: #6CC4B3;' : 'color: #A9A396;'),
+        bar: 'height: 100%; border-radius: 3px; width: ' + p.pct + '%; background: ' + (p.pct < 50 ? '#E8957D' : '#6CC4B3') + ';',
+        insp: on ? 'true' : 'false',
+        inspStyle: 'margin-left: auto; min-height: 32px; padding: 0 10px; border-radius: 999px; font-size: 12px; ' + (on ? 'background: #E0AE52; color: #1A1408; border: none; font-weight: 600;' : 'background: transparent; color: #CFC8B8; border: 1px solid #3A4050;'),
+        toggle: function () { var s = Object.assign({}, self.state.insp); s[i] = !s[i]; self.setState({ insp: s }); }
+      };
+    });
+    var rb = 'display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; ';
+    return {
+      party: party,
+      reveals: [
+        { type: 'NPC', name: '[NPC name]', to: 'To everyone · scheduled for tonight' },
+        { type: 'Lore · Places', name: '[Place name]', to: 'To everyone · adds a map pin' },
+        { type: 'Per-player', name: '[Vision only one player sees]', to: 'Only [Player character 2]' },
+        { type: 'Quest objective', name: '[Hidden objective]', to: 'To everyone' }
+      ],
+      handouts: [
+        { kind: '[Letter]', to: 'to all' },
+        { kind: '[Portrait]', to: 'to all' },
+        { kind: '[Secret note]', to: 'to [PC 2]' },
+        { kind: '[Region map]', to: 'to all' }
+      ],
+      tags: ['NPC met', 'Loot found', 'Quest update', 'Big moment', 'Rules call'],
+      rolls: [
+        { who: '[Player character 2]', what: 'Perception (15 + 2)', total: '17', style: rb + 'background: #20232C;' },
+        { who: '[Player character 3] · to you only', what: 'Insight (12 + 3)', total: '15', style: rb + 'background: #1E1A28; border: 1px dashed #7A68A3;' },
+        { who: 'You · hidden', what: 'Stealth, [Enemy A] (8 + 3)', total: '11', style: rb + 'background: #1E1A28; border: 1px dashed #7A68A3;' },
+        { who: '[Player character 1]', what: 'Athletics (9 + 0)', total: '9', style: rb + 'background: #20232C;' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

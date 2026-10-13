@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Campaign Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 2300px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+<dc-import name="HubTop" active="settings" mode="dm" hint-size="100%,166px"></dc-import>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 24px 28px; flex: 1">
+<nav aria-label="Settings sections" style="flex: 1 1 220px; max-width: 100%; box-sizing: border-box; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+<a href="{{n.href}}" aria-current="{{n.current}}" style="{{n.style}}">{{n.label}}</a>
+</sc-for>
+</nav>
+<main style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div>
+<h1 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 36px; font-weight: 600">Campaign settings</h1>
+<p style="margin: 4px 0 0; color: #A9A396">Only DMs and co-DMs with permission can change these.</p>
+</div>
+
+<section id="pages" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 12px">
+<div>
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Pages and features</h2>
+<p style="margin: 4px 0 0; font-size: 14px; color: #A9A396">Turn any page or feature on or off. Content is kept when you switch something off, so nothing is lost.</p>
+</div>
+<dc-import name="FeatureToggles" hint-size="100%,1100px"></dc-import>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px">
+<section id="privacy" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Visibility defaults</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="d-new" style="font-size: 13px; color: #A9A396">New content starts as</label>
+<select id="d-new" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>Hidden until I reveal it</option><option>Visible to every player</option></select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="d-npc" style="font-size: 13px; color: #A9A396">When an NPC is revealed, players see</label>
+<select id="d-npc" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>Name and portrait</option><option>Everything</option><option>Name only</option></select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #2E3341; padding-top: 12px">
+<div style="display: flex; align-items: center; gap: 8px"><input id="d-pp" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="d-pp">Allow reveals to only some players</label></div>
+<div style="display: flex; align-items: center; gap: 8px"><input id="d-sched" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="d-sched">Post scheduled reveals to Discord</label></div>
+</div>
+</section>
+<section id="dice" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Dice</h2>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px"><input id="r-dm" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="r-dm">Players can roll to the DM only</label></div>
+<div style="display: flex; align-items: center; gap: 8px"><input id="r-self" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="r-self">Players can roll just for themselves</label></div>
+<div style="display: flex; align-items: center; gap: 8px"><input id="r-hide" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="r-hide">DM rolls are hidden by default</label></div>
+<div style="display: flex; align-items: center; gap: 8px"><input id="r-math" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="r-math">Show the roll and modifier, not just the total</label></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #2E3341; padding-top: 12px">
+<label for="r-force" style="font-size: 13px; color: #A9A396">Always private (DM can't override)</label>
+<select id="r-force" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>Insight and Perception checks</option><option>None</option></select>
+</div>
+</section>
+</div>
+
+<section id="danger" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 22px; border-radius: 14px; border: 1px solid #5A2E2A; background: #1E1716">
+<div><h2 style="margin: 0; font-size: 17px; font-weight: 600">Archive or delete</h2><p style="margin: 2px 0 0; font-size: 14px; color: #A9A396">Archiving keeps everything readable. Deleting can't be undone.</p></div>
+<div style="display: flex; gap: 8px"><button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Archive campaign</button><button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; background: transparent; color: #F5C2B3; border: 1px solid #7A3A33; font-size: 14px">Delete campaign</button></div>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var base = 'min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 8px; font-size: 14px; text-decoration: none; ';
+    var nav = [
+      ['General', 'Setup1Pages.dc.html'], ['Pages and features', '#pages', true], ['Visibility defaults', '#privacy'], ['Dice', '#dice'],
+      ['People and permissions', 'SettingsPeople.dc.html'], ['Discord', '#'], ['Archive or delete', '#danger']
+    ].map(function (n) {
+      return { label: n[0], href: n[1], current: n[2] ? 'page' : 'false', style: base + (n[2] ? 'background: #2A2618; color: #EDE7DA; border: 1px solid #E0AE52; font-weight: 600;' : 'color: #CFC8B8; border: 1px solid transparent;') };
+    });
+    return { nav: nav };
+  }
+}
+</script>
+</body>
+</html>

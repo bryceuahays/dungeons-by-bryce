@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lore: Player View</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1900px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+<dc-import name="HubTop" active="lore" mode="player" hint-size="100%,126px"></dc-import>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 24px 28px; flex: 1">
+<div style="flex: 1 1 280px; max-width: 100%"><dc-import name="Sidebar" mode="player" hint-size="100%,1200px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<div>
+<h1 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 36px; font-weight: 600">Lore</h1>
+<p style="margin: 4px 0 0; color: #A9A396">What your party knows about the world. More appears as you discover it.</p>
+</div>
+<label for="lore-q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search lore</label>
+<input id="lore-q" type="search" placeholder="Search lore" style="flex: 0 1 260px; min-height: 40px; padding: 0 12px; border-radius: 999px; background: #1B1E26; border: 1px solid #3A4050; color: #EDE7DA; font: inherit; font-size: 14px">
+</div>
+<nav aria-label="Lore sections" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{jumps}}" as="j" hint-placeholder-count="7">
+<a href="{{j.href}}" style="min-height: 36px; padding: 0 14px; border-radius: 999px; background: #20232C; border: 1px solid #2E3341; color: #CFC8B8; font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 6px">{{j.label}}<span style="font-size: 12px; color: #A9A396">{{j.count}}</span></a>
+</sc-for>
+</nav>
+
+<section id="history" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">History</h2>
+<ol style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px">
+<sc-for list="{{eras}}" as="e" hint-placeholder-count="3">
+<li style="display: flex; flex-direction: column; gap: 6px; padding-top: 14px; border-top: 3px solid #4A4F5E">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #E0AE52">{{e.when}}</span>
+<span style="font-family: Spectral, Georgia, serif; font-size: 18px; font-weight: 600">{{e.name}}</span>
+<span style="font-size: 14px; color: #CFC8B8">{{e.text}}</span>
+</li>
+</sc-for>
+</ol>
+</section>
+
+<section id="places" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px"><h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Places</h2><a href="Map.dc.html" style="font-size: 14px">See on the map →</a></div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #A9A396"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"></path><circle cx="12" cy="9" r="2.5"></circle></svg><span style="color: #EDE7DA; font-weight: 600">[Region name]</span> · [Region summary]</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px">
+<sc-for list="{{places}}" as="p" hint-placeholder-count="3">
+<article style="border-radius: 12px; overflow: hidden; background: #20232C; border: 1px solid #2E3341">
+<div style="height: 96px; background: #232733; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8E8879">[Place image]</div>
+<div style="padding: 10px 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #E0AE52">{{p.type}}</span>
+<h3 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 18px; font-weight: 600">{{p.name}}</h3>
+<span style="font-size: 13px; color: #CFC8B8">[One-line summary]</span>
+<span style="font-size: 12px; color: #A9A396">{{p.found}}</span>
+</div>
+</article>
+</sc-for>
+</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px">
+<section id="factions" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Factions</h2>
+<sc-for list="{{factions}}" as="f" hint-placeholder-count="2">
+<article style="display: flex; gap: 12px; padding: 12px; border-radius: 12px; background: #20232C">
+<div style="width: 48px; height: 48px; flex: none; border-radius: 50%; background: #232733; border: 1px solid #3A4050; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #8E8879">Symbol</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; justify-content: space-between; gap: 8px"><h3 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 18px; font-weight: 600">{{f.name}}</h3><span style="{{f.standStyle}}">{{f.stand}}</span></div>
+<span style="font-size: 13px; color: #A9A396">Led by [Leader] · Based in [Place]</span>
+<span style="font-size: 14px; color: #CFC8B8">Goal: [What they want]</span>
+</div>
+</article>
+</sc-for>
+</section>
+<section id="religions" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Religions and deities</h2>
+<sc-for list="{{deities}}" as="d" hint-placeholder-count="2">
+<article style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: #20232C">
+<div style="display: flex; justify-content: space-between; gap: 8px"><h3 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 18px; font-weight: 600">{{d.name}}</h3><span style="font-size: 13px; color: #A9A396">Symbol: [Symbol]</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{d.domains}}" as="dm" hint-placeholder-count="2"><span style="font-size: 12px; padding: 1px 8px; border-radius: 999px; background: #232733">{{dm}}</span></sc-for></div>
+<span style="font-size: 13px; color: #CFC8B8">Worshipped by [Followers]</span>
+</article>
+</sc-for>
+</section>
+<section id="creatures" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Bestiary</h2>
+<article style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: #20232C">
+<div style="display: flex; justify-content: space-between; gap: 8px"><h3 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 18px; font-weight: 600">[Creature name]</h3><span style="font-size: 13px; color: #A9A396">[Type] · [Habitat]</span></div>
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #A9A396">What you've learned</span>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px">
+<li style="display: flex; justify-content: space-between; gap: 8px"><span>[Weakness]</span><span style="font-size: 12px; color: #A9A396">Session 2</span></li>
+<li style="display: flex; justify-content: space-between; gap: 8px"><span>[Behavior]</span><span style="font-size: 12px; color: #A9A396">Session 3</span></li>
+<li style="display: flex; justify-content: space-between; gap: 8px; color: #8E8879"><span>??? Not learned yet</span><span style="font-size: 12px">2 more</span></li>
+</ul>
+</article>
+</section>
+<section id="items" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Items and artifacts</h2>
+<article style="display: flex; gap: 12px; padding: 12px; border-radius: 12px; background: #20232C">
+<div style="width: 64px; height: 64px; flex: none; border-radius: 10px; background: #232733; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #8E8879">[Item]</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h3 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 18px; font-weight: 600">[Artifact name]</h3>
+<span style="font-size: 13px; color: #B39DDB">[Rarity] · Requires attunement</span>
+<span style="font-size: 14px; color: #CFC8B8">[Legend of the item, as far as the party knows]</span>
+<span style="font-size: 12px; color: #A9A396">Last seen with [NPC name]</span>
+</div>
+</article>
+</section>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 12px; border: 1px dashed #3A4050; color: #A9A396; font-size: 14px">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+More of this world is waiting to be discovered.
+</div>
+</main>
+</div>
+<div style="padding: 0 28px 28px"><dc-import name="Timeline" mode="player" hint-size="100%,240px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var standColor = { Friendly: '#6CC4B3', Wary: '#C9C2B3', Hostile: '#E8957D' };
+    return {
+      jumps: [
+        { label: 'History', count: '3', href: '#history' },
+        { label: 'Places', count: '4', href: '#places' },
+        { label: 'Factions', count: '2', href: '#factions' },
+        { label: 'Religions', count: '2', href: '#religions' },
+        { label: 'Bestiary', count: '1', href: '#creatures' },
+        { label: 'Items', count: '1', href: '#items' }
+      ],
+      eras: [
+        { when: '[Years]', name: '[Ancient era]', text: '[What the party knows about this time.]' },
+        { when: '[Years]', name: '[Middle era]', text: '[What the party knows about this time.]' },
+        { when: '[Years] · now', name: '[Current era]', text: '[What the party knows about this time.]' }
+      ],
+      places: [
+        { type: 'City', name: '[Place name]', found: 'Visited in Session 1' },
+        { type: 'Dungeon', name: '[Place name]', found: 'Discovered in Session 2' },
+        { type: 'Landmark', name: '[Place name]', found: 'Heard of in Session 3' }
+      ],
+      factions: [
+        { name: '[Faction name]', stand: 'Friendly', standStyle: 'font-size: 12px; font-weight: 600; color: ' + standColor.Friendly + ';' },
+        { name: '[Faction name]', stand: 'Hostile', standStyle: 'font-size: 12px; font-weight: 600; color: ' + standColor.Hostile + ';' }
+      ],
+      deities: [
+        { name: '[Deity name]', domains: ['[Domain]', '[Domain]'] },
+        { name: '[Deity name]', domains: ['[Domain]'] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

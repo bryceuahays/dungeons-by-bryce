@@ -200,3 +200,11 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 156. **A character can be created outside any campaign,** from My characters: choose its system and the step-by-step creator opens. Its creator and sheet live at their own address, wear the default campaign look, and only its owner can open them.
 157. **Outside a campaign a character is offered the SRD for its system and its owner's own homebrew** (every entry they have made, drafts included, since it is their own). Homebrew that belongs to someone else's campaign comes with that campaign.
 158. **A character that uses your homebrew keeps the choice when it is added to a campaign,** but the campaign's sheet only knows the homebrew attached to that campaign. If the entry is not attached there, the sheet shows that choice as missing until the DM adds it.
+
+## Hub redesign: mockups and design system (13 October 2026)
+
+159. **The version 2 hub mockups live in `docs/design/`,** as pictures and as source, with a design system that maps every mockup colour onto the existing theme variables. Nothing in the app changed.
+160. **The mockups' colours stand for theme tokens.** New screens use the campaign theme's variables (or the hub's `--h-*` variables outside a campaign) so they work in every theme, including Vellum.
+161. **A new `--secret` colour marks things hidden from players** (dashed border plus a text label). It is to be added to `src/styles/campaign.css` in its own small pull request.
+162. **"Reveals at Session N" in the mockups means a reveal stage or a story beat.** The app's existing reveal model is kept; there is no session-number reveal.
+163. **The mockup's game system menu said a trademarked name.** It was changed to the fifth edition rule choices the app already has.

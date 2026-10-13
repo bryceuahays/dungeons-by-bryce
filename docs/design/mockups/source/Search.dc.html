@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hub Search</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+mark{background:#4A3B16;color:#F2D58A;border-radius:3px;padding:0 2px}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1900px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+<dc-import name="HubTop" active="search" mode="dm" query="ruins" hint-size="100%,166px"></dc-import>
+<main style="width: 100%; max-width: 1100px; margin: 0 auto; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 20px">
+<div>
+<h1 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 36px; font-weight: 600">Results for “ruins”</h1>
+<p style="margin: 4px 0 0; color: #A9A396">9 results across the hub. Players only get results they're allowed to see; hidden ones are marked for you.</p>
+</div>
+<div role="group" aria-label="Filter results" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="8"><button type="button" aria-pressed="{{f.pressed}}" style="{{f.style}}">{{f.label}} <span style="opacity: 0.75">{{f.count}}</span></button></sc-for>
+</div>
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">{{g.title}}</h2>
+<sc-for list="{{g.items}}" as="r" hint-placeholder-count="2">
+<a href="{{r.href}}" style="{{r.style}}">
+<span style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px"><span style="font-family: Spectral, Georgia, serif; font-size: 19px; font-weight: 600; color: #EDE7DA">{{r.title}}</span><span style="font-size: 12px; color: #A9A396">{{r.where}}</span><sc-if value="{{r.hidden}}" hint-placeholder-val="{{false}}"><span style="font-size: 11px; font-weight: 600; color: #D6CBEF; border: 1px dashed #7A68A3; border-radius: 999px; padding: 0 8px">{{r.hiddenLabel}}</span></sc-if></span>
+<span style="display: block; font-size: 14px; color: #CFC8B8">{{r.before}}<mark>{{r.hit}}</mark>{{r.after}}</span>
+</a>
+</sc-for>
+</section>
+</sc-for>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var fb = 'min-height: 40px; padding: 0 14px; border-radius: 999px; font-size: 14px; ';
+    var filters = [['All', 9], ['Lore', 2], ['NPCs', 2], ['Quests', 1], ['Map', 1], ['Recaps', 2], ['Items', 1], ['Handouts', 0]].map(function (f, i) {
+      return { label: f[0], count: f[1], pressed: i === 0 ? 'true' : 'false', style: fb + (i === 0 ? 'background: #EDE7DA; color: #121419; border: none; font-weight: 600;' : 'background: #20232C; color: #CFC8B8; border: 1px solid #2E3341;') };
+    });
+    var card = function (hidden) { return 'display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 12px; text-decoration: none; ' + (hidden ? 'background: #1E1A28; border: 1px dashed #7A68A3;' : 'background: #1B1E26; border: 1px solid #2E3341;'); };
+    var R = function (o) { o.style = card(o.hidden); o.hidden = !!o.hidden; o.hiddenLabel = o.hiddenLabel || 'Hidden from players'; return o; };
+    var groups = [
+      { title: 'Lore', items: [
+        R({ title: '[Ruins]', where: 'Lore · Places · Dungeon', href: 'Lore.dc.html', before: '[Summary of the ', hit: 'ruins', after: ' as the party knows them…]' }),
+        R({ title: '[What lies beneath the ruins]', where: 'Secrets · Plot secret', href: 'Secrets.dc.html', before: '[The truth about the ', hit: 'ruins', after: '…]', hidden: true })
+      ] },
+      { title: 'NPCs', items: [
+        R({ title: '[NPC name]', where: 'NPCs · Cult enforcer', href: 'NPCs.dc.html', before: '[Last seen near the ', hit: 'ruins', after: '…]' }),
+        R({ title: '[Hooded stranger]', where: 'NPCs', href: 'NPCs.dc.html', before: '[Waits at the ', hit: 'ruins', after: ' at night…]', hidden: true, hiddenLabel: 'Only [Player character 2]' })
+      ] },
+      { title: 'Quests and map', items: [
+        R({ title: '[Main quest]', where: 'Quest log · Objective', href: 'Quests.dc.html', before: '[Search the ', hit: 'ruins', after: ' for the missing…]' }),
+        R({ title: '[Ruins] pin', where: 'Map · Revealed Session 2', href: 'Map.dc.html', before: '[Pin label: ', hit: 'Ruins', after: ']' })
+      ] },
+      { title: 'Session recaps', items: [
+        R({ title: 'Session 2 recap', where: 'Welcome · Recaps', href: 'Welcome.dc.html', before: '[…the party first spotted the ', hit: 'ruins', after: ' from the road…]' }),
+        R({ title: 'Session 3 recap', where: 'Welcome · Recaps', href: 'Welcome.dc.html', before: '[…a fight broke out inside the ', hit: 'ruins', after: '…]' })
+      ] },
+      { title: 'Items', items: [
+        R({ title: '[Map fragment]', where: 'Party loot · Quest item', href: 'Loot.dc.html', before: '[Found in the ', hit: 'ruins', after: ', Session 3]' })
+      ] }
+    ];
+    return { filters: filters, groups: groups };
+  }
+}
+</script>
+</body>
+</html>

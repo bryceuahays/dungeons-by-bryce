@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Relationship Web: DM Editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1900px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+<dc-import name="HubTop" active="relations" mode="dm" hint-size="100%,166px"></dc-import>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 24px 28px; flex: 1">
+<div style="flex: 1 1 280px; max-width: 100%"><dc-import name="Sidebar" mode="dm" hint-size="100%,1300px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<div>
+<h1 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 36px; font-weight: 600">Relationship web</h1>
+<p style="margin: 4px 0 0; color: #A9A396">Who knows whom. Players only see the lines you've revealed.</p>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Center on…</button>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #E0AE52; color: #1A1408; border: none; font-size: 14px; font-weight: 600">+ Add connection</button>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; font-size: 13px; color: #A9A396">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 22px; height: 0; border-top: 2px solid #6CC4B3"></span>Friendly</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 22px; height: 0; border-top: 2px solid #8E8879"></span>Neutral or business</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 22px; height: 0; border-top: 2px solid #E8957D"></span>Hostile</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 22px; height: 0; border-top: 2px dashed #B39DDB"></span>Hidden from players</span>
+<span style="display: flex; align-items: center; gap: 8px; margin-left: auto; color: #EDE7DA"><input id="show-hidden" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #B39DDB"><label for="show-hidden">Show hidden connections</label></span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 999 1 460px; min-width: 0; overflow: auto; border-radius: 14px; border: 1px solid #2E3341; background: #16181F">
+<div style="position: relative; width: 720px; height: 480px; margin: 0 auto">
+<svg width="95" height="8" viewBox="0 0 95 8" preserveAspectRatio="none" style="position: absolute; left: 190px; top: 236px; width: 95px; height: 8px; overflow: visible; fill: none; stroke: #6CC4B3; stroke-width: 2; stroke-linecap: round"><path d="M 0 4 L 95 4"></path></svg>
+<svg width="95" height="8" viewBox="0 0 95 8" preserveAspectRatio="none" style="position: absolute; left: 435px; top: 236px; width: 95px; height: 8px; overflow: visible; fill: none; stroke: #E8957D; stroke-width: 2; stroke-linecap: round"><path d="M 0 4 L 95 4"></path></svg>
+<svg width="8" height="116" viewBox="0 0 8 116" preserveAspectRatio="none" style="position: absolute; left: 356px; top: 96px; width: 8px; height: 116px; overflow: visible; fill: none; stroke: #8E8879; stroke-width: 2; stroke-linecap: round"><path d="M 4 0 L 4 116"></path></svg>
+<svg width="8" height="116" viewBox="0 0 8 116" preserveAspectRatio="none" style="position: absolute; left: 356px; top: 268px; width: 8px; height: 116px; overflow: visible; fill: none; stroke: #E8957D; stroke-width: 2; stroke-linecap: round"><path d="M 4 0 L 4 116"></path></svg>
+<svg width="8" height="116" viewBox="0 0 8 116" preserveAspectRatio="none" style="position: absolute; left: 601px; top: 96px; width: 8px; height: 116px; overflow: visible; fill: none; stroke: #B39DDB; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 6 6"><path d="M 4 0 L 4 116"></path></svg>
+<svg width="170" height="8" viewBox="0 0 170 8" preserveAspectRatio="none" style="position: absolute; left: 435px; top: 408px; width: 170px; height: 8px; overflow: visible; fill: none; stroke: #8E8879; stroke-width: 2; stroke-linecap: round"><path d="M 0 4 L 170 4"></path></svg>
+<svg width="8" height="144" viewBox="0 0 8 144" preserveAspectRatio="none" style="position: absolute; left: 601px; top: 268px; width: 8px; height: 144px; overflow: visible; fill: none; stroke: #8E8879; stroke-width: 2; stroke-linecap: round"><path d="M 4 0 L 4 144"></path></svg>
+<svg width="95" height="8" viewBox="0 0 95 8" preserveAspectRatio="none" style="position: absolute; left: 190px; top: 408px; width: 95px; height: 8px; overflow: visible; fill: none; stroke: #B39DDB; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 6 6"><path d="M 0 4 L 95 4"></path></svg>
+<div style="position: absolute; left: 285px; top: 40px; width: 150px; height: 56px; box-sizing: border-box; padding: 6px 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; line-height: 1.25; background: #20232C; border: 1px solid #3A4050; border-radius: 10px"><span><b>[NPC name]</b><br>Guard captain</span></div>
+<div style="position: absolute; left: 530px; top: 40px; width: 150px; height: 56px; box-sizing: border-box; padding: 6px 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; line-height: 1.25; background: #1E1A28; border: 1px dashed #7A68A3; border-radius: 10px"><span><b>[Mysterious patron]</b><br>Hidden NPC</span></div>
+<div style="position: absolute; left: 40px; top: 212px; width: 150px; height: 56px; box-sizing: border-box; padding: 6px 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; line-height: 1.25; background: #20232C; border: 1px solid #3A4050; border-radius: 10px"><span><b>[NPC name]</b><br>Innkeeper</span></div>
+<div style="position: absolute; left: 285px; top: 212px; width: 150px; height: 56px; box-sizing: border-box; padding: 6px 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 14px; line-height: 1.25; color: #1A1408; background: #E0AE52; border-radius: 10px"><span><b>The party</b></span></div>
+<div style="position: absolute; left: 530px; top: 212px; width: 150px; height: 56px; box-sizing: border-box; padding: 6px 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; line-height: 1.25; background: #232B3D; border: 1px solid #4A5B80; border-radius: 28px"><span><b>[Faction name]</b><br>Faction</span></div>
+<div style="position: absolute; left: 40px; top: 384px; width: 150px; height: 56px; box-sizing: border-box; padding: 6px 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; line-height: 1.25; background: #20232C; border: 1px solid #3A4050; border-radius: 10px"><span><b>[NPC name]</b><br>Hooded stranger</span></div>
+<div style="position: absolute; left: 285px; top: 384px; width: 150px; height: 56px; box-sizing: border-box; padding: 6px 8px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; line-height: 1.25; background: #20232C; border: 1px solid #3A4050; border-radius: 10px"><span><b>[NPC name]</b><br>Cult enforcer</span></div>
+<div style="position: absolute; left: 214px; top: 212px; width: 48px; text-align: center; font-size: 13px; line-height: 16px; color: #A6E0D4">Trusts</div>
+<div style="position: absolute; left: 446px; top: 212px; width: 72px; text-align: center; font-size: 13px; line-height: 16px; color: #F5C2B3">Hunted by</div>
+<div style="position: absolute; left: 372px; top: 146px; width: 90px; font-size: 13px; line-height: 16px; color: #CFC8B8">Owes a favor</div>
+<div style="position: absolute; left: 372px; top: 318px; width: 48px; font-size: 13px; line-height: 16px; color: #F5C2B3">Rivals</div>
+<div style="position: absolute; left: 617px; top: 146px; width: 100px; font-size: 13px; line-height: 16px; color: #D6CBEF">Secretly leads</div>
+<div style="position: absolute; left: 484px; top: 384px; width: 72px; text-align: center; font-size: 13px; line-height: 16px; color: #CFC8B8">Member of</div>
+<div style="position: absolute; left: 202px; top: 384px; width: 72px; text-align: center; font-size: 13px; line-height: 16px; color: #D6CBEF">Meets with</div>
+</div>
+</div>
+
+<section aria-label="Selected connection" style="flex: 1 1 260px; max-width: 100%; box-sizing: border-box; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Selected connection</span>
+<div style="font-family: Spectral, Georgia, serif; font-size: 20px; font-weight: 600; line-height: 1.3">[Mysterious patron] secretly leads [Faction name]</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="rel-type" style="font-size: 12px; color: #A9A396">Type</label>
+<select id="rel-type" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>Neutral or business</option><option>Friendly</option><option>Hostile</option><option>Family</option><option>Romantic</option></select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<label for="rel-vis" style="font-size: 12px; color: #A9A396">Players see this</label>
+<select id="rel-vis" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #1E1A28; border: 1px dashed #7A68A3; color: #EDE7DA; font: inherit"><option>At start of Session 5</option><option>Now</option><option>When I reveal it</option></select>
+</div>
+<div style="padding: 10px 12px; border-radius: 10px; background: #1E1A28; border: 1px dashed #7A68A3; font-size: 13px; color: #D6CBEF">DM note: [How the party could find out]</div>
+<div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #2E3341; padding-top: 12px; font-size: 14px">
+<a href="NPCs.dc.html">Open [Mysterious patron] →</a>
+<a href="Lore.dc.html">Open [Faction name] →</a>
+</div>
+</section>
+</div>
+</main>
+</div>
+<div style="padding: 0 28px 28px"><dc-import name="Timeline" mode="dm" hint-size="100%,260px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

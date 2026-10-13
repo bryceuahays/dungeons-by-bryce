@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup: World and Lore</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1300px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; padding: 16px 28px; background: #16181F; border-bottom: 1px solid #2E3341">
+<div>
+<div style="font-size: 13px; color: #A9A396">New campaign</div>
+<div style="font-family: Spectral, Georgia, serif; font-size: 23px; font-weight: 600; line-height: 1.15">[Campaign name]</div>
+</div>
+<nav aria-label="Setup steps"><ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="4">
+<li><a href="{{st.href}}" aria-current="{{st.current}}" style="{{st.style}}"><span style="{{st.numStyle}}">{{st.num}}</span>{{st.label}}</a></li>
+</sc-for>
+</ol></nav>
+</header>
+
+<main style="flex: 1; width: 100%; max-width: 1360px; margin: 0 auto; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div>
+<h1 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 36px; font-weight: 600">Build your world</h1>
+<p style="margin: 6px 0 0; max-width: 70ch; color: #A9A396">Pick a category and fill in its template. Each category has its own fields, so entries land in the right section of the Lore page, already formatted.</p>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: #1B1E26; border: 1px dashed #4A4F5E">
+<span style="font-size: 14px; color: #CFC8B8">Already have notes? Upload a doc and we'll sort it into categories for you to review.</span>
+<button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px; white-space: nowrap">Import a document</button>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<nav aria-label="Lore categories" style="flex: 1 1 250px; max-width: 100%; box-sizing: border-box; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="16">
+<button type="button" aria-current="{{c.current}}" style="{{c.style}}"><span>{{c.name}}</span><span style="{{c.countStyle}}">{{c.count}}</span></button>
+</sc-for>
+<div style="margin-top: 10px; padding: 10px 4px 0; border-top: 1px solid #2E3341; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Add a category</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{more}}" as="m" hint-placeholder-count="10"><button type="button" style="min-height: 32px; padding: 0 10px; border-radius: 999px; background: #20232C; color: #CFC8B8; border: 1px solid #3A4050; font-size: 12px">+ {{m}}</button></sc-for>
+</div>
+<button type="button" style="min-height: 44px; padding: 0 12px; text-align: left; border-radius: 8px; background: transparent; color: #E0AE52; border: 1px dashed #5A4A26; font-size: 14px">+ Make your own category</button>
+</div>
+</nav>
+
+<section aria-label="New place" style="flex: 999 1 460px; min-width: 0; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">New entry · Places and regions</h2>
+<span style="font-size: 13px; color: #A9A396">5 entries so far</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1">
+<label for="pl-name" style="font-size: 13px; color: #A9A396">Name</label>
+<input id="pl-name" type="text" placeholder="[Place name]" style="min-height: 44px; padding: 0 12px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="pl-type" style="font-size: 13px; color: #A9A396">Type of place</label>
+<select id="pl-type" style="min-height: 44px; padding: 0 12px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>City</option><option>Town or village</option><option>Dungeon</option><option>Wilderness</option><option>Landmark</option><option>Region or kingdom</option></select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="pl-parent" style="font-size: 13px; color: #A9A396">Part of</label>
+<select id="pl-parent" style="min-height: 44px; padding: 0 12px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>[Region name]</option><option>None (top level)</option></select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1">
+<label for="pl-sum" style="font-size: 13px; color: #A9A396">One-line summary (shown on the card)</label>
+<input id="pl-sum" type="text" placeholder="What players picture when they hear the name" style="min-height: 44px; padding: 0 12px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1">
+<label for="pl-desc" style="font-size: 13px; color: #A9A396">Full description</label>
+<textarea id="pl-desc" rows="4" placeholder="Shown when a player opens the entry" style="padding: 10px 12px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit; resize: vertical"></textarea>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #A9A396">Notable NPCs here</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="font-size: 13px; padding: 4px 10px; border-radius: 999px; background: #232733">[NPC name]</span><button type="button" style="min-height: 32px; padding: 0 10px; border-radius: 999px; background: transparent; color: #E0AE52; border: 1px dashed #5A4A26; font-size: 13px">+ Link NPC</button></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #A9A396">Factions present</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="font-size: 13px; padding: 4px 10px; border-radius: 999px; background: #232733">[Faction]</span><button type="button" style="min-height: 32px; padding: 0 10px; border-radius: 999px; background: transparent; color: #E0AE52; border: 1px dashed #5A4A26; font-size: 13px">+ Link faction</button></div>
+</div>
+<div style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px">
+<div style="flex: 1 1 260px; border: 1.5px dashed #4A4F5E; border-radius: 12px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #A9A396; font-size: 14px"><span>Images or video</span><button type="button" style="min-height: 40px; padding: 0 12px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Browse</button></div>
+<div style="flex: 1 1 260px; border: 1px solid #2E3341; border-radius: 12px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; color: #CFC8B8"><span>Map page is on</span><button type="button" style="min-height: 40px; padding: 0 12px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Place pin on map</button></div>
+</div>
+</div>
+<fieldset style="margin: 0; border: 1px solid #2E3341; border-radius: 12px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center">
+<legend style="padding: 0 6px; font-size: 13px; color: #A9A396">Players can see this</legend>
+<div style="display: flex; align-items: center; gap: 8px"><input id="v-now" type="radio" name="vis" style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="v-now">From the start</label></div>
+<div style="display: flex; align-items: center; gap: 8px"><input id="v-hide" type="radio" name="vis" style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="v-hide">When I reveal it</label></div>
+<div style="display: flex; align-items: center; gap: 8px"><input id="v-sched" type="radio" name="vis" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="v-sched">At the start of Session</label><select aria-label="Session number" style="min-height: 36px; padding: 0 8px; border-radius: 6px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>2</option><option>3</option></select></div>
+</fieldset>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="pl-dm" style="font-size: 13px; color: #C9B8EC">DM-only notes</label>
+<textarea id="pl-dm" rows="2" placeholder="Traps, secrets, what is really going on" style="padding: 10px 12px; border-radius: 8px; background: #1E1A28; border: 1px dashed #7A68A3; color: #EDE7DA; font: inherit; resize: vertical"></textarea>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end">
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Save and add another</button>
+<button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 8px; background: #E0AE52; color: #1A1408; border: none; font-size: 14px; font-weight: 600">Save entry</button>
+</div>
+</section>
+
+<aside style="flex: 1 1 300px; max-width: 100%; display: flex; flex-direction: column; gap: 16px">
+<section aria-label="Preview" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Preview on the Lore page</h2>
+<div style="border-radius: 12px; overflow: hidden; background: #20232C; border: 1px solid #2E3341">
+<div style="height: 110px; background: #232733; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8E8879">[Place image]</div>
+<div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; gap: 6px; flex-wrap: wrap"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #E0AE52">City</span><span style="font-size: 11px; color: #A9A396">in [Region name]</span></div>
+<div style="font-family: Spectral, Georgia, serif; font-size: 19px; font-weight: 600">[Place name]</div>
+<div style="font-size: 14px; color: #CFC8B8">[One-line summary]</div>
+<div style="font-size: 12px; color: #A9A396">[NPC name] · [Faction]</div>
+</div>
+</div>
+<div style="font-size: 13px; color: #A9A396">Appears under <span style="color: #EDE7DA">Places</span>, nested inside its region.</div>
+</section>
+<section aria-label="Category templates" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Templates in other categories</h2>
+<dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<sc-for list="{{templates}}" as="tp" hint-placeholder-count="7">
+<div><dt style="font-weight: 600">{{tp.name}}</dt><dd style="margin: 0; color: #A9A396">{{tp.fields}}</dd></div>
+</sc-for>
+</dl>
+</section>
+</aside>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px">
+<a href="Setup1Pages.dc.html" style="min-height: 48px; padding: 0 20px; border-radius: 10px; color: #CFC8B8; border: 1px solid #3A4050; font-size: 15px; text-decoration: none; display: flex; align-items: center">← Back</a>
+<a href="Setup3Cast.dc.html" style="min-height: 48px; padding: 0 22px; border-radius: 10px; background: #E0AE52; color: #1A1408; font-size: 15px; font-weight: 600; text-decoration: none; display: flex; align-items: center">Continue to NPCs and encounters →</a>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var cur = 2;
+    var steps = [['Basics and pages', 'Setup1Pages.dc.html'], ['World and lore', 'Setup2Lore.dc.html'], ['NPCs and encounters', 'Setup3Cast.dc.html'], ['Players and schedule', 'Setup4Players.dc.html']].map(function (s, i) {
+      var n = i + 1, on = n === cur, done = n < cur;
+      return {
+        label: s[0], href: s[1], num: done ? '✓' : String(n), current: on ? 'step' : 'false',
+        style: 'display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 999px; font-size: 14px; text-decoration: none; ' + (on ? 'background: #2A2618; border: 1px solid #E0AE52; color: #EDE7DA; font-weight: 600;' : 'background: #20232C; border: 1px solid transparent; color: #A9A396;'),
+        numStyle: 'width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; ' + (on ? 'background: #E0AE52; color: #1A1408;' : (done ? 'background: #3A4050; color: #EDE7DA;' : 'border: 1.5px solid #5A6070;'))
+      };
+    });
+    var list = [['World overview', 1], ['History and eras', 3], ['Places and regions', 5], ['Factions and organizations', 2], ['Religions and deities', 2]];
+    var more = ['Peoples and cultures', 'Creatures and bestiary', 'Magic and the arcane', 'Items and artifacts', 'Languages and scripts', 'Calendar and holidays', 'Myths and legends', 'Rulers and politics', 'Trade and economy', 'Planes and cosmology'];
+    var cats = list.map(function (c) {
+      var on = c[0] === 'Places and regions';
+      return {
+        name: c[0], count: c[1] ? String(c[1]) : '–', current: on ? 'true' : 'false',
+        style: 'min-height: 40px; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0 12px; border-radius: 8px; font-size: 14px; text-align: left; ' + (on ? 'background: #2A2618; color: #EDE7DA; border: 1px solid #E0AE52; font-weight: 600;' : 'background: transparent; color: #CFC8B8; border: 1px solid transparent;'),
+        countStyle: 'font-size: 12px; ' + (c[1] ? 'color: #EDE7DA;' : 'color: #6E6A61;')
+      };
+    });
+    var templates = [
+      { name: 'History and eras', fields: 'Era, date or year, key events, figures involved. Shown as a timeline.' },
+      { name: 'Factions', fields: 'Leader, goals, symbol, base of operations, allies and rivals, party standing.' },
+      { name: 'Religions and deities', fields: 'Domains, symbol, holy days, followers, temples.' },
+      { name: 'Peoples and cultures', fields: 'Homeland, customs, language, appearance, typical names.' },
+      { name: 'Creatures', fields: 'Type, habitat, behavior, and what the party has learned (weaknesses unlock as discovered).' },
+      { name: 'Items and artifacts', fields: 'Rarity, attunement, history, current holder.' },
+      { name: 'Calendar', fields: 'Months, weekdays, holidays. Feeds in-world dates on the timeline.' }
+    ];
+    return { steps: steps, cats: cats, more: more, templates: templates };
+  }
+}
+</script>
+</body>
+</html>
