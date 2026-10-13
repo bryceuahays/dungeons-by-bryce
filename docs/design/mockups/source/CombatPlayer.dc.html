@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Combat: Player View</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1900px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+<dc-import name="HubTop" active="combat" mode="player" hint-size="100%,126px"></dc-import>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 24px 28px; flex: 1">
+<div style="flex: 1 1 280px; max-width: 100%"><dc-import name="Sidebar" mode="player" hint-size="100%,1200px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div>
+<h1 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 36px; font-weight: 600">Combat</h1>
+<p style="margin: 4px 0 0; color: #A9A396">[Encounter name] · Round 2</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; padding: 18px 20px; border-radius: 12px; background: #2A2618; border: 1px solid #E0AE52">
+<div><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #E0AE52">It's your turn</span><div style="font-family: Spectral, Georgia, serif; font-size: 28px; font-weight: 600">[Player character 1]</div></div>
+<div style="font-size: 14px; color: #CFC8B8">Action · Bonus action · Movement [#] ft</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section aria-label="Initiative" style="flex: 1 1 290px; max-width: 100%; box-sizing: border-box; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0 0 4px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Turn order</h2>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{order}}" as="c" hint-placeholder-count="6">
+<li style="{{c.rowStyle}}">
+<span style="width: 32px; height: 32px; flex: none; border-radius: 8px; background: #2E3341; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px">{{c.init}}</span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600; font-size: 14px">{{c.name}}</span>
+<div style="display: flex; flex-wrap: wrap; gap: 4px"><span style="{{c.healthStyle}}">{{c.health}}</span><sc-for list="{{c.conds}}" as="cd" hint-placeholder-count="1"><span style="font-size: 11px; font-weight: 600; border-radius: 999px; padding: 1px 8px; color: #F5C2B3; background: #3A231C">{{cd}}</span></sc-for></div>
+</div>
+</li>
+</sc-for>
+</ol>
+<p style="margin: 4px 0 0; font-size: 12px; color: #A9A396">Enemy health shows as a status. The DM sees exact numbers.</p>
+</section>
+
+<div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<div style="resize: both; overflow: hidden; width: 100%; max-width: 100%; height: 300px; min-width: 240px; min-height: 180px; box-sizing: border-box; position: relative; border-radius: 12px; border: 1px solid #2E3341; background-color: #1C2620; background-image: linear-gradient(#2B3A31 1px, transparent 1px), linear-gradient(90deg, #2B3A31 1px, transparent 1px); background-size: 40px 40px">
+<span style="position: absolute; top: 10px; left: 12px; font-size: 12px; color: #A9C2B2">[Battle map image]</span>
+<sc-for list="{{tokens}}" as="tk" hint-placeholder-count="6"><span title="{{tk.name}}" style="{{tk.style}}">{{tk.short}}</span></sc-for>
+</div>
+<section aria-label="Your action" style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #A9A396">Choose a target</h2>
+<div role="group" aria-label="Targets" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{targets}}" as="tg" hint-placeholder-count="2">
+<button type="button" onClick="{{tg.pick}}" aria-pressed="{{tg.pressed}}" style="{{tg.style}}">{{tg.name}} · {{tg.health}}</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="min-height: 48px; padding: 0 20px; border-radius: 10px; background: #E8957D; color: #1F0F0A; border: none; font-size: 15px; font-weight: 600">Attack {{targetName}}</button>
+<button type="button" style="min-height: 48px; padding: 0 16px; border-radius: 10px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 15px">Cast a spell</button>
+<button type="button" style="min-height: 48px; padding: 0 16px; border-radius: 10px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 15px">Dash</button>
+<button type="button" style="min-height: 48px; padding: 0 16px; border-radius: 10px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 15px">Dodge</button>
+<button type="button" style="min-height: 48px; padding: 0 16px; border-radius: 10px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 15px">Help</button>
+<button type="button" style="min-height: 48px; padding: 0 16px; border-radius: 10px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 15px">End turn</button>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; background: #20232C">
+<span><span style="display: block; font-size: 12px; color: #A9A396">Last roll · posted to party rolls</span>Attack vs [Enemy A] (19 + 4)</span>
+<span style="font-family: Spectral, Georgia, serif; font-size: 28px; font-weight: 600">23</span>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+<div style="padding: 0 28px 28px"><dc-import name="Timeline" mode="player" hint-size="100%,240px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { target: 0 }; }
+  renderVals() {
+    var self = this;
+    var kindColor = { pc: '#6CC4B3', enemy: '#E8957D', ally: '#9DB8E8' };
+    var statusColor = { Healthy: '#A6E0D4', Wounded: '#EAD39C', Bloodied: '#F5C2B3', Down: '#A9A396' };
+    var list = [
+      { name: '[Player character 1]', short: 'P1', kind: 'pc', init: 18, hp: '24 / 31 HP', conds: ['Poisoned'], x: 20, y: 60 },
+      { name: '[Enemy A]', short: 'EA', kind: 'enemy', init: 15, status: 'Healthy', conds: [], x: 62, y: 30 },
+      { name: '[Player character 2]', short: 'P2', kind: 'pc', init: 13, hp: '19 / 19 HP', conds: [], x: 30, y: 72 },
+      { name: '[Enemy B]', short: 'EB', kind: 'enemy', init: 11, status: 'Bloodied', conds: ['Prone'], x: 72, y: 52 },
+      { name: '[Ally NPC]', short: 'AN', kind: 'ally', init: 9, status: 'Healthy', conds: [], x: 14, y: 36 },
+      { name: '[Player character 3]', short: 'P3', kind: 'pc', init: 6, hp: '28 / 28 HP', conds: [], x: 40, y: 48 }
+    ];
+    var order = list.map(function (c, i) {
+      var label = c.hp || c.status;
+      return {
+        name: c.name, init: c.init, conds: c.conds, health: label,
+        healthStyle: 'font-size: 12px; font-weight: 600; color: ' + (c.hp ? '#A6E0D4' : statusColor[c.status]) + ';',
+        rowStyle: 'display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; ' + (i === 0 ? 'background: #2A2618; border: 1px solid #E0AE52;' : 'background: #20232C; border: 1px solid transparent;')
+      };
+    });
+    var tokens = list.map(function (c, i) {
+      return { name: c.name, short: c.short, style: 'position: absolute; left: ' + c.x + '%; top: ' + c.y + '%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #121419; background: ' + kindColor[c.kind] + '; ' + (i === 0 ? 'box-shadow: 0 0 0 3px #121419, 0 0 0 6px #E0AE52;' : 'box-shadow: 0 0 0 2px #121419;') };
+    });
+    var enemies = list.filter(function (c) { return c.kind === 'enemy'; });
+    var targets = enemies.map(function (e, i) {
+      var on = i === self.state.target;
+      return {
+        name: e.name, health: e.status, pressed: on ? 'true' : 'false',
+        style: 'min-height: 44px; padding: 0 16px; border-radius: 999px; font-size: 14px; ' + (on ? 'background: #3A231C; color: #F5C2B3; border: 1.5px solid #E8957D; font-weight: 600;' : 'background: #20232C; color: #CFC8B8; border: 1.5px solid #2E3341;'),
+        pick: function () { self.setState({ target: i }); }
+      };
+    });
+    return { order: order, tokens: tokens, targets: targets, targetName: enemies[this.state.target].name };
+  }
+}
+</script>
+</body>
+</html>

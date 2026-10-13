@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>People and Permissions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1400px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+<dc-import name="HubTop" active="people" mode="dm" hint-size="100%,166px"></dc-import>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 24px 28px; flex: 1">
+<nav aria-label="Settings sections" style="flex: 1 1 220px; max-width: 100%; box-sizing: border-box; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+<a href="{{n.href}}" aria-current="{{n.current}}" style="{{n.style}}">{{n.label}}</a>
+</sc-for>
+</nav>
+<main style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<div>
+<h1 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 36px; font-weight: 600">People and permissions</h1>
+<p style="margin: 4px 0 0; color: #A9A396">Invite co-DMs and choose exactly what each one can do.</p>
+</div>
+
+<section style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Everyone in this campaign</h2>
+<span style="font-size: 13px; color: #A9A396">1 DM · 1 co-DM · 3 players</span>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{people}}" as="p" hint-placeholder-count="5">
+<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 14px; border-radius: 10px; background: #20232C">
+<span style="width: 36px; height: 36px; flex: none; border-radius: 50%; background: #2E3341; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">{{p.initials}}</span>
+<div style="flex: 1 1 200px; min-width: 0"><div style="font-weight: 600">{{p.name}}</div><div style="font-size: 13px; color: #A9A396">{{p.sub}}</div></div>
+<span style="{{p.roleStyle}}">{{p.role}}</span>
+</li>
+</sc-for>
+</ul>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; border-top: 1px solid #2E3341; padding-top: 14px">
+<div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px"><label for="inv-email" style="font-size: 13px; color: #A9A396">Invite a co-DM</label><input id="inv-email" type="email" placeholder="Email or Discord username" style="min-height: 44px; padding: 0 12px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="inv-preset" style="font-size: 13px; color: #A9A396">Start from</label><select id="inv-preset" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>Full co-DM</option><option>Combat helper</option><option>Lore editor</option><option>Custom</option></select></div>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #E0AE52; color: #1A1408; border: none; font-size: 14px; font-weight: 600">Send invite</button>
+</div>
+</section>
+
+<section style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<div>
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">What [Co-DM name] can do</h2>
+<p style="margin: 4px 0 0; font-size: 14px; color: #A9A396">Preset: Combat helper, customized</p>
+</div>
+<label for="who-edit" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Co-DM to edit</label>
+<select id="who-edit" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>[Co-DM name]</option></select>
+</div>
+<div style="overflow-x: auto; border: 1px solid #2E3341; border-radius: 12px">
+<table style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px">
+<thead><tr style="background: #20232C; text-align: left; color: #A9A396; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase">
+<th scope="col" style="padding: 10px 14px; font-weight: 600">Permission</th>
+<th scope="col" style="padding: 10px 14px; font-weight: 600; text-align: center">You (DM)</th>
+<th scope="col" style="padding: 10px 14px; font-weight: 600; text-align: center">[Co-DM name]</th>
+<th scope="col" style="padding: 10px 14px; font-weight: 600; text-align: center">Players</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{perms}}" as="pm" hint-placeholder-count="10">
+<tr style="border-top: 1px solid #2E3341">
+<th scope="row" style="padding: 10px 14px; text-align: left; font-weight: 400"><span style="display: block">{{pm.name}}</span><span style="display: block; font-size: 12px; color: #A9A396">{{pm.desc}}</span></th>
+<td style="padding: 10px 14px; text-align: center"><input type="checkbox" checked disabled aria-label="You: {{pm.name}}" style="width: 18px; height: 18px; accent-color: #6E7385"></td>
+<td style="padding: 10px 14px; text-align: center"><input id="{{pm.id}}" type="checkbox" checked="{{pm.co}}" aria-label="[Co-DM name]: {{pm.name}}" style="width: 20px; height: 20px; accent-color: #E0AE52"></td>
+<td style="padding: 10px 14px; text-align: center; color: #6E6A61">{{pm.player}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; background: transparent; color: #F5C2B3; border: 1px solid #7A3A33; font-size: 14px">Remove co-DM</button><button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #E0AE52; color: #1A1408; border: none; font-size: 14px; font-weight: 600">Save permissions</button></div>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var base = 'min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 8px; font-size: 14px; text-decoration: none; ';
+    var nav = [
+      ['General', 'Setup1Pages.dc.html'], ['Pages and features', 'Settings.dc.html'], ['Visibility defaults', 'Settings.dc.html'], ['Dice', 'Settings.dc.html'],
+      ['People and permissions', '#', true], ['Discord', 'Settings.dc.html'], ['Archive or delete', 'Settings.dc.html']
+    ].map(function (n) {
+      return { label: n[0], href: n[1], current: n[2] ? 'page' : 'false', style: base + (n[2] ? 'background: #2A2618; color: #EDE7DA; border: 1px solid #E0AE52; font-weight: 600;' : 'color: #CFC8B8; border: 1px solid transparent;') };
+    });
+    var pill = 'font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; ';
+    var people = [
+      { initials: 'DM', name: '[DM name] (you)', sub: 'Owner', role: 'DM', roleStyle: pill + 'color: #1A1408; background: #E0AE52;' },
+      { initials: 'CD', name: '[Co-DM name]', sub: 'Joined [date]', role: 'Co-DM', roleStyle: pill + 'color: #D6CBEF; border: 1px solid #7A68A3;' },
+      { initials: 'P1', name: '[Player name]', sub: 'Playing [Player character 1]', role: 'Player', roleStyle: pill + 'color: #A6E0D4; border: 1px solid #3E7A6F;' },
+      { initials: 'P2', name: '[Player name]', sub: 'Playing [Player character 2]', role: 'Player', roleStyle: pill + 'color: #A6E0D4; border: 1px solid #3E7A6F;' },
+      { initials: 'P3', name: '[Player name]', sub: 'Invite sent', role: 'Player', roleStyle: pill + 'color: #CFC8B8; border: 1px solid #4A4F5E;' }
+    ];
+    var P = function (name, desc, co) { return { name: name, desc: desc, co: co }; };
+    var perms = [
+      P('See hidden content', 'Secrets, hidden NPCs, lore and pins', true),
+      P('Edit pages and content', 'Add and change NPCs, lore, quests, loot', false),
+      P('Reveal and schedule reveals', 'Including reveals to one player', false),
+      P('Run combat', 'Initiative, damage, conditions', true),
+      P('Push handouts', 'Show handouts on players’ screens', true),
+      P('See private rolls', 'Rolls players send to the DM only', true),
+      P('Read player messages', 'Private notes sent to the DM', false),
+      P('Write session recaps', 'Draft and publish recaps', false),
+      P('Manage players and invites', '', false),
+      P('Change campaign settings', 'Pages, features, defaults', false)
+    ].map(function (p, i) { return { id: 'perm-' + i, name: p.name, desc: p.desc, co: p.co, player: '—' }; });
+    return { nav: nav, people: people, perms: perms };
+  }
+}
+</script>
+</body>
+</html>

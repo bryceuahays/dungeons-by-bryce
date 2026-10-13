@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Page and Feature Switches</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 100%; box-sizing: border-box; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #EDE7DA; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+<h3 style="margin: 10px 0 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{g.color}}">{{g.title}}</h3>
+<sc-for list="{{g.pages}}" as="p" hint-placeholder-count="4">
+<div style="{{p.boxStyle}}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px">
+<sc-if value="{{p.locked}}" hint-placeholder-val="{{true}}"><span title="Always on" style="width: 22px; height: 22px; flex: none; display: flex; align-items: center; justify-content: center; color: #A9A396"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span></sc-if>
+<sc-if value="{{p.switchable}}" hint-placeholder-val="{{false}}"><input id="{{p.cid}}" type="checkbox" checked="{{p.on}}" style="width: 22px; height: 22px; flex: none; margin: 0; accent-color: #E0AE52"></sc-if>
+<label for="{{p.cid}}" style="flex: 1 1 200px; min-width: 0; cursor: pointer"><span style="font-weight: 600">{{p.name}}</span> <span style="font-size: 13px; color: #A9A396">· {{p.desc}}</span></label>
+<span style="font-size: 13px; color: #CFC8B8">{{p.summary}}</span>
+<button type="button" onClick="{{p.toggle}}" aria-expanded="{{p.expanded}}" style="min-height: 40px; padding: 0 12px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font: inherit; font-size: 13px; cursor: pointer">{{p.btn}}</button>
+</div>
+<sc-if value="{{p.open}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; padding: 4px 14px 14px 50px">
+<sc-for list="{{p.feats}}" as="f" hint-placeholder-count="6">
+<div style="display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border-radius: 8px; background: #16181F">
+<input id="{{f.id}}" type="checkbox" checked="{{f.on}}" style="width: 18px; height: 18px; flex: none; margin: 2px 0 0; accent-color: #E0AE52">
+<label for="{{f.id}}" style="cursor: pointer; font-size: 14px">{{f.name}}<span style="display: block; font-size: 12px; color: #A9A396">{{f.desc}}</span></label>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"open":{"editor":"text","default":"combat"},"$preview":{"width":1100,"height":1400}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { open: props.open ?? 'combat' }; }
+  renderVals() {
+    var self = this;
+    var F = function (name, desc, on) { return { name: name, desc: desc || '', on: on !== false }; };
+    var core = [
+      { id: 'welcome', name: 'Welcome', desc: 'the hub home page', locked: true, feats: [F('Intro video or banner'), F('Session recap'), F('Next session and RSVP'), F('Newly revealed'), F('Active quests', 'Needs Quest log'), F('Handouts shelf')] },
+      { id: 'sidebar', name: 'Character sidebar', desc: 'on every page', feats: [F('Attributes'), F('Skills'), F('Tap to roll'), F('Party dice log'), F('Private rolls', 'Roll to the DM only, or just yourself'), F('Conditions')] },
+      { id: 'npcs', name: 'NPCs', desc: 'everyone the party meets', feats: [F('Portraits'), F('Attitude tags', 'Ally, neutral, hostile'), F('Partial reveals', 'Name only, name and portrait…'), F('Connections', 'Needs Relationship web'), F('Filters and search')] },
+      { id: 'lore', name: 'Lore', desc: 'the world, by category', feats: [F('Category templates'), F('Import from a document'), F('Bestiary: what you’ve learned'), F('History as a timeline')] },
+      { id: 'combat', name: 'Combat', desc: 'fights at the table', feats: [F('Initiative tracker'), F('Battle map', 'Resizable map with tokens', false), F('Auto-roll NPC initiative'), F('Enemy health as a status', 'Healthy, Bloodied, Down'), F('Conditions and concentration'), F('Target and action buttons')] },
+      { id: 'players', name: 'Players', desc: 'each character in full', feats: [F('Full character sheet'), F('Private note to the DM'), F('Personal notes'), F('Party can view other sheets', 'Only what each player shares')] },
+      { id: 'timeline', name: 'Timeline', desc: 'session by session', feats: [F('Custom events'), F('Planned sessions', 'DM only'), F('In-world dates', 'Uses your Calendar lore', false)] },
+      { id: 'secrets', name: 'Secrets', desc: 'DM only', feats: [F('Reveal schedule'), F('Player messages inbox'), F('Plot secrets')] },
+      { id: 'settings', name: 'Campaign settings', desc: 'DM and permitted co-DMs', feats: [F('Discord posting'), F('Visibility defaults'), F('Dice privacy rules'), F('Archive campaign')] },
+      { id: 'people', name: 'People and permissions', desc: 'DM and permitted co-DMs', feats: [F('Co-DMs'), F('Permission presets'), F('Invite by Discord username')] }
+    ];
+    var optional = [
+      { id: 'map', name: 'Map', desc: 'world map with pins', optional: true, on: true, feats: [F('Pins that reveal'), F('Fog over unexplored areas'), F('Party location marker')] },
+      { id: 'quests', name: 'Quest log', desc: 'objectives and rewards', optional: true, on: true, feats: [F('Hidden objectives'), F('Rewards'), F('Track on Welcome page')] },
+      { id: 'loot', name: 'Party loot', desc: 'shared treasure', optional: true, on: true, feats: [F('Coin purse'), F('Claiming items'), F('Unidentified items'), F('Loot history')] },
+      { id: 'relations', name: 'Relationship web', desc: 'who knows whom', optional: true, on: false, feats: [F('Hidden connections'), F('Center on a person')] },
+      { id: 'search', name: 'Hub-wide search', desc: 'search box in the header', optional: true, on: true, feats: [F('Search recaps'), F('Filter by type')] },
+      { id: 'live', name: 'Live session screen', desc: 'DM view for running the table', optional: true, on: false, feats: [F('Party at a glance'), F('Scene notes and read-aloud'), F('Reveal and handout tray'), F('Session notes to recap')] }
+    ];
+    var build = function (list, optionalGroup) {
+      return list.map(function (p) {
+        var open = self.state.open === p.id;
+        var onCount = p.feats.filter(function (f) { return f.on; }).length;
+        var pageOn = optionalGroup ? p.on : true;
+        return {
+          name: p.name, desc: p.desc, cid: 'pg-' + p.id,
+          locked: !optionalGroup, switchable: optionalGroup, on: pageOn,
+          summary: pageOn ? (onCount + ' of ' + p.feats.length + ' features on') : 'Page off',
+          open: open, expanded: open ? 'true' : 'false', btn: open ? 'Done' : 'Customize',
+          toggle: function () { self.setState({ open: open ? '' : p.id }); },
+          boxStyle: 'border-radius: 12px; ' + (optionalGroup ? (pageOn ? 'background: #2A2618; border: 1px solid #5A4A26;' : 'background: #1B1E26; border: 1px dashed #4A4F5E;') : 'background: #20232C; border: 1px solid #2E3341;'),
+          feats: p.feats.map(function (f, i) { return { id: 'ft-' + p.id + '-' + i, name: f.name, desc: f.desc, on: f.on }; })
+        };
+      });
+    };
+    return {
+      groups: [
+        { title: 'Default pages · always included, features can be switched off', color: '#A9A396', pages: build(core, false) },
+        { title: 'Optional pages', color: '#E0AE52', pages: build(optional, true) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

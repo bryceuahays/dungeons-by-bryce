@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Campaign Timeline</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<section aria-label="Campaign timeline" style="width: 100%; box-sizing: border-box; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #EDE7DA; font-size: 15px; line-height: 1.5; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<div>
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 22px; font-weight: 600">Timeline</h2>
+<p style="margin: 2px 0 0; font-size: 13px; color: #A9A396">{{note}}</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 12px; color: #A9A396">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #232733; border: 1px solid #4A4F5E"></span>Story event</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; border: 1px solid #3E7A6F"></span>Custom event</span>
+<sc-if value="{{dm}}" hint-placeholder-val="{{true}}"><span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; border: 1px dashed #7A68A3"></span>Planned · DM only</span></sc-if>
+<sc-if value="{{dm}}" hint-placeholder-val="{{true}}"><button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font: inherit; font-size: 14px; cursor: pointer">+ Add custom event</button></sc-if>
+</div>
+</div>
+<div style="overflow-x: auto; margin-top: 16px">
+<ol style="list-style: none; margin: 0; padding: 0 0 4px; display: flex; min-width: 720px">
+<sc-for list="{{timeline}}" as="s" hint-placeholder-count="6">
+<li style="flex: 1 1 0; min-width: 130px; padding: 0 12px 0 0; display: flex; flex-direction: column; gap: 8px">
+<div style="position: relative; height: 20px">
+<div style="{{s.lineStyle}}"></div>
+<div style="{{s.dotStyle}}"></div>
+</div>
+<div style="font-weight: 600; font-size: 14px">Session {{s.n}}</div>
+<div style="font-size: 12px; color: #A9A396; margin-top: -6px">{{s.sub}}</div>
+<div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+<sc-for list="{{s.events}}" as="ev" hint-placeholder-count="1">
+<span style="{{ev.style}}">{{ev.label}}</span>
+</sc-for>
+</div>
+</li>
+</sc-for>
+</ol>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["dm","player"],"default":"dm"},"$preview":{"width":1384,"height":260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var dm = (this.props.mode ?? 'dm') === 'dm';
+    var evBase = 'font-size: 12px; border-radius: 6px; padding: 3px 8px; ';
+    var sessions = [
+      { n: 1, st: 'done', events: [{ label: '[Key event]' }] },
+      { n: 2, st: 'done', events: [{ label: '[Key event]' }, { label: '[Custom event]', custom: true }] },
+      { n: 3, st: 'done', events: [{ label: '[Key event]' }, { label: 'Quest started: [Quest]' }] },
+      { n: 4, st: 'next', events: [{ label: 'Reveal: [NPC name]', planned: true }] },
+      { n: 5, st: 'planned', events: [{ label: 'Reveal: [Lore entry]', planned: true }, { label: '[Planned encounter]', planned: true }] },
+      { n: 6, st: 'planned', events: [{ label: '[Planned event]', planned: true }] }
+    ];
+    var timeline = sessions.filter(function (x) { return dm || x.st !== 'planned'; }).map(function (x) {
+      var dot = 'position: absolute; left: 0; top: 2px; width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box; ';
+      if (x.st === 'done') dot += 'background: #E0AE52;';
+      else if (x.st === 'next') dot += 'background: #121419; border: 3px solid #E0AE52;';
+      else dot += 'background: #121419; border: 2px dashed #B39DDB;';
+      return {
+        n: x.n,
+        sub: x.st === 'done' ? 'Played' : (x.st === 'next' ? 'Up next' : 'Planned · DM only'),
+        dotStyle: dot,
+        lineStyle: 'position: absolute; left: 0; right: -12px; top: 9px; height: 0; ' + (x.st === 'done' ? 'border-top: 2px solid #4A4F5E;' : 'border-top: 2px dashed #4A4F5E;'),
+        events: x.events.filter(function (e) { return dm || !e.planned; }).map(function (e) {
+          var st = evBase + (e.planned ? 'color: #D6CBEF; border: 1px dashed #7A68A3;' : (e.custom ? 'color: #A6E0D4; border: 1px solid #3E7A6F;' : 'color: #EDE7DA; background: #232733;'));
+          return { label: e.label, style: st };
+        })
+      };
+    });
+    return { dm: dm, timeline: timeline, note: dm ? 'Played sessions, planned sessions, scheduled reveals and custom events' : 'What has happened so far, updated after every session' };
+  }
+}
+</script>
+</body>
+</html>

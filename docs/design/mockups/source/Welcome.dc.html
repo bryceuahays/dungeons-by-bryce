@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Welcome: Player View</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1700px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+<dc-import name="HubTop" active="welcome" mode="player" hint-size="100%,126px"></dc-import>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 24px 28px; flex: 1">
+<div style="flex: 1 1 280px; max-width: 100%"><dc-import name="Sidebar" mode="player" hint-size="100%,1200px"></dc-import></div>
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<section style="position: relative; min-height: 300px; border-radius: 14px; border: 1px solid #2E3341; background: #1B1E26; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 28px; box-sizing: border-box">
+<div style="position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #A9A396"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 5l11 7-11 7z"></path></svg>Intro video or banner image</div>
+<div style="font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #E0AE52">Welcome to</div>
+<h1 style="margin: 4px 0 10px; font-family: Spectral, Georgia, serif; font-size: 46px; font-weight: 600; line-height: 1.05">[Campaign name]</h1>
+<p style="margin: 0; max-width: 62ch; color: #CFC8B8">[Short pitch: two or three sentences that set the scene.]</p>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px">
+<section style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px"><h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 22px; font-weight: 600">Previously on…</h2><span style="font-size: 13px; color: #A9A396">Session 3 · [Date]</span></div>
+<p style="margin: 0; color: #CFC8B8">[Session recap: what the party did, who they met, and where they left off.]</p>
+<a href="#" style="font-size: 14px">Read every recap →</a>
+</section>
+<section style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px"><h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 22px; font-weight: 600">Next session</h2><span style="font-size: 13px; color: #A9A396">Session 4</span></div>
+<div style="font-size: 18px; font-weight: 600">[Day, date · time]</div>
+<div style="font-size: 14px; color: #CFC8B8">Where we left off: [Location]</div>
+<div role="group" aria-label="Are you coming?" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px">
+<button type="button" aria-pressed="true" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #6CC4B3; color: #0D1F1B; border: none; font-size: 14px; font-weight: 600">I'm in</button>
+<button type="button" aria-pressed="false" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Can't make it</button>
+</div>
+<div style="font-size: 13px; color: #A9A396">2 of 3 players are coming</div>
+</section>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px">
+<section style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px">
+<h2 style="margin: 0 0 12px; font-family: Spectral, Georgia, serif; font-size: 22px; font-weight: 600">Newly revealed</h2>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{reveals}}" as="r" hint-placeholder-count="3">
+<li><a href="{{r.href}}" style="min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 14px; border-radius: 10px; background: #20232C; border: 1px solid #2E3341; color: #EDE7DA; text-decoration: none"><span><span style="display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #E0AE52">{{r.type}}</span>{{r.name}}</span><span style="font-size: 13px; color: #A9A396">{{r.where}} →</span></a></li>
+</sc-for>
+</ul>
+</section>
+<section style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px"><h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 22px; font-weight: 600">Active quests</h2><a href="Quests.dc.html" style="font-size: 14px">Quest log →</a></div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{quests}}" as="q" hint-placeholder-count="2">
+<li style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="font-weight: 600">{{q.name}}</span><span style="font-size: 13px; color: #A9A396">{{q.progress}}</span></div>
+<div style="height: 6px; border-radius: 3px; background: #2E3341; overflow: hidden"><div style="{{q.bar}}"></div></div>
+</li>
+</sc-for>
+</ul>
+</section>
+</div>
+
+<section style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 20px">
+<h2 style="margin: 0 0 12px; font-family: Spectral, Georgia, serif; font-size: 22px; font-weight: 600">Handouts</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px">
+<sc-for list="{{handouts}}" as="h" hint-placeholder-count="3">
+<button type="button" style="padding: 0; border-radius: 10px; overflow: hidden; background: #20232C; border: 1px solid #2E3341; color: #EDE7DA; text-align: left">
+<span style="height: 96px; background: #232733; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8E8879">{{h.kind}}</span>
+<span style="display: block; padding: 8px 10px; font-size: 13px">{{h.name}}<span style="display: block; font-size: 12px; color: #A9A396">{{h.when}}</span></span>
+</button>
+</sc-for>
+</div>
+</section>
+</main>
+</div>
+<div style="padding: 0 28px 28px"><dc-import name="Timeline" mode="player" hint-size="100%,240px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var bar = function (p, c) { return 'height: 100%; border-radius: 3px; width: ' + p + '%; background: ' + c + ';'; };
+    return {
+      reveals: [
+        { type: 'New NPC', name: '[NPC name]', where: 'NPCs', href: 'NPCs.dc.html' },
+        { type: 'New lore', name: '[Lore entry]', where: 'Lore', href: 'Lore.dc.html' },
+        { type: 'New place', name: '[Place name]', where: 'Map', href: 'Map.dc.html' }
+      ],
+      quests: [
+        { name: '[Main quest]', progress: '2 of 4 objectives', bar: bar(50, '#E0AE52') },
+        { name: '[Side quest]', progress: '1 of 2 objectives', bar: bar(50, '#6CC4B3') }
+      ],
+      handouts: [
+        { kind: '[Letter]', name: '[Handout name]', when: 'Session 3' },
+        { kind: '[Region map]', name: '[Handout name]', when: 'Session 2' },
+        { kind: '[Portrait]', name: '[Handout name]', when: 'Session 1' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

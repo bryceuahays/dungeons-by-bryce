@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup: Players and Schedule</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121419}
+button{font:inherit;cursor:pointer}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #E0AE52;outline-offset:2px}
+a{color:#E0AE52}a:hover{color:#F2C979}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1300px; box-sizing: border-box; background: #121419; color: #EDE7DA; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; padding: 16px 28px; background: #16181F; border-bottom: 1px solid #2E3341">
+<div>
+<div style="font-size: 13px; color: #A9A396">New campaign</div>
+<div style="font-family: Spectral, Georgia, serif; font-size: 23px; font-weight: 600; line-height: 1.15">[Campaign name]</div>
+</div>
+<nav aria-label="Setup steps"><ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="4">
+<li><a href="{{st.href}}" aria-current="{{st.current}}" style="{{st.style}}"><span style="{{st.numStyle}}">{{st.num}}</span>{{st.label}}</a></li>
+</sc-for>
+</ol></nav>
+</header>
+
+<main style="flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; box-sizing: border-box; padding: 32px 28px; display: flex; flex-direction: column; gap: 24px">
+<div>
+<h1 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 36px; font-weight: 600">Players, schedule and timeline</h1>
+<p style="margin: 6px 0 0; max-width: 70ch; color: #A9A396">Invite your table, set when you play, and sketch the sessions ahead.</p>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section style="flex: 999 1 520px; min-width: 0; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Players</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end">
+<div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px">
+<label for="inv-link" style="font-size: 13px; color: #A9A396">Invite link</label>
+<input id="inv-link" type="text" readonly value="[Invite link]" style="min-height: 44px; padding: 0 12px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #CFC8B8; font: inherit">
+</div>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Copy link</button>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">Share to Discord</button>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{players}}" as="p" hint-placeholder-count="3">
+<li style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 14px; border-radius: 10px; background: #20232C">
+<div><div style="font-weight: 600">{{p.player}}</div><div style="font-size: 13px; color: #A9A396">Playing {{p.pc}}</div></div>
+<span style="{{p.style}}">{{p.sheet}}</span>
+</li>
+</sc-for>
+</ul>
+<div style="font-size: 13px; color: #A9A396">Players can upload a character sheet PDF or fill in the sheet themselves. The sidebar on every hub page reads from it.</div>
+</section>
+
+<section style="flex: 1 1 320px; max-width: 100%; box-sizing: border-box; background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">When you play</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="s-day" style="font-size: 13px; color: #A9A396">Day</label><select id="s-day" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>[Day]</option></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="s-time" style="font-size: 13px; color: #A9A396">Time</label><input id="s-time" type="text" placeholder="[Time]" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"></div>
+<div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1"><label for="s-rep" style="font-size: 13px; color: #A9A396">Repeats</label><select id="s-rep" style="min-height: 44px; padding: 0 10px; border-radius: 8px; background: #16181F; border: 1px solid #3A4050; color: #EDE7DA; font: inherit"><option>Every week</option><option>Every two weeks</option><option>Monthly</option><option>I'll schedule each one</option></select></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #2E3341; padding-top: 12px">
+<div style="display: flex; align-items: center; gap: 8px"><input id="s-rsvp" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="s-rsvp">Ask players to RSVP</label></div>
+<div style="display: flex; align-items: center; gap: 8px"><input id="s-remind" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="s-remind">Remind on Discord a day before</label></div>
+<div style="display: flex; align-items: center; gap: 8px"><input id="s-recap" type="checkbox" checked style="width: 18px; height: 18px; accent-color: #E0AE52"><label for="s-recap">Post recaps to Discord</label></div>
+</div>
+</section>
+</div>
+
+<section style="background: #1B1E26; border: 1px solid #2E3341; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<div>
+<h2 style="margin: 0; font-family: Spectral, Georgia, serif; font-size: 24px; font-weight: 600">Plan the timeline</h2>
+<p style="margin: 4px 0 0; font-size: 14px; color: #A9A396">Planned events and reveals stay DM-only until their session starts. Reveals you scheduled in earlier steps are already here.</p>
+</div>
+<button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 8px; background: #232733; color: #EDE7DA; border: 1px solid #3A4050; font-size: 14px">+ Add session</button>
+</div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{plan}}" as="s" hint-placeholder-count="5">
+<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 14px; border-radius: 10px; background: #20232C">
+<span style="min-width: 90px; font-weight: 600">Session {{s.n}}</span>
+<div style="flex: 1 1 300px; display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{s.items}}" as="it" hint-placeholder-count="2"><span style="{{it.style}}">{{it.label}}</span></sc-for>
+</div>
+<button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; background: transparent; color: #E0AE52; border: 1px dashed #5A4A26; font-size: 13px">+ Planned event</button>
+</li>
+</sc-for>
+</ol>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px">
+<a href="Setup3Cast.dc.html" style="min-height: 48px; padding: 0 20px; border-radius: 10px; color: #CFC8B8; border: 1px solid #3A4050; font-size: 15px; text-decoration: none; display: flex; align-items: center">← Back</a>
+<a href="WelcomeDM.dc.html" style="min-height: 48px; padding: 0 22px; border-radius: 10px; background: #E0AE52; color: #1A1408; font-size: 15px; font-weight: 600; text-decoration: none; display: flex; align-items: center">Finish and open the hub →</a>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var cur = 4;
+    var steps = [['Basics and pages', 'Setup1Pages.dc.html'], ['World and lore', 'Setup2Lore.dc.html'], ['NPCs and encounters', 'Setup3Cast.dc.html'], ['Players and schedule', 'Setup4Players.dc.html']].map(function (s, i) {
+      var n = i + 1, on = n === cur, done = n < cur;
+      return {
+        label: s[0], href: s[1], num: done ? '✓' : String(n), current: on ? 'step' : 'false',
+        style: 'display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 999px; font-size: 14px; text-decoration: none; ' + (on ? 'background: #2A2618; border: 1px solid #E0AE52; color: #EDE7DA; font-weight: 600;' : 'background: #20232C; border: 1px solid transparent; color: #A9A396;'),
+        numStyle: 'width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; ' + (on ? 'background: #E0AE52; color: #1A1408;' : (done ? 'background: #3A4050; color: #EDE7DA;' : 'border: 1.5px solid #5A6070;'))
+      };
+    });
+    var pill = 'font-size: 13px; padding: 2px 10px; border-radius: 999px; ';
+    var players = [
+      { player: '[Player name]', pc: '[Player character 1]', sheet: 'Sheet imported', style: pill + 'color: #A6E0D4; border: 1px solid #3E7A6F;' },
+      { player: '[Player name]', pc: '[Player character 2]', sheet: 'Filled in by player', style: pill + 'color: #A6E0D4; border: 1px solid #3E7A6F;' },
+      { player: '[Player name]', pc: 'No character yet', sheet: 'Invite sent', style: pill + 'color: #CFC8B8; border: 1px solid #4A4F5E;' }
+    ];
+    var ev = pill + 'color: #EDE7DA; background: #232733;';
+    var rev = pill + 'color: #D6CBEF; border: 1px dashed #7A68A3;';
+    var plan = [
+      { n: 1, items: [{ label: '[Opening scene]', style: ev }] },
+      { n: 2, items: [{ label: 'Reveal: [NPC name]', style: rev }, { label: '[Planned event]', style: ev }] },
+      { n: 3, items: [{ label: 'Reveal: [Place name]', style: rev }] },
+      { n: 4, items: [{ label: 'Encounter: [Encounter name]', style: ev }] },
+      { n: 5, items: [{ label: 'Reveal: [NPC name]', style: rev }, { label: 'Reveal: [Lore entry]', style: rev }] }
+    ];
+    return { steps: steps, players: players, plan: plan };
+  }
+}
+</script>
+</body>
+</html>
