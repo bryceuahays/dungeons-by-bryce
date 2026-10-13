@@ -35,23 +35,22 @@ The mockup column is what you see in the images. Build with the token column.
 
 ### New tokens
 
-These do not exist yet. Add them to `src/styles/campaign.css` (a shared file: its own small pull request) so every theme gets them:
+These were added by hub version 2 item 2 (issue 83). They are set on `.campaign` in `src/styles/campaign.css`, each worked out from the theme's own colours, so every theme has them, a DM's custom theme included:
 
-```css
-.campaign {
-  --line-strong: color-mix(in srgb, var(--line) 75%, var(--vellum));
-  --vellum-soft: color-mix(in srgb, var(--vellum) 82%, var(--dim));
-  --gold-tint: color-mix(in srgb, var(--gold) 12%, var(--plate));
-  --ember-tint: color-mix(in srgb, var(--ember) 16%, var(--plate));
-  --ember-text: color-mix(in srgb, var(--ember) 45%, var(--vellum));
-  --secret: #b39ddb;
-  --secret-bg: color-mix(in srgb, var(--secret) 10%, var(--plate));
-  --secret-line: color-mix(in srgb, var(--secret) 60%, var(--line));
-  --secret-text: color-mix(in srgb, var(--secret) 55%, var(--vellum));
-}
-```
+| Token | What it is for |
+|---|---|
+| `--line-strong` | Border of inputs and secondary buttons |
+| `--vellum-soft` | Secondary text |
+| `--gold-tint` | Background of a selected row or an "up now" banner |
+| `--ember-tint`, `--ember-text` | Background and text of a danger notice |
+| `--secret` | The "hidden from players" colour |
+| `--secret-bg`, `--secret-line`, `--secret-text` | Background, dashed border and label text of the hidden look |
 
-`--secret` needs a darker value on the light Vellum theme (try `#6b4fa0`). The tidy way is a `secret` colour on each theme in `src/config/themes.ts` (also shared), falling back to the value above.
+**Where `--secret` comes from.** Each of the seven themes has a `secret` colour in `src/config/themes.ts`, and `themeStyle()` puts it on the page. It is purple (`#b39ddb`), darker on the light Vellum theme (`#6b4fa0`), a little pinker on Frostbound, and amber on Abyssal, whose own accent is already purple. A custom theme has none of its own; the stylesheet then mixes purple with the theme's text colour, which comes out light on a dark theme and dark on a light one.
+
+**The `secret` colour sits beside each theme, not inside its `colors`.** A campaign stores its own copy of its theme and the database compares that copy to the default themes exactly. Never add a colour inside `colors` without planning for every stored copy.
+
+`tests/tokens.test.mjs` works the colours out from the real stylesheet and fails if any of them is hard to read in any theme.
 
 ## The hidden-from-players look
 
@@ -60,6 +59,8 @@ Anything a player cannot see yet, shown to a DM, looks the same everywhere:
 - **Dashed** border in `--secret-line`, background `--secret-bg`.
 - A small text label saying who can see it: "Hidden from players", "Only [player name]", or "Reveals at [stage name]". Never rely on the colour or the dashes alone.
 - Planned timeline events, hidden map pins, hidden NPCs, hidden lore, hidden relationship lines and private dice rolls all use this look.
+
+Build it with `HiddenBox` and `HiddenTag` from `src/features/hub/ui/Hidden.tsx`. Do not restyle it per page. To see it in every theme, open **Head DM > Design samples** (`/admin/design`); when a new shared piece is added to `src/features/hub/ui/`, add it to `Samples.tsx` too.
 
 This is only a look. Whether a player receives the content is decided on the server (see `CLAUDE.md`, Hard rules, Visibility). A player's page never contains hidden content styled to be invisible.
 

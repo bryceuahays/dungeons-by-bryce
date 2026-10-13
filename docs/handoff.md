@@ -255,8 +255,8 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 
 | Item | Piece | Issue | Priority | Database change | Status |
 |---|---|---|---|---|---|
-| 1 | Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) (existing) | Must | No | Ready |
-| 2 | Design tokens and the hidden-from-players look | [#83](https://github.com/bryceuahays/dungeons-by-bryce/issues/83) | Must | No | Ready |
+| 1 | Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) (existing) | Must | Yes (applied) | Built and live |
+| 2 | Design tokens and the hidden-from-players look | [#83](https://github.com/bryceuahays/dungeons-by-bryce/issues/83) | Must | No | Built |
 | 3 | Page and feature switches | [#84](https://github.com/bryceuahays/dungeons-by-bryce/issues/84) | Must | No | Ready |
 | 4 | Visibility upgrades and partial NPC reveals | [#85](https://github.com/bryceuahays/dungeons-by-bryce/issues/85) | Must | Yes | Waits for item 1, item 2 |
 | 5 | Dice rolling, public and private | [#86](https://github.com/bryceuahays/dungeons-by-bryce/issues/86) | Must | Yes | Waits for item 1, item 2, item 4 |
@@ -293,6 +293,12 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **Where it lives:** `src/config/flags.ts` (the list), `src/lib/flags.ts` (what pages and actions call), `src/features/flags/` and `src/app/(hub)/admin/flags/` (your screen), the `feature_flags` table (which flags are on), `tests/flags.test.mjs`. How to use it is in `CLAUDE.md`, under "Feature Flags".
 - **What you see as the Head DM:** every flagged page, on the live site, as soon as it is merged and deployed. Your players and other DMs do not.
 - **Your screen:** sign in, open **Head DM**, then **Feature flags**. It lists all 21 pieces with a switch each. "Turn on for everyone" shows that piece to all your players at once; "Hide it again" takes it back.
-- **What you do by hand, once:** apply the migration `20261015000001_feature_flags.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Until then the screen opens but says the switches cannot be saved yet.
 - **What you do by hand, later:** when a hub piece is built, live and you are happy with it, flip its switch.
-- **No database change.**
+- **Database change:** one small table, `feature_flags`. Applied on 13 October 2026.
+
+### Item 2: design tokens and the hidden-from-players look (built)
+
+- **What it is:** the new colours the hub mockups need, added to every campaign theme, and the one shared look for anything hidden from players: a dashed box, a tinted background and a label in words.
+- **Where to see it:** sign in, open **Head DM**, then **Design samples**. It shows the look in all seven themes. No campaign page uses it yet, so campaigns look exactly as before.
+- **Where it lives:** `src/styles/campaign.css` (the tokens), `src/config/themes.ts` (each theme's `secret` colour), `src/features/hub/ui/` (the look and the samples), `tests/tokens.test.mjs`.
+- **What you do by hand:** nothing. No database change.
