@@ -28,7 +28,7 @@ This file has two halves. "How we work" is for everyone on the team and fits on 
 
 1. **One branch per issue,** named `feature/<issue-number>-short-name`. Nobody pushes to the main branch. Only Bryce merges to it.
 2. **Merge small and often.** Pull the main branch into your branch every day you work. Aim for branches that live days, not weeks.
-3. **Unfinished work merges behind a feature flag.** We do not keep features on separate branches for weeks and join them at the end. (Flags are issue #1; until it merges, keep pull requests to finished pieces.)
+3. **Unfinished work merges behind a feature flag.** We do not keep features on separate branches for weeks and join them at the end. (How to use one is in `CLAUDE.md`, under "Feature Flags".)
 4. **Each feature owns its own folder.** To change a shared file (the table below), ask its owner, or open a small separate pull request for just that change.
 5. **One database migration open at a time.** Announce it on the issue before you write it. There is one live database and no test copy.
 6. **Comment on your issue when you start,** saying which files you expect to touch. Each issue's "Touches" section lists what it should need.
@@ -175,7 +175,7 @@ Two more things every feature shares, which need care rather than an owner: the 
 
 | Feature | Issue | Folders it owns | Shared files it changes | Migration | Waits for |
 |---|---|---|---|---|---|
-| Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) | `src/config/flags.ts` (new), `src/lib/flags.ts` (new), `tests/flags.test.mjs` (new) | None | No | Nothing |
+| Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) | `src/config/flags.ts` (new), `src/lib/flags.ts` (new), `src/features/flags/` (new), `src/app/(hub)/admin/flags/` (new), `tests/flags.test.mjs` (new) | `src/app/(hub)/admin/page.tsx` (one link)<br>`supabase/migrations/` (the database schema) | Yes: `20261015000001_feature_flags.sql` | Nothing |
 | Homebrew builder shared core | [#2](https://github.com/bryceuahays/dungeons-by-bryce/issues/2) | `src/features/homebrew/core/` (new), `docs/homebrew-core.md` (new) | `src/components/EntityEditor.tsx`<br>`src/config/homebrew.ts`<br>`src/lib/rules/engine.ts`<br>`src/app/(hub)/homebrew/actions.ts` | No | Nothing |
 | Per-feature folder split: table tools | [#3](https://github.com/bryceuahays/dungeons-by-bryce/issues/3) | `src/features/tools/` (new) | `src/components/tools/Simple.tsx`<br>`src/app/globals.css` | No | Nothing |
 | Per-feature folder split: server actions | [#4](https://github.com/bryceuahays/dungeons-by-bryce/issues/4) | `src/app/c/[slug]/actions/` (new), `src/app/(hub)/actions/` (new) | `src/app/c/[slug]/actions.ts`<br>`src/app/(hub)/actions.ts` | No | Nothing |
@@ -298,7 +298,7 @@ The convention proposed for new work: **`src/features/<area>/<feature>/`** holds
 
 ## Feature flags
 
-There is no flag system yet (issue #1). The entitlement layer decides what a plan includes; it does not know whether the site is running live, as a preview, or on someone's machine. Until flags exist, only finished pieces should be merged.
+Flags exist since 13 October 2026 (issue #1). The list is `src/config/flags.ts`: one flag per item of the hub version 2 build plan, named `hub_v2_<page>`. A flag that is off hides its page from everyone except the Head DM and the automated tests' accounts, so unfinished work can be merged small and often. Pages and actions check a flag on the server through `src/lib/flags.ts`. Bryce turns a flag on for everyone by having `on: true` and the date set on it, then merging and deploying. The full how-to is in `CLAUDE.md`, under "Feature Flags".
 
 ## Notes on how the board was set up
 

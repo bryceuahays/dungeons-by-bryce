@@ -181,6 +181,24 @@ Environment variable names (values are never written down here): `NEXT_PUBLIC_SU
 - Only Bryce deploys, or a session he has told to in that session. Preview deployments sit behind a Vercel login.
 - Order for a change that needs the database: apply the additive migration first, deploy the code, then run any import or seed script.
 
+## Feature Flags
+
+Unfinished work is merged to `main` behind a flag, so it can go in small pieces without players seeing it.
+
+- The list is `src/config/flags.ts`. There is one flag per item of the hub version 2 build plan, named `hub_v2_<page>`, all listed from the start. Building an item means checking its flag, not editing that file.
+- Which flags are on for everyone is kept in the database (the `feature_flags` table). Bryce switches them himself on **Head DM > Feature flags** (`/admin/flags`, code in `src/features/flags/`). Everyone can read the rows that are on; only the Head DM can read the rest or change any.
+- **A flag that is off** is on only for the Head DM (so Bryce can try it on the live site), for the automated tests' accounts, on a developer's own machine (`npm run dev`) and on Vercel preview deployments. Everyone else gets "not found".
+- **Turning a flag on for everyone** is Bryce's to do, from that screen. It takes effect at once, with no merge and no deploy. Never switch one for him, in the database or from a script. `on: true` with `released: 'YYYY-MM-DD'` in `src/config/flags.ts` fixes a flag on in the code; it is only the last step before the flag is removed, and only when Bryce says so.
+- **Use it on the server**, through `src/lib/flags.ts`:
+  - a page or route: `await requireFlag('hub_v2_quests')` (answers "not found")
+  - a server action: `if (!(await flag('hub_v2_quests'))) return { error: NOT_AVAILABLE }`
+  - a link, tab or panel: render it only when `await flag(...)` is true
+  - a client component: give it the plain values from `await myFlags()`
+- **Never decide a flag in the browser,** and never render a flagged feature and hide it. When a flag is off, the feature's text and data must not be sent at all. A test fails if a client component imports the flag rule.
+- **Tests never touch the real flags' switches.** A test that needs a row in `feature_flags` names it `zz_test_…`, which is not on the list and so switches nothing on the live site.
+- **Testing a flagged feature:** test accounts have every flag on. To prove it is hidden from ordinary people, make the account with `makeUser(label, { unblocked: true })` and check the page answers 404 and its data is not in the HTML.
+- **When a feature is released,** remove its flag and its checks in a small pull request of their own.
+
 ## Working in Parallel
 
 Several people, each with their own Claude Code session, build in this repository at once. Every session follows these rules.
@@ -192,7 +210,7 @@ Several people, each with their own Claude Code session, build in this repositor
 - **Stop and ask before adding a database migration.** Only one may be open at a time, and it is announced on the issue first.
 - **Do not deploy.**
 - **Merge small and often.** One pull request does one thing and can be reviewed in 15 minutes. Pull `main` into the branch at the start of each working day. Branches live days, not weeks.
-- **Unfinished work is hidden behind a feature flag** (see the "Feature flags" issue). Until flags exist, merge only finished pieces.
+- **Unfinished work is hidden behind a feature flag** (see "Feature Flags" above). Merge it small and often with its flag off.
 - Comment on the issue when starting, saying which files are expected to change.
 
 ## Project Board
