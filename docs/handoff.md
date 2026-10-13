@@ -246,3 +246,43 @@ Make a pack under **Homebrew**, then **Head DM**, **Store and custom site reques
 **Where it is in the UI:** nowhere yet. These are the pictures each new page is built from, one page at a time.
 
 **What you need to do by hand:** review and merge the pull request. Decide the name of the new DM-only overview page, since "Secrets" is already the name of a table tool.
+
+## Hub version 2: the build order and its issues
+
+Planned on 13 October 2026. No app code was written. The plan is `docs/design/build-plan.md`, the design is in `docs/design/`, and every item is on the roadmap board.
+
+To build one item: start a fresh Claude Code session and give it the "build one piece" prompt with the issue number from this table.
+
+| Item | Piece | Issue | Priority | Database change | Status |
+|---|---|---|---|---|---|
+| 1 | Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) (existing) | Must | No | Ready |
+| 2 | Design tokens and the hidden-from-players look | [#83](https://github.com/bryceuahays/dungeons-by-bryce/issues/83) | Must | No | Ready |
+| 3 | Page and feature switches | [#84](https://github.com/bryceuahays/dungeons-by-bryce/issues/84) | Must | No | Ready |
+| 4 | Visibility upgrades and partial NPC reveals | [#85](https://github.com/bryceuahays/dungeons-by-bryce/issues/85) | Must | Yes | Waits for item 1, item 2 |
+| 5 | Dice rolling, public and private | [#86](https://github.com/bryceuahays/dungeons-by-bryce/issues/86) | Must | Yes | Waits for item 1, item 2, item 4 |
+| 6 | Co-DM screen and permissions | [#62](https://github.com/bryceuahays/dungeons-by-bryce/issues/62) (existing) | Must | Yes | Waits for item 1, item 5 |
+| 7 | Campaign settings page | [#87](https://github.com/bryceuahays/dungeons-by-bryce/issues/87) | Must | No | Waits for item 1, item 2, item 3, item 5, item 6 |
+| 8 | Header, page tabs, character sidebar and phone layout | [#88](https://github.com/bryceuahays/dungeons-by-bryce/issues/88) | Must | No | Waits for item 1, item 2, item 3, item 5 |
+| 9 | Welcome page | [#89](https://github.com/bryceuahays/dungeons-by-bryce/issues/89) | Should | No | Waits for item 1, item 2, item 3, item 8 |
+| 10 | NPCs page | [#90](https://github.com/bryceuahays/dungeons-by-bryce/issues/90) | Should | No | Waits for item 1, item 2, item 3, item 4, item 8 |
+| 11 | Lore page and lore categories | [#51](https://github.com/bryceuahays/dungeons-by-bryce/issues/51) (existing) | Should | Probably | Waits for item 1, item 2, item 3, item 4, item 8 |
+| 12 | Combat page | [#91](https://github.com/bryceuahays/dungeons-by-bryce/issues/91) | Should | Maybe | Waits for item 1, item 2, item 3, item 4, item 5, item 8 |
+| 13 | Players page | [#92](https://github.com/bryceuahays/dungeons-by-bryce/issues/92) | Should | Maybe | Waits for item 1, item 2, item 3, item 8 |
+| 14 | Reveals: the DM overview of hidden things | [#93](https://github.com/bryceuahays/dungeons-by-bryce/issues/93) | Should | No | Waits for item 1, item 2, item 3, item 4, item 8, item 13 |
+| 15 | Timeline restyle | [#94](https://github.com/bryceuahays/dungeons-by-bryce/issues/94) | Should | No | Waits for item 1, item 2 |
+| 16 | Map page: pin layers and "party is here" | [#95](https://github.com/bryceuahays/dungeons-by-bryce/issues/95) | Could | No | Waits for item 1, item 2, item 3, item 4, item 8, item 11 |
+| 17 | Quest log | [#96](https://github.com/bryceuahays/dungeons-by-bryce/issues/96) | Could | Yes | Waits for item 1, item 2, item 3, item 4, item 8 |
+| 18 | Party loot | [#97](https://github.com/bryceuahays/dungeons-by-bryce/issues/97) | Could | Yes | Waits for item 1, item 2, item 3, item 4, item 8 |
+| 19 | Relationship web | [#98](https://github.com/bryceuahays/dungeons-by-bryce/issues/98) | Could | Yes | Waits for item 1, item 2, item 3, item 4, item 8, item 10 |
+| 20 | Handouts and "Push handout" | [#99](https://github.com/bryceuahays/dungeons-by-bryce/issues/99) | Could | Yes | Waits for item 1, item 2, item 3, item 4, item 8 |
+| 21 | Hub-wide search | [#100](https://github.com/bryceuahays/dungeons-by-bryce/issues/100) | Could | Maybe | Waits for item 1, item 2, item 3, item 4, item 8 |
+| 22 | New campaign setup in four steps | [#101](https://github.com/bryceuahays/dungeons-by-bryce/issues/101) | Could | No | Waits for item 1, item 3, item 11, item 12, item 20 |
+| 23 | Live session screen | [#102](https://github.com/bryceuahays/dungeons-by-bryce/issues/102) | Could | Maybe | Backlog (only if you want it) |
+
+**What you need to do by hand**
+
+1. Merge the planning pull request (documents only).
+2. Start with items 1, 2 and 3. They do not wait for anything and can be built at the same time by different people.
+3. Items 4, 5 and 6 each change the database, so they go one after another. Each comes with a migration file that is written but not applied; the pull request will say so, and you apply it before deploying.
+4. Nothing reaches players until you switch on its feature flag (item 1).
+5. Item 23, the live session screen, is on the board as Backlog. Say if you want it built.

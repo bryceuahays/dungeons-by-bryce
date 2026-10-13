@@ -208,3 +208,18 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 161. **A new `--secret` colour marks things hidden from players** (dashed border plus a text label). It is to be added to `src/styles/campaign.css` in its own small pull request.
 162. **"Reveals at Session N" in the mockups means a reveal stage or a story beat.** The app's existing reveal model is kept; there is no session-number reveal.
 163. **The mockup's game system menu said a trademarked name.** It was changed to the fifth edition rule choices the app already has.
+
+## Hub version 2: the planning session (13 October 2026)
+
+164. **The build plan is saved word for word as `docs/design/build-plan.md`.** The only additions are Markdown heading marks (`#`, `##`, `###`) on its section titles so it reads properly on GitHub. No words were changed.
+165. **Twenty new issues, #83 to #102, one per item.** Items 1, 6 and 11 use the issues that already existed (#1, #62, #51): the plan's details were added to each as a comment, and nothing in the original text was changed.
+166. **Each issue's title starts "Hub v2 item N"** so the build order is visible on the board.
+167. **Priorities are a first guess for you to re-sort:** items 1 to 8 (groundwork, foundations and the shell) are Must, the default pages 9 to 15 are Should, the optional pages and setup 16 to 22 are Could. Item 23 is Could and Backlog, as the plan says.
+168. **Status:** items 1, 2 and 3 are Ready, because nothing has to merge before them. Everything else is Backlog with a "Waits for" list.
+169. **"Waits for" was worked out from the plan's own cross-references,** plus one rule: a page waits for the shell (item 8), and anything with hidden content waits for visibility (item 4). Items 4, 5 and 6 are chained because only one migration may be open at a time.
+170. **Feature flag names follow `hub_v2_<page>`,** one per item, listed in each issue. Item 2 (design tokens) has no flag: it changes shared styles and must leave existing pages looking the same.
+171. **New hub code is planned under `src/features/hub/<page>/`,** with dice in `src/features/dice/`, following the folder rule in `CLAUDE.md`.
+172. **Related issues got a comment, not a duplicate:** #61 (saved fights), #49 (scheduling), #40 (Discord) and #58 (named-player visibility, which item 4 finishes).
+173. **The "Draft recap from notes" button in the mockups is left out,** as the plan says. It belongs to #45.
+174. **#51 was "Homebrew: lore organization" and is now also the Lore page (item 11).** Its older text describes lore as a kind of homebrew entry; the plan describes lore as campaign content in categories. The plan is the newer one, and whoever builds item 11 should settle the wording first.
+175. **Alec's game systems are not in the mockups.** The sidebar and sheet in the design show the six standard abilities. Item 8 reads the sheet from the rules engine, so a campaign on a custom system should show its own abilities and trackers; the issue says so.
