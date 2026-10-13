@@ -190,6 +190,17 @@ New hub pages follow `docs/design/design-system.md`.
 - **Shared pieces live in `src/features/hub/ui/`** and are drawn in all seven themes on Head DM > Design samples (`/admin/design`, `Samples.tsx`). Add a new shared piece there too, and check it in the light Vellum theme and at 390px.
 - **Never add a colour inside a theme's `colors` in `src/config/themes.ts`.** Campaigns store their own copy of a theme and the database compares it to the default themes exactly. A theme's `secret` colour sits beside `theme` for this reason.
 
+## Hub Pages and Feature Switches
+
+A DM chooses which hub pages a campaign has, and which features each page has (Manage > Pages and features).
+
+- **The list is `src/config/hub-features.ts`:** ten default pages (always there; only their features can be switched off) and six optional pages (can be switched off whole). The names come from the mockup; a test compares them.
+- **Check both the flag and the switch.** A hub page: `await requireFlag('hub_v2_map')`, then `if (!hasPage(campaign.settings, 'map')) notFound()`. A feature on a page: render it, and run its server actions, only when `hasFeature(campaign.settings, 'combat.map')` is true. Both helpers are exported from `src/config/tools.ts`, next to `hasTool`.
+- **What is switched off is stored, not what is on:** `settings.features = { off: ['map', 'combat.map'] }`. A campaign with no list keeps everything, and a feature added to the list later starts on for every campaign.
+- **Switching something off only hides it.** Never delete or change a page's content because its switch is off.
+- **`startsOff` in the list** is only for new campaign setup (item 22). It never switches anything off in an existing campaign.
+- **Adding a feature to a page** means adding one line to that page's `features` in `src/config/hub-features.ts`. Never reuse or rename an id: campaigns have stored them.
+
 ## Feature Flags
 
 Unfinished work is merged to `main` behind a flag, so it can go in small pieces without players seeing it.

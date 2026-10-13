@@ -1,0 +1,37 @@
+/* Page and feature switches (SwitchesForm.tsx), after FeatureToggles.png. Theme variables only. */
+.campaign .sw{display:flex; flex-direction:column; gap:10px; font-family:var(--body); font-size:15px; line-height:1.5; margin-top:12px}
+.campaign .sw section{display:flex; flex-direction:column; gap:10px}
+.campaign .sw .sw-group{margin:10px 0 0; font-family:var(--body); font-size:13px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--dim)}
+.campaign .sw .sw-group.opt{color:var(--gold)}
+.campaign .sw .sw-page{border-radius:12px; background:var(--plate2); border:1px solid var(--line); min-width:0}
+.campaign .sw .sw-page.on{background:var(--gold-tint); border-color:color-mix(in srgb, var(--gold) 40%, var(--line))}
+.campaign .sw .sw-page.off{background:var(--plate); border:1px dashed var(--line-strong)}
+.campaign[data-radius] .sw .sw-page,.campaign[data-radius] .sw .sw-feat,.campaign[data-radius] .sw .sw-btn{border-radius:var(--radius)}
+.campaign .sw .sw-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; padding:8px 14px; min-height:60px; box-sizing:border-box}
+.campaign .sw .sw-lock{width:22px; height:22px; flex:none; display:flex; align-items:center; justify-content:center; color:var(--dim)}
+/* The boxes are drawn from the theme, so an empty one is light on a light theme (the browser's own would be dark there). */
+.campaign .sw input[type=checkbox]{flex:none; margin:0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:grid; place-content:center;
+  background:var(--field); border:1.5px solid var(--line-strong); border-radius:4px}
+.campaign .sw input[type=checkbox]:checked{background:var(--gold); border-color:var(--gold)}
+.campaign .sw input[type=checkbox]:checked::after{content:""; width:5px; height:10px; border:solid var(--on-gold); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}
+.campaign .sw .sw-box{width:22px; height:22px}
+.campaign .sw .sw-name{flex:1 1 200px; min-width:0; margin:0; padding:10px 0; color:var(--vellum); font-size:15px; overflow-wrap:anywhere}
+.campaign .sw label.sw-name[for]{cursor:pointer}
+.campaign .sw .sw-name b{font-weight:600}
+.campaign .sw .sw-name span{font-size:13px; color:var(--dim)}
+.campaign .sw .sw-sum{font-size:13px; color:var(--vellum-soft)}
+.campaign .sw .sw-btn{min-height:44px; padding:0 14px; border-radius:8px; background:var(--plate2); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:13px; cursor:pointer}
+.campaign .sw .sw-btn:hover{border-color:var(--gold)}
+.campaign .sw .sw-btn:focus-visible,.campaign .sw input[type=checkbox]:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+.campaign .sw .sw-feats{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap:8px; padding:4px 14px 14px 50px}
+.campaign .sw .sw-feat{display:flex; align-items:flex-start; gap:10px; padding:0 10px; border-radius:8px; background:var(--field); min-width:0}
+.campaign .sw .sw-feat input{width:18px; height:18px; margin-top:13px}
+.campaign .sw .sw-feat label{flex:1; min-width:0; margin:0; padding:10px 0; min-height:44px; box-sizing:border-box; cursor:pointer; font-size:14px; color:var(--vellum); overflow-wrap:anywhere}
+.campaign .sw .sw-feat label span{display:block; font-size:12px; color:var(--dim)}
+.campaign .sw .sw-save{margin-top:6px}
+.campaign .sw .sw-save .act{min-height:44px; padding:0 16px}
+.campaign .sw .sw-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+@media (max-width:600px){
+  .campaign .sw .sw-feats{padding-left:14px}
+  .campaign .sw .sw-sum{flex:1 1 auto}
+}

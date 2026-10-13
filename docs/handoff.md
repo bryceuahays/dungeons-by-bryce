@@ -257,7 +257,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 |---|---|---|---|---|---|
 | 1 | Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) (existing) | Must | Yes (applied) | Built and live |
 | 2 | Design tokens and the hidden-from-players look | [#83](https://github.com/bryceuahays/dungeons-by-bryce/issues/83) | Must | No | Built |
-| 3 | Page and feature switches | [#84](https://github.com/bryceuahays/dungeons-by-bryce/issues/84) | Must | No | Ready |
+| 3 | Page and feature switches | [#84](https://github.com/bryceuahays/dungeons-by-bryce/issues/84) | Must | No | Built |
 | 4 | Visibility upgrades and partial NPC reveals | [#85](https://github.com/bryceuahays/dungeons-by-bryce/issues/85) | Must | Yes | Waits for item 1, item 2 |
 | 5 | Dice rolling, public and private | [#86](https://github.com/bryceuahays/dungeons-by-bryce/issues/86) | Must | Yes | Waits for item 1, item 2, item 4 |
 | 6 | Co-DM screen and permissions | [#62](https://github.com/bryceuahays/dungeons-by-bryce/issues/62) (existing) | Must | Yes | Waits for item 1, item 5 |
@@ -302,3 +302,11 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **Where to see it:** sign in, open **Head DM**, then **Design samples**. It shows the look in all seven themes. No campaign page uses it yet, so campaigns look exactly as before.
 - **Where it lives:** `src/styles/campaign.css` (the tokens), `src/config/themes.ts` (each theme's `secret` colour), `src/features/hub/ui/` (the look and the samples), `tests/tokens.test.mjs`.
 - **What you do by hand:** nothing. No database change.
+
+### Item 3: page and feature switches (built)
+
+- **What it is:** a new part of a campaign's Manage page, "Pages and features". It lists the sixteen hub pages. The ten default pages are always there and only their features can be switched off. The six optional pages (Map, Quest log, Party loot, Relationship web, Hub-wide search, Live session screen) can be switched off whole. "Customize" opens a page's features.
+- **What it does today:** it saves the choices. None of the sixteen pages is built yet, so there is nothing for a switch to hide. Each page checks its switches as it is built.
+- **Who sees it:** you, because it is behind the feature flag "Page and feature switches". Other DMs do not until you turn that flag on under Head DM > Feature flags. Even then, a DM is only shown the switches of pages whose own flag is on.
+- **Where it lives:** `src/config/hub-features.ts` (the list and the rule), `src/features/hub/switches/` (the form and its save action), `tests/switches.test.mjs`. How to use it is in `CLAUDE.md`, under "Hub Pages and Feature Switches".
+- **What you do by hand:** nothing. No database change: the choices are kept in each campaign's existing settings.

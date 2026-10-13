@@ -261,3 +261,18 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 202. **Two files outside the issue's list were changed, both announced on the issue:** `src/lib/theme-style.ts` (two lines, so the colour reaches the page) and the Head DM page (one link).
 203. **Existing pages look the same.** The change only adds variables and new class names that nothing used before. The demo campaign page was compared with the live site, wide and at phone width, and matched pixel for pixel.
 204. **A test works out every new colour from the real stylesheet and checks it can be read** (contrast of at least 4.5 to 1 for text) in all seven themes, and again for each as if it were a custom theme.
+
+## Hub version 2, item 3: page and feature switches (13 October 2026)
+
+205. **The campaign stores what is switched off, not what is on:** `settings.features = { off: [...] }`. The table tools store what is on, but with that shape a feature added later would start switched off in every campaign that had ever saved. Storing what is off gives the plan's rule ("a campaign with no list keeps everything on") and means a new feature starts on everywhere.
+206. **The list has the mockup's names, in its order,** taken from `FeatureToggles.dc.html`. A test reads that file and fails if the list drifts from it. The one difference: the page the mockup calls "Secrets" is "Reveals", as the plan says, because Secrets is already a table tool.
+207. **Existing campaigns have everything on,** including the two features and two pages the mockup draws switched off (Battle map, In-world dates, Relationship web, Live session screen). The mockup shows a new campaign; the plan's rule covers existing ones. The list marks those four as "starts off" for new campaign setup (item 22) to use.
+208. **A feature that shows something from another page goes with that page.** With the Quest log switched off, "Active quests" on Welcome is off too; with the Relationship web off, "Connections" on NPCs is off. The form says so.
+209. **Switching an optional page off keeps its own feature choices,** so switching it back on restores them as they were.
+210. **The switches do nothing visible yet.** None of the sixteen pages is built. This item is the list, where the choices are kept, the form, and the two helpers (`hasPage`, `hasFeature`) every later page calls.
+211. **A DM is only shown the switches of pages whose own flag is on for them.** Once you release this form, other DMs will see a page's switches when you release that page, not sixteen switches for pages that do not exist yet. You see all sixteen, and the form tells you why.
+212. **Page switches and table tool switches are separate for now.** Switching the Map page off does not switch off the Maps tool, and the other way round. Each hub page that replaces a tool (NPCs, Combat, Timeline, Map) decides how to join them when it is built, and item 7 puts both under one Campaign settings page.
+213. **Some features in the mockup's list are odd to switch off** ("Initiative tracker" on Combat, "Archive campaign" on Campaign settings). They are in the list as drawn. Say if any should not have a switch.
+214. **The save action lives in the feature's own folder,** so the shared campaign actions file named in the issue was not changed. The shared files that did change: one line in `src/config/tools.ts` and two lines in the Manage page.
+215. **The tick boxes are drawn from the theme** rather than left to the browser, because the browser's empty box is dark on the light Vellum theme and looked ticked.
+216. **Saving is one button for the whole form,** like the table tools, not a save on every click.

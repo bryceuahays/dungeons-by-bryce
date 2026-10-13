@@ -19,3 +19,8 @@ export const TOOLS: { id: string; name: string; what: string; feature?: Feature;
 export const hasTool = (settings: { tools?: unknown } | null | undefined, id: string) => !Array.isArray(settings?.tools) || settings.tools.includes(id);
 export const toolsOf = (settings: { tools?: unknown } | null | undefined) => TOOLS.filter((t) => hasTool(settings, t.id));
 export const cleanTools = (list: unknown[]): string[] => TOOLS.map((t) => t.id).filter((id) => list.map(String).includes(id));
+
+// The same question one level down, for the hub's pages and the features on each (hub version
+// 2): hasPage(settings, 'map') and hasFeature(settings, 'combat.map'). The list is
+// src/config/hub-features.ts. A campaign with no list keeps everything.
+export { hasFeature, hasPage } from './hub-features.ts';
