@@ -5,6 +5,7 @@ import type { Entry, ToolProps } from '@/lib/entry-types';
 import { EntityCard } from '../EntityCard';
 import { visLabel } from '../VisPicker';
 import { EntryForm, Problem, uploadPicture, useEntries, visOf, type F } from './kit';
+import type { SheetSystem } from '@/features/systems/model';
 
 const STATUSES: [string, string][] = [['alive', 'Alive'], ['dead', 'Dead'], ['missing', 'Missing'], ['hostile', 'Hostile'], ['allied', 'Allied']];
 
@@ -35,7 +36,7 @@ function NpcEditor({ n, p, fields, save, remove, close }: { n: Partial<Entry>; p
 // see: name, portrait, where they are, their faction, their status, and "what the
 // players know". What the NPC wants, their relationships and their secrets are stored
 // apart and only ever sent to the DM.
-export function NpcTool(p: ToolProps & { initial: Entry[]; monsters: { id: string; name: string; source: string; data: any }[]; consequences?: Entry[] }) {
+export function NpcTool(p: ToolProps & { initial: Entry[]; monsters: { id: string; name: string; source: string; data: any }[]; consequences?: Entry[]; system?: SheetSystem | null }) {
   const { rows, save, remove, msg } = useEntries(p.initial);
   const [open, setOpen] = useState<string | null>(null);   // entry being edited, or 'new'
   const [q, setQ] = useState('');
@@ -88,7 +89,7 @@ export function NpcTool(p: ToolProps & { initial: Entry[]; monsters: { id: strin
                 {n.secret.wants ? <p><b>Wants:</b> {n.secret.wants}</p> : null}
                 {n.secret.relations ? <p style={{ whiteSpace: 'pre-wrap' }}><b>Relationships:</b> {n.secret.relations}</p> : null}
                 {n.secret.secret ? <p style={{ whiteSpace: 'pre-wrap' }}><b>Secrets:</b> {n.secret.secret}</p> : null}
-                {n.secret.stat && p.monsters.find((m) => m.id === n.secret!.stat) ? <details><summary>Stat block</summary><EntityCard type="monster" name={p.monsters.find((m) => m.id === n.secret!.stat)!.name} data={p.monsters.find((m) => m.id === n.secret!.stat)!.data} /></details> : null}
+                {n.secret.stat && p.monsters.find((m) => m.id === n.secret!.stat) ? <details><summary>Stat block</summary><EntityCard abilities={p.system?.rules.abilities} type="monster" name={p.monsters.find((m) => m.id === n.secret!.stat)!.name} data={p.monsters.find((m) => m.id === n.secret!.stat)!.data} /></details> : null}
                 {!n.secret.wants && !n.secret.relations && !n.secret.secret && !n.secret.stat ? <p className="who">No DM notes yet.</p> : null}
               </div></div>
             ) : null}

@@ -125,10 +125,13 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
   if (!worldId) return { error: 'Choose the world this campaign belongs to (step 1).' };
   // its system (which fifth edition rules it plays by), its genres, and the tools its hub starts with
   const system = form.get('system') ?? form.get('rules');
-  const rules = isSystem(system) ? system : NEW_CAMPAIGN_RULES;
+  // or one of your own systems (src/features/systems), which plays the rules it is built on
+  const customId = String(system ?? '').startsWith('custom:') ? String(system).slice(7) : '';
+  const { data: custom } = /^[0-9a-f-]{36}$/.test(customId) ? await supabase.from('game_systems').select('id, base').eq('id', customId).maybeSingle() : { data: null };
+  const rules = custom ? (custom.base as typeof NEW_CAMPAIGN_RULES) : isSystem(system) ? system : NEW_CAMPAIGN_RULES;
   const genres = cleanGenres(form.getAll('genre'));
   const tools = form.has('tools_chosen') ? cleanTools(form.getAll('tool')) : null;
-  const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme, settings: { rules, genres, ...(tools ? { tools } : {}) }, world_id: worldId }).select('id').single();
+  const { data: campaign, error } = await supabase.from('campaigns').insert({ title, slug, tagline, theme, settings: { rules, genres, ...(tools ? { tools } : {}), ...(custom ? { system: custom.id } : {}) }, world_id: worldId }).select('id').single();
   if (error || !campaign) {
     if (/not allowed/i.test(error?.message || '')) return { error: 'That world is not one of yours. Choose another (step 1).' };
     if (/upgrade:/i.test(error?.message || '')) return { error: 'The free plan runs one campaign, and you already have one. Pro runs as many as you like: see Plans in the bar above. Nothing you have made is affected.' };

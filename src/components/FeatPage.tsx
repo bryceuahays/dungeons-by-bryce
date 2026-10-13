@@ -3,6 +3,7 @@
 import { ABILITIES } from '@/lib/rules/engine';
 import type { FeatOption } from './ClassGives';
 import { TraitCards, type Trait } from './TraitCards';
+import { useRules } from '@/features/systems/RulesContext';
 
 // A feat's own page (Homebrew, a feat entry), built like a class's features: the feat's category,
 // prerequisites and whether it repeats, then its benefits as cards with the same parts as a feature.
@@ -33,6 +34,8 @@ export function featOut(d: any) {
 const benefitsOf = (d: any, name: string): Benefit[] => (Array.isArray(d.benefits) ? d.benefits : [{ name: name || 'Benefit', text: d.desc ?? '', effects: d.effects ?? [] }]);
 
 export function FeatPage({ data, setData, name, feats, spellNames }: { data: any; setData: (d: any) => void; name: string; feats: FeatOption[]; spellNames: string[] }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, AB } = useRules();
   const r = data.req ?? (data.prereq ? { other: data.prereq } : {});
   const benefits = benefitsOf(data, name);
   const putReq = (p: any) => setData({ ...data, benefits, req: { ...r, ...p } });

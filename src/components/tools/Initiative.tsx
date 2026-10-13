@@ -8,6 +8,7 @@ import { EntityCard } from '../EntityCard';
 import { Sheet5e } from '../Sheet5e';
 import { ConfirmButton } from '../ConfirmButton';
 import { useLive } from './kit';
+import type { SheetSystem } from '@/features/systems/model';
 
 type Combatant = { id: string; name: string; kind: 'pc' | 'npc' | 'monster'; init: number; dex: number; hp: number; hpMax: number; ac: number; conditions: string[]; conc: boolean; hidden: boolean; showHp: boolean; ref?: string };
 type State = { round: number; turn: string | null; list: Combatant[] };
@@ -28,7 +29,7 @@ export function publicView(s: State) {
   };
 }
 
-export function InitiativeTool(p: ToolProps & { initial: Entry | null; characters: { id: string; owner: string; data: any }[]; monsters: Entity[]; entities: Entity[]; names: Record<string, string> }) {
+export function InitiativeTool(p: ToolProps & { initial: Entry | null; characters: { id: string; owner: string; data: any }[]; monsters: Entity[]; entities: Entity[]; names: Record<string, string>; system?: SheetSystem | null }) {
   return p.dm ? <DmTracker {...p} /> : <PlayerTracker {...p} />;
 }
 
@@ -57,7 +58,7 @@ function PlayerTracker(p: ToolProps & { initial: Entry | null }) {
 
 // ---------------------------------------------------------------- the DM's tracker
 
-function DmTracker(p: ToolProps & { initial: Entry | null; characters: { id: string; owner: string; data: any }[]; monsters: Entity[]; entities: Entity[]; names: Record<string, string> }) {
+function DmTracker(p: ToolProps & { initial: Entry | null; characters: { id: string; owner: string; data: any }[]; monsters: Entity[]; entities: Entity[]; names: Record<string, string>; system?: SheetSystem | null }) {
   // whatever was saved is filled out, so an older or partial save can never break the page
   const [s, setS] = useState<State>(() => {
     const saved = (p.initial?.secret ?? {}) as Partial<State>;
@@ -166,9 +167,9 @@ function DmTracker(p: ToolProps & { initial: Entry | null; characters: { id: str
       {active ? (
         <>
           <h2>Acting now: {active.name}</h2>
-          {activeMon ? <div className="plate"><EntityCard type="monster" name={activeMon.name} source={activeMon.source} data={activeMon.data} /></div> : null}
+          {activeMon ? <div className="plate"><EntityCard abilities={p.system?.rules.abilities} type="monster" name={activeMon.name} source={activeMon.source} data={activeMon.data} /></div> : null}
           {activeCh ? (activeCh.data?.v === 2
-            ? <Sheet5e key={activeCh.id} character={activeCh} entities={p.entities} readOnly play />
+            ? <Sheet5e key={activeCh.id} character={activeCh} entities={p.entities} readOnly play system={p.system} />
             : <div className="plate"><h3>{activeCh.data?.name}</h3><p className="who">Level {activeCh.data?.level} {activeCh.data?.cls}. Played by {p.names[activeCh.owner] ?? activeCh.data?.player ?? 'a player'}.</p><p className="kv"><b>AC</b> {activeCh.data?.ac} · <b>Hit points</b> {activeCh.data?.hp} / {activeCh.data?.hpMax} · <b>Speed</b> {activeCh.data?.speed}</p><p><a className="act sm" href={`/c/${p.slug}/players?c=${activeCh.id}`}>Open the full sheet</a></p></div>) : null}
           {!activeMon && !activeCh ? <p className="who">No sheet or stat block is attached to {active.name}.</p> : null}
         </>

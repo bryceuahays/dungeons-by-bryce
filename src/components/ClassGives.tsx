@@ -9,6 +9,7 @@ import { EntityCard } from './EntityCard';
 import { ALL_LANGUAGES, LANGUAGE_GROUPS, TOOL_GROUPS, WEAPONS } from '@/config/proficiencies';
 import { ABILITIES } from '@/lib/rules/engine';
 import { GrowsEditor } from './ClassFeatures';
+import { useRules } from '@/features/systems/RulesContext';
 
 // Two add-ons for a class feature, in plain language:
 //   Gives   - what the feature adds to the character sheet by itself. Stored as the feature's
@@ -60,6 +61,8 @@ export function GivesEditor({ effects, onChange, spellNames }: { effects: any[];
 }
 
 function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) => void; spellNames: string[] }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, SKILL_NAMES, DAMAGE_TYPES, CONDITIONS } = useRules();
   const set = (p: any) => onChange({ ...g, ...p });
   const num = (label: string, k: string, extra?: any) => <label>{label}<input type="number" value={g[k] ?? ''} {...extra} onChange={(e) => set({ [k]: e.target.value === '' ? '' : Number(e.target.value) })} /></label>;
   switch (g.t) {
@@ -349,6 +352,7 @@ export function useLine(u: Use | null) {
 }
 
 export function GiveSpell({ name, onChange, spellNames }: { name: string; onChange: (name: string) => void; spellNames: string[] }) {
+  const { CARD } = useRules(); // the game system's abilities, for the cards shown here
   const tools = useContext(SpellTools);
   const [read, setRead] = useState<any>(null);
   const [making, setMaking] = useState(false);
@@ -367,7 +371,7 @@ export function GiveSpell({ name, onChange, spellNames }: { name: string; onChan
         {!known ? <button type="button" className="quiet small-btn" onClick={() => setMaking(true)}>{name.trim() ? 'Create this spell' : 'Create a new spell'}</button> : null}
         {name.trim() && !known ? <span className="bad hint">Not in the SRD or your homebrew yet.</span> : null}
       </span>
-      {read ? <div className="spell-read">{read === 'missing' ? <p className="dim">This spell does not exist yet. Use &quot;Create a new spell&quot; to make it.</p> : <EntityCard type="spell" name={read.name} source={read.source} data={read.data} />}</div> : null}
+      {read ? <div className="spell-read">{read === 'missing' ? <p className="dim">This spell does not exist yet. Use &quot;Create a new spell&quot; to make it.</p> : <EntityCard abilities={CARD} type="spell" name={read.name} source={read.source} data={read.data} />}</div> : null}
       {making ? <SpellPopup id={null} startName={name.trim()} pro={tools.pro} onClose={() => setMaking(false)} onDeleted={() => setMaking(false)} onSaved={(s) => { tools.onSpellSaved(s); onChange(s.name); setMaking(false); }} /> : null}
     </div>
   );

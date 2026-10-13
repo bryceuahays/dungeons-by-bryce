@@ -6,6 +6,7 @@ import { deleteSpell, saveEntity, spellDetail } from '@/app/(hub)/homebrew/actio
 import { STATUS } from '@/config/homebrew';
 import type { SpellOption } from '@/lib/class-spells';
 import { EntityCard } from './EntityCard';
+import { useRules } from '@/features/systems/RulesContext';
 
 // The class's spell list (data.spellList: spell ids). Browse every SRD 5.2 spell and your own,
 // read any of them, tick what the class can learn, and make your own versions or new spells in
@@ -16,6 +17,7 @@ export const SPELL_LEVELS = ['Cantrips', '1st level', '2nd level', '3rd level', 
 export function ClassSpells({ spells, value, onChange, onSpellSaved, onSpellDeleted, pro }: {
   spells: SpellOption[]; value: string[]; onChange: (v: string[]) => void; onSpellSaved: (s: SpellOption) => void; onSpellDeleted: (id: string) => void; pro: boolean;
 }) {
+  const { CARD } = useRules(); // the game system's abilities, for the cards shown here
   const [q, setQ] = useState('');
   const [level, setLevel] = useState('all');
   const [show, setShow] = useState('all');
@@ -79,7 +81,7 @@ export function ClassSpells({ spells, value, onChange, onSpellSaved, onSpellDele
                       {s.mine ? <span className="chip">Your homebrew</span> : null}
                       <button type="button" className="spell-act" onClick={() => setEditing(s.mine ? { id: s.id } : { id: null, from: s.id })}>{s.mine ? 'Edit' : 'Make my own version'}</button>
                     </div>
-                    {d ? <div className="spell-read">{d === 'loading' ? <p className="dim">Loading…</p> : <EntityCard type="spell" name={d.name} source={d.source} data={d.data} />}</div> : null}
+                    {d ? <div className="spell-read">{d === 'loading' ? <p className="dim">Loading…</p> : <EntityCard abilities={CARD} type="spell" name={d.name} source={d.source} data={d.data} />}</div> : null}
                   </li>
                 );
               })}

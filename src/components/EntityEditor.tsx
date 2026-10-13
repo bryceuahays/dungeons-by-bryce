@@ -27,6 +27,7 @@ import type { SpellOption } from '@/lib/class-spells';
 import type { FeatOption } from './ClassGives';
 import { ConfirmButton } from './ConfirmButton';
 import { VisPicker, type Member, type Stage, type Vis } from './VisPicker';
+import { useRules } from '@/features/systems/RulesContext';
 
 const get = (o: any, path: string) => path.split('.').reduce((v, k) => (v == null ? v : v[k]), o);
 const set = (o: any, path: string, v: any): any => {
@@ -39,16 +40,18 @@ const AB = Object.fromEntries(ABILITIES) as Record<string, string>;
 
 // A class's primary ability as ticked abilities joined by "and" or "or". Stored as primaryAbs and
 // primaryJoin; `primary` keeps the readable text ("Strength or Dexterity") that the rest of the site shows.
-const primaryText = (abs: string[], join: string) => {
-  const names = ABILITIES.filter(([k]) => abs.includes(k)).map(([, l]) => l);
+const primaryText = (abs: string[], join: string, list: [string, string][] = ABILITIES) => {
+  const names = list.filter(([k]) => abs.includes(k)).map(([, l]) => l);
   return names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' ' + join + ' ' + names[names.length - 1];
 };
 function PrimaryAbility({ data, onChange, label, help }: { data: any; onChange: (d: any) => void; label: string; help: React.ReactNode }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES } = useRules();
   // entries saved before the checkboxes only have the text: read the abilities out of it
   const text = String(data.primary ?? '');
   const abs: string[] = data.primaryAbs ?? ABILITIES.filter(([, l]) => text.includes(l)).map(([k]) => k);
   const join: string = data.primaryJoin ?? (/ and /.test(text) ? 'and' : 'or');
-  const put = (a: string[], j: string) => onChange({ ...data, primaryAbs: a, primaryJoin: j, primary: primaryText(a, j) });
+  const put = (a: string[], j: string) => onChange({ ...data, primaryAbs: a, primaryJoin: j, primary: primaryText(a, j, ABILITIES) });
   return (
     <fieldset className="multi"><legend>{label}</legend>
       {help ? <p style={{ flexBasis: '100%', margin: '0 0 6px' }}>{help}</p> : null}
@@ -59,12 +62,17 @@ function PrimaryAbility({ data, onChange, label, help }: { data: any; onChange: 
           <label className="ckrow"><input type="radio" checked={join === 'and'} onChange={() => put(abs, 'and')} /> All of them (and)</label>
         </p>
       ) : null}
-      {abs.length ? <p className="dim" style={{ flexBasis: '100%', margin: '6px 0 0' }}>Players see: {primaryText(abs, join)}</p> : null}
+      {abs.length ? <p className="dim" style={{ flexBasis: '100%', margin: '6px 0 0' }}>Players see: {primaryText(abs, join, ABILITIES)}</p> : null}
     </fieldset>
   );
 }
 
 function FieldInput({ f, data, onChange }: { f: Field; data: any; onChange: (d: any) => void }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, AB } = useRules();
+  // a list of abilities (saving throws, spellcasting ability) offers the system's own
+  const isAbs = (f.options ?? []).some((o) => o) && (f.options ?? []).every((o) => ['', 'str', 'dex', 'con', 'int', 'wis', 'cha'].includes(o));
+  f = isAbs ? { ...f, options: [...((f.options ?? []).includes('') ? [''] : []), ...ABILITIES.map(([k]) => k)] } : f;
   const v = get(data, f.key) ?? f.def;
   const put = (nv: any) => onChange(set(data, f.key, nv));
   const help = f.help ? <span className="dim hint">{f.help}</span> : null;
@@ -367,6 +375,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
   id: string | null; initial: { type: string; name: string; status: string; depth: string; source: string; data: any }; pro: boolean;
   srd: { type: string; name: string; data: any }[]; versions: Version[]; campaigns: CampaignLink[]; version: number; changeNote: string; clonedFrom?: string | null; spells?: SpellOption[]; feats?: FeatOption[]; subclasses?: SubclassOption[]; classes?: ClassOption[]; items?: string[];
 }) {
+  const { CARD } = useRules(); // the game system's abilities, for the cards shown here
   const router = useRouter();
   const def = TYPES[initial.type];
   const [name, setName] = useState(initial.name);
@@ -605,7 +614,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               {tab === 'Player' ? (
                 <>
                   <p className="dim">A mock-up of what a player sees when they choose this class. Once there is a character creator, this will match it.</p>
-                  <EntityCard type={initial.type} name={name} status={status} data={data} />
+                  <EntityCard abilities={CARD} type={initial.type} name={name} status={status} data={data} />
                 </>
               ) : null}
             </>
@@ -691,7 +700,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
       <aside className="brew-side" hidden={onlyAdvanced && tab === 'Player'}>
         <div className="panel">
           <h3>{isSub && parent ? 'Features by level' : onlyAdvanced ? (tab === 'Spells' ? 'Spell slots' : tab === 'Features' || tab === 'Subclasses' ? 'Features by level' : 'Class table') : 'What your players see'}</h3>
-          {isSub && parent ? <div className="ecard"><FeatureTable data={withSubclass(parent.data, subOut(data).features)} /></div> : onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard type={initial.type} name={name} status={status} data={isSpell ? spellOut(data) : isFeat ? featOut(data) : isRace ? raceOut(data) : isBg ? backgroundOut(data) : isItem ? itemOut(data) : isMonster ? monsterOut(data) : isRes ? resourceOut(data) : data} />}
+          {isSub && parent ? <div className="ecard"><FeatureTable data={withSubclass(parent.data, subOut(data).features)} /></div> : onlyAdvanced ? <div className="ecard">{tab === 'Spells' ? <SlotTable casting={classOut(data).casting} /> : tab === 'Features' || tab === 'Subclasses' ? <FeatureTable data={classOut(data)} /> : <ClassTableView table={classTable({ data: classOut(data) })} />}</div> : <EntityCard abilities={CARD} type={initial.type} name={name} status={status} data={isSpell ? spellOut(data) : isFeat ? featOut(data) : isRace ? raceOut(data) : isBg ? backgroundOut(data) : isItem ? itemOut(data) : isMonster ? monsterOut(data) : isRes ? resourceOut(data) : data} />}
         </div>
         {onlyAdvanced && tab === 'Spells' && data.casting?.kind && data.casting.kind !== 'none' ? (
           <div className="panel">

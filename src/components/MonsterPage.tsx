@@ -7,6 +7,7 @@ import { CONDITIONS } from '@/lib/spell-rules.mjs';
 import { CRS, SENSES, SPEEDS, actionText, castIntro, castList, castNumbers, limitLabel, modOf, pbFor, sgn, xpFor } from '@/lib/monster-rules';
 import { GiveSpell } from './ClassGives';
 import { CREATURE_TYPES } from './RacePage';
+import { useRules } from '@/features/systems/RulesContext';
 
 // A monster's own page: its stat block as fields.
 //   size, ctype, tags, align, cr; acv, acNote; hpv, hdv; speeds { walk, fly, swim, climb, burrow }, hover
@@ -41,6 +42,8 @@ export function monsterOut(d: any) {
 }
 
 function ActionCards({ list, onChange, noun, ab, pb, spellNames }: { list: any[]; onChange: (l: any[]) => void; noun: string; ab: Record<string, number>; pb: number; spellNames: string[] }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, DAMAGE_TYPES } = useRules();
   const [open, setOpen] = useState<number | null>(null);
   const put = (i: number, p: any) => onChange(list.map((a, j) => (j === i ? { ...a, ...p } : a)));
   const num = (v: string) => (v === '' ? '' : Number(v));
@@ -112,6 +115,8 @@ function ActionCards({ list, onChange, noun, ab, pb, spellNames }: { list: any[]
 // A spellcasting action's fields: the ability, DC and to-hit (from the scores unless changed), the components
 // it still needs, and its spells, each picked like a class's (suggest, read, or create one) with how often.
 function CastFields({ c, ab, pb, spellNames, onChange }: { c: any; ab: Record<string, number>; pb: number; spellNames: string[]; onChange: (c: any) => void }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES } = useRules();
   const auto = castNumbers({ ...c, dc: '', atk: '' }, ab, pb);
   const comps = c.comps ?? { v: true, s: true, m: false };
   const spells: any[] = c.spells ?? [];
@@ -148,6 +153,8 @@ function CastFields({ c, ab, pb, spellNames, onChange }: { c: any; ab: Record<st
 }
 
 export function MonsterPage({ data, setData, spellNames }: { data: any; setData: (d: any) => void; spellNames: string[] }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, AB, SKILL_NAMES, DAMAGE_TYPES, CONDITIONS } = useRules();
   const ab = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...(data.ab ?? {}) };
   const cr = String(data.cr ?? '1');
   const pb = pbFor(cr);
@@ -191,9 +198,9 @@ export function MonsterPage({ data, setData, spellNames }: { data: any; setData:
       </fieldset>
 
       <fieldset className="feat-uses"><legend>Ability scores, saves and skills</legend>
-        <table className="ctable mon-abs"><thead><tr><th></th>{ABILITIES.map(([k]) => <th key={k}>{AB3[k]}</th>)}</tr></thead>
+        <table className="ctable mon-abs"><thead><tr><th></th>{ABILITIES.map(([k]) => <th key={k}>{(AB[k] ?? AB3[k] ?? k).slice(0, 3)}</th>)}</tr></thead>
           <tbody>
-            <tr><td>Score</td>{ABILITIES.map(([k]) => <td key={k}><input type="number" min={1} max={30} aria-label={k + ' score'} value={ab[k as keyof typeof ab]} onChange={(e) => put({ ab: { ...ab, [k]: Number(e.target.value) || 1 } })} /><span className="dim"> {sgn(modOf(ab[k as keyof typeof ab]))}</span></td>)}</tr>
+            <tr><td>Score</td>{ABILITIES.map(([k]) => <td key={k}><input type="number" min={1} max={30} aria-label={k + ' score'} value={ab[k as keyof typeof ab] ?? 10} onChange={(e) => put({ ab: { ...ab, [k]: Number(e.target.value) || 1 } })} /><span className="dim"> {sgn(modOf(ab[k as keyof typeof ab]))}</span></td>)}</tr>
             <tr><td>Save</td>{ABILITIES.map(([k]) => { const v = data.saveB?.[k]; return <td key={k}><label className="ckrow mon-prof"><input type="checkbox" aria-label={k + ' save proficiency'} checked={v !== undefined && v !== ''} onChange={(e) => put({ saveB: { ...(data.saveB ?? {}), [k]: e.target.checked ? modOf(ab[k as keyof typeof ab]) + pb : '' } })} />{v !== undefined && v !== '' ? <input type="number" aria-label={k + ' save bonus'} value={v} onChange={(e) => put({ saveB: { ...data.saveB, [k]: num(e.target.value) } })} /> : null}</label></td>; })}</tr>
           </tbody>
         </table>

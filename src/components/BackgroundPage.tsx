@@ -9,6 +9,7 @@ import { ToolsBox } from './ClassProfs';
 import { StartEquipBox } from './ClassEquip';
 import { LanguagePicker } from './LanguagePicker';
 import { TraitCards, type Trait } from './TraitCards';
+import { useRules } from '@/features/systems/RulesContext';
 
 // A background's own page, built like the class page: the 2024 recipe as fields.
 //   abilities: the three a player raises (+2 and +1, or +1 to all three; none above 20)
@@ -46,6 +47,8 @@ export function backgroundOut(d: any) {
 }
 
 export function BackgroundPage({ data, setData, feats, spellNames, items }: { data: any; setData: (d: any) => void; feats: FeatOption[]; spellNames: string[]; items: string[] }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES, AB, SKILL_NAMES } = useRules();
   const abilities: string[] = data.abilities ?? [];
   const skills: string[] = data.skills ?? [];
   const feat = data.feat ?? { name: '', note: '' };

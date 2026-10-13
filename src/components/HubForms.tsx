@@ -50,7 +50,7 @@ export function PasswordForm() {
   );
 }
 
-export function NewCampaignForm({ pro, packs = [], worlds = [], world = '' }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[]; worlds?: { id: string; name: string }[]; world?: string }) {
+export function NewCampaignForm({ pro, packs = [], worlds = [], world = '', systems = [] }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[]; worlds?: { id: string; name: string }[]; world?: string; systems?: { id: string; name: string; base: string }[] }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
   const [step, setStep] = useState(1);
   const [need, setNeed] = useState('');
@@ -71,10 +71,11 @@ export function NewCampaignForm({ pro, packs = [], worlds = [], world = '' }: { 
           <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the name.<input name="slug" pattern="[a-z0-9][a-z0-9\-]{1,60}" placeholder="my-next-campaign" /></label>
           <label>World<select name="world" defaultValue={world} required onChange={() => setNeed('')}><option value="">Choose a world…</option>{worlds.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
           <p className="dim">Every campaign belongs to a world and gets that world&apos;s homebrew. Need a new one? <Link href="/worlds">Make a world first</Link>.</p>
-          <fieldset className="multi">
-            <legend>System</legend>
-            {SYSTEMS.map((sys) => <label key={sys.id} className="ckrow"><input type="radio" name="system" value={sys.id} defaultChecked={sys.id === NEW_CAMPAIGN_RULES} style={{ flexShrink: 0 }} /> <span><b>{sys.name}</b> <span className="dim">{sys.what}</span></span></label>)}
-          </fieldset>
+          <label>System<select name="system" defaultValue={NEW_CAMPAIGN_RULES}>
+            <optgroup label="Ready-made">{SYSTEMS.filter((sys) => sys.id !== 'both').map((sys) => <option key={sys.id} value={sys.id}>{sys.name}</option>)}</optgroup>
+            {systems.length ? <optgroup label="Your systems">{systems.map((s) => <option key={s.id} value={'custom:' + s.id}>{s.name} (built on Fifth Edition {s.base})</option>)}</optgroup> : null}
+          </select></label>
+          <p className="dim">The rules this campaign plays by. Make your own under <Link href="/homebrew/systems">Homebrew</Link>.</p>
           <fieldset className="multi">
             <legend>Genres (tick any that fit)</legend>
             {GENRES.map((g) => <label key={g} className="ckrow"><input type="checkbox" name="genre" value={g} /> <span>{g}</span></label>)}

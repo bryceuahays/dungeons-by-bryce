@@ -166,7 +166,7 @@ test('versions keep the history; packs and their contents belong to their maker'
 
 test('builder pages: three depths, clone from the SRD, upgrade prompts at the free limits', async () => {
   const home = await page('/homebrew', pro.session);
-  assert.ok(home.status === 200 && home.text.includes('Race or species') && home.text.includes('Custom resource') && home.text.includes('Packs'));
+  assert.ok(home.status === 200 && home.text.includes('Species') && home.text.includes('Custom resource') && home.text.includes('Packs'));
   const fresh = await page('/homebrew/new?type=race', pro.session);
   // Pro: the full editor (Advanced; Quick is marked as coming later)
   assert.ok(fresh.status === 200 && ['Quick', 'Advanced', 'Race or species name', 'What your players see', 'Balance hint'].every((t) => fresh.text.includes(t)));

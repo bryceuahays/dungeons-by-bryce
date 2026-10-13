@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requireViewer } from '@/lib/auth';
 import { upgradeNeeded } from '@/lib/entitlements';
 import { ENTITY_TYPES } from '@/lib/rules/engine';
+import { withBrewSystem } from '@/features/systems/brew';
 
 export type BrewState = { error?: string; note?: string; upgrade?: string; id?: string } | null;
 export type EntityInput = { type: string; name: string; status: string; depth: string; source: string; data: Record<string, any>; cloned_from?: string | null };
@@ -37,6 +38,8 @@ export async function saveEntity(id: string | null, input: EntityInput, note?: s
   const row = clean(input);
   if (typeof row === 'string') return { error: row };
   if (!id) {
+    // a new entry is made for the game system the Homebrew page is showing
+    row.data = await withBrewSystem(row.data);
     for (let n = 1; n < 30; n++) {
       const slug = slugOf(row.name) + (n > 1 ? '-' + n : '');
       const { data, error } = await supabase.from('entities').insert({ ...row, slug, owner_id: user.id }).select('id').single();
@@ -79,7 +82,7 @@ export async function cloneEntity(id: string, _: BrewState, __: FormData): Promi
   for (let n = 1; n < 30 && !made; n++) {
     const { data, error } = await supabase.from('entities').insert({
       owner_id: user.id, type: src.type, name: src.name + (src.owner_id === user.id ? ' (copy)' : ''), slug: slugOf(src.name) + (n > 1 ? '-' + n : ''),
-      source: src.source === 'private' ? 'private' : 'homebrew', status: 'draft', depth: 'quick', data: src.source === 'srd' ? { ...src.data, replaces: [src.id] } : src.data, cloned_from: src.id,
+      source: src.source === 'private' ? 'private' : 'homebrew', status: 'draft', depth: 'quick', data: await withBrewSystem(src.source === 'srd' ? { ...src.data, replaces: [src.id] } : { ...src.data }), cloned_from: src.id,
     }).select('id').single();
     if (data) made = data.id;
     else if (!/duplicate|unique/i.test(error?.message || '')) return fail(error?.message, 'The copy could not be made.');

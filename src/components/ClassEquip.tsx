@@ -4,6 +4,7 @@ import { ABILITIES } from '@/lib/rules/engine';
 import { ARMOR, WEAPON_CATS } from '@/config/proficiencies';
 import { readProfs } from './ClassProfs';
 import { LETTER, type Pkg } from '@/lib/class-equip';
+import { useRules } from '@/features/systems/RulesContext';
 
 // The class's Main tab, under its proficiencies: starting equipment and multiclassing.
 //   startEquip: [{ items: [{ name, count }], gp }]  packages; the player picks one (2024 rules)
@@ -40,6 +41,8 @@ export function StartEquipBox({ data, onChange, items }: { data: any; onChange: 
 }
 
 export function MulticlassBox({ data, onChange }: { data: any; onChange: (d: any) => void }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { ABILITIES } = useRules();
   const m = data.multiclass ?? { req: [], join: 'and', armor: [], weaponCats: [], toolItems: [], skills: 0, tools: 0 };
   const put = (p: any) => onChange({ ...data, multiclass: { ...m, ...p } });
   const req: { ab: string; min: number | '' }[] = m.req ?? [];

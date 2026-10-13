@@ -13,6 +13,8 @@ import { campaignCanMake } from '@/lib/entitlements';
 import type { Section } from '@/lib/types';
 import { FREE_LIMITS } from '@/config/plans';
 import { CopyLink } from '@/components/CopyBox';
+import { CampaignSystemForm } from '@/features/systems/CampaignSystemForm';
+import { mySystems } from '@/features/systems/data';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const metadata = { title: 'Manage' };
@@ -140,6 +142,7 @@ export default async function Manage({ params, searchParams }: { params: Promise
         <div className="plate">
           <p>Which open rules this campaign uses. It decides which races or species, classes, spells and creatures your players and you can pick from. Characters keep whatever they already chose. Your own homebrew is always available whichever you choose.</p>
           <RulesForm slug={slug} value={rulesOf(campaign.settings)} options={Object.entries(RULES).map(([k, v]) => [k, v.label])} />
+          {isOwner ? <CampaignSystemForm slug={slug} value={String(campaign.settings?.system ?? '')} systems={(await mySystems(supabase, ctx.user.id)).filter((s) => s.base === rulesOf(campaign.settings) || s.id === campaign.settings?.system)} /> : null}
         </div>
 
         <h2 id="tools">Table tools</h2>

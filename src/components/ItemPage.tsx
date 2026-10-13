@@ -4,6 +4,7 @@ import { DAMAGE_TYPES } from '@/config/homebrew';
 import type { FeatOption } from './ClassGives';
 import { GiveSpell, GivesEditor } from './ClassGives';
 import { TraitCards, type Trait } from './TraitCards';
+import { useRules } from '@/features/systems/RulesContext';
 
 // An item's own page, built like the class page: what kind of thing it is, then its rules as fields.
 //   kind: 'Weapon' | 'Armor' | 'Gear' | 'Magic item'; costN + costUnit; lb; desc
@@ -58,6 +59,8 @@ export function itemOut(d: any) {
 }
 
 export function ItemPage({ data, setData, feats, spellNames, items }: { data: any; setData: (d: any) => void; feats: FeatOption[]; spellNames: string[]; items: string[] }) {
+  // the game system being built for (src/features/systems/RulesContext.tsx)
+  const { DAMAGE_TYPES } = useRules();
   const kind = data.kind ?? 'Gear';
   const w = { cat: 'simple', type: 'melee', dice: '1d6', dtype: 'slashing', props: [], ...(data.weapon ?? {}) };
   const a = { type: 'light', base: 11, dex: 'full', ...(data.armor ?? {}) };

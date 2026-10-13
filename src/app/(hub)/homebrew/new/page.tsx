@@ -3,6 +3,9 @@ import { requireViewer } from '@/lib/auth';
 import { getPlan, remaining } from '@/lib/entitlements';
 import { TYPES } from '@/config/homebrew';
 import { EntityEditor } from '@/components/EntityEditor';
+import { RulesProvider } from '@/features/systems/RulesContext';
+import { editorRulesFor } from '@/features/systems/brew';
+import { renameText } from '@/features/systems/model';
 import { UpgradeHint } from '@/components/UpgradeHint';
 import { CLASS_BLURBS } from '@/config/class-blurbs';
 import { SRD_FOCUS } from '@/lib/rules/engine';
@@ -15,7 +18,7 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
   const def = TYPES[type];
   if (!def) notFound();
   const { supabase, user } = await requireViewer();
-  const [plan, { data: srd }, { data: start }, spells, feats, subclasses, classes, items] = await Promise.all([
+  const [plan, { data: srd }, { data: started }, spells, feats, subclasses, classes, items] = await Promise.all([
     getPlan(),
     supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', type).order('srd_version').limit(700),
     // from the class picker: open already filled in with that SRD entry (saved only on Save)
@@ -26,12 +29,18 @@ export default async function NewEntity({ searchParams }: { searchParams: Promis
     type === 'subclass' ? loadClassOptions(supabase, user.id) : Promise.resolve(undefined),
     type === 'class' || type === 'background' || type === 'item' ? loadItemNames(supabase) : Promise.resolve(undefined),
   ]);
+  // the game system chosen on the Homebrew page: its abilities and skills in the editor, and its
+  // renamed words in the text of an official entry this starts from
+  const custom = await editorRulesFor(supabase, user.id);
+  const start = started && custom ? { ...started, data: renameText(started.data, custom.sys.text.replace.filter((r) => r.types.includes(type))) } : started;
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>New {def.label.toLowerCase()}</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>
       {plan.pro && (type === 'class' || type === 'subclass' || type === 'spell' || type === 'feat' || type === 'race' || type === 'background' || type === 'item' || type === 'monster' || type === 'resource') ? null : <h1>{start ? `New ${def.label.toLowerCase()}, starting from the ${start.name}` : `New ${def.label.toLowerCase()}`}</h1>}
+      <RulesProvider value={custom?.rules ?? null}>
       <EntityEditor id={null} pro={plan.pro} srd={srd ?? []} versions={[]} campaigns={[]} version={1} changeNote="" clonedFrom={start?.id ?? null} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type, name: start?.name ?? '', status: 'draft', depth: 'quick', source: 'homebrew', data: startData(type, start, spells) }} />
+      </RulesProvider>
     </>
   );
 }

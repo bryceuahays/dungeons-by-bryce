@@ -53,8 +53,10 @@ test('new campaign: two steps, a world to choose, system and genre choices, and 
   // an input with this name and value, whatever order its attributes are written in
   const esc = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const input = (name, value) => new RegExp(`<input(?=[^>]*name="${name}")(?=[^>]*value="${esc(value)}")[^>]*>`).test(res.text);
-  for (const s of SYSTEMS) assert.ok(res.text.includes(s.name) && input('system', s.id), 'system choice: ' + s.name);
-  assert.ok(!/<select name="system"/.test(res.text), 'systems are choices, not a dropdown');
+  // the system is a dropdown of the ready-made rules (one set at a time) and the DM's own systems (src/features/systems)
+  assert.ok(/<select name="system"/.test(res.text), 'the system is a dropdown');
+  for (const s of SYSTEMS.filter((x) => x.id !== 'both')) assert.ok(res.text.includes(s.name) && new RegExp(`<option[^>]*value="${s.id}"`).test(res.text), 'system choice: ' + s.name);
+  assert.ok(!/<option[^>]*value="both"/.test(res.text), 'both sets of rules is not offered for a new campaign');
   for (const g of GENRES) assert.ok(input('genre', g), 'genre: ' + g);
   for (const t of TOOLS) assert.ok(input('tool', t.id), 'tool: ' + t.name);
 });
