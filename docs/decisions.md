@@ -248,3 +248,16 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 192. **Tests never flip a real flag.** They add rows named `zz_test_…`, which are not on the list, so nothing on the live site changes while they run.
 193. **The table is not sent over Realtime.** Pages read it on each request, which is quick enough for a switch that changes a few times a year.
 194. **The Head DM page gained one link** ("Feature flags", next to "Store and custom site requests"). Nothing else on it changed.
+
+## Hub version 2, item 2: design tokens and the hidden look (13 October 2026)
+
+195. **The `secret` colour sits beside each theme, not inside its colours.** The plan says to add it "to each theme". A campaign stores its own copy of its theme, and the database compares that copy to the default themes exactly to decide what a free campaign may use. A new colour inside the theme would have stopped every existing campaign matching its theme and would have needed the database's copy changed too. Beside the theme, nothing stored changes.
+196. **The hidden colour is purple, with three exceptions.** Vellum gets a darker purple (it is a light theme). Abyssal gets amber, because its own accent is already purple and "hidden" would have looked like "selected". Frostbound gets a slightly pinker purple, to stand apart from its pale blue links. Say if you would rather have different colours; each is one value.
+197. **A custom theme (the Pro theme editor) gets a hidden colour worked out for it,** by mixing purple with the theme's text colour. That is light on a dark theme and dark on a light one, so it stays readable. It cannot promise to differ from a custom accent, which is one reason the look always has its dashes and its words.
+198. **The five other new colours are worked out from each theme's own colours,** exactly as the design system wrote them, so there is nothing to choose per theme and custom themes get them too.
+199. **The hidden look is two pieces:** a dashed, tinted box with its label, and the label on its own for a card that already has a frame. The label defaults to "Hidden from players" and cannot be left empty.
+200. **Not built here: the purple "Reveal now" button and the editing banner** from the mockups. They belong to the pages that use them (items 4 and 14).
+201. **A Head DM only "Design samples" page was added** (Head DM > Design samples). The issue did not ask for it. No campaign page uses the new look yet, so without it there was nothing to look at and no way to check all seven themes. It shows made-up words only.
+202. **Two files outside the issue's list were changed, both announced on the issue:** `src/lib/theme-style.ts` (two lines, so the colour reaches the page) and the Head DM page (one link).
+203. **Existing pages look the same.** The change only adds variables and new class names that nothing used before. The demo campaign page was compared with the live site, wide and at phone width, and matched pixel for pixel.
+204. **A test works out every new colour from the real stylesheet and checks it can be read** (contrast of at least 4.5 to 1 for text) in all seven themes, and again for each as if it were a custom theme.

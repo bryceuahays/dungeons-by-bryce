@@ -1,0 +1,20 @@
+/* The "hidden from players" look (Hidden.tsx). Colours are the theme's own: the --secret
+   tokens are set on .campaign in src/styles/campaign.css. */
+.campaign .hid-box{background:var(--secret-bg); border:1px dashed var(--secret-line); border-radius:10px; padding:12px 14px; min-width:0; overflow-wrap:anywhere}
+.campaign[data-radius] .hid-box{border-radius:var(--radius)}
+.campaign .hid-box > .hid-tag{margin:0 0 8px}
+.campaign .hid-box > :last-child{margin-bottom:0}
+.campaign .hid-tag{display:inline-block; max-width:100%; font-family:var(--body); font-style:normal; font-size:.75rem; font-weight:600; line-height:1.5; letter-spacing:.01em;
+  color:var(--secret-text); background:var(--secret-bg); border:1px dashed var(--secret-line); border-radius:999px; padding:1px 9px; vertical-align:middle; white-space:normal; text-shadow:none}
+
+/* Design samples (the Head DM's page): one small campaign-themed card per theme. */
+.campaign.ui-sample{min-height:0; padding:16px; margin:0 0 16px; border:1px solid var(--line); border-radius:12px; background-image:none; background-attachment:scroll; font-size:15px; line-height:1.5}
+.campaign.ui-sample h3{font-family:var(--display); font-weight:600; font-size:1.25rem; margin:0 0 10px; color:var(--vellum)}
+.campaign.ui-sample p{margin:0 0 10px}
+.campaign.ui-sample .ui-panel{background:var(--plate); border:1px solid var(--line); border-radius:12px; padding:14px}
+.campaign.ui-sample .ui-row{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 0}
+.campaign.ui-sample .ui-chip{display:inline-block; font-size:.8rem; font-weight:600; border-radius:8px; padding:6px 10px; border:1px solid var(--line)}
+.campaign.ui-sample .ui-soft{color:var(--vellum-soft)}
+.campaign.ui-sample .ui-strong{border-color:var(--line-strong); background:var(--plate2)}
+.campaign.ui-sample .ui-gold{background:var(--gold-tint); border-color:var(--gold)}
+.campaign.ui-sample .ui-ember{background:var(--ember-tint); border-color:var(--ember); color:var(--ember-text)}

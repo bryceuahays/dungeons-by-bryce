@@ -181,6 +181,15 @@ Environment variable names (values are never written down here): `NEXT_PUBLIC_SU
 - Only Bryce deploys, or a session he has told to in that session. Preview deployments sit behind a Vercel login.
 - Order for a change that needs the database: apply the additive migration first, deploy the code, then run any import or seed script.
 
+## Hub Design
+
+New hub pages follow `docs/design/design-system.md`.
+
+- **Colours and fonts come from theme variables only.** The hub version 2 tokens (`--line-strong`, `--vellum-soft`, `--gold-tint`, `--ember-tint`, `--ember-text`, and the four `--secret` tokens) are set on `.campaign` in `src/styles/campaign.css`.
+- **Anything hidden from players, as a DM sees it, uses `HiddenBox` or `HiddenTag`** from `src/features/hub/ui/Hidden.tsx`: a dashed border, a tinted background and a label in words. It is only a look. A player's page must not contain the hidden thing at all.
+- **Shared pieces live in `src/features/hub/ui/`** and are drawn in all seven themes on Head DM > Design samples (`/admin/design`, `Samples.tsx`). Add a new shared piece there too, and check it in the light Vellum theme and at 390px.
+- **Never add a colour inside a theme's `colors` in `src/config/themes.ts`.** Campaigns store their own copy of a theme and the database compares it to the default themes exactly. A theme's `secret` colour sits beside `theme` for this reason.
+
 ## Feature Flags
 
 Unfinished work is merged to `main` behind a flag, so it can go in small pieces without players seeing it.

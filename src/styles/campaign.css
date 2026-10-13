@@ -5,6 +5,15 @@
   --void:#101014; --deep:#16161c; --plate:#1c1c24; --plate2:#22222c; --line:#34343f; --field:#0d0d11;
   --vellum:#e8e6e1; --dim:#a3a1a8; --gold:#b9b2a0; --ember:#c9785a; --star:#8fa7d6; --verd:#6fb3a0; --on-gold:#14140f;
   --gold-hi:color-mix(in srgb, var(--gold) 80%, white); --gold-lo:color-mix(in srgb, var(--gold) 88%, black);
+  /* Hub version 2 tokens (docs/design/design-system.md), worked out from the theme's own colours so every theme has them. */
+  --line-strong:color-mix(in srgb, var(--line) 75%, var(--vellum)); --vellum-soft:color-mix(in srgb, var(--vellum) 82%, var(--dim));
+  --gold-tint:color-mix(in srgb, var(--gold) 12%, var(--plate));
+  --ember-tint:color-mix(in srgb, var(--ember) 16%, var(--plate)); --ember-text:color-mix(in srgb, var(--ember) 45%, var(--vellum));
+  /* "Hidden from players". A preset theme sets --secret itself (src/config/themes.ts). This is for a custom theme:
+     mixing with the text colour makes it lighter on a dark theme and darker on a light one. */
+  --secret:color-mix(in srgb, #8a63d2 70%, var(--vellum));
+  --secret-bg:color-mix(in srgb, var(--secret) 10%, var(--plate)); --secret-line:color-mix(in srgb, var(--secret) 60%, var(--line));
+  --secret-text:color-mix(in srgb, var(--secret) 55%, var(--vellum));
   --display:Georgia,"Times New Roman",serif; --body:Georgia,"Times New Roman",serif;
   color-scheme:dark;
   position:relative; min-height:100vh; margin:0;
