@@ -223,3 +223,15 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 173. **The "Draft recap from notes" button in the mockups is left out,** as the plan says. It belongs to #45.
 174. **#51 was "Homebrew: lore organization" and is now also the Lore page (item 11).** Its older text describes lore as a kind of homebrew entry; the plan describes lore as campaign content in categories. The plan is the newer one, and whoever builds item 11 should settle the wording first.
 175. **Alec's game systems are not in the mockups.** The sidebar and sheet in the design show the six standard abilities. Item 8 reads the sheet from the rules engine, so a campaign on a custom system should show its own abilities and trackers; the issue says so.
+
+## Hub version 2, item 1: feature flags (13 October 2026)
+
+176. **A flag is a line in a config file,** `src/config/flags.ts`, not a setting in the database. The plan says item 1 needs no database change, and a file means a flag cannot be flipped by accident on the live site. To turn one on for everyone, you ask for it: `on: true` and the date are set, and it is merged and deployed.
+177. **All 21 flags are listed now,** one per item 3 to 23. Items 1 (the flags themselves) and 2 (design tokens) have none. Listing them up front means no later item has to edit the flags file, which several people would otherwise change at once.
+178. **"Bryce's account" means the Head DM account.** A flag that is off is on for the Head DM everywhere, including the live site, so you can try an unfinished page there.
+179. **"Test accounts" are recognised by a mark only the server can set,** not by their email address. Sign-up needs no email confirmation, so anyone could have signed up with an address that looks like a test account's. The mark is the same one the plan-limits switch already uses (`profiles.always_enforce`), which an account cannot change on itself. A test proves that.
+180. **A test that needs an ordinary person** makes the account with `makeUser(label, { unblocked: true })`, the option that already existed for standing in for a real free account.
+181. **Flags are also all on in `npm run dev` and on Vercel preview deployments,** so a partner sees what they are building on their own machine, and you see it on a preview. The built site that the tests and the live site run goes by the account.
+182. **A flagged-off page answers "not found",** and the check happens on the server. A test fails if a client component imports the flag rule, so the decision cannot drift into the browser.
+183. **No page uses a flag yet,** so the server helpers (`flag`, `requireFlag`, `myFlags`) are not exercised by a page test in this item. The rule they apply is fully tested, and item 3 is the first to put a real page behind one.
+184. **Not built: a screen for you to flip flags yourself.** It would need the flags stored in the database (a migration) and a control on the Head DM page (a shared file), both outside this item. Say if you want it.

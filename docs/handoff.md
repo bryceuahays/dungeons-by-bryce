@@ -286,3 +286,11 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 3. Items 4, 5 and 6 each change the database, so they go one after another. Each comes with a migration file that is written but not applied; the pull request will say so, and you apply it before deploying.
 4. Nothing reaches players until you switch on its feature flag (item 1).
 5. Item 23, the live session screen, is on the board as Backlog. Say if you want it built.
+
+### Item 1: feature flags (built)
+
+- **What it is:** the way unfinished hub pages are merged without players seeing them. There is nothing to see in the site yet: no page uses a flag until item 3.
+- **Where it lives:** `src/config/flags.ts` (the list), `src/lib/flags.ts` (what pages and actions call), `tests/flags.test.mjs`. How to use it is in `CLAUDE.md`, under "Feature Flags".
+- **What you see as the Head DM:** every flagged page, on the live site, as soon as it is merged and deployed. Your players and other DMs do not.
+- **What you do by hand:** nothing now. When a hub page is ready for everyone, say "turn on" and its name; the flag gets `on: true` and the date, and it is merged and deployed.
+- **No database change.**
