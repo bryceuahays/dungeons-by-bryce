@@ -234,4 +234,17 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 181. **Flags are also all on in `npm run dev` and on Vercel preview deployments,** so a partner sees what they are building on their own machine, and you see it on a preview. The built site that the tests and the live site run goes by the account.
 182. **A flagged-off page answers "not found",** and the check happens on the server. A test fails if a client component imports the flag rule, so the decision cannot drift into the browser.
 183. **No page uses a flag yet,** so the server helpers (`flag`, `requireFlag`, `myFlags`) are not exercised by a page test in this item. The rule they apply is fully tested, and item 3 is the first to put a real page behind one.
-184. **Not built: a screen for you to flip flags yourself.** It would need the flags stored in the database (a migration) and a control on the Head DM page (a shared file), both outside this item. Say if you want it.
+184. **Not built at first: a screen for you to flip flags yourself.** You asked for it the same day; see the next section.
+
+## Hub version 2, item 1, second part: flags you switch yourself (13 October 2026)
+
+185. **Which flags are on is now kept in the database,** in a small new table, `feature_flags`. This replaces decision 176: you asked to flip them from a screen, and a screen cannot change a file. The list of flags (names, what each is for, its issue) stays in `src/config/flags.ts`.
+186. **The screen is Head DM > Feature flags** (`/admin/flags`). Each flag shows what it is, a link to its issue, and whether it is hidden or on for everyone. Turning one on asks "Everyone will see this. Turn it on?" first; hiding it again does not ask.
+187. **A switch takes effect at once.** No merge and no deploy. Hiding a flag again takes the piece away from everyone but you and keeps whatever people made with it.
+188. **Everyone can read which flags are on; only you can read the ones that are off, and only you can change any.** The database enforces this, not the screen. A test signs in as an ordinary account, as a test account and as a signed-out visitor and proves each can read only the "on" rows and can change nothing.
+189. **The screen cannot tell you whether a piece has been built yet.** A switch for a piece that is not built and live has nothing to show. The issue link is where to check. I chose this over adding a "built" mark to the list, because every later item would then have to edit the shared list file.
+190. **If the table cannot be read, nothing counts as switched on.** An unfinished piece stays hidden rather than showing. This also means the code can go live before the migration is applied: the screen then says the switches cannot be saved yet.
+191. **`on: true` in the config file still works** and fixes a flag on whatever the screen says. It is kept only as the last step before a finished flag is removed.
+192. **Tests never flip a real flag.** They add rows named `zz_test_…`, which are not on the list, so nothing on the live site changes while they run.
+193. **The table is not sent over Realtime.** Pages read it on each request, which is quick enough for a switch that changes a few times a year.
+194. **The Head DM page gained one link** ("Feature flags", next to "Store and custom site requests"). Nothing else on it changed.

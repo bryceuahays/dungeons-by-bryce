@@ -5,8 +5,12 @@
 //   * the automated tests' throwaway accounts, so the feature is tested while it is hidden.
 //     (They carry a mark only the server can set. Nobody can give themselves one, for
 //     example by signing up with an address that looks like a test account's.)
-// Setting `on: true` (with the date in `released`) turns it on for everyone. That is the
-// whole switch: change it here, merge, deploy.
+//
+// The Head DM turns a flag on for everyone from a screen (Head DM > Feature flags). Which
+// flags he has turned on is kept in the database (the feature_flags table), so it takes
+// effect at once, with no merge and no deploy. This file is the list: the names, what each
+// is for, and its issue. `on: true` here (with the date in `released`) fixes a flag on in
+// the code whatever the screen says; it is the last step before the flag is removed.
 //
 // There is one flag per item of the hub version 2 build plan (docs/design/build-plan.md),
 // named hub_v2_<page>. They are all listed here from the start so that building an item
@@ -57,6 +61,13 @@ export function flagOn(name: Flag, viewer: FlagViewer, table: Record<string, Fla
   if (!viewer) return false;                    // signed out
   if (viewer.role === 'head') return true;      // the site owner
   return viewer.test === true;                  // an automated test's account
+}
+
+// The list with the Head DM's switches laid over it: a flag he has turned on is on for
+// everyone. A name that is not on the list is ignored.
+export function withSwitches(switchedOn: Iterable<string>, table: Record<string, FlagDef> = FLAGS): Record<string, FlagDef> {
+  const on = new Set(switchedOn);
+  return Object.fromEntries(Object.entries(table).map(([name, def]) => [name, on.has(name) ? { ...def, on: true } : def]));
 }
 
 // Every flag at once for one person, for handing to a client component as plain data.

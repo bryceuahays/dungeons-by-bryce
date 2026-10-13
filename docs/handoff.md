@@ -290,7 +290,9 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 ### Item 1: feature flags (built)
 
 - **What it is:** the way unfinished hub pages are merged without players seeing them. There is nothing to see in the site yet: no page uses a flag until item 3.
-- **Where it lives:** `src/config/flags.ts` (the list), `src/lib/flags.ts` (what pages and actions call), `tests/flags.test.mjs`. How to use it is in `CLAUDE.md`, under "Feature Flags".
+- **Where it lives:** `src/config/flags.ts` (the list), `src/lib/flags.ts` (what pages and actions call), `src/features/flags/` and `src/app/(hub)/admin/flags/` (your screen), the `feature_flags` table (which flags are on), `tests/flags.test.mjs`. How to use it is in `CLAUDE.md`, under "Feature Flags".
 - **What you see as the Head DM:** every flagged page, on the live site, as soon as it is merged and deployed. Your players and other DMs do not.
-- **What you do by hand:** nothing now. When a hub page is ready for everyone, say "turn on" and its name; the flag gets `on: true` and the date, and it is merged and deployed.
+- **Your screen:** sign in, open **Head DM**, then **Feature flags**. It lists all 21 pieces with a switch each. "Turn on for everyone" shows that piece to all your players at once; "Hide it again" takes it back.
+- **What you do by hand, once:** apply the migration `20261015000001_feature_flags.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Until then the screen opens but says the switches cannot be saved yet.
+- **What you do by hand, later:** when a hub piece is built, live and you are happy with it, flip its switch.
 - **No database change.**

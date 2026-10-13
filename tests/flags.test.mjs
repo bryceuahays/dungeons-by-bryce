@@ -1,11 +1,12 @@
-// Feature flags (src/config/flags.ts): who a flag is on for, and that the list is in order.
-// These need no database and no running site.
+// Feature flags: who a flag is on for and that the list is in order (src/config/flags.ts, no
+// database needed), then the Head DM's switches in the database and his screen for them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { FLAGS, FLAG_NAMES, flagOn, flagsFor } from '../src/config/flags.ts';
-import { ROOT, admin, cleanup, makeUser } from './helpers.mjs';
+import crypto from 'node:crypto';
+import { FLAGS, FLAG_NAMES, flagOn, flagsFor, withSwitches } from '../src/config/flags.ts';
+import { ROOT, admin, anonClient, cleanup, makeUser, page } from './helpers.mjs';
 
 const ordinary = { role: 'player', test: false };
 const head = { role: 'head' };
@@ -84,4 +85,80 @@ test('flags are decided on the server: no client component reads the flag rule',
     return /^\s*['"]use client['"]/.test(text) && /from ['"]@\/(config|lib)\/flags['"]/.test(text) && /\bflagOn\b|\bflagsFor\b|\brequireFlag\b|\bmyFlags\b|import \{[^}]*\bflag\b/.test(text);
   });
   assert.deepEqual(offenders.map((f) => path.relative(ROOT, f)), [], 'pass a client component the plain true/false values instead');
+});
+
+test('a flag the Head DM has switched on is on for everyone, and a name that is not on the list is ignored', () => {
+  const table = withSwitches(['example', 'not_a_flag'], off);
+  for (const viewer of [ordinary, null, head, tester]) assert.equal(flagOn('example', viewer, table), true);
+  assert.deepEqual(Object.keys(table), ['example']);
+  assert.equal(flagOn('not_a_flag', ordinary, table), false);
+  assert.equal(flagOn('example', ordinary, withSwitches([], off)), false, 'no switch, still hidden');
+  assert.equal(off.example.on, false, 'the list itself is not changed');
+  // the real list: switching one flag on leaves the rest hidden
+  const real = withSwitches([FLAG_NAMES[0]]);
+  assert.equal(flagOn(FLAG_NAMES[0], ordinary, real), true);
+  assert.equal(flagOn(FLAG_NAMES[1], ordinary, real), false);
+  assert.deepEqual(flagsFor(null, real), { ...flagsFor(null), [FLAG_NAMES[0]]: true });
+});
+
+// The rows these tests add are named zz_test_…, which is not on the site's list, so they switch
+// nothing on the live site. The real flags' switches are never touched.
+const wipeSwitches = () => admin.from('feature_flags').delete().like('name', 'zz_test_%');
+const gone = (r) => !!r.error || (r.data ?? []).length === 0;
+
+test('the switches in the database: only the Head DM changes them, and nobody else reads one that is off', async (t) => {
+  await cleanup();
+  t.after(async () => { await wipeSwitches(); await cleanup(); });
+  const [boss, plain, marked] = await Promise.all([makeUser('flaghead', { head: true }), makeUser('flagplain', { unblocked: true }), makeUser('flagtester')]);
+  const anon = anonClient();
+  const tag = 'zz_test_' + crypto.randomBytes(4).toString('hex');
+  const shown = tag + '_on', hidden = tag + '_off';
+  const seen = async (c) => ((await c.from('feature_flags').select('name').like('name', tag + '%')).data ?? []).map((r) => r.name).sort();
+
+  const made = await boss.client.from('feature_flags').insert([{ name: shown, is_on: true }, { name: hidden, is_on: false }]).select('name');
+  assert.equal(made.error, null, 'the Head DM adds switches');
+  assert.deepEqual(await seen(boss.client), [hidden, shown], 'and reads them all');
+  // everyone else, signed in or not, reads only what is on (a test account included: the mark does not open the table)
+  for (const c of [plain.client, marked.client, anon]) assert.deepEqual(await seen(c), [shown]);
+  assert.equal(((await plain.client.from('feature_flags').select('name').eq('name', hidden)).data ?? []).length, 0, 'asking for the hidden one by name finds nothing');
+
+  // and changes nothing
+  for (const c of [plain.client, marked.client, anon]) {
+    assert.ok(gone(await c.from('feature_flags').insert({ name: tag + '_mine', is_on: true }).select('name')), 'cannot add a switch');
+    assert.ok(gone(await c.from('feature_flags').update({ is_on: true }).eq('name', hidden).select('name')), 'cannot turn one on');
+    assert.ok(gone(await c.from('feature_flags').update({ is_on: false }).eq('name', shown).select('name')), 'cannot turn one off');
+    assert.ok(gone(await c.from('feature_flags').upsert({ name: hidden, is_on: true }).select('name')), 'cannot turn one on by saving over it');
+    assert.ok(gone(await c.from('feature_flags').delete().eq('name', shown).select('name')), 'cannot remove one');
+  }
+  const kept = (await admin.from('feature_flags').select('name, is_on').like('name', tag + '%').order('name')).data;
+  assert.deepEqual(kept, [{ name: hidden, is_on: false }, { name: shown, is_on: true }], 'the rows are as the Head DM left them');
+
+  // the Head DM flips them, and everyone's view follows at once
+  assert.equal((await boss.client.from('feature_flags').upsert({ name: hidden, is_on: true }).select('name')).error, null);
+  assert.deepEqual(await seen(anon), [hidden, shown]);
+  assert.equal((await boss.client.from('feature_flags').upsert({ name: shown, is_on: false }).select('name')).error, null);
+  assert.deepEqual(await seen(plain.client), [hidden]);
+  assert.ok((await boss.client.from('feature_flags').insert({ name: 'Not A Flag!' }).select('name')).error, 'a name that is not a plain flag name is refused');
+});
+
+test('the Head DM\'s flags screen lists every flag, and nobody else reaches it', async (t) => {
+  await cleanup();
+  t.after(cleanup);
+  const [boss, plain] = await Promise.all([makeUser('flagscreen', { head: true }), makeUser('flagvisitor', { unblocked: true })]);
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+  const screen = await page('/admin/flags', boss.session);
+  assert.equal(screen.status, 200);
+  for (const name of FLAG_NAMES) {
+    assert.ok(screen.text.includes(esc(FLAGS[name].what)), name + ' is listed');
+    assert.ok(screen.text.includes('/issues/' + FLAGS[name].issue + '"'), name + ' links to its issue');
+  }
+  assert.ok(!screen.text.includes('cannot be saved yet'), 'the table behind the screen is there');
+  assert.ok((await page('/admin', boss.session)).text.includes('href="/admin/flags"'), 'the Head DM page links to it');
+  // an ordinary account and a signed-out visitor are sent away, with none of it in the answer
+  for (const session of [plain.session, null]) {
+    const r = await page('/admin/flags', session);
+    assert.ok(r.status >= 300 && r.status < 400, 'sent away');
+    assert.ok(!/admin/.test(r.location ?? ''), 'not to another Head DM page');
+    assert.equal(r.text, '');
+  }
 });

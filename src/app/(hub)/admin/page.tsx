@@ -32,7 +32,7 @@ export default async function Admin() {
       <h1>Head DM</h1>
       <div className="panel"><p className="dim">{accounts ?? 0} account{accounts === 1 ? '' : 's'} and {list.length} campaign{list.length === 1 ? '' : 's'} on the site.</p></div>
 
-      <p><Link className="button quiet" href="/admin/business">Store and custom site requests</Link></p>
+      <p><Link className="button quiet" href="/admin/business">Store and custom site requests</Link> <Link className="button quiet" href="/admin/flags">Feature flags</Link></p>
 
       <h2>Feedback</h2>
       <div className="panel">

@@ -175,7 +175,7 @@ Two more things every feature shares, which need care rather than an owner: the 
 
 | Feature | Issue | Folders it owns | Shared files it changes | Migration | Waits for |
 |---|---|---|---|---|---|
-| Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) | `src/config/flags.ts` (new), `src/lib/flags.ts` (new), `tests/flags.test.mjs` (new) | None | No | Nothing |
+| Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) | `src/config/flags.ts` (new), `src/lib/flags.ts` (new), `src/features/flags/` (new), `src/app/(hub)/admin/flags/` (new), `tests/flags.test.mjs` (new) | `src/app/(hub)/admin/page.tsx` (one link)<br>`supabase/migrations/` (the database schema) | Yes: `20261015000001_feature_flags.sql` | Nothing |
 | Homebrew builder shared core | [#2](https://github.com/bryceuahays/dungeons-by-bryce/issues/2) | `src/features/homebrew/core/` (new), `docs/homebrew-core.md` (new) | `src/components/EntityEditor.tsx`<br>`src/config/homebrew.ts`<br>`src/lib/rules/engine.ts`<br>`src/app/(hub)/homebrew/actions.ts` | No | Nothing |
 | Per-feature folder split: table tools | [#3](https://github.com/bryceuahays/dungeons-by-bryce/issues/3) | `src/features/tools/` (new) | `src/components/tools/Simple.tsx`<br>`src/app/globals.css` | No | Nothing |
 | Per-feature folder split: server actions | [#4](https://github.com/bryceuahays/dungeons-by-bryce/issues/4) | `src/app/c/[slug]/actions/` (new), `src/app/(hub)/actions/` (new) | `src/app/c/[slug]/actions.ts`<br>`src/app/(hub)/actions.ts` | No | Nothing |
