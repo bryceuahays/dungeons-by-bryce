@@ -15,6 +15,7 @@ import { FREE_LIMITS } from '@/config/plans';
 import { CopyLink } from '@/components/CopyBox';
 import { CampaignSystemForm } from '@/features/systems/CampaignSystemForm';
 import { mySystems } from '@/features/systems/data';
+import { PagesAndFeatures } from '@/features/hub/switches/PagesAndFeatures';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const metadata = { title: 'Manage' };
@@ -150,6 +151,8 @@ export default async function Manage({ params, searchParams }: { params: Promise
           <p>The tools this campaign&apos;s hub has. Switching one off hides it for you and your players; nothing in it is deleted, and switching it back on brings it all back.</p>
           <ToolsForm slug={slug} tools={TOOLS.map(({ id, name, what }) => ({ id, name, what }))} on={toolsOf(campaign.settings).map((t) => t.id)} />
         </div>
+
+        <PagesAndFeatures slug={slug} settings={campaign.settings} />
 
         <h2>Theme</h2>
         <div className="plate">
