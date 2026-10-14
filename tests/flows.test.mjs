@@ -44,12 +44,16 @@ test('world page: lore with an Edit lore button, its campaigns, a New campaign b
   assert.equal((await admin.from('campaigns').select('settings').eq('id', inside.id).single()).data.settings.rules, '2024');
 });
 
-test('new campaign: two steps, a world to choose, system and genre choices, and the tools to start with', async () => {
+test('new campaign: two steps, a world to choose if you like, system and genre choices, and the tools to start with', async () => {
   const w = (await dm.client.from('worlds').insert({ name: 'Ember Reach' }).select('id').single()).data;
   const res = await page('/new-campaign?world=' + w.id, dm.session);
   assert.equal(res.status, 200);
-  for (const t of ['Step 1 of 2: Details', 'Step 2 of 2: Hub and tools', 'Description', 'Web address', 'Choose a world…', 'Ember Reach', 'Tools the hub starts with', 'Paste your campaign (optional)', 'Look']) assert.ok(res.text.includes(t), 'the form has: ' + t);
+  for (const t of ['Step 1 of 2: Details', 'Step 2 of 2: Hub and tools', 'Description', 'Web address', 'World (optional)', 'No world', 'Ember Reach', 'Tools the hub starts with', 'Paste your campaign (optional)', 'Look']) assert.ok(res.text.includes(t), 'the form has: ' + t);
   assert.ok(new RegExp(`<option value="${w.id}" selected`).test(res.text) || res.text.includes(`"world":"${w.id}"`) || res.text.includes(`value="${w.id}"`), 'the world the flow started from is offered');
+  // a world is optional (issue 111): the first choice is none, and the form does not insist
+  assert.ok(/<option value=""[^>]*>No world<\/option>/.test(res.text), 'No world is offered');
+  assert.ok(!/<select(?=[^>]*name="world")(?=[^>]*required)[^>]*>/.test(res.text), 'and choosing a world is not required');
+  assert.ok(!res.text.includes('Choose the world this campaign belongs to'));
   // an input with this name and value, whatever order its attributes are written in
   const esc = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const input = (name, value) => new RegExp(`<input(?=[^>]*name="${name}")(?=[^>]*value="${esc(value)}")[^>]*>`).test(res.text);

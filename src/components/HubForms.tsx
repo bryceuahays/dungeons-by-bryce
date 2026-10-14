@@ -53,14 +53,9 @@ export function PasswordForm() {
 export function NewCampaignForm({ pro, packs = [], worlds = [], world = '', systems = [] }: { pro: boolean; packs?: { id: string; name: string; description: string; free: boolean }[]; worlds?: { id: string; name: string }[]; world?: string; systems?: { id: string; name: string; base: string }[] }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCampaign, null);
   const [step, setStep] = useState(1);
-  const [need, setNeed] = useState('');
   const form = useRef<HTMLFormElement>(null);
   const go = (n: number) => { setStep(n); window.scrollTo({ top: 0 }); };
-  // the second step needs a world chosen on the first
-  const next = () => {
-    if (!String(new FormData(form.current ?? undefined).get('world') || '')) { setNeed('Choose the world this campaign belongs to.'); return; }
-    setNeed(''); go(2);
-  };
+  const next = () => go(2);
   return (
     <form action={action} ref={form}>
       <div hidden={step !== 1}>
@@ -69,8 +64,8 @@ export function NewCampaignForm({ pro, packs = [], worlds = [], world = '', syst
           <label>Name<input name="title" maxLength={80} placeholder="Leave empty if your pasted text starts with # Title" /></label>
           <label>Description<textarea name="tagline" rows={2} maxLength={300} placeholder="One or two lines about it." /></label>
           <label>Web address (lowercase letters, numbers, dashes). Leave empty to make one from the name.<input name="slug" pattern="[a-z0-9][a-z0-9\-]{1,60}" placeholder="my-next-campaign" /></label>
-          <label>World<select name="world" defaultValue={world} required onChange={() => setNeed('')}><option value="">Choose a world…</option>{worlds.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
-          <p className="dim">Every campaign belongs to a world and gets that world&apos;s homebrew. Need a new one? <Link href="/worlds">Make a world first</Link>.</p>
+          <label>World (optional)<select name="world" defaultValue={world}><option value="">No world</option>{worlds.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
+          <p className="dim">A campaign in a world gets that world&apos;s homebrew. A campaign can also stand alone, and be put in a world later from that world&apos;s page. <Link href="/worlds">Your worlds</Link>.</p>
           <label>System<select name="system" defaultValue={NEW_CAMPAIGN_RULES}>
             <optgroup label="Ready-made">{SYSTEMS.filter((sys) => sys.id !== 'both').map((sys) => <option key={sys.id} value={sys.id}>{sys.name}</option>)}</optgroup>
             {systems.length ? <optgroup label="Your systems">{systems.map((s) => <option key={s.id} value={'custom:' + s.id}>{s.name} (built on Fifth Edition {s.base})</option>)}</optgroup> : null}
@@ -81,7 +76,6 @@ export function NewCampaignForm({ pro, packs = [], worlds = [], world = '', syst
             {GENRES.map((g) => <label key={g} className="ckrow"><input type="checkbox" name="genre" value={g} /> <span>{g}</span></label>)}
           </fieldset>
         </div>
-        {need ? <p className="bad" role="alert">{need}</p> : null}
         <Msg state={state} />
         <button type="button" onClick={next}>Next: hub and tools</button>
       </div>

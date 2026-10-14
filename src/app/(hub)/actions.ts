@@ -119,10 +119,10 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
   try { chosen = JSON.parse(String(form.get('theme') || 'null')); } catch { chosen = null; }
   const theme = presetOf(chosen)?.theme ?? cleanTheme(chosen ?? { preset: 'slate' });
 
-  // every new campaign belongs to a world (the database checks the world is yours or a ready-made one)
+  // the world it belongs to, if any (the database checks the world is yours or a ready-made one).
+  // A campaign can also stand alone, and be put in a world later from that world's page.
   const world = String(form.get('world') || '');
   const worldId = /^[0-9a-f-]{36}$/.test(world) ? world : null;
-  if (!worldId) return { error: 'Choose the world this campaign belongs to (step 1).' };
   // its system (which fifth edition rules it plays by), its genres, and the tools its hub starts with
   const system = form.get('system') ?? form.get('rules');
   // or one of your own systems (src/features/systems), which plays the rules it is built on
@@ -161,15 +161,16 @@ export async function createCampaign(_: FormState, form: FormData): Promise<Form
     note = `?imported=${r.tabs}-${r.blocks}`;
   }
 
-  await attachWorldEntries(supabase, worldId, [id]);
+  if (worldId) await attachWorldEntries(supabase, worldId, [id]);
 
   // packs ticked on the form (the database checks the account may use each one)
   for (const p of form.getAll('pack').map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x)).slice(0, 10)) await supabase.rpc('attach_pack', { p, c: id });
 
   revalidatePath('/campaigns');
   revalidatePath('/worlds');
-  // back to the world it was made in, where it now appears in the list
-  redirect('/worlds/' + worldId + '?made=' + encodeURIComponent(slug) + (note ? '&' + note.slice(1) : ''));
+  // back to the world it was made in, where it now appears in the list; a campaign on its own opens itself
+  if (worldId) redirect('/worlds/' + worldId + '?made=' + encodeURIComponent(slug) + (note ? '&' + note.slice(1) : ''));
+  redirect(note ? `/c/${slug}/manage${note}` : '/c/' + slug);
 }
 
 // ---------------------------------------------------------------- feedback

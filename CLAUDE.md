@@ -134,7 +134,7 @@ Map pictures are served only through `src/lib/map-image.ts`, which paints hidden
 - Stripe is called over plain HTTPS in `src/lib/stripe.ts`; the webhook at `/api/stripe/webhook` verifies the signature.
 
 ### Worlds, systems and tools
-- A world (`worlds`) holds campaigns (`campaigns.world_id`) and homebrew (`world_entities`). New campaigns must be in a world; older ones may have none.
+- A world (`worlds`) holds campaigns (`campaigns.world_id`) and homebrew (`world_entities`). A campaign may be in a world or stand alone; a new campaign chooses on the form, and can be put in a world later from that world's page.
 - A campaign's system is `settings.rules` (`src/config/systems.ts`); its genres are `settings.genres` (`src/config/genres.ts`); the tools its hub has are `settings.tools` (`hasTool`, `toolsOf` in `src/config/tools.ts`; no list means every tool).
 - A character has a `system` and may have no campaign. `characters_system` keeps the system in step and refuses a move to a campaign on another system.
 
