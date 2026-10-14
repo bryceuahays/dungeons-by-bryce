@@ -14,7 +14,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
   const { data: campaign } = await supabase.from('campaigns').select('id').eq('slug', slug).maybeSingle();
   if (!campaign) return new NextResponse('Not found', { status: 404 });
   const { data: entry } = await supabase.from('entries').select('kind, data').eq('id', id).eq('campaign_id', campaign.id).maybeSingle();
-  const file = String(entry?.data?.file ?? '');
+  let file = String(entry?.data?.file ?? '');
+  if (entry && !file && entry.kind === 'npc') {
+    // An NPC shown to players by name only keeps its portrait with the DM-only secrets,
+    // which the database hands to nobody but the DM.
+    const { data: kept } = await supabase.from('entry_secrets').select('data').eq('entry_id', id).maybeSingle();
+    file = String(kept?.data?.held?.file ?? '');
+  }
   if (!entry || entry.kind === 'map' || !file.startsWith(campaign.id + '/')) return new NextResponse('Not found', { status: 404 });
   const { data, error } = await createAdminClient().storage.from('campaign-files').createSignedUrl(file, 3600);
   if (error || !data) return new NextResponse('Not found', { status: 404 });

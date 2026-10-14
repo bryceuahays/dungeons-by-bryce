@@ -172,7 +172,7 @@ function FeaturesEditor({ value, onChange, levels, effects }: { value: Feature[]
 // ---------------------------------------------------------------- the editor
 
 type Version = { version: number; note: string; name: string; data: any; created_at: string };
-type CampaignLink = { id: string; title: string; stages: Stage[]; members: Member[]; attached: Vis | null };
+type CampaignLink = { id: string; title: string; stages: Stage[]; members: Member[]; beats?: { id: string; title: string }[]; attached: Vis | null };
 
 // The class editor's tabs, and which fields from TYPES.class each one shows.
 const CLASS_TABS = ['Main', 'Spells', 'Features', 'Subclasses', 'Leveling', 'Player'];
@@ -673,7 +673,7 @@ export function EntityEditor({ id, initial, pro, srd, versions, campaigns, versi
               <div key={c.id} className="attach">
                 <label className="ckrow"><input type="checkbox" checked={!!c.attached} disabled={pending}
                   onChange={(e) => { const on = e.target.checked; const v = on ? { vis: 'all', vis_players: [], vis_stage: null } : null; setLinks(links.map((x) => (x.id === c.id ? { ...x, attached: v } : x))); start(async () => setMsg(await setAttached(id, c.id, on, v ?? undefined))); }} /> <b>{c.title}</b></label>
-                {c.attached ? <VisPicker value={c.attached} stages={c.stages} members={c.members} canName={pro} disabled={pending}
+                {c.attached ? <VisPicker value={c.attached} stages={c.stages} members={c.members} beats={c.beats ?? []} canName={pro} disabled={pending}
                   onChange={(v) => { setLinks(links.map((x) => (x.id === c.id ? { ...x, attached: v } : x))); start(async () => setMsg(await setAttached(id, c.id, true, v))); }} /> : null}
               </div>
             )) : <p className="dim">You are not running a campaign yet.</p>}

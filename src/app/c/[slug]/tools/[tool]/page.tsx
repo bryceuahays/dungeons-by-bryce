@@ -15,6 +15,8 @@ import { TimelineTool } from '@/components/tools/Timeline';
 import { MapsTool } from '@/components/tools/Maps';
 import { LogTool, NotesTool, WorldTool, ZeroTool } from '@/components/tools/Simple';
 import { campaignSheetSystem } from '@/features/systems/data';
+import { flag } from '@/lib/flags';
+import { VisMode } from '@/features/hub/visibility/VisMode';
 
 export async function generateMetadata({ params }: { params: Promise<{ tool: string }> }) {
   const { tool } = await params;
@@ -105,5 +107,8 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
       </div>
     );
   }
-  return <div className="cs-guide">{body}<div className="wrap">{back}</div></div>;
+  // hub version 2 visibility: a DM gets "Who sees this?" with every choice, including the campaign's story beats
+  const v2 = dm && (await flag('hub_v2_visibility'));
+  const beats = v2 ? (await getEntries(ctx, ['beat'])).map((b) => ({ id: b.id, title: b.title })) : [];
+  return <div className="cs-guide"><VisMode on={v2} beats={beats}>{body}</VisMode><div className="wrap">{back}</div></div>;
 }

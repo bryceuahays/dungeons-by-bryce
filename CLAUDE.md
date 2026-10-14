@@ -190,6 +190,17 @@ New hub pages follow `docs/design/design-system.md`.
 - **Shared pieces live in `src/features/hub/ui/`** and are drawn in all seven themes on Head DM > Design samples (`/admin/design`, `Samples.tsx`). Add a new shared piece there too, and check it in the light Vellum theme and at 390px.
 - **Never add a colour inside a theme's `colors` in `src/config/themes.ts`.** Campaigns store their own copy of a theme and the database compares it to the default themes exactly. A theme's `secret` colour sits beside `theme` for this reason.
 
+## Visibility: Who Sees What
+
+One rule decides who receives anything in a campaign, and it is written twice: `entry_open()` in the database and `entryOpen()` in `src/lib/entry-types.ts`. **Change both or neither.** A test fails if they stop knowing the same values, and another compares their answers on the live database for every value.
+
+- **Seven stored values** (`vis`, with `vis_players`, `vis_stage`, `vis_entry` beside it): `all`, `dm`, `players`, `stage`, `entry` (once a story beat has happened), and the two that combine who with when, `players_stage` and `players_entry`. Table-tool entries and homebrew attached to a campaign both use them.
+- **The control is `VisPicker`.** Never build another. Where the page has turned on hub version 2 visibility (`<VisMode on>`, from the `hub_v2_visibility` flag), a DM's picker is the "Who sees this?" dialog in `src/features/hub/visibility/`, which asks who and when and offers every choice on every kind of content. `model.ts` there turns the two questions into the stored value and back, and writes the sentence that says who will see it.
+- **NPC partial reveals.** `data.reveal` on an NPC is how much of them players get: everything (not set), `portrait` (name and portrait) or `name` (name only). Who can see the NPC at all is still `vis`. What is held back is stored with the DM-only secrets (`entry_secrets`, under `held`), never on the NPC's own row; use `npcSplit()` to save and `npcFull()` for the DM's view. The database refuses a partly shown NPC that carries anything but its name (and, at `portrait`, its picture). **A new NPC field is held back by default.**
+- **The DM previewing as a player** reads with the DM's own login, which the database lets read everything, so the same rule is applied in code before anything is sent (`getEntries`, `getSheetEntities`, `serveMap`). Anything new a player can be shown needs that step too.
+- **A published copy of a campaign** has none of the original's players: anything for named players becomes DM only (`src/lib/store.ts`).
+- **Page blocks are separate.** They keep their own controls (DM only, hidden, a stage, named players). New hub pages are built on entries.
+
 ## Hub Pages and Feature Switches
 
 A DM chooses which hub pages a campaign has, and which features each page has (Manage > Pages and features).

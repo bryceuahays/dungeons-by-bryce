@@ -212,7 +212,7 @@ function PinPanel({ pin, p, maps, save, remove, go, who }: { pin: Entry; p: Tool
           {p.dm ? (
             <p style={{ marginTop: 10 }}>
               <VisPicker value={visOf(pin)} stages={p.stages} members={p.members} beats={p.make.maps_plus ? p.beats : []} allow={['dm', 'all', 'stage', 'players', 'entry']} canName={p.make.player_secrets}
-                onChange={(v) => save({ ...base, ...v, data: { ...pin.data, beat: v.vis === 'entry' ? v.vis_entry : undefined } })} />
+                onChange={(v) => save({ ...base, ...v, data: { ...pin.data, beat: v.vis === 'entry' || v.vis === 'players_entry' ? v.vis_entry : undefined } })} />
             </p>
           ) : <label className="ck" style={{ marginTop: 10 }}><input type="checkbox" checked={pin.vis === 'players'} onChange={(e) => save({ ...base, vis: e.target.checked ? 'players' : 'all', vis_players: e.target.checked ? [p.userId] : [] })} /> Only I see this pin</label>}
           {p.dm && pin.vis === 'entry' ? <p className="muted">This pin appears for players by itself when that beat is marked as having happened.</p> : null}

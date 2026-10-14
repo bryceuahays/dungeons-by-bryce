@@ -120,7 +120,7 @@ export async function publishProduct(reader: SupabaseClient, sellerId: string, i
     campaign: { title: real?.title ?? campaign.title, tagline: real?.tagline ?? campaign.tagline, theme: campaign.theme, phases: campaign.phases, settings: { ...(campaign.settings ?? {}), session: 0 }, background: campaign.background },
     faces: src.faces.filter((f) => f.phase !== ''),
     sections: src.sections, content: src.content.filter((r) => !LEGACY_KINDS.includes(r.kind)), entries: src.entries, secrets: src.secrets,
-    entities: src.homebrew.map((a) => ({ ...a.entities, vis: a.vis === 'players' ? 'dm' : a.vis, vis_stage: a.vis_stage })),
+    entities: src.homebrew.map((a) => ({ ...a.entities, vis: /^players|^entry$/.test(String(a.vis)) ? 'dm' : a.vis, vis_stage: a.vis_stage })),
     files, bg,
   };
 
@@ -188,7 +188,7 @@ async function copyEntries(admin: SupabaseClient, all: any[], secrets: Record<st
   for (let pass = 0; pass < 6 && pending.length; pass++) {
     for (const e of [...pending]) {
       if (e.parent && !map.has(e.parent) && all.some((x) => x.id === e.parent)) continue;
-      const row = { campaign_id: id, kind: e.kind, parent: e.parent ? map.get(e.parent) ?? null : null, owner: userId, sort: e.sort, title: e.title, status: e.status, live: e.live, vis: e.vis === 'players' ? 'dm' : e.vis, vis_players: [], vis_stage: e.vis_stage, data: { ...(e.data ?? {}), ...(e.data?.file ? { file: moved[e.data.file] } : {}) } };
+      const row = { campaign_id: id, kind: e.kind, parent: e.parent ? map.get(e.parent) ?? null : null, owner: userId, sort: e.sort, title: e.title, status: e.status, live: e.live, vis: String(e.vis).startsWith('players') ? 'dm' : e.vis, vis_players: [], vis_stage: e.vis_stage, data: { ...(e.data ?? {}), ...(e.data?.file ? { file: moved[e.data.file] } : {}) } };
       const ins = await admin.from('entries').insert(row).select('id').single();
       if (ins.data) map.set(e.id, ins.data.id);
       pending.splice(pending.indexOf(e), 1);
@@ -418,7 +418,7 @@ export async function generateEdition(reader: SupabaseClient, sellerId: string, 
 
   // ---- homebrew: the seller's own, attached by reference (it is theirs, so nothing is duplicated)
   const mineBrew = src.homebrew.filter((a) => a.entities.owner_id === sellerId);
-  if (mineBrew.length) await admin.from('campaign_entities').insert(mineBrew.map((a) => ({ campaign_id: id, entity_id: a.entities.id, vis: a.vis === 'players' ? 'dm' : a.vis, vis_stage: a.vis_stage })));
+  if (mineBrew.length) await admin.from('campaign_entities').insert(mineBrew.map((a) => ({ campaign_id: id, entity_id: a.entities.id, vis: /^players|^entry$/.test(String(a.vis)) ? 'dm' : a.vis, vis_stage: a.vis_stage })));
 
   return { slug, left };
 }

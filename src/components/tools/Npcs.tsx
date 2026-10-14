@@ -6,19 +6,28 @@ import { EntityCard } from '../EntityCard';
 import { visLabel } from '../VisPicker';
 import { EntryForm, Problem, uploadPicture, useEntries, visOf, type F } from './kit';
 import type { SheetSystem } from '@/features/systems/model';
+import { HiddenTag } from '@/features/hub/ui/Hidden';
+import { useVisMode } from '@/features/hub/visibility/VisMode';
+import { REVEAL, npcFull, npcSplit, revealLabel, revealOf, type Reveal } from '@/features/hub/visibility/model';
 
 const STATUSES: [string, string][] = [['alive', 'Alive'], ['dead', 'Dead'], ['missing', 'Missing'], ['hostile', 'Hostile'], ['allied', 'Allied']];
 
 function NpcEditor({ n, p, fields, save, remove, close }: { n: Partial<Entry>; p: ToolProps; fields: F[]; save: ReturnType<typeof useEntries>['save']; remove: ReturnType<typeof useEntries>['remove']; close: () => void }) {
-  const [pic, setPic] = useState<string>(n.data?.file ?? '');
+  // The NPC as the DM edits it: the details held back from players (a partial reveal) put back in place.
+  const full = npcFull(n);
+  const [pic, setPic] = useState<string>(String(full.data.file ?? ''));
   const [err, setErr] = useState('');
+  const [level, setLevel] = useState<Reveal>(revealOf(n.data));
+  const v2 = useVisMode().on;
   return (
     <div className="plate">
       <h3>{n.id ? 'Edit ' + n.title : 'New NPC'}</h3>
-      <EntryForm fields={fields} entry={{ status: 'alive', ...n }} stages={p.stages} members={p.members} canName={p.make.player_secrets}
+      <EntryForm fields={fields} entry={{ ...n, status: full.status || 'alive', data: full.data }} stages={p.stages} members={p.members} canName={p.make.player_secrets}
         onCancel={() => close()} onDelete={n.id ? () => { void remove(n.id!); close(); } : undefined}
         onSave={async (patch, secret) => {
-          const r = await save({ ...patch, id: n.id, campaign_id: p.campaignId, kind: 'npc', status: patch.status || 'alive', data: { ...patch.data, file: pic || undefined } }, secret);
+          // what players may read goes on the NPC itself; anything held back goes with the DM-only notes
+          const kept = npcSplit({ status: patch.status || 'alive', data: { ...patch.data, file: pic || undefined } }, secret, level);
+          const r = await save({ ...patch, id: n.id, campaign_id: p.campaignId, kind: 'npc', status: kept.status, data: kept.data }, kept.secret);
           if (!r.error) close();
           return r;
         }}>
@@ -27,6 +36,12 @@ function NpcEditor({ n, p, fields, save, remove, close }: { n: Partial<Entry>; p
         </label>
         {pic ? <p className="muted">A portrait is attached. <button type="button" className="act sm" onClick={() => setPic('')}>Remove it</button></p> : null}
         {err ? <p className="err">{err}</p> : null}
+        {v2 || level !== 'all' ? (
+          <label className="f" style={{ marginTop: 10 }}>What players see of them
+            <select value={level} onChange={(e) => setLevel(e.target.value as Reveal)}>{REVEAL.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select>
+            <small className="muted">{REVEAL.find((r) => r[0] === level)![2]} This is for the players who can see this NPC at all. DM notes are never shown to players.</small>
+          </label>
+        ) : null}
       </EntryForm>
     </div>
   );
@@ -41,7 +56,8 @@ export function NpcTool(p: ToolProps & { initial: Entry[]; monsters: { id: strin
   const [open, setOpen] = useState<string | null>(null);   // entry being edited, or 'new'
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState({ location: '', faction: '', status: '' });
-  const npcs = rows.filter((r) => r.kind === 'npc');
+  // a partly revealed NPC keeps the rest with the DM's notes; the DM's own view puts it back together
+  const npcs = rows.filter((r) => r.kind === 'npc').map((r) => (p.dm && r.secret ? { ...r, ...npcFull(r), shown: revealOf(r.data) } : { ...r, shown: 'all' as Reveal }));
   const uniq = (k: string) => [...new Set(npcs.map((n) => String(n.data[k] ?? '').trim()).filter(Boolean))].sort();
   const shown = useMemo(() => npcs.filter((n) => {
     const hay = `${n.title} ${n.data.location ?? ''} ${n.data.faction ?? ''} ${n.data.known ?? ''} ${n.secret?.wants ?? ''} ${n.secret?.secret ?? ''}`.toLowerCase();
@@ -73,14 +89,14 @@ export function NpcTool(p: ToolProps & { initial: Entry[]; monsters: { id: strin
       <Problem r={msg} />
       {open === 'new' ? <NpcEditor n={{}} p={p} fields={fields} save={save} remove={remove} close={() => setOpen(null)} /> : null}
       <div className="grid g2">
-        {shown.map((n) => (open === n.id ? <NpcEditor key={n.id} n={n} p={p} fields={fields} save={save} remove={remove} close={() => setOpen(null)} /> : (
+        {shown.map((n) => (open === n.id ? <NpcEditor key={n.id} n={rows.find((r) => r.id === n.id) ?? n} p={p} fields={fields} save={save} remove={remove} close={() => setOpen(null)} /> : (
           <article key={n.id} className="plate npc">
             <div className="npc-head">
               {n.data.file ? <img src={`${p.base ?? '/c/' + p.slug}/file/${n.id}?v=${encodeURIComponent(n.data.file.slice(-12))}`} alt="" loading="lazy" /> : null}
               <div>
                 <h3>{n.title}</h3>
                 <p className="who">{[STATUSES.find((s) => s[0] === n.status)?.[1], n.data.faction, n.data.location].filter(Boolean).join(' · ')}</p>
-                {p.dm ? <p><span className={'pillb ' + (n.vis === 'dm' ? 'dm' : 'pl')}>{visLabel(visOf(n), p.stages, p.members)}</span></p> : null}
+                {p.dm ? <p><span className={'pillb ' + (n.vis === 'dm' ? 'dm' : 'pl')}>{visLabel(visOf(n), p.stages, p.members)}</span>{n.shown !== 'all' ? <> <HiddenTag>Players see: {revealLabel(n.shown).toLowerCase()}</HiddenTag></> : null}</p> : null}
               </div>
             </div>
             {n.data.known ? <><h4>{p.dm ? 'What the players know' : 'What you know'}</h4><p style={{ whiteSpace: 'pre-wrap' }}>{n.data.known}</p></> : null}
