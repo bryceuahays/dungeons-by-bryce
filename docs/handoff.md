@@ -259,7 +259,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 | 2 | Design tokens and the hidden-from-players look | [#83](https://github.com/bryceuahays/dungeons-by-bryce/issues/83) | Must | No | Built |
 | 3 | Page and feature switches | [#84](https://github.com/bryceuahays/dungeons-by-bryce/issues/84) | Must | No | Built |
 | 4 | Visibility upgrades and partial NPC reveals | [#85](https://github.com/bryceuahays/dungeons-by-bryce/issues/85) | Must | Yes: `20261016000001_visibility.sql` | Waits for item 1, item 2 |
-| 5 | Dice rolling, public and private | [#86](https://github.com/bryceuahays/dungeons-by-bryce/issues/86) | Must | Yes | Waits for item 1, item 2, item 4 |
+| 5 | Dice rolling, public and private | [#86](https://github.com/bryceuahays/dungeons-by-bryce/issues/86) | Must | Yes: `20261017000001_dice.sql` | Waits for item 1, item 2, item 4 |
 | 6 | Co-DM screen and permissions | [#62](https://github.com/bryceuahays/dungeons-by-bryce/issues/62) (existing) | Must | Yes | Waits for item 1, item 5 |
 | 7 | Campaign settings page | [#87](https://github.com/bryceuahays/dungeons-by-bryce/issues/87) | Must | No | Waits for item 1, item 2, item 3, item 5, item 6 |
 | 8 | Header, page tabs, character sidebar and phone layout | [#88](https://github.com/bryceuahays/dungeons-by-bryce/issues/88) | Must | No | Waits for item 1, item 2, item 3, item 5 |
@@ -311,7 +311,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **Where it lives:** `src/config/hub-features.ts` (the list and the rule), `src/features/hub/switches/` (the form and its save action), `tests/switches.test.mjs`. How to use it is in `CLAUDE.md`, under "Hub Pages and Feature Switches".
 - **What you do by hand:** nothing. No database change: the choices are kept in each campaign's existing settings.
 
-### Item 4: visibility and NPC partial reveals (built, waiting for its database change)
+### Item 4: visibility and NPC partial reveals (built and live)
 
 - **What it is:** one way of choosing who sees something, for everything a DM makes with the table tools and for homebrew attached to a campaign.
 - **The new control:** a "Change" button next to "Who sees it" opens **Who sees this?**. It asks two things: who (every player, only DMs, only some players) and when (right away, when I reveal it, from a stage, once a story beat happens). The two can be combined, for example "Only Mira, from Act two". It says in a sentence what will happen before you apply it.
@@ -321,3 +321,16 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **Where it lives:** `src/features/hub/visibility/` (the dialog, and the rules for turning its answers into what is stored), `src/components/VisPicker.tsx`, `src/lib/entry-types.ts`, `src/components/tools/Npcs.tsx`, `tests/visibility.test.mjs`. How it works is in `CLAUDE.md`, under "Visibility: Who Sees What".
 - **What you do by hand, once:** apply the migration `20261016000001_visibility.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Apply it **before** this is put live.
 - **Not changed:** page blocks (the tabs you write) keep the visibility controls they have.
+
+### Item 5: dice (built, waiting for its database change)
+
+- **What it is:** a dice roller for each campaign. Every roll is made on the server, so nobody can choose their own result.
+- **Where to find it:** open a campaign, **Table tools**, then **Dice**. When the new sidebar is built (item 8) the same pieces move there.
+- **Rolling:** buttons for d4 to d100, or write your own (2d6+3, 1d8+1d6+2, 2d20kh1 for advantage, 2d20kl1 for disadvantage). A player with a character also gets **Tap to roll**: their attributes, saving throws, skills and initiative, with the modifier from their sheet.
+- **Who sees a roll:** a player picks Everyone, DM only, or Just me. You pick Everyone, DMs only, or some named players. Private rolls are drawn with the dashed "hidden" look and say who can see them.
+- **Ask for a roll:** you pick players and a check; it appears on their Dice page with one button. A **blind roll** is rolled by the player and seen only by you.
+- **Dice rules** (at the bottom of the Dice page, for you): whether players may roll to the DM only or just for themselves, whether your rolls are hidden by default, whether everyone sees the dice or only the total, and checks that are always private.
+- **The three switches from item 3** now do something: Tap to roll, Party dice log and Private rolls (Manage > Pages and features > Character sidebar).
+- **Who sees it:** you, behind the feature flag "Dice rolling, public and private".
+- **What you do by hand, once:** apply the migration `20261017000001_dice.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Apply it before this is put live.
+- **Left for later items:** tap to roll for attacks and spells (with the sheet, item 8), and the Initiative tool rolling NPC initiative as a hidden roll (with the Combat page, item 12).
