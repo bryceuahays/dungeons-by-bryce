@@ -159,7 +159,9 @@ test('a co-DM without "See hidden content" reads the campaign as a player does: 
   assert.ok(((await co.client.rpc('campaign_members', { c: C.id })).data ?? []).length >= 4, 'they get the list of who is in the campaign');
   const manage = await page(`/c/${C.slug}/manage`, co.session);
   assert.equal(manage.status, 200);
-  assert.ok(manage.text.includes('You are a co-DM of this campaign') && manage.text.includes('manage players and invites') && !manage.text.includes('People and permissions'));
+  assert.ok(manage.text.includes('You are a co-DM of this campaign') && manage.text.includes('manage players and invites'));
+  // not the owner's screen (the words 'People and permissions' are also a hub page's name in Pages and features)
+  assert.ok(!manage.text.includes('id="people"') && !manage.text.includes('Make co-DM') && !manage.text.includes('ppl-row'));
   assert.deepEqual(leaks(manage.text), []);
 });
 

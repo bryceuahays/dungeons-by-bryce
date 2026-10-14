@@ -57,7 +57,7 @@ function Row({ slug, person }: { slug: string; person: Person }) {
               <li key={p.id}>
                 <input id={`ppl-${person.id}-${p.id}`} type="checkbox" checked={perms[p.id]} onChange={(e) => tick(p.id, e.target.checked)} />
                 <label htmlFor={`ppl-${person.id}-${p.id}`}>{p.name}
-                  <span>{[p.what, NEEDS_HIDDEN.includes(p.id) ? 'Needs "See hidden content".' : '', NOT_YET.includes(p.id) ? 'Not built yet; kept for when it is.' : ''].filter(Boolean).join(' ')}</span>
+                  <span>{[p.what ? p.what + '.' : '', NEEDS_HIDDEN.includes(p.id) ? 'Needs "See hidden content".' : '', NOT_YET.includes(p.id) ? 'Not built yet; kept for when it is.' : ''].filter(Boolean).join(' ')}</span>
                 </label>
               </li>
             ))}
