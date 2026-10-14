@@ -81,6 +81,7 @@ export function DicePanel(p: {
     if (out.error) return setLast({ error: out.error });
     if (out.blind) { setLast({ note: `Rolled: ${out.label}. Your DM has the result.` }); if (body.request) setRequests((prev) => prev.filter((q) => q.id !== body.request)); return; }
     setLast({ roll: out.roll });
+    if (body.label) setWhat('');   // the note was for that roll, not the next one
     if (p.log) add(out.roll);
     if (body.request) setRequests((prev) => prev.filter((q) => q.id !== body.request));
   };
