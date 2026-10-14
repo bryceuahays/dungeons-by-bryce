@@ -260,7 +260,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 | 3 | Page and feature switches | [#84](https://github.com/bryceuahays/dungeons-by-bryce/issues/84) | Must | No | Built |
 | 4 | Visibility upgrades and partial NPC reveals | [#85](https://github.com/bryceuahays/dungeons-by-bryce/issues/85) | Must | Yes: `20261016000001_visibility.sql` | Waits for item 1, item 2 |
 | 5 | Dice rolling, public and private | [#86](https://github.com/bryceuahays/dungeons-by-bryce/issues/86) | Must | Yes: `20261017000001_dice.sql` | Waits for item 1, item 2, item 4 |
-| 6 | Co-DM screen and permissions | [#62](https://github.com/bryceuahays/dungeons-by-bryce/issues/62) (existing) | Must | Yes | Waits for item 1, item 5 |
+| 6 | Co-DM screen and permissions | [#62](https://github.com/bryceuahays/dungeons-by-bryce/issues/62) (existing) | Must | Yes: `20261018000001_co_dm_permissions.sql` | Waits for item 1, item 5 |
 | 7 | Campaign settings page | [#87](https://github.com/bryceuahays/dungeons-by-bryce/issues/87) | Must | No | Waits for item 1, item 2, item 3, item 5, item 6 |
 | 8 | Header, page tabs, character sidebar and phone layout | [#88](https://github.com/bryceuahays/dungeons-by-bryce/issues/88) | Must | No | Waits for item 1, item 2, item 3, item 5 |
 | 9 | Welcome page | [#89](https://github.com/bryceuahays/dungeons-by-bryce/issues/89) | Should | No | Waits for item 1, item 2, item 3, item 8 |
@@ -322,7 +322,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **What you do by hand, once:** apply the migration `20261016000001_visibility.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Apply it **before** this is put live.
 - **Not changed:** page blocks (the tabs you write) keep the visibility controls they have.
 
-### Item 5: dice (built, waiting for its database change)
+### Item 5: dice (built and live)
 
 - **What it is:** a dice roller for each campaign. Every roll is made on the server, so nobody can choose their own result.
 - **Where to find it:** open a campaign, **Table tools**, then **Dice**. When the new sidebar is built (item 8) the same pieces move there.
@@ -334,3 +334,16 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **Who sees it:** you, behind the feature flag "Dice rolling, public and private".
 - **What you do by hand, once:** apply the migration `20261017000001_dice.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Apply it before this is put live.
 - **Left for later items:** tap to roll for attacks and spells (with the sheet, item 8), and the Initiative tool rolling NPC initiative as a hidden roll (with the Combat page, item 12).
+
+### Item 6: co-DMs and permissions (built, waiting for its database change)
+
+- **What it is:** you can make someone in a campaign a co-DM and choose exactly what they may do.
+- **Where to find it:** a campaign's **Manage** page, **People and permissions**. It lists everyone in the campaign. A player has a "Make co-DM" button with a starting point; a co-DM has "Permissions", which opens ten tick boxes, and "Remove co-DM".
+- **The three starting points:** Full co-DM (everything you can do, except choosing co-DMs and deleting the campaign), Combat helper (runs the fight and sees private rolls; reads the rest as a player), Lore editor (sees everything hidden and edits pages; does not reveal things or change settings). Any mix of the ten is "Custom".
+- **To add someone new as a co-DM:** invite them as a player first, then make them a co-DM. There is no separate co-DM invite yet.
+- **What is enforced today:** see hidden content, edit pages and content, reveal (who sees something, and the stage), run combat, see private rolls, manage players and invites, change campaign settings. The database refuses what a co-DM has not been given; the page also leaves it out where it can.
+- **Three permissions are kept but govern nothing yet,** because their features are not built: push handouts, read player messages, write session recaps.
+- **A hole this closes:** before this, any co-DM could have made themselves the owner of a campaign by changing one field through the database. Now only the owner can hand a campaign over.
+- **Who sees the screen:** you, as a campaign's owner, behind the feature flag "Co-DM screen and permissions". The database rules apply to everyone as soon as the migration runs, and change nothing for an owner or for a co-DM without a shorter list.
+- **Where it lives:** `src/config/co-dm.ts` (the list), `src/features/hub/people/` (the screen), `src/lib/campaign.ts` (who counts as a DM), `tests/codm.test.mjs`. How it works is in `CLAUDE.md`, under "Co-DMs and Permissions".
+- **What you do by hand, once:** apply the migration `20261018000001_co_dm_permissions.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Apply it before this is put live.

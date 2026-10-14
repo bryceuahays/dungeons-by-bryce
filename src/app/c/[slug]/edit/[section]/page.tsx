@@ -13,7 +13,7 @@ export const metadata = { title: 'Edit page' };
 export default async function EditSection({ params }: { params: Promise<{ slug: string; section: string }> }) {
   const { slug, section } = await params;
   const ctx = await getCampaign(slug);
-  if (!ctx.realDm) redirect('/c/' + slug);
+  if (!ctx.realDm || !ctx.perms.edit) redirect('/c/' + slug);   // "Edit pages and content"
   const { data: sec } = await ctx.supabase.from('sections').select('slug, title, kind').eq('campaign_id', ctx.campaign.id).eq('slug', section).maybeSingle();
   if (!sec) notFound();
   const { data } = await ctx.supabase.from('content').select('*').eq('campaign_id', ctx.campaign.id).eq('section', section).order('sort').order('visibility', { ascending: false });

@@ -201,6 +201,18 @@ One rule decides who receives anything in a campaign, and it is written twice: `
 - **A published copy of a campaign** has none of the original's players: anything for named players becomes DM only (`src/lib/store.ts`).
 - **Page blocks are separate.** They keep their own controls (DM only, hidden, a stage, named players). New hub pages are built on entries.
 
+## Co-DMs and Permissions
+
+A campaign has one owner and any number of co-DMs. The owner chooses what each co-DM may do.
+
+- **The list is `src/config/co-dm.ts`:** ten permissions (`see_hidden`, `edit`, `reveal`, `combat`, `handouts`, `private_rolls`, `messages`, `recaps`, `players`, `settings`) and three presets. They are stored on the membership (`memberships.perms`). **Nothing stored means everything**, which is "Full co-DM" and what every co-DM had before permissions existed.
+- **The database decides.** `co_dm_can(campaign, permission)` is yes for the owner always, and for a co-DM whose permissions are empty or say yes. `reads_all()` asks for `see_hidden`; `can_edit()` asks for `edit`. Never check a permission only in the page.
+- **`edit`, `reveal` and `settings` need `see_hidden`** (`dm_may()` in the database, `cleanPerms()` in the app). A co-DM without `see_hidden` reads the campaign as a player does.
+- **In the app,** `ctx.realDm` and `ctx.isDm` mean "reads what a DM reads": the owner, or a co-DM with `see_hidden`. Use `ctx.perms.<name>` to leave out what the database would refuse, `ctx.isOwner` for what only the owner does, and `ctx.coDm` to tell a co-DM from the owner.
+- **Only the owner** chooses co-DMs (`set_co_dm()`), deletes the campaign, or hands it to someone else. Who owns a campaign cannot be changed by a co-DM.
+- **A new DM feature needs a permission.** Pick the one that fits and check it in the database rule for that feature with `co_dm_can()` (or `dm_may()` if it touches hidden things). `handouts`, `messages` and `recaps` are waiting for their features (items 20, 14 and 9).
+- **Keep `is_campaign_dm(campaign)` per campaign.** It still means "the owner or any co-DM of this campaign". Never add a site-wide DM check.
+
 ## Dice
 
 Dice are rolled on the server, never in the browser (`src/features/dice/`).
@@ -211,7 +223,7 @@ Dice are rolled on the server, never in the browser (`src/features/dice/`).
 - **Who may make which roll** is `decidePrivacy()` in `model.ts`, applied by the server: the campaign's dice rules (`settings.dice`), the "Private rolls" feature switch, and checks that are always private.
 - **Tap to roll:** a check's modifier is worked out by the rules engine on the server when the page is built and handed to the browser sealed (`myChecks()`); the browser can ask for that check but cannot change its number.
 - **The limit** of 30 rolls a minute per person is a database trigger.
-- **Co-DM permissions** are `memberships.perms` (empty means everything) and `co_dm_can(campaign, permission)`. Dice use one, `private_rolls`. Item 6 builds the rest on the same column.
+- **Private rolls** are read by the owner and by a co-DM with the `private_rolls` permission (see "Co-DMs and Permissions").
 - `notation.ts` (the parser) and `model.ts` are pure and tested as plain code.
 
 ## Hub Pages and Feature Switches

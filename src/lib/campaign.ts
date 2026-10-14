@@ -7,6 +7,7 @@ import { safeCssValue } from './sanitize';
 import type { Campaign, ContentRow, Section } from './types';
 import type { CampaignAccess } from './entitlements';
 import { entryOpen, type Viewer } from './entry-types';
+import { ALL_PERMS, NO_PERMS, permSet, type PermSet } from '@/config/co-dm';
 import { RULES, rulesOf, type RulesChoice } from '@/config/rules';
 import { campaignSystem } from '@/features/systems/data';
 import { applyText } from '@/features/systems/model';
@@ -37,7 +38,7 @@ export const getCampaign = cache(async (slug: string) => {
   const [viewer, { data: plan }, { data: row }] = await Promise.all([
     viewerP,
     supabase.rpc('campaign_access', { p_slug: slug }),
-    supabase.from('campaigns').select('*, sections(*), memberships(user_id, role), head_reveals(campaign_id)').eq('slug', slug).maybeSingle(),
+    supabase.from('campaigns').select('*, sections(*), memberships(*), head_reveals(campaign_id)').eq('slug', slug).maybeSingle(),
   ]);
   if (!row) {
     // an address from another phase sends you to the current one; anything else does not exist
@@ -45,9 +46,17 @@ export const getCampaign = cache(async (slug: string) => {
     if (now) redirect('/c/' + now);
     notFound();
   }
-  const { sections: allSections, memberships, head_reveals: reveal, ...campaign } = row as Campaign & { sections: Section[]; memberships: { user_id: string; role: string }[]; head_reveals: unknown };
-  // The DM of this campaign is whoever owns it (or has been made a co-DM of it).
-  const realDm = campaign.owner_id === viewer.user.id || (memberships ?? []).some((m) => m.user_id === viewer.user.id && m.role === 'dm');
+  const { sections: allSections, memberships, head_reveals: reveal, ...campaign } = row as Campaign & { sections: Section[]; memberships: { user_id: string; role: string; perms?: unknown }[]; head_reveals: unknown };
+  // The owner may do everything. A co-DM may do what the owner has chosen for them (nothing
+  // chosen means everything). These are for leaving out what the database would refuse anyway;
+  // the database is what decides.
+  const isOwner = campaign.owner_id === viewer.user.id;
+  const mine = (memberships ?? []).find((m) => m.user_id === viewer.user.id);
+  const coDm = !isOwner && mine?.role === 'dm';
+  const perms: PermSet = isOwner ? ALL_PERMS : coDm ? permSet(mine?.perms) : NO_PERMS;
+  // "The DM" to every page is whoever reads what a DM reads: the owner, or a co-DM with
+  // "See hidden content". A co-DM without it reads the campaign as a player does.
+  const realDm = isOwner || (coDm && perms.see_hidden);
   const preview = realDm ? readViewAs((await store).get(VIEW_AS_PLAYER)?.value) : null;
   const asPlayer = !!preview;
   // The Head DM, in a campaign someone else runs that they have unhidden: reads what its
@@ -77,7 +86,8 @@ export const getCampaign = cache(async (slug: string) => {
   // the plan of the DM who owns this campaign, and whether it can still be changed
   const access: CampaignAccess = { pro: !!plan?.pro, creator: !!plan?.creator, writable: plan?.writable !== false, paid: !!(plan?.paid ?? plan?.pro) };
   return {
-    access, canEdit: realDm && access.writable && !asPlayer,
+    access, canEdit: realDm && perms.edit && access.writable && !asPlayer,
+    isOwner, coDm, perms,
     viewAs: preview ?? { player: null, stage: null }, realPhase,
     ...viewer, campaign, sections, isDm, realDm, asPlayer, headView, faces,
     // what the DM calls the campaign; players only ever get campaign.title

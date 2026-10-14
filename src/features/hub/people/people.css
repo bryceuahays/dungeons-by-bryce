@@ -1,0 +1,30 @@
+/* People and permissions (PeopleForm.tsx), after SettingsPeople.png. Theme variables only. */
+.campaign .ppl{list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:10px; font-family:var(--body); font-size:15px; line-height:1.5}
+.campaign .ppl .ppl-row{border-radius:12px; background:var(--plate2); border:1px solid var(--line); padding:8px 14px; min-width:0}
+.campaign .ppl .ppl-row.co{border-color:var(--secret-line)}
+.campaign[data-radius] .ppl .ppl-row,.campaign[data-radius] .ppl button,.campaign[data-radius] .ppl select{border-radius:var(--radius)}
+.campaign .ppl .ppl-head{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; min-height:44px}
+.campaign .ppl .ppl-who{flex:1 1 180px; min-width:0; overflow-wrap:anywhere; color:var(--vellum)}
+.campaign .ppl .ppl-who small{display:block; font-size:13px; color:var(--dim)}
+.campaign .ppl .ppl-role{font-size:12px; font-weight:600; border-radius:999px; padding:2px 10px; color:var(--verd); border:1px solid color-mix(in srgb, var(--verd) 55%, var(--line))}
+.campaign .ppl .ppl-role.co{color:var(--secret-text); border-color:var(--secret-line)}
+.campaign .ppl .ppl-make{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.campaign .ppl select{width:auto; max-width:100%; min-height:44px; margin:0; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
+.campaign .ppl .ppl-btn,.campaign .ppl .small-btn{min-height:44px; padding:0 14px; border-radius:8px; background:var(--plate); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px; cursor:pointer}
+.campaign .ppl .ppl-btn.danger,.campaign .ppl .small-btn.danger{color:var(--ember-text); border-color:var(--ember)}
+.campaign .ppl .ppl-go{min-height:48px; padding:0 18px; border-radius:8px; background:var(--gold); color:var(--on-gold); border:0; font:inherit; font-weight:600; cursor:pointer}
+.campaign .ppl button:disabled{opacity:.5; cursor:default}
+.campaign .ppl button:focus-visible,.campaign .ppl select:focus-visible,.campaign .ppl input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+.campaign .ppl .ppl-sum{margin:2px 0 6px; font-size:13px; color:var(--vellum-soft); max-width:none}
+.campaign .ppl .ppl-perms{border-top:1px solid var(--line); padding:10px 0 6px}
+.campaign .ppl .ppl-preset{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 8px; font-size:13px; color:var(--dim)}
+.campaign .ppl .ppl-perms ul{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap:6px}
+.campaign .ppl .ppl-perms li{display:flex; align-items:flex-start; gap:10px; padding:0 10px; border-radius:8px; background:var(--field); min-width:0}
+.campaign .ppl .ppl-perms li label{flex:1; min-width:0; min-height:44px; box-sizing:border-box; margin:0; padding:10px 0; cursor:pointer; font-size:14px; color:var(--vellum); overflow-wrap:anywhere}
+.campaign .ppl .ppl-perms li label span{display:block; font-size:12px; color:var(--dim)}
+.campaign .ppl input[type=checkbox]{flex:none; width:18px; height:18px; margin:13px 0 0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:grid; place-content:center; background:var(--plate); border:1.5px solid var(--line-strong); border-radius:4px}
+.campaign .ppl input[type=checkbox]:checked{background:var(--gold); border-color:var(--gold)}
+.campaign .ppl input[type=checkbox]:checked::after{content:""; width:4px; height:9px; border:solid var(--on-gold); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}
+.campaign .ppl .ppl-acts{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0 0; max-width:none}
+.campaign .ppl .confirm-inline{display:inline-flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:14px}
+.campaign .ppl .ppl-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}

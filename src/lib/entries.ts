@@ -17,7 +17,9 @@ export const viewerOf = (ctx: CampaignCtx): Viewer => ({
   stages: ctx.campaign.phases.map((p) => p.id),
 });
 
-export async function getEntries(ctx: CampaignCtx, kinds: string[], opts: { secrets?: boolean } = {}): Promise<Entry[]> {
+// `opts.dm` is for a co-DM who runs combat without seeing the rest: they are given the
+// DM's half of the fight. The database only hands them the encounter's, whatever is asked.
+export async function getEntries(ctx: CampaignCtx, kinds: string[], opts: { secrets?: boolean; dm?: boolean } = {}): Promise<Entry[]> {
   const { data } = await ctx.supabase.from('entries').select('*').eq('campaign_id', ctx.campaign.id).in('kind', kinds).order('sort').order('created_at');
   let rows = (data ?? []) as Entry[];
   if (ctx.asPlayer) {
@@ -27,7 +29,7 @@ export async function getEntries(ctx: CampaignCtx, kinds: string[], opts: { secr
     const hit = new Set(((beats ?? []) as any[]).filter((b) => b.status === 'hit').map((b) => b.id as string));
     rows = rows.filter((e) => (v.player && e.owner === v.player) || (e.live && entryOpen(e, v, hit)));
   }
-  if (opts.secrets && ctx.isDm && rows.length) {
+  if (opts.secrets && (ctx.isDm || opts.dm) && rows.length) {
     const { data: secrets } = await ctx.supabase.from('entry_secrets').select('entry_id, data').eq('campaign_id', ctx.campaign.id);
     const by = new Map((secrets ?? []).map((s) => [s.entry_id, s.data]));
     rows = rows.map((r) => ({ ...r, secret: by.get(r.id) ?? {} }));
