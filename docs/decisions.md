@@ -298,3 +298,23 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 233. **Outside a campaign there is no "hidden" colour,** so the dialog on the homebrew page uses the standard purple with the hub's own colours for everything else.
 234. **Files changed beyond the issue's list,** each announced on the issue: the tool page (tells the picker the flag is on and which beats exist), the picture route, the store copy, and three homebrew files so attached homebrew gets the same dialog.
 235. **This finishes #58** (named players for attached homebrew and map regions). Attaching homebrew already offered named players; the map region and the preview were the missing parts.
+
+## Hub version 2, item 5: dice (13 October 2026)
+
+236. **The dice live on their own page for now,** Table tools > Dice. The plan puts them on the sidebar, which is item 8. The page is built from the pieces the sidebar will reuse.
+237. **Rolling goes through a server route, not a server action.** The plan says "a server action rolls it". A route does the same job on the server, and the automated tests can call it exactly as the page does, which they cannot do with an action. A request from another website is refused.
+238. **A browser can read rolls and can write none.** The server rolls with a secure random number generator and stores the result with the service role. Whatever a browser sends as a total, dice, name or owner is ignored.
+239. **A roll is stored as two rows,** the roll (who, label, total, who sees it) and its details (the dice and modifier). The setting "show the roll and modifier, not just the total" then really holds: with it off, another person's dice are not theirs to read, by page or by API. The roller and the DM always see them.
+240. **"Just me" means just the roller.** The DM cannot read it, and neither can the Head DM.
+241. **A blind roll is stored as DM only with a mark that the roller may not read it.** The player is told the roll happened and nothing else.
+242. **Tap to roll takes its modifier from the rules engine on the server.** The page hands the browser each check sealed with a signature; the browser can ask for that check to be rolled but cannot change the number, use another player's, or make one up. A sealed check lasts 12 hours, so a change to the sheet shows after the page is reloaded.
+243. **Tap to roll covers attributes, saving throws, skills and initiative.** Attacks and spells are left for the sheet (item 8): the rules engine does not work out attack bonuses yet.
+244. **The Initiative tool is not changed here.** Rolling NPC initiative as a hidden DM roll is left for the Combat page (item 12), which builds on that tool. The server side it needs (a DM's hidden roll) is in place.
+245. **The limit of 30 rolls a minute is held by the database,** so it applies however a roll is stored.
+246. **Co-DM permissions start here, one item early.** The dice spec needs "a co-DM without See private rolls cannot see private rolls" to be true, so this item adds where permissions are kept (empty means everything, so every co-DM today keeps full access) and uses one of them. There is no screen for it yet; that is item 6.
+247. **An always-private check is matched by its label.** A player's roll labelled "Insight" goes to the DM only when Insight is on the campaign's list, whether it was tapped or typed.
+248. **The DM's choices are Everyone, DMs only and named players,** as the plan lists them. A player cannot address a roll to another player.
+249. **"Private rolls" switched off (item 3) applies to players.** They then roll in the open. The DM can still roll hidden.
+250. **With the roll log switched off, no rolls are sent to the page at all,** not just hidden. A player still sees the result of their own roll as they make it.
+251. **The dice rules sit at the bottom of the Dice page for now.** Item 7 moves them into Campaign settings.
+252. **Rolls are never deleted by the site.** There is no "clear the log" yet; the log shows the latest 40.

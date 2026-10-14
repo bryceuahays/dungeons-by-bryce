@@ -201,6 +201,19 @@ One rule decides who receives anything in a campaign, and it is written twice: `
 - **A published copy of a campaign** has none of the original's players: anything for named players becomes DM only (`src/lib/store.ts`).
 - **Page blocks are separate.** They keep their own controls (DM only, hidden, a stage, named players). New hub pages are built on entries.
 
+## Dice
+
+Dice are rolled on the server, never in the browser (`src/features/dice/`).
+
+- **One way in.** The browser posts what to roll to `/c/<slug>/tools/dice/roll`. `server.ts` decides whether that roll may be made and who will see it, rolls it with `crypto.randomInt`, and stores it with the service role. Signed-in people can read the dice tables and can write none of them. Never add a second way to store a roll, and never roll in a client component.
+- **A roll is two rows:** `rolls` (who, label, total, privacy) and `roll_details` (the dice and modifier). A campaign that shows only totals keeps other people's details from them.
+- **Who may read a roll** is the database's rule (`rolls_select`) and the same rule in code, `rollOpen()` in `model.ts`, used for the DM's "view as player". **Change both or neither.** Privacy is `all`, `dm`, `self` (not even the DM) or `players` (a DM roll for named players); `blind` means the roller does not see their own result.
+- **Who may make which roll** is `decidePrivacy()` in `model.ts`, applied by the server: the campaign's dice rules (`settings.dice`), the "Private rolls" feature switch, and checks that are always private.
+- **Tap to roll:** a check's modifier is worked out by the rules engine on the server when the page is built and handed to the browser sealed (`myChecks()`); the browser can ask for that check but cannot change its number.
+- **The limit** of 30 rolls a minute per person is a database trigger.
+- **Co-DM permissions** are `memberships.perms` (empty means everything) and `co_dm_can(campaign, permission)`. Dice use one, `private_rolls`. Item 6 builds the rest on the same column.
+- `notation.ts` (the parser) and `model.ts` are pure and tested as plain code.
+
 ## Hub Pages and Feature Switches
 
 A DM chooses which hub pages a campaign has, and which features each page has (Manage > Pages and features).

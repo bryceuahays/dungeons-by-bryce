@@ -1,0 +1,45 @@
+/* Dice (DicePanel.tsx), after Sidebar.png and Settings.png. Theme variables only. */
+.campaign .dice{display:grid; grid-template-columns:repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap:20px; align-items:start; font-family:var(--body); font-size:15px; line-height:1.5; margin-top:14px}
+.campaign .dice .dice-card{background:var(--plate); border:1px solid var(--line); border-radius:14px; padding:18px; min-width:0; display:flex; flex-direction:column; gap:12px}
+.campaign[data-radius] .dice .dice-card,.campaign[data-radius] .dice button,.campaign[data-radius] .dice input,.campaign[data-radius] .dice select{border-radius:var(--radius)}
+.campaign .dice h3{margin:0; font-family:var(--display); font-weight:600; font-size:1.25rem; color:var(--vellum)}
+.campaign .dice p{margin:0; max-width:none}
+.campaign .dice .dice-dim{color:var(--dim); font-size:13px}
+.campaign .dice .dice-eyebrow{display:block; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--dim)}
+.campaign .dice button{font:inherit; cursor:pointer}
+.campaign .dice button:disabled{opacity:.5; cursor:default}
+.campaign .dice button:focus-visible,.campaign .dice input:focus-visible,.campaign .dice select:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+
+.campaign .dice .dice-who{display:flex; flex-direction:column; gap:6px}
+.campaign .dice .dice-seg{display:flex; gap:4px; padding:4px; border-radius:10px; background:var(--field); border:1px solid var(--line)}
+.campaign .dice .dice-seg button{flex:1; min-height:44px; padding:0 8px; border-radius:7px; border:0; background:transparent; color:var(--vellum-soft); font-size:13px}
+.campaign .dice .dice-seg button[aria-pressed=true]{background:var(--gold); color:var(--on-gold); font-weight:600}
+.campaign .dice .dice-seg button.priv[aria-pressed=true]{background:var(--secret); color:var(--void)}
+.campaign .dice .dice-named{display:flex; flex-wrap:wrap; gap:0 16px; background:var(--field); border-radius:10px; padding:2px 12px}
+.campaign .dice .dice-named label,.campaign .dice .dice-rule{display:flex; align-items:center; gap:10px; min-height:44px; margin:0; color:var(--vellum); font-size:14px; cursor:pointer}
+.campaign .dice input[type=checkbox]{flex:none; width:18px; height:18px; margin:0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:grid; place-content:center; background:var(--field); border:1.5px solid var(--line-strong); border-radius:4px}
+.campaign .dice .dice-named input[type=checkbox]{background:var(--plate)}
+.campaign .dice input[type=checkbox]:checked{background:var(--gold); border-color:var(--gold)}
+.campaign .dice input[type=checkbox]:checked::after{content:""; width:4px; height:9px; border:solid var(--on-gold); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}
+
+.campaign .dice .dice-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:6px}
+.campaign .dice .dice-die{min-height:48px; border-radius:8px; background:var(--plate2); color:var(--vellum); border:1px solid var(--line-strong); font-weight:600}
+.campaign .dice .dice-die:hover:not(:disabled),.campaign .dice .dice-check:hover:not(:disabled){border-color:var(--gold)}
+.campaign .dice .dice-custom{display:flex; flex-wrap:wrap; gap:8px 10px; align-items:flex-end}
+.campaign .dice .dice-custom label,.campaign .dice .dice-pick{display:flex; flex-direction:column; gap:2px; flex:1 1 140px; min-width:0; margin:0; font-size:13px; color:var(--dim)}
+.campaign .dice input:not([type=checkbox]),.campaign .dice select{width:100%; box-sizing:border-box; min-height:44px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:15px}
+.campaign .dice .dice-go{min-height:48px; padding:0 18px; border-radius:8px; background:var(--gold); color:var(--on-gold); border:0; font-weight:600}
+.campaign .dice .dice-quiet{min-height:44px; padding:0 14px; border-radius:8px; background:var(--plate2); color:var(--vellum); border:1px solid var(--line-strong); font-size:13px}
+.campaign .dice .dice-save{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+
+.campaign .dice .dice-last p,.campaign .dice .dice-log li{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; background:var(--plate2); border:1px solid transparent; min-width:0}
+.campaign .dice .dice-last p.priv,.campaign .dice .dice-log li.priv{background:var(--secret-bg); border:1px dashed var(--secret-line)}
+.campaign .dice .dice-last p.err{display:block; background:var(--ember-tint); color:var(--ember-text)}
+.campaign .dice .dice-last b,.campaign .dice .dice-log b{font-family:var(--display); font-size:1.4rem; font-weight:600; color:var(--vellum)}
+.campaign .dice .dice-log{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px}
+.campaign .dice .dice-roll-what{display:flex; flex-direction:column; min-width:0; overflow-wrap:anywhere}
+.campaign .dice .dice-roll-what small{font-size:12px; color:var(--dim)}
+
+.campaign .dice .dice-checks{display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:6px; margin-top:4px}
+.campaign .dice .dice-check{display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:44px; padding:0 10px; border-radius:8px; background:var(--plate2); color:var(--vellum); border:1px solid var(--line); font-size:14px; text-align:left}
+.campaign .dice .dice-ask{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 12px; padding:10px 12px; border-radius:10px; background:var(--gold-tint); border:1px solid color-mix(in srgb, var(--gold) 40%, var(--line))}
