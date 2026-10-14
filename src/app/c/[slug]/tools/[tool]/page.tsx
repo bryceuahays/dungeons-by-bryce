@@ -25,7 +25,11 @@ export async function generateMetadata({ params }: { params: Promise<{ tool: str
 
 // What every tool is told about the viewer. A DM previewing as a player is treated as
 // that player and cannot change anything; the Head DM looking in reads but cannot write.
-async function toolProps(ctx: CampaignCtx): Promise<ToolProps> {
+async function toolProps(ctx: CampaignCtx, tool: string): Promise<ToolProps> {
+  // A co-DM is offered what the owner chose for them: changing things needs "edit" or
+  // "reveal"; the fight needs "combat" (or "edit"). The database refuses the rest whatever is offered.
+  const may = !ctx.coDm || (tool === 'initiative' ? ctx.perms.combat || ctx.perms.edit : ctx.perms.edit || ctx.perms.reveal);
+  const runsFight = tool === 'initiative' && ctx.coDm && ctx.perms.combat && !ctx.asPlayer;
   let members = await getMembers(ctx);
   if (!members.length) {
     // players know each other by the names on the party list
@@ -37,7 +41,7 @@ async function toolProps(ctx: CampaignCtx): Promise<ToolProps> {
   return {
     campaignId: ctx.campaign.id, slug: ctx.campaign.slug,
     userId: ctx.asPlayer ? ctx.viewAs.player ?? '00000000-0000-0000-0000-000000000000' : ctx.user.id,
-    dm: ctx.isDm, canWrite: ctx.access.writable && !ctx.asPlayer && !ctx.headView,
+    dm: ctx.isDm || runsFight, canWrite: ctx.access.writable && !ctx.asPlayer && !ctx.headView && may,
     stages: ctx.campaign.phases, members,
     can: Object.fromEntries((Object.keys(FEATURES) as Feature[]).map((f) => [f, campaignCan(ctx.access, f)])),
     make: Object.fromEntries((Object.keys(FEATURES) as Feature[]).map((f) => [f, campaignCanMake(ctx.access, f)])),
@@ -56,10 +60,10 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
   if (def.feature && !campaignCan(ctx.access, def.feature)) {
     return <div className="cs-guide"><div className="wrap"><h2>{def.name}</h2><p className="lede">{def.what}</p><UpgradeHint feature={def.feature} dm={ctx.realDm} />{back}</div></div>;
   }
-  const p = await toolProps(ctx);
+  const p = await toolProps(ctx, tool);
   // a campaign playing a custom game system: its abilities on stat blocks and cards, and on the sheet
   const system = await campaignSheetSystem(ctx);
-  const dm = ctx.isDm;
+  const dm = p.dm;
   let body: React.ReactNode = null;
 
   if (tool === 'npcs') {
@@ -67,7 +71,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
     body = <NpcTool {...p} system={system} initial={rows} monsters={(monsters as any[]).map((m) => ({ id: m.id, name: m.name, source: m.source, data: m.data }))} consequences={cons} />;
   } else if (tool === 'initiative') {
     const [rows, chars, monsters, entities] = await Promise.all([
-      getEntries(ctx, ['encounter'], { secrets: true }),
+      getEntries(ctx, ['encounter'], { secrets: true, dm }),
       dm ? ctx.supabase.from('characters').select('id, owner, data').eq('campaign_id', ctx.campaign.id) : { data: [] },
       dm ? getSheetEntities(ctx, ['monster']) : [],
       dm ? getSheetEntities(ctx, undefined, { liteSpells: true }) : [],

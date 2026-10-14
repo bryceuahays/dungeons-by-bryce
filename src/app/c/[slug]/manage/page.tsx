@@ -16,6 +16,7 @@ import { CopyLink } from '@/components/CopyBox';
 import { CampaignSystemForm } from '@/features/systems/CampaignSystemForm';
 import { mySystems } from '@/features/systems/data';
 import { PagesAndFeatures } from '@/features/hub/switches/PagesAndFeatures';
+import { People, YourPermissions } from '@/features/hub/people/People';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const metadata = { title: 'Manage' };
@@ -24,7 +25,8 @@ export default async function Manage({ params, searchParams }: { params: Promise
   const { slug } = await params;
   const { imported } = await searchParams;
   const ctx = await getCampaign(slug);
-  if (!ctx.realDm) redirect('/c/' + slug);
+  // the DM, and a co-DM who manages players without seeing what is hidden
+  if (!ctx.realDm && !(ctx.coDm && ctx.perms.players)) redirect('/c/' + slug);
   const { supabase, campaign } = ctx;
   const [{ data: invites }, { data: members }, { data: profiles }, { data: allSections }, { data: chars }, { data: faces }] = await Promise.all([
     supabase.from('invites').select('*').eq('campaign_id', campaign.id).order('created_at', { ascending: false }),
@@ -50,7 +52,8 @@ export default async function Manage({ params, searchParams }: { params: Promise
     <div className="cs-guide">
       <div className="wrap">
         <h2>Manage {realTitle}</h2>
-        <p className="lede">Only you see this page. You are the DM of this campaign.</p>
+        <p className="lede">{ctx.coDm ? 'You are a co-DM of this campaign.' : 'Only you see this page. You are the DM of this campaign.'}</p>
+        {ctx.coDm ? <YourPermissions perms={ctx.perms} /> : null}
         {imported ? <p className="okmsg" role="status">Your campaign was created, with {newBlocks} block{newBlocks === 1 ? '' : 's'} in {newTabs} tab{newTabs === 1 ? '' : 's'} from the text you pasted. Open a tab and choose Edit this page to change anything.</p> : null}
 
         <h2>Reveal stages</h2>
@@ -125,6 +128,8 @@ export default async function Manage({ params, searchParams }: { params: Promise
           }) : <p className="who">Nobody has joined yet.</p>}
           <p className="who" style={{ marginTop: 10 }}>Removing a member takes away their access. Their characters stay on your Players tab until you remove them there.</p>
         </div>
+
+        <People slug={slug} campaignId={campaign.id} isOwner={ctx.isOwner} members={memberList} />
 
         <h2>Tabs</h2>
         <div className="plate">
