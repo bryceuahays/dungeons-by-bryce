@@ -1,0 +1,46 @@
+/* "Who sees this?" (WhoSees.tsx), after Visibility.png. Theme variables only.
+   Inside a campaign the variables are the campaign theme's. On hub pages outside a campaign
+   (attaching homebrew) the same names are pointed at the hub's own colours. */
+.hub .vis2,.hub > .vis2-dialog,.hub .vis2-dialog{
+  --void:var(--h-bg); --plate:var(--h-panel); --plate2:var(--h-panel-2); --field:var(--h-field); --line:var(--h-line); --line-strong:var(--h-line);
+  --vellum:var(--h-text); --vellum-soft:var(--h-text); --dim:var(--h-dim); --gold:var(--h-accent); --ember:var(--h-bad);
+  --secret:#b39ddb; --secret-bg:color-mix(in srgb, var(--secret) 10%, var(--plate)); --secret-line:color-mix(in srgb, var(--secret) 60%, var(--line)); --secret-text:color-mix(in srgb, var(--secret) 55%, var(--vellum));
+}
+.hub .vis2 .hid-tag{display:inline-block; font-size:.75rem; font-weight:600; line-height:1.5; color:var(--secret-text); background:var(--secret-bg); border:1px dashed var(--secret-line); border-radius:999px; padding:1px 9px}
+
+.vis2{display:inline-flex; flex-wrap:wrap; align-items:center; gap:6px 10px; max-width:100%}
+.vis2 .vis2-l{font-size:.85rem; color:var(--dim)}
+.vis2 .vis2-open{font-size:.85rem; font-weight:600; color:var(--vellum)}
+.vis2 .vis2-btn,dialog.vis2-dialog .vis2-btn{min-height:44px; padding:0 14px; border-radius:8px; background:var(--plate2); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:.9rem; cursor:pointer; width:auto}
+.vis2 .vis2-btn:disabled{opacity:.5; cursor:default}
+.vis2 .vis2-btn:hover:not(:disabled),dialog.vis2-dialog .vis2-btn:hover{border-color:var(--secret)}
+.vis2-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+
+dialog.vis2-dialog{width:min(440px, calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; box-sizing:border-box; margin:auto; padding:20px;
+  background:var(--plate); color:var(--vellum); border:1px solid var(--secret-line); border-radius:14px; font-family:var(--body, inherit); font-size:15px; line-height:1.5; text-align:left}
+dialog.vis2-dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog.vis2-dialog h3{margin:0 0 14px; font-family:var(--display, inherit); font-weight:600; font-size:1.35rem; color:var(--vellum); text-transform:none; letter-spacing:0}
+dialog.vis2-dialog fieldset{border:0; margin:0 0 14px; padding:0; min-width:0}
+dialog.vis2-dialog fieldset:disabled{opacity:.45}
+dialog.vis2-dialog legend{padding:0; margin:0 0 4px; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--dim)}
+dialog.vis2-dialog label.vis2-opt{display:flex; align-items:center; gap:12px; min-height:44px; margin:0; padding:0; cursor:pointer; color:var(--vellum); font-size:15px; font-weight:400; text-transform:none; letter-spacing:0}
+dialog.vis2-dialog .vis2-people{background:var(--field); border-radius:10px; padding:4px 14px; margin:4px 0 0 30px}
+dialog.vis2-dialog .vis2-when{display:flex; flex-wrap:wrap; align-items:center; gap:0 12px}
+dialog.vis2-dialog select{width:auto; max-width:100%; min-height:44px; margin:0 0 6px 30px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
+/* radios and tick boxes are drawn from the theme, so an empty one is light on a light theme */
+dialog.vis2-dialog input[type=radio],dialog.vis2-dialog input[type=checkbox]{flex:none; width:18px; height:18px; margin:0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:grid; place-content:center;
+  background:var(--field); border:1.5px solid var(--line-strong)}
+dialog.vis2-dialog input[type=radio]{border-radius:50%}
+dialog.vis2-dialog input[type=checkbox]{border-radius:4px}
+dialog.vis2-dialog input[type=radio]:checked{border-color:var(--secret)}
+dialog.vis2-dialog input[type=radio]:checked::after{content:""; width:10px; height:10px; border-radius:50%; background:var(--secret)}
+dialog.vis2-dialog input[type=checkbox]:checked{background:var(--secret); border-color:var(--secret)}
+dialog.vis2-dialog input[type=checkbox]:checked::after{content:""; width:4px; height:9px; border:solid var(--void); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}
+dialog.vis2-dialog input:disabled{opacity:.5; cursor:default}
+dialog.vis2-dialog input:focus-visible,dialog.vis2-dialog select:focus-visible,dialog.vis2-dialog button:focus-visible,.vis2 .vis2-btn:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+dialog.vis2-dialog .vis2-sum{margin:0 0 14px; padding:10px 12px; border-radius:10px; background:var(--secret-bg); border:1px dashed var(--secret-line); color:var(--secret-text); max-width:none}
+dialog.vis2-dialog .vis2-sum.open{background:var(--plate2); border:1px solid var(--line); color:var(--vellum-soft)}
+dialog.vis2-dialog .vis2-acts{display:flex; justify-content:flex-end; gap:10px; margin:0}
+dialog.vis2-dialog .vis2-apply{min-height:48px; padding:0 20px; border-radius:8px; background:var(--secret); color:var(--void); border:0; font:inherit; font-weight:600; cursor:pointer; width:auto}
+dialog.vis2-dialog .vis2-apply:disabled{opacity:.5; cursor:default}
+dialog.vis2-dialog .vis2-btn{min-height:48px}

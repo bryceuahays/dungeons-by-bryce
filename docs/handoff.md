@@ -258,7 +258,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 | 1 | Feature flags | [#1](https://github.com/bryceuahays/dungeons-by-bryce/issues/1) (existing) | Must | Yes (applied) | Built and live |
 | 2 | Design tokens and the hidden-from-players look | [#83](https://github.com/bryceuahays/dungeons-by-bryce/issues/83) | Must | No | Built |
 | 3 | Page and feature switches | [#84](https://github.com/bryceuahays/dungeons-by-bryce/issues/84) | Must | No | Built |
-| 4 | Visibility upgrades and partial NPC reveals | [#85](https://github.com/bryceuahays/dungeons-by-bryce/issues/85) | Must | Yes | Waits for item 1, item 2 |
+| 4 | Visibility upgrades and partial NPC reveals | [#85](https://github.com/bryceuahays/dungeons-by-bryce/issues/85) | Must | Yes: `20261016000001_visibility.sql` | Waits for item 1, item 2 |
 | 5 | Dice rolling, public and private | [#86](https://github.com/bryceuahays/dungeons-by-bryce/issues/86) | Must | Yes | Waits for item 1, item 2, item 4 |
 | 6 | Co-DM screen and permissions | [#62](https://github.com/bryceuahays/dungeons-by-bryce/issues/62) (existing) | Must | Yes | Waits for item 1, item 5 |
 | 7 | Campaign settings page | [#87](https://github.com/bryceuahays/dungeons-by-bryce/issues/87) | Must | No | Waits for item 1, item 2, item 3, item 5, item 6 |
@@ -310,3 +310,14 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **Who sees it:** you, because it is behind the feature flag "Page and feature switches". Other DMs do not until you turn that flag on under Head DM > Feature flags. Even then, a DM is only shown the switches of pages whose own flag is on.
 - **Where it lives:** `src/config/hub-features.ts` (the list and the rule), `src/features/hub/switches/` (the form and its save action), `tests/switches.test.mjs`. How to use it is in `CLAUDE.md`, under "Hub Pages and Feature Switches".
 - **What you do by hand:** nothing. No database change: the choices are kept in each campaign's existing settings.
+
+### Item 4: visibility and NPC partial reveals (built, waiting for its database change)
+
+- **What it is:** one way of choosing who sees something, for everything a DM makes with the table tools and for homebrew attached to a campaign.
+- **The new control:** a "Change" button next to "Who sees it" opens **Who sees this?**. It asks two things: who (every player, only DMs, only some players) and when (right away, when I reveal it, from a stage, once a story beat happens). The two can be combined, for example "Only Mira, from Act two". It says in a sentence what will happen before you apply it.
+- **NPC partial reveals:** when you edit an NPC there is a new choice, "What players see of them": everything, name and portrait, or name only. With name only, players who can see that NPC get the name and nothing else: no portrait, no status, no place, no faction, none of "what the players know".
+- **Also fixed:** a hidden part of a map can now be opened for named players only, and "View as player" now shows attached homebrew exactly as that player gets it. Before, the preview showed homebrew meant for a different player or a later stage. Real players were never shown it; only your preview was wrong.
+- **Who sees the new control:** you, because it is behind the feature flag "Visibility upgrades and partial NPC reveals". Other DMs keep the control they have until you turn that flag on under Head DM > Feature flags.
+- **Where it lives:** `src/features/hub/visibility/` (the dialog, and the rules for turning its answers into what is stored), `src/components/VisPicker.tsx`, `src/lib/entry-types.ts`, `src/components/tools/Npcs.tsx`, `tests/visibility.test.mjs`. How it works is in `CLAUDE.md`, under "Visibility: Who Sees What".
+- **What you do by hand, once:** apply the migration `20261016000001_visibility.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Apply it **before** this is put live.
+- **Not changed:** page blocks (the tabs you write) keep the visibility controls they have.

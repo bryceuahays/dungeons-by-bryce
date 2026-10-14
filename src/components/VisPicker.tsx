@@ -1,16 +1,28 @@
 'use client';
+import { useVisMode } from '@/features/hub/visibility/VisMode';
+import { WhoSees } from '@/features/hub/visibility/WhoSees';
 
 // "Who sees it": the one control for visibility, used on blocks, homebrew, NPCs, beats,
 // regions, pins, clocks and everything else that has it.
+//
+// Where the page has switched on the hub version 2 picker (the hub_v2_visibility flag, handed
+// down by <VisMode>), a DM's control is "Who sees this?" instead (src/features/hub/visibility):
+// every kind of content gets every choice, and who and when can be combined. Otherwise it is
+// the control below, exactly as it was.
 export type Vis = { vis: string; vis_players: string[]; vis_stage: string | null; vis_entry?: string | null };
 export type Stage = { id: string; label: string };
 export type Member = { user_id: string; display_name: string };
 
-const LABEL: Record<string, string> = { all: 'Everyone at the table', dm: 'DM only', players: 'Only the players I name', stage: 'Everyone, from a stage onward', entry: 'Everyone, once a story beat happens' };
+const LABEL: Record<string, string> = { all: 'Everyone at the table', dm: 'DM only', players: 'Only the players I name', stage: 'Everyone, from a stage onward', entry: 'Everyone, once a story beat happens',
+  players_stage: 'Only the players I name, from a stage onward', players_entry: 'Only the players I name, once a story beat happens' };
 
-export function VisPicker({ value, onChange, stages = [], members = [], beats = [], allow = ['all', 'dm', 'players', 'stage'], canName = true, disabled }: {
+export function VisPicker({ value, onChange, stages = [], members = [], beats: givenBeats, allow = ['all', 'dm', 'players', 'stage'], canName = true, disabled }: {
   value: Vis; onChange: (v: Vis) => void; stages?: Stage[]; members?: Member[]; beats?: { id: string; title: string }[]; allow?: string[]; canName?: boolean; disabled?: boolean;
 }) {
+  const mode = useVisMode();
+  // A control that offers "DM only" is a DM's. The few that do not (a beat being logged) keep the short list.
+  if (mode.on && allow.includes('dm')) return <WhoSees value={value} onChange={onChange} stages={stages} members={members} beats={givenBeats ?? mode.beats} canName={canName} disabled={disabled} />;
+  const beats = givenBeats ?? [];
   const options = allow.filter((o) => (o !== 'stage' || stages.length > 0) && (o !== 'entry' || beats.length > 0) && (o !== 'players' || members.length > 0));
   const set = (patch: Partial<Vis>) => onChange({ ...value, ...patch });
   return (
@@ -21,7 +33,7 @@ export function VisPicker({ value, onChange, stages = [], members = [], beats = 
           {options.includes(value.vis) ? null : <option value={value.vis}>{LABEL[value.vis] ?? value.vis}</option>}
         </select>
       </label>
-      {value.vis === 'stage' ? (
+      {value.vis === 'stage' || value.vis === 'players_stage' ? (
         <label className="vis-l">From
           <select value={value.vis_stage ?? ''} disabled={disabled} onChange={(e) => set({ vis_stage: e.target.value || null })}>
             <option value="">Choose a stage</option>
@@ -29,7 +41,7 @@ export function VisPicker({ value, onChange, stages = [], members = [], beats = 
           </select>
         </label>
       ) : null}
-      {value.vis === 'entry' ? (
+      {value.vis === 'entry' || value.vis === 'players_entry' ? (
         <label className="vis-l">When
           <select value={value.vis_entry ?? ''} disabled={disabled} onChange={(e) => set({ vis_entry: e.target.value || null })}>
             <option value="">Choose a beat</option>
@@ -37,7 +49,7 @@ export function VisPicker({ value, onChange, stages = [], members = [], beats = 
           </select>
         </label>
       ) : null}
-      {value.vis === 'players' ? (
+      {value.vis === 'players' || value.vis === 'players_stage' || value.vis === 'players_entry' ? (
         <span className="vis-who">
           {members.map((m) => (
             <label key={m.user_id} className="vis-ck">
@@ -52,8 +64,10 @@ export function VisPicker({ value, onChange, stages = [], members = [], beats = 
   );
 }
 
-export const visLabel = (v: Vis, stages: Stage[] = [], members: Member[] = [], beats: { id: string; title: string }[] = []) =>
+export const visLabel = (v: Vis, stages: Stage[] = [], members: Member[] = [], beats: { id: string; title: string }[] = []): string =>
   v.vis === 'all' ? 'Everyone' : v.vis === 'dm' ? 'DM only'
     : v.vis === 'stage' ? `From ${stages.find((s) => s.id === v.vis_stage)?.label ?? 'a stage'}`
     : v.vis === 'entry' ? `After "${beats.find((b) => b.id === v.vis_entry)?.title ?? 'a beat'}"`
+    : v.vis === 'players_stage' ? `${visLabel({ ...v, vis: 'players' }, stages, members)}, from ${stages.find((s) => s.id === v.vis_stage)?.label ?? 'a stage'}`
+    : v.vis === 'players_entry' ? `${visLabel({ ...v, vis: 'players' }, stages, members)}, after "${beats.find((b) => b.id === v.vis_entry)?.title ?? 'a beat'}"`
     : `Only ${v.vis_players.map((id) => members.find((m) => m.user_id === id)?.display_name ?? 'a player').join(', ') || 'named players'}`;

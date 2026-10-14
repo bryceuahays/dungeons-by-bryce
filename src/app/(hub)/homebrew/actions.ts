@@ -93,11 +93,11 @@ export async function cloneEntity(id: string, _: BrewState, __: FormData): Promi
 }
 
 // Attach an entry to one of your campaigns (or detach it), with who may see it there.
-export async function setAttached(entityId: string, campaignId: string, on: boolean, vis?: { vis: string; vis_players: string[]; vis_stage: string | null }): Promise<BrewState> {
+export async function setAttached(entityId: string, campaignId: string, on: boolean, vis?: { vis: string; vis_players: string[]; vis_stage: string | null; vis_entry?: string | null }): Promise<BrewState> {
   const { supabase } = await requireViewer();
   if (!on) { await supabase.from('campaign_entities').delete().eq('campaign_id', campaignId).eq('entity_id', entityId); revalidatePath('/homebrew/' + entityId); return { note: 'Removed from that campaign.' }; }
   const v = vis ?? { vis: 'all', vis_players: [], vis_stage: null };
-  const { error } = await supabase.from('campaign_entities').upsert({ campaign_id: campaignId, entity_id: entityId, vis: v.vis, vis_players: v.vis_players ?? [], vis_stage: v.vis_stage || null });
+  const { error } = await supabase.from('campaign_entities').upsert({ campaign_id: campaignId, entity_id: entityId, vis: v.vis, vis_players: v.vis_players ?? [], vis_stage: v.vis_stage || null, ...(v.vis_entry ? { vis_entry: v.vis_entry } : v.vis === 'entry' || v.vis === 'players_entry' ? { vis_entry: null } : {}) });
   if (error) return fail(error.message, 'That could not be attached. You can attach your own entries to campaigns you run.');
   revalidatePath('/homebrew/' + entityId);
   return { note: 'Saved.' };

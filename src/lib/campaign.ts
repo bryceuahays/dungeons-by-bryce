@@ -6,6 +6,7 @@ import { requireViewer } from './auth';
 import { safeCssValue } from './sanitize';
 import type { Campaign, ContentRow, Section } from './types';
 import type { CampaignAccess } from './entitlements';
+import { entryOpen, type Viewer } from './entry-types';
 import { RULES, rulesOf, type RulesChoice } from '@/config/rules';
 import { campaignSystem } from '@/features/systems/data';
 import { applyText } from '@/features/systems/model';
@@ -191,12 +192,22 @@ async function sheetEntities(ctx: CampaignCtx, types: string[], opts: { liteSpel
     // a character outside any campaign (opts.owner) draws on its owner's own homebrew instead of a campaign's
     opts.owner
       ? ctx.supabase.from('entities').select(cols).eq('owner_id', opts.owner).neq('source', 'srd').in('type', types).order('name')
-      : ctx.supabase.from('campaign_entities').select(`vis, vis_players, vis_stage, entities(${cols})`).eq('campaign_id', ctx.campaign.id),
+      : ctx.supabase.from('campaign_entities').select(`*, entities(${cols})`).eq('campaign_id', ctx.campaign.id),
   ]);
+  // The DM previewing as a player gets what that player gets. The database has already left out
+  // what a real player may not have; the DM's own login reads everything, so the rule is applied here.
+  let open = (_a: any) => true;
+  if (!opts.owner && ctx.asPlayer) {
+    const rows = (attached.data ?? []) as any[];
+    const { data: beats } = rows.some((a) => a.vis === 'entry' || a.vis === 'players_entry')
+      ? await ctx.supabase.from('entries').select('id').eq('campaign_id', ctx.campaign.id).eq('kind', 'beat').eq('status', 'hit') : { data: [] as any[] };
+    const hit = new Set(((beats ?? []) as any[]).map((b) => b.id as string));
+    const viewer: Viewer = { player: ctx.viewAs.player, stage: ctx.campaign.phase, stages: ctx.campaign.phases.map((p) => p.id) };
+    open = (a: any) => a.entities.status !== 'draft' && entryOpen(a, viewer, hit);
+  }
   const mine = opts.owner ? ((attached.data ?? []) as any[]) : ((attached.data ?? []) as any[])
     .filter((a) => a.entities && types.includes(a.entities.type))
-    // the DM previewing as a player gets what players get
-    .filter((a) => ctx.realDm && !ctx.asPlayer ? true : a.entities.status !== 'draft' && a.vis !== 'dm')
+    .filter((a) => (ctx.realDm && !ctx.asPlayer ? true : ctx.asPlayer ? open(a) : a.entities.status !== 'draft' && a.vis !== 'dm'))
     .map((a) => a.entities);
   // homebrew that replaces an SRD entry (a Warlock reskin, someone's own version of the Fighter) hides
   // that entry here, in every rules version (matched by kind and name); characters that already use it

@@ -9,6 +9,8 @@ import { RulesProvider } from '@/features/systems/RulesContext';
 import { editorRulesFor } from '@/features/systems/brew';
 import { EntityCard } from '@/components/EntityCard';
 import { CloneButton } from '@/components/BrewForms';
+import { flag } from '@/lib/flags';
+import { VisMode } from '@/features/hub/visibility/VisMode';
 import { loadClassOptions, loadFeatOptions, loadItemNames, loadSpellOptions, loadSubclassOptions } from '@/lib/class-spells';
 
 export const metadata = { title: 'Homebrew entry' };
@@ -37,7 +39,7 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
     supabase.from('entities').select('type, name, data').eq('source', 'srd').eq('type', e.type).order('srd_version').limit(700),
     supabase.from('entity_versions').select('version, note, name, data, created_at').eq('entity_id', id).order('version', { ascending: false }),
     supabase.from('campaigns').select('id, title, phases').eq('owner_id', user.id).order('created_at'),
-    supabase.from('campaign_entities').select('campaign_id, vis, vis_players, vis_stage').eq('entity_id', id),
+    supabase.from('campaign_entities').select('*').eq('entity_id', id),
     e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' || e.type === 'resource' ? loadSpellOptions(supabase, user.id) : Promise.resolve(undefined),
     e.type === 'class' || e.type === 'subclass' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'resource' ? loadFeatOptions(supabase) : Promise.resolve(undefined),
     e.type === 'class' ? loadSubclassOptions(supabase, user.id) : Promise.resolve(undefined),
@@ -58,17 +60,22 @@ export default async function EntityPage({ params }: { params: Promise<{ id: str
   };
   const data = base ? { ...e.data, startEquip: e.data.startEquip ?? base.startEquip, multiclass: e.data.multiclass ?? base.multiclass, features: (e.data.features ?? []).map(filled) } : e.data;
   const real = new Map((faces.data ?? []).map((f) => [f.campaign_id, f.title]));
+  // hub version 2 visibility: attaching offers every choice, including "once a story beat happens" in that campaign
+  const visV2 = await flag('hub_v2_visibility');
+  const { data: beatRows } = visV2 && (campaigns ?? []).length ? await supabase.from('entries').select('id, title, campaign_id').eq('kind', 'beat').in('campaign_id', (campaigns ?? []).map((c) => c.id)).order('sort') : { data: [] as any[] };
   const links = (campaigns ?? []).map((c, i) => {
     const a = (attached ?? []).find((x) => x.campaign_id === c.id);
-    return { id: c.id as string, title: (real.get(c.id) ?? c.title) as string, stages: (c.phases ?? []) as any[], members: ((members[i].data ?? []) as any[]).map((m) => ({ user_id: m.user_id, display_name: m.display_name })), attached: a ? { vis: a.vis, vis_players: a.vis_players ?? [], vis_stage: a.vis_stage } : null };
+    return { id: c.id as string, title: (real.get(c.id) ?? c.title) as string, stages: (c.phases ?? []) as any[], members: ((members[i].data ?? []) as any[]).map((m) => ({ user_id: m.user_id, display_name: m.display_name })), beats: ((beatRows ?? []) as any[]).filter((b) => b.campaign_id === c.id).map((b) => ({ id: b.id as string, title: b.title as string })), attached: a ? { vis: a.vis, vis_players: a.vis_players ?? [], vis_stage: a.vis_stage, vis_entry: a.vis_entry ?? null } : null };
   });
   return (
     <>
       {plan.pro && (e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' || e.type === 'resource') ? null : <h1>{TYPES[e.type]?.label ?? 'Entry'}: {e.name}</h1>}
       <div className="inline" style={{ marginBottom: 12 }}>{plan.pro && (e.type === 'class' || e.type === 'subclass' || e.type === 'spell' || e.type === 'feat' || e.type === 'race' || e.type === 'background' || e.type === 'item' || e.type === 'monster' || e.type === 'resource') ? null : <Link className="button quiet" href="/homebrew">All my homebrew</Link>}<CloneButton id={e.id} label="Make a copy" /></div>
       <RulesProvider value={er?.rules ?? null}>
+      <VisMode on={visV2}>
       <EntityEditor key={e.updated_at} id={e.id} pro={plan.pro} srd={srd ?? []} versions={(versions ?? []) as any[]} campaigns={links} version={e.version} changeNote={e.change_note} clonedFrom={e.cloned_from} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items}
         initial={{ type: e.type, name: e.name, status: e.status, depth: e.depth, source: e.source, data }} />
+      </VisMode>
       </RulesProvider>
     </>
   );
