@@ -181,6 +181,20 @@ Environment variable names (values are never written down here): `NEXT_PUBLIC_SU
 - Only Bryce deploys, or a session he has told to in that session. Preview deployments sit behind a Vercel login.
 - Order for a change that needs the database: apply the additive migration first, deploy the code, then run any import or seed script.
 
+### Bryce tests a preview before anything goes live
+
+Bryce's rule (15 October 2026): every change gets a link he can test before it is merged and put live.
+
+1. When the pull request is ready (build and tests pass), deploy a preview of the branch: `npx vercel --yes` (no `--prod`).
+2. Point the fixed test address at it: `npx vercel alias set <the preview's own address> dungeons-by-bryce-preview.vercel.app`. One address means Bryce can bookmark it and stays signed in there.
+3. Send Bryce **https://dungeons-by-bryce-preview.vercel.app** with what to try, and remind him that:
+   - it sits behind Vercel's login (he signs in to Vercel once in that browser);
+   - it uses the one live database, so what he saves there is real;
+   - every hub version 2 feature flag is on in a preview (`src/lib/flags.ts`), so it shows unreleased pieces too.
+4. Merge and `npx vercel --prod` only when Bryce says so.
+
+A change with a migration: Bryce applies the migration first, then the preview is made, because the preview runs against the live database.
+
 ## Hub Design
 
 New hub pages follow `docs/design/design-system.md`.
