@@ -1,0 +1,15 @@
+/* The reveal controls on a page block (issue 117). Theme variables only. */
+.br{flex:1 1 100%; display:flex; flex-direction:column; gap:8px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--field)}
+.br-switch{display:inline-flex; align-items:center; gap:12px; min-height:44px; padding:0; border:0; background:none; color:var(--vellum); font:inherit; font-size:15px; cursor:pointer; align-self:flex-start}
+.br-switch:disabled{opacity:.6; cursor:default}
+.br-knob{position:relative; flex:none; width:44px; height:26px; border-radius:13px; background:var(--line-strong); transition:background .15s}
+.br-knob::after{content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:var(--vellum); transition:transform .15s}
+.br-switch.on .br-knob{background:var(--verd)}
+.br-switch.on .br-knob::after{transform:translateX(18px)}
+.br-switch:focus-visible{outline:2px solid var(--verd); outline-offset:3px; border-radius:6px}
+.br-auto{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:flex-end}
+.br-auto label{display:flex; flex-direction:column; gap:4px; min-width:0; max-width:100%; margin:0; font-size:13px; color:var(--dim); text-transform:none; letter-spacing:0}
+.br-auto select,.br-auto input{box-sizing:border-box; min-height:44px; max-width:100%; padding:0 10px; border-radius:8px; background:var(--void); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
+.br-auto input{width:6rem}
+.br-note{margin:0; font-size:14px; color:var(--dim)}
+@media (max-width:480px){.br-auto{flex-direction:column; align-items:stretch}}

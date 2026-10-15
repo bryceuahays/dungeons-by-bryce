@@ -64,11 +64,16 @@ export default async function Manage({ params, searchParams }: { params: Promise
       {imported ? <p className="okmsg" role="status">Your campaign was created, with {newBlocks} block{newBlocks === 1 ? '' : 's'} in {newTabs} tab{newTabs === 1 ? '' : 's'} from the text you pasted. Open a tab and choose Edit this page to change anything.</p> : null}
     </>
   );
+  // hub version 2 reveals (issue 117): stages are called chapters
+  const chapters = await flag('hub_v2_visibility');
+  const st = (stage: string, chapter: string) => (chapters ? chapter : stage);
   const stagesPart = (
     <>
-      <h2>Reveal stages</h2>
+      <h2>{st('Reveal stages', 'Chapters')}</h2>
       <div className="plate">
-        <p>A stage sets what players can reach: the campaign&apos;s title and web address, which tabs and blocks exist for them, and what the table tools show. Anything held for another stage is held back by the database itself, not just hidden on the page.</p>
+        {chapters ? (
+          <p>Chapters are the big turning points of your story. Moving to the next chapter can change what players can reach: the campaign&apos;s title and web address, which tabs and blocks exist for them, and what the table tools show. Anything held for a later chapter is held back by the database itself, not just hidden on the page. For smaller reveals, give a block or an entry its own trigger instead: when a session starts or is played, or when a story beat happens.</p>
+        ) : <p>A stage sets what players can reach: the campaign&apos;s title and web address, which tabs and blocks exist for them, and what the table tools show. Anything held for another stage is held back by the database itself, not just hidden on the page.</p>}
         {campaign.phases.length ? (
           <>
             <div className="chips">
@@ -79,15 +84,15 @@ export default async function Manage({ params, searchParams }: { params: Promise
               ))}
             </div>
             <p className="row" style={{ marginTop: 10 }}>
-              <form action={stepStage.bind(null, slug, -1)}><button className="act sm" type="submit" disabled={stageAt <= 0}>Roll back one stage</button></form>
-              <form action={stepStage.bind(null, slug, 1)}><button className="act" type="submit" disabled={stageAt < 0 || stageAt >= campaign.phases.length - 1}>Advance to the next stage</button></form>
+              <form action={stepStage.bind(null, slug, -1)}><button className="act sm" type="submit" disabled={stageAt <= 0}>{st('Roll back one stage', 'Back one chapter')}</button></form>
+              <form action={stepStage.bind(null, slug, 1)}><button className="act" type="submit" disabled={stageAt < 0 || stageAt >= campaign.phases.length - 1}>{st('Advance to the next stage', 'Start the next chapter')}</button></form>
             </p>
             <p className="who">Now: {campaign.phases.find((p) => p.id === campaign.phase)?.label ?? 'not set'}. Players see this campaign as &quot;{campaign.title}&quot; at /c/{campaign.slug}.</p>
           </>
-        ) : <p className="who">This campaign has no stages yet, so everything players can see is shown from the start. Add two below for a before-and-after reveal.</p>}
+        ) : <p className="who">{st('This campaign has no stages yet, so everything players can see is shown from the start. Add two below for a before-and-after reveal.', 'This campaign has no chapters yet. You do not need any: blocks and entries can be revealed by hand or when a session starts. Add chapters below if your story has big turning points.')}</p>}
         <details style={{ marginTop: 10 }} open={!campaign.phases.length}>
-          <summary className="muted" style={{ cursor: 'pointer' }}>Add, rename, reorder or remove stages</summary>
-          <StagesForm slug={slug} stages={campaign.phases} pro={campaignCanMake(ctx.access, 'stages')} />
+          <summary className="muted" style={{ cursor: 'pointer' }}>{st('Add, rename, reorder or remove stages', 'Add, rename, reorder or remove chapters')}</summary>
+          <StagesForm slug={slug} stages={campaign.phases} pro={campaignCanMake(ctx.access, 'stages')} chapters={chapters} />
           {campaignCanMake(ctx.access, 'stages') ? null : <UpgradeHint feature="stages" />}
         </details>
       </div>
@@ -97,10 +102,10 @@ export default async function Manage({ params, searchParams }: { params: Promise
     <>
       <h2>Preview</h2>
       <div className="plate">
-        <p>See every page exactly as a player receives it. DM-only content is left out on the server, not just hidden. Choose a player to check what only they can see, and a stage to check what the table will see later.</p>
+        <p>See every page exactly as a player receives it. DM-only content is left out on the server, not just hidden. Choose a player to check what only they can see, and {st('a stage', 'a chapter')} to check what the table will see later.</p>
         <form action={previewAs.bind(null, slug)} className="row">
           <label className="f">As<select name="player" defaultValue=""><option value="">Any player</option>{memberList.map((m) => <option key={m.user_id} value={m.user_id}>{m.display_name || 'Unnamed'}</option>)}</select></label>
-          {campaign.phases.length ? <label className="f">At<select name="stage" defaultValue=""><option value="">The current stage</option>{campaign.phases.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select></label> : null}
+          {campaign.phases.length ? <label className="f">At<select name="stage" defaultValue=""><option value="">{st('The current stage', 'The current chapter')}</option>{campaign.phases.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select></label> : null}
           <button className="act" type="submit">View as</button>
         </form>
       </div>

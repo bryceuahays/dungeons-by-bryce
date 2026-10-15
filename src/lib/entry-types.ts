@@ -8,18 +8,23 @@ export type Entry = {
   secret?: Record<string, any>;   // only ever filled in for the DM
 };
 
-export type Viewer = { player: string | null; stage: string; stages: string[] };
+// `met` is the reveal triggers that have happened (src/features/hub/reveals/triggers.ts); without
+// it, nothing that waits for a trigger is open.
+export type Viewer = { player: string | null; stage: string; stages: string[]; met?: ReadonlySet<string> };
 
 // `hit` is the ids of the story beats that have happened.
 //   all            every member            players        the named players
 //   stage          from that stage on      entry          once that beat has happened
 //   players_stage  the named players, from that stage on
 //   players_entry  the named players, once that beat has happened
+//   when           everyone, once the trigger in vis_stage has happened (sessions, beats, chapters)
+//   players_when   the named players, once that trigger has happened
 //   anything else (dm)  nobody but the DM
 export function entryOpen(e: Pick<Entry, 'vis' | 'vis_players' | 'vis_stage' | 'vis_entry'>, v: Viewer, hit: Set<string>): boolean {
   const named = () => !!v.player && (e.vis_players ?? []).includes(v.player);
   const reached = () => { if (!e.vis_stage) return true; const at = v.stages.indexOf(e.vis_stage), now = v.stages.indexOf(v.stage); return at >= 0 && now >= at; };
   const happened = () => !!e.vis_entry && hit.has(e.vis_entry);
+  const triggered = () => !!e.vis_stage && !!v.met && v.met.has(e.vis_stage);
   switch (e.vis) {
     case 'all': return true;
     case 'players': return named();
@@ -27,6 +32,8 @@ export function entryOpen(e: Pick<Entry, 'vis' | 'vis_players' | 'vis_stage' | '
     case 'entry': return happened();
     case 'players_stage': return named() && reached();
     case 'players_entry': return named() && happened();
+    case 'when': return triggered();
+    case 'players_when': return named() && triggered();
     default: return false;
   }
 }

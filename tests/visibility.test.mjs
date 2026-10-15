@@ -14,7 +14,11 @@ import { WHEN, WHO, describe, fromChoice, namesPlayers, npcFull, npcSplit, probl
 import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, page, wait } from './helpers.mjs';
 
 const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', BEAT = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-const VALUES = ['all', 'dm', 'players', 'stage', 'entry', 'players_stage', 'players_entry'];
+// 'when' and 'players_when' (a trigger: a session, a beat or a chapter) came with issue 117
+const VALUES = ['all', 'dm', 'players', 'stage', 'entry', 'players_stage', 'players_entry', 'when', 'players_when'];
+// the newest migration that says this (a later one replaces an earlier one's definition)
+const newest = (marker) => fs.readdirSync(path.join(ROOT, 'supabase/migrations')).sort().reverse()
+  .map((f) => fs.readFileSync(path.join(ROOT, 'supabase/migrations', f), 'utf8')).find((s) => s.includes(marker));
 
 // ------------------------------------------------------------------ the rule, in code
 
@@ -46,18 +50,19 @@ test('the rule: who and when, alone and combined', () => {
   assert.equal(entryOpen(row('entry', { vis_entry: null }), at(A, 's2'), hit), false);
 });
 
-test('the database rule and the code rule know the same seven values', () => {
-  const sql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261016000001_visibility.sql'), 'utf8');
-  const fn = sql.slice(sql.indexOf('create or replace function public.entry_open'), sql.indexOf('-- ================================================================ 2.'));
+test('the database rule and the code rule know the same values', () => {
+  const sql = newest('create or replace function public.entry_open');
+  const from = sql.indexOf('create or replace function public.entry_open');
+  const fn = sql.slice(from, sql.indexOf('$$;', from));
   assert.deepEqual([...fn.matchAll(/when '([a-z_]+)' then/g)].map((m) => m[1]).sort(), VALUES.filter((v) => v !== 'dm').sort(), 'entry_open() opens exactly these; anything else, DM only included, is closed');
   const ts = fs.readFileSync(path.join(ROOT, 'src/lib/entry-types.ts'), 'utf8');
   assert.deepEqual([...ts.matchAll(/case '([a-z_]+)': return/g)].map((m) => m[1]).sort(), VALUES.filter((v) => v !== 'dm').sort(), 'and so does entryOpen()');
-  for (const table of ['entries', 'campaign_entities']) assert.match(sql, new RegExp(`alter table public\\.${table} add constraint ${table}_vis_check\\s+check \\(vis in \\('all', 'dm', 'players', 'stage', 'entry', 'players_stage', 'players_entry'\\)\\)`), table + ' accepts the seven values');
+  for (const table of ['entries', 'campaign_entities']) assert.match(newest(`add constraint ${table}_vis_check`), new RegExp(`alter table public\\.${table} add constraint ${table}_vis_check\\s+check \\(vis in \\(${VALUES.map((v) => `'${v}'`).join(', ')}\\)\\)`), table + ' accepts exactly these values');
 });
 
 test('the picker\'s two questions turn into one stored value and back', () => {
   const base = { vis_players: [A], vis_stage: 's2', vis_entry: BEAT };
-  for (const vis of VALUES.filter((v) => v !== 'dm')) assert.equal(fromChoice(toChoice({ vis, ...base })).vis, vis, vis + ' survives the round trip');
+  for (const vis of VALUES.filter((v) => v !== 'dm')) assert.equal(fromChoice(toChoice({ vis, ...base, ...(/when$/.test(vis) ? { vis_stage: 'session:3:played' } : {}) })).vis, vis, vis + ' survives the round trip');
   assert.deepEqual(toChoice({ vis: 'players_stage', ...base }), { who: 'players', when: 'stage', players: [A], stage: 's2', entry: BEAT });
   assert.deepEqual(toChoice({ vis: 'entry', ...base }), { who: 'all', when: 'entry', players: [A], stage: 's2', entry: BEAT });
   // "only DMs" forgets the names; "when I reveal it" keeps them and is still closed
@@ -74,7 +79,7 @@ test('the picker\'s two questions turn into one stored value and back', () => {
   assert.ok(namesPlayers('players_entry') && !namesPlayers('entry') && waitsForStage('players_stage') && !waitsForStage('players') && waitsForBeat('entry') && waitsForBeat('players_entry'));
   // it will not save an answer with a hole in it
   assert.equal(problem({ who: 'players', when: 'now', players: [], stage: null, entry: null }), 'Choose at least one player.');
-  assert.equal(problem({ who: 'all', when: 'stage', players: [], stage: null, entry: null }), 'Choose a stage.');
+  assert.equal(problem({ who: 'all', when: 'stage', players: [], stage: null, entry: null }), 'Choose a chapter.');
   assert.equal(problem({ who: 'players', when: 'entry', players: [A], stage: null, entry: null }), 'Choose a story beat.');
   assert.equal(problem({ who: 'dm', when: 'stage', players: [], stage: null, entry: null }), null, 'only DMs needs no when');
   assert.equal(problem({ who: 'players', when: 'stage', players: [A], stage: 's2', entry: null }), null);

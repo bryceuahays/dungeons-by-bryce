@@ -27,6 +27,8 @@ dialog.vis2-dialog label.vis2-opt{display:flex; align-items:center; gap:12px; mi
 dialog.vis2-dialog .vis2-people{background:var(--field); border-radius:10px; padding:4px 14px; margin:4px 0 0 30px}
 dialog.vis2-dialog .vis2-when{display:flex; flex-wrap:wrap; align-items:center; gap:0 12px}
 dialog.vis2-dialog select{width:auto; max-width:100%; min-height:44px; margin:0 0 6px 30px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
+dialog.vis2-dialog label.vis2-num{display:flex; align-items:center; gap:8px; margin:0 0 6px 30px; color:var(--vellum); font-size:14px; text-transform:none; letter-spacing:0}
+dialog.vis2-dialog .vis2-num input{width:5.5rem; min-height:44px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit}
 /* radios and tick boxes are drawn from the theme, so an empty one is light on a light theme */
 dialog.vis2-dialog input[type=radio],dialog.vis2-dialog input[type=checkbox]{flex:none; width:18px; height:18px; margin:0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:grid; place-content:center;
   background:var(--field); border:1.5px solid var(--line-strong)}
