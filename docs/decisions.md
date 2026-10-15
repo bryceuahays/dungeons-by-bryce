@@ -337,3 +337,8 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 266. **The mockup's table has columns for You, the co-DM and Players.** The screen is a list of tick boxes per co-DM instead: your column is always all yes and the players' column always all no.
 267. **A combat helper cannot add the party to a fight from a list,** because they cannot read other players' sheets. They can add combatants by name. The Combat page (item 12) is the place to improve this.
 268. **A co-DM who sees hidden content but cannot edit still sees the DM's edit controls in the table tools;** saving is refused with "You are not allowed to change that." The page editor and the Manage page say what they may do. Hiding every control is left for the pages that replace those tools.
+
+## New campaign: a world is optional (14 October 2026)
+
+269. **A new campaign no longer has to be in a world.** This reverses decision 142. You asked for it: a one-off campaign should not need a world made first. The form offers "No world" first; a campaign without one stands alone and gets no world homebrew, and can be put in a world later from that world's page. Choosing a world works as before. The database never required a world, so nothing there changes.
+270. **A campaign made without a world opens itself when it is made** (or its Manage page, if text was pasted in). One made in a world still goes back to that world, where it now appears in the list.
