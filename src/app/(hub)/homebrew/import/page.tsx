@@ -3,6 +3,9 @@ import { getPlan, remaining } from '@/lib/entitlements';
 import { loadClassOptions, loadFeatOptions, loadItemNames, loadSpellOptions, loadSubclassOptions } from '@/lib/class-spells';
 import { BrewImport } from '@/components/BrewImport';
 import { UpgradeHint } from '@/components/UpgradeHint';
+import { RulesProvider } from '@/features/systems/RulesContext';
+import { editorRulesFor } from '@/features/systems/brew';
+import { importPreamble } from '@/features/systems/model';
 
 export const metadata = { title: 'Import homebrew' };
 
@@ -20,12 +23,17 @@ export default async function ImportBrew({ searchParams }: { searchParams: Promi
     loadClassOptions(supabase, user.id),
     loadItemNames(supabase),
   ]);
+  // the game system chosen on the Homebrew page: told to the AI, and built for in the editor
+  const custom = await editorRulesFor(supabase, user.id);
   if (remaining(plan, 'homebrew') <= 0) return (<><h1>Import homebrew</h1><UpgradeHint feature="homebrew" /></>);
   return (
     <>
       <h1>Import homebrew <span className="beta-tag">Beta</span></h1>
       <p className="dim">This is new and still being tested with different AIs. If something comes through wrong, fill it in by hand in the editor, and let us know through Feedback.</p>
-      <BrewImport pro={plan.pro} start={type} srd={srd ?? []} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items} />
+      {custom ? <p className="dim">For <b>{custom.sys.name}</b>: the prompt tells your AI this system's abilities, skills and names.</p> : null}
+      <RulesProvider value={custom?.rules ?? null}>
+      <BrewImport preamble={custom ? importPreamble(custom.sys) : ''} abilities={custom?.rules.card ?? null} pro={plan.pro} start={type} srd={srd ?? []} spells={spells} feats={feats} subclasses={subclasses} classes={classes} items={items} />
+      </RulesProvider>
     </>
   );
 }

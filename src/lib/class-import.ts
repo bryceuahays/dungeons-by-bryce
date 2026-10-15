@@ -107,7 +107,16 @@ My notes:
 
 export const AB = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const ABILITY_WORDS: Record<string, string> = { strength: 'str', dexterity: 'dex', constitution: 'con', intelligence: 'int', wisdom: 'wis', charisma: 'cha' };
-export const ab = (v: unknown) => { const t = String(v ?? '').trim().toLowerCase(); return AB.includes(t) ? t : ABILITY_WORDS[t] ?? (AB.includes(t.slice(0, 3)) ? t.slice(0, 3) : ''); };
+// A custom game system's own abilities (set by Import homebrew before it reads an answer): their
+// keys, names and short names are understood too, before fifth edition's.
+let extra: { key: string; label: string; abbr: string }[] = [];
+export const setImportAbilities = (list: { key: string; label: string; abbr: string }[] | null | undefined) => { extra = list ?? []; };
+export const ab = (v: unknown) => {
+  const t = String(v ?? '').trim().toLowerCase();
+  const own = extra.find((a) => a.key.toLowerCase() === t || a.label.toLowerCase() === t || a.abbr.toLowerCase() === t);
+  if (own) return own.key;
+  return AB.includes(t) ? t : ABILITY_WORDS[t] ?? (AB.includes(t.slice(0, 3)) ? t.slice(0, 3) : '');
+};
 export const abs = (v: unknown) => [...new Set((Array.isArray(v) ? v : []).map(ab).filter(Boolean))];
 export const str = (v: unknown, max = 5000) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, max) : '');
 export const int = (v: unknown, lo: number, hi: number) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : null; };
@@ -139,7 +148,7 @@ export function parseClassImport(text: string, spells: SpellOption[]): ImportRes
   const prim = abs(j.primaryAbilities);
   if (prim.length) {
     const join = j.primaryJoin === 'and' ? 'and' : 'or';
-    const words = prim.map((k) => PRIMARY_NAMES[k]);
+    const words = prim.map((k) => extra.find((a) => a.key === k)?.label ?? PRIMARY_NAMES[k]);
     Object.assign(data, { primaryAbs: prim, primaryJoin: join, primary: words.length < 2 ? words[0] : words.slice(0, -1).join(', ') + ' ' + join + ' ' + words[words.length - 1] });
   }
   const saves = abs(j.savingThrows);

@@ -7,12 +7,16 @@ import type { SpellOption } from '@/lib/class-spells';
 import { EntityEditor } from './EntityEditor';
 import type { FeatOption } from './ClassGives';
 import type { ClassOption, SubclassOption } from './ClassSubclasses';
+import { setImportAbilities } from '@/lib/class-import';
 
 // The "Import homebrew" page: pick what you are importing, then a guide, the prompt for that kind to
 // give your own AI, and a box for its answer. The answer opens in that kind's editor right here;
 // nothing is saved until Create.
 
-export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes, items }: {
+// preamble and abilities: the custom game system chosen on the Homebrew page (src/features/systems),
+// told to the AI on top of the prompt and understood when its answer is read
+export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes, items, preamble = '', abilities = null }: {
+  preamble?: string; abilities?: { key: string; label: string; abbr: string }[] | null;
   pro: boolean; start: string; srd: { type: string; name: string; data: any }[]; spells: SpellOption[]; feats: FeatOption[]; subclasses: SubclassOption[]; classes: ClassOption[]; items: string[];
 }) {
   const [type, setType] = useState(PROMPTS[start] ? start : 'class');
@@ -28,7 +32,7 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
     try { history.replaceState(null, '', '?type=' + t); } catch { /* the address just does not follow */ }
   };
   const copy = async () => {
-    try { await navigator.clipboard.writeText(PROMPTS[type]); setCopied('yes'); } catch { setCopied('blocked'); }
+    try { await navigator.clipboard.writeText(preamble + PROMPTS[type]); setCopied('yes'); } catch { setCopied('blocked'); }
   };
   const [busy, setBusy] = useState(false);
   // a reskin ("basedOn": "Warlock") starts from that official entry (the 2024 one first), or one of your own
@@ -55,6 +59,7 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
     return null;
   };
   const open = async () => {
+    setImportAbilities(abilities);
     const r = parseBrewImport(type, answer, spells);
     if (!r.ok) { setError(r.error); return; }
     setError('');
@@ -118,7 +123,7 @@ export function BrewImport({ pro, start, srd, spells, feats, subclasses, classes
           {copied === 'yes' ? <span className="good">Copied. Paste it into your AI, then your notes.</span> : null}
           {copied === 'blocked' ? <span className="dim">Your browser blocked copying: click in the box and press Ctrl+A, then Ctrl+C.</span> : null}
         </p>
-        <textarea className="mono import-prompt" readOnly rows={12} value={PROMPTS[type]} onFocus={(e) => e.target.select()} aria-label={`The ${noun} prompt to give your AI`} />
+        <textarea className="mono import-prompt" readOnly rows={12} value={preamble + PROMPTS[type]} onFocus={(e) => e.target.select()} aria-label={`The ${noun} prompt to give your AI`} />
       </div>
 
       <div className="panel">
