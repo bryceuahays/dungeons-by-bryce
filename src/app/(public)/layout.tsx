@@ -14,7 +14,7 @@ export default async function PublicLayout({ children }: { children: React.React
             <Link href="/pricing">Pricing</Link>
             <Link href="/store">Store</Link>
             <Link href="/custom">Have Bryce build it</Link>
-            {viewer ? <Link href="/campaigns">My campaigns</Link> : <Link href="/sign-in">Sign in</Link>}
+            {viewer ? <Link href="/campaigns">Campaigns</Link> : <Link href="/sign-in">Sign in</Link>}
           </nav>
         </div>
       </header>

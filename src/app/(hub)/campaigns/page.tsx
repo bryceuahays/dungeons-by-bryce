@@ -6,7 +6,7 @@ import { JoinForm } from '@/components/HubForms';
 import type { Campaign } from '@/lib/types';
 import { COMMISSION_TIERS, tierPrice } from '@/config/commissions';
 
-export const metadata = { title: 'My campaigns' };
+export const metadata = { title: 'Campaigns' };
 
 export default async function Campaigns() {
   const { supabase, user } = await requireViewer();
@@ -39,7 +39,8 @@ export default async function Campaigns() {
   return (
     <>
       {fonts.map((href) => <link key={href} rel="stylesheet" href={href} precedence="default" />)}
-      <h1>My campaigns</h1>
+      <p><Link className="button" href="/new-campaign">New campaign</Link></p>
+      <h1>Campaigns</h1>
 
       <h2>Campaigns you run</h2>
       {mine.length ? <div className="cards">{mine.map(card)}</div>

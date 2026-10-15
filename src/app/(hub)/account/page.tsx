@@ -20,7 +20,7 @@ export default async function Account() {
       <div className="panel narrow"><PasswordForm /></div>
       <h2>Your hub background</h2>
       <div className="panel">
-        <p className="dim">This is the picture behind My campaigns, My characters, and the other hub pages. Only you see it. {has ? 'You are using your own picture.' : 'You are using the standard hall.'}</p>
+        <p className="dim">This is the picture behind Campaigns, My characters, and the other hub pages. Only you see it. {has ? 'You are using your own picture.' : 'You are using the standard hall.'}</p>
         <BackgroundUploader folder={`user/${user.id}`} has={has} save={setHubBackground} />
       </div>
       <form action={signOut} style={{ marginTop: 24 }}><button className="quiet" type="submit">Sign out</button></form>
