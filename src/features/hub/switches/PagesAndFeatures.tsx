@@ -8,7 +8,7 @@ import { SwitchesForm } from './SwitchesForm';
 //
 // A page is listed only when its own flag is on for the viewer, so a DM is never shown
 // switches for a page that does not exist for them yet.
-export async function PagesAndFeatures({ slug, settings }: { slug: string; settings: { features?: unknown } | null | undefined }) {
+export async function PagesAndFeatures({ slug, settings, heading = true }: { slug: string; settings: { features?: unknown } | null | undefined; heading?: boolean }) {
   if (!(await flag('hub_v2_switches'))) return null;
   const [flags, viewer] = await Promise.all([myFlags(), getViewer()]);
   const pages = (HUB_PAGES as readonly HubPage[]).filter((p) => flags[p.flag]).map((p) => ({
@@ -18,7 +18,7 @@ export async function PagesAndFeatures({ slug, settings }: { slug: string; setti
   if (!pages.length) return null;
   return (
     <>
-      <h2 id="pages">Pages and features</h2>
+      {heading ? <h2 id="pages">Pages and features</h2> : <span id="pages" />}
       <div className="plate">
         <p>The pages this campaign&apos;s hub has, and the features on each. Switching something off hides it for you and your players; nothing in it is deleted, and switching it back on brings it all back.</p>
         {viewer?.isHead ? <p className="who">You see every page here because you are the Head DM. Another DM sees a page&apos;s switches once you turn that page on under Head DM, Feature flags. A switch has nothing to hide until its page is built.</p> : null}

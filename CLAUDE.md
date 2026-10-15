@@ -201,6 +201,14 @@ One rule decides who receives anything in a campaign, and it is written twice: `
 - **A published copy of a campaign** has none of the original's players: anything for named players becomes DM only (`src/lib/store.ts`).
 - **Page blocks are separate.** They keep their own controls (DM only, hidden, a stage, named players). New hub pages are built on entries.
 
+## Campaign Settings
+
+With the `hub_v2_settings` flag, a campaign's Manage page is **Campaign settings** (`src/features/hub/settings/`): sections for General, Pages and features, Visibility defaults, Dice, People and permissions, Discord, and Archive or delete. Without the flag it is the Manage page as it was.
+
+- **Every part is written once** in `src/app/c/[slug]/manage/page.tsx` and placed in both layouts. A new campaign setting goes in as a part, into the section it belongs to, and into the old layout too until the flag is retired.
+- **Visibility defaults** are `settings.visibility` (`defaults.ts`): how new content starts (hidden or visible), what players see of a newly revealed NPC, and whether reveals to only some players are offered. A campaign with none behaves as campaigns always have. The tool page hands them to the pickers through `<VisMode defaults>`; a new hub page that makes content should start from them too.
+- **Discord and archiving are not built.** Their sections say so.
+
 ## Co-DMs and Permissions
 
 A campaign has one owner and any number of co-DMs. The owner chooses what each co-DM may do.

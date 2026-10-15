@@ -8,7 +8,7 @@ type Member = { user_id: string; display_name: string; joined_at: string; role: 
 // "People and permissions" on the Manage page (SettingsPeople.png): everyone in the campaign,
 // and for each co-DM exactly what they may do. Only the campaign's owner gets it, and only
 // behind its flag (hub_v2_people); for anyone else it renders nothing and sends nothing.
-export async function People({ slug, campaignId, isOwner, members }: { slug: string; campaignId: string; isOwner: boolean; members: Member[] }) {
+export async function People({ slug, campaignId, isOwner, members, heading = true }: { slug: string; campaignId: string; isOwner: boolean; members: Member[]; heading?: boolean }) {
   if (!isOwner || !(await flag('hub_v2_people'))) return null;
   const ctx = await getCampaign(slug);
   const { data } = await ctx.supabase.rpc('co_dm_list', { c: campaignId });
@@ -20,7 +20,7 @@ export async function People({ slug, campaignId, isOwner, members }: { slug: str
   const coDms = people.filter((p) => p.coDm).length, players = people.length - coDms;
   return (
     <>
-      <h2 id="people">People and permissions</h2>
+      {heading ? <h2 id="people">People and permissions</h2> : <span id="people" />}
       <div className="plate">
         <p>Make someone a co-DM and choose exactly what they can do. You always have every permission, and only you can choose co-DMs or delete the campaign.</p>
         <p className="who">1 DM · {coDms} co-DM{coDms === 1 ? '' : 's'} · {players} player{players === 1 ? '' : 's'}. To add a new co-DM, invite them as a player first, then make them a co-DM here.</p>

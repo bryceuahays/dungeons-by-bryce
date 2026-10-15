@@ -1,0 +1,31 @@
+/* Campaign settings (SettingsLayout.tsx), after Settings.png. Theme variables only. */
+.campaign .cs-guide .wrap:has(> .set){max-width:min(1200px, 100%)}
+.campaign .set{display:grid; grid-template-columns:220px minmax(0, 1fr); gap:24px; align-items:start}
+.campaign .set .set-nav{position:sticky; top:72px; display:flex; flex-direction:column; gap:4px; padding:12px; border-radius:14px; background:var(--plate); border:1px solid var(--line)}
+.campaign .set .set-nav a{display:flex; align-items:center; min-height:44px; padding:0 12px; border-radius:8px; font-family:var(--body); font-size:14px; color:var(--vellum-soft); text-decoration:none; border:1px solid transparent}
+.campaign .set .set-nav a:hover{color:var(--vellum); border-color:var(--line-strong)}
+.campaign .set .set-nav a:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+.campaign .set .set-main{min-width:0}
+.campaign .set .set-sec{scroll-margin-top:72px; margin:0 0 24px; padding:20px; border-radius:14px; background:var(--plate); border:1px solid var(--line); min-width:0}
+.campaign .set .set-sec.danger{border-color:color-mix(in srgb, var(--ember) 45%, var(--line)); background:color-mix(in srgb, var(--ember) 5%, var(--plate))}
+.campaign[data-radius] .set .set-sec,.campaign[data-radius] .set .set-nav{border-radius:var(--radius)}
+.campaign .set .set-h{margin:0 0 12px; font-family:var(--display); font-weight:600; font-size:1.5rem; color:var(--vellum)}
+/* the existing parts keep their own headings, one size down, inside a section */
+.campaign .set .set-sec > h2:not(.set-h){font-size:1.15rem; margin:20px 0 8px}
+.campaign .set .set-sec > .plate{margin:0 0 12px}
+.campaign .set .set-form .f{display:flex; flex-direction:column; gap:4px; margin:0 0 12px; max-width:440px}
+.campaign .set .set-ck{display:flex; align-items:center; gap:10px; min-height:44px; margin:0; cursor:pointer; color:var(--vellum)}
+.campaign .set .set-ck.off{color:var(--dim); cursor:default}
+.campaign .set .set-ck small{color:var(--dim)}
+/* tick boxes drawn from the theme, so an empty one is light on a light theme */
+.campaign .set .set-ck input{flex:none; width:18px; height:18px; margin:0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:grid; place-content:center; background:var(--field); border:1.5px solid var(--line-strong); border-radius:4px}
+.campaign .set .set-ck input:checked{background:var(--gold); border-color:var(--gold)}
+.campaign .set .set-ck input:checked::after{content:""; width:4px; height:9px; border:solid var(--on-gold); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}
+.campaign .set .set-ck input:disabled{opacity:.5; cursor:default}
+.campaign .set .set-ck input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+@media (max-width:820px){
+  .campaign .set{grid-template-columns:minmax(0, 1fr); gap:12px}
+  .campaign .set .set-nav{position:static; flex-direction:row; overflow-x:auto; padding:6px; gap:4px}
+  .campaign .set .set-nav a{flex:none; white-space:nowrap}
+  .campaign .set .set-sec{padding:16px}
+}

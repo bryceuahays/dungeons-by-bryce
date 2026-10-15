@@ -20,6 +20,8 @@ export function VisPicker({ value, onChange, stages = [], members = [], beats: g
   value: Vis; onChange: (v: Vis) => void; stages?: Stage[]; members?: Member[]; beats?: { id: string; title: string }[]; allow?: string[]; canName?: boolean; disabled?: boolean;
 }) {
   const mode = useVisMode();
+  const named = value.vis === 'players' || value.vis === 'players_stage' || value.vis === 'players_entry' || (value.vis === 'dm' && (value.vis_players ?? []).length > 0);
+  if (!mode.defaults.named && !named) members = [];
   // A control that offers "DM only" is a DM's. The few that do not (a beat being logged) keep the short list.
   if (mode.on && allow.includes('dm')) return <WhoSees value={value} onChange={onChange} stages={stages} members={members} beats={givenBeats ?? mode.beats} canName={canName} disabled={disabled} />;
   const beats = givenBeats ?? [];

@@ -186,7 +186,7 @@ export function DicePanel(p: {
       ) : null}
 
       {p.dm ? <AskForm slug={p.slug} members={p.members} checkNames={p.checkNames} open={requests} post={post} names={names} onGone={(id) => setRequests((prev) => prev.filter((q) => q.id !== id))} onMade={(made) => setRequests((prev) => [...prev.filter((q) => !made.some((m) => m.id === q.id)), ...made])} /> : null}
-      {p.dm ? <RulesForm slug={p.slug} rules={p.rules} checkNames={p.checkNames} /> : null}
+      {p.dm ? <DiceRulesForm slug={p.slug} rules={p.rules} checkNames={p.checkNames} /> : null}
     </div>
   );
 }
@@ -241,8 +241,8 @@ function AskForm({ slug, members, checkNames, open, post, names, onGone, onMade 
   );
 }
 
-// The campaign's dice rules (Settings.png). Item 7 moves this into Campaign settings.
-function RulesForm({ slug, rules, checkNames }: { slug: string; rules: DiceRules; checkNames: string[] }) {
+// The campaign's dice rules (Settings.png), here for the DM and on Campaign settings.
+export function DiceRulesForm({ slug, rules, checkNames, heading = true }: { slug: string; rules: DiceRules; checkNames: string[]; heading?: boolean }) {
   const [r, setR] = useState<DiceRules>(rules);
   const [msg, setMsg] = useState<{ error?: string; note?: string } | null>(null);
   const [pending, start] = useTransition();
@@ -251,8 +251,8 @@ function RulesForm({ slug, rules, checkNames }: { slug: string; rules: DiceRules
   );
   const skills = checkNames.filter((n) => !/ (save|check)$/.test(n) && n !== 'Initiative');
   return (
-    <section className="dice-card" aria-label="Dice rules">
-      <h3>Dice rules</h3>
+    <section className={heading ? 'dice-card' : 'dice-card bare'} aria-label="Dice rules">
+      {heading ? <h3>Dice rules</h3> : null}
       {tick('dmOnly', 'Players can roll to the DM only')}
       {tick('self', 'Players can roll just for themselves')}
       {tick('dmHidden', 'DM rolls are hidden by default')}

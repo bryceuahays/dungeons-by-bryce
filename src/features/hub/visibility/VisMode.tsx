@@ -1,13 +1,16 @@
 'use client';
 import { createContext, useContext, type ReactNode } from 'react';
 
-// Whether the new "Who sees this?" picker is in use on this page, and the story beats it can
-// offer for "once a story beat happens". The page decides on the server (the hub_v2_visibility
-// flag) and hands down the plain answer; nothing here reads a flag.
-type Mode = { on: boolean; beats: { id: string; title: string }[] };
-const Ctx = createContext<Mode>({ on: false, beats: [] });
+// Whether the new "Who sees this?" picker is in use on this page, the story beats it can offer
+// for "once a story beat happens", and the campaign's visibility defaults (Campaign settings).
+// The page decides on the server (the hub_v2_visibility flag) and hands down plain answers;
+// nothing here reads a flag.
+type Defaults = { newVis: 'dm' | 'all'; npcReveal: 'all' | 'portrait' | 'name'; named: boolean };
+type Mode = { on: boolean; beats: { id: string; title: string }[]; defaults: Defaults };
+const DEFAULTS: Defaults = { newVis: 'dm', npcReveal: 'all', named: true };
+const Ctx = createContext<Mode>({ on: false, beats: [], defaults: DEFAULTS });
 
-export function VisMode({ on, beats = [], children }: { on: boolean; beats?: { id: string; title: string }[]; children: ReactNode }) {
-  return <Ctx.Provider value={{ on, beats }}>{children}</Ctx.Provider>;
+export function VisMode({ on, beats = [], defaults = DEFAULTS, children }: { on: boolean; beats?: { id: string; title: string }[]; defaults?: Defaults; children: ReactNode }) {
+  return <Ctx.Provider value={{ on, beats, defaults }}>{children}</Ctx.Provider>;
 }
 export const useVisMode = () => useContext(Ctx);

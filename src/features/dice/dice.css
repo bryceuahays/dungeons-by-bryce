@@ -43,3 +43,7 @@
 .campaign .dice .dice-checks{display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:6px; margin-top:4px}
 .campaign .dice .dice-check{display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:44px; padding:0 10px; border-radius:8px; background:var(--plate2); color:var(--vellum); border:1px solid var(--line); font-size:14px; text-align:left}
 .campaign .dice .dice-ask{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px 12px; padding:10px 12px; border-radius:10px; background:var(--gold-tint); border:1px solid color-mix(in srgb, var(--gold) 40%, var(--line))}
+
+/* the dice rules form on its own (Campaign settings), without the Dice page's grid or card */
+.campaign .dice.one{display:block; margin-top:0}
+.campaign .dice .dice-card.bare{background:none; border:0; padding:0}

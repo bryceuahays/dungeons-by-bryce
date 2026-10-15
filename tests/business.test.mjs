@@ -184,7 +184,8 @@ test('store: private content cannot be published; a product is a frozen copy; th
   assert.equal((await buyer.client.from('content').update({ title: 'my copy' }).eq('campaign_id', copy.id).select('id')).data.length, 3);
   assert.ok(/upgrade:timeline/.test((await buyer.client.from('entries').insert({ campaign_id: copy.id, kind: 'beat', title: 'My own beat', status: 'planned', live: false, vis: 'all' }).select('id')).error?.message ?? ''), 'what came with it works; making new Pro-only things needs Pro');
   const mg = await page(where.replace(SITE, ''), buyer.session);
-  assert.ok(mg.status === 200 && mg.text.includes('Manage The Glass Coast') && !mg.text.includes('read-only'));
+  // (as Manage, or as Campaign settings for an account with the hub version 2 flag, which names the campaign in its first line)
+  assert.ok(mg.status === 200 && (mg.text.includes('Manage The Glass Coast') || mg.text.includes('The Glass Coast. Only DMs and co-DMs')) && !mg.text.includes('read-only'));
   assert.equal(((await head.client.from('campaigns').select('id').eq('id', copy.id)).data ?? []).length, 0, 'the seller cannot see the buyer\'s copy');
 
   // a paid product: no charge without Stripe; delivered when the payment is confirmed, once
