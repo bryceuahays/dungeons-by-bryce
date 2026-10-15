@@ -296,7 +296,7 @@ export const AFFECTS: Record<SectionKey, [string, string][]> = {
 export function editorRules(sys: Sys) {
   return {
     abilities: sys.abilities.list.map((a) => [a.id, a.name] as [string, string]),
-    skills: sys.skills.list.map((s) => s.name),
+    skills: [...new Set(sys.skills.list.map((s) => s.name.trim()).filter(Boolean))], // a repeated name is offered once
     damage: sys.combat.damage,
     conditions: sys.combat.conditions.map((c) => c.name),
     name: sys.name,

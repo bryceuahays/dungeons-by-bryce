@@ -118,7 +118,7 @@ export function Sidebar({ slug, campaignId }: { slug: string; campaignId: string
           {s.skills ? (
             <>
               <h3 className="sb-h">Skills <small>Prof. {signed(s.prof)}</small></h3>
-              <div className="sb-skills">{s.skills.map((k) => <Fragment key={k.name}>{tap(k.token, <><i className={k.proficient ? 'yes' : ''} aria-label={k.proficient ? (k.expert ? 'expertise' : 'proficient') : undefined} /><span>{k.name}</span><b>{signed(k.bonus)}</b></>, 'sb-skill', k.name)}</Fragment>)}</div>
+              <div className="sb-skills">{s.skills.map((k, i) => <Fragment key={k.name + i}>{tap(k.token, <><i className={k.proficient ? 'yes' : ''} aria-label={k.proficient ? (k.expert ? 'expertise' : 'proficient') : undefined} /><span>{k.name}</span><b>{signed(k.bonus)}</b></>, 'sb-skill', k.name)}</Fragment>)}</div>
             </>
           ) : null}
         </>

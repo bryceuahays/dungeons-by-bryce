@@ -173,7 +173,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
       <p className="s5-chips">{d.saves.map((x) => <span key={x.key} className={x.proficient ? 'on' : ''}>{x.label.slice(0, 3)} {sgn(x.bonus)}</span>)}</p>
       <h3>Skills</h3>
       <div className="s5-skills">
-        {d.skills.map((x) => <span key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name}{system ? <small> ({d.abilities.find((a) => a.key === x.ability)?.abbr ?? '—'})</small> : null}{x.expert ? ' (expertise)' : ''}</span>)}
+        {d.skills.map((x, i) => <span key={x.name + i} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name}{system ? <small> ({d.abilities.find((a) => a.key === x.ability)?.abbr ?? '—'})</small> : null}{x.expert ? ' (expertise)' : ''}</span>)}
       </div>
     </section>
   );
