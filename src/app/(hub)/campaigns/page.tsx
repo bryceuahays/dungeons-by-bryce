@@ -40,7 +40,7 @@ export default async function Campaigns() {
     <>
       {fonts.map((href) => <link key={href} rel="stylesheet" href={href} precedence="default" />)}
       <p><Link className="button" href="/new-campaign">New campaign</Link></p>
-      <h1>Campaigns</h1>
+      <h1>My campaigns</h1>
 
       <h2>Campaigns you run</h2>
       {mine.length ? <div className="cards">{mine.map(card)}</div>
