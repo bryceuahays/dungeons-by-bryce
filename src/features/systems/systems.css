@@ -100,3 +100,8 @@
 .brew-system{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 .hub .brew-system label{margin:0;min-width:260px}
 .brew-system-links{font-size:.85rem}
+/* the real sheet in the System editor's preview */
+.hub .sm-who{margin:0 0 4px}
+.sm-real .s5{font-size:.85rem}
+.sm-real .s5 .s5-abs,.sm-real .s5 .s5-stats{grid-template-columns:repeat(auto-fill,minmax(70px,1fr))}
+.sm-real .s5 .s5-skills{grid-template-columns:1fr}

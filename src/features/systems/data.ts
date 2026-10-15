@@ -2,6 +2,7 @@
 // Loading game systems on the server. A campaign with settings.system uses that saved system; one
 // without uses the ready-made rules of settings.rules, as before.
 import { resolve, sheetSystem, type Sys } from './model';
+import { blankV2 } from '@/lib/rules/engine';
 
 type Supa = { from: (t: string) => any };
 const isId = (s: unknown): s is string => typeof s === 'string' && /^[0-9a-f-]{36}$/.test(s);
@@ -53,3 +54,40 @@ export async function characterSheetSystem(supabase: Supa, userId: string, gameS
   const sys = await loadSystem(supabase, gameSystem);
   return sys && sys.ownerId === userId ? { id: sys.id, name: sys.name, sheet: sheetSystem(sys) } : null;
 }
+
+// Characters for the System editor's preview, worked out by the real rules with the system being
+// edited: two ready-made level 3 samples (a Fighter and a Wizard, from the official rules), and the
+// owner's own characters that play this system, with every entry they use.
+export async function systemPreview(supabase: Supa, userId: string, base: string, id: string | null) {
+  const version = base === '2014' ? '5.1' : '5.2';
+  const cols = 'id, type, name, source, srd_version, status, version, change_note, data';
+  const one = async (type: string, names: string[]) => {
+    const { data } = await supabase.from('entities').select('id, name').eq('source', 'srd').eq('srd_version', version).eq('type', type).in('name', names);
+    return names.map((n) => ((data ?? []) as any[]).find((r) => r.name === n)).find(Boolean)?.id ?? null;
+  };
+  const [fighter, wizard, human, dwarf, soldier, sage] = await Promise.all([
+    one('class', ['Fighter']), one('class', ['Wizard']), one('race', ['Human']), one('race', ['Dwarf', 'Hill Dwarf']),
+    one('background', ['Soldier', 'Acolyte']), one('background', ['Sage', 'Acolyte']),
+  ]);
+  const sample = (key: string, name: string, line: string, d: Record<string, unknown>) => ({ id: key, name, line, sample: true, data: { ...blankV2(), name, level: 3, ...d } });
+  const samples = [
+    ...(fighter ? [sample('sample-fighter', 'Sample Fighter', 'Ready-made: level 3 Human Fighter', { clsId: fighter, raceId: human, bgId: soldier, ab: { str: 16, dex: 13, con: 15, int: 8, wis: 12, cha: 10 }, skills: ['Athletics', 'Perception'], armor: { name: 'Chain Mail', base: 16, dex: 'none' } })] : []),
+    ...(wizard ? [sample('sample-wizard', 'Sample Wizard', 'Ready-made: level 3 Dwarf Wizard', { clsId: wizard, raceId: dwarf, bgId: sage, ab: { str: 8, dex: 14, con: 14, int: 16, wis: 12, cha: 10 }, skills: ['Arcana', 'Investigation'] })] : []),
+  ];
+  // your characters on this system: in its campaigns, or outside any campaign
+  let mine: any[] = [];
+  if (id) {
+    const { data: camps } = await supabase.from('campaigns').select('id').eq('owner_id', userId).eq('settings->>system', id);
+    const ids = ((camps ?? []) as any[]).map((c) => c.id);
+    const [inCamps, solo] = await Promise.all([
+      ids.length ? supabase.from('characters').select('id, data').in('campaign_id', ids).limit(8) : { data: [] },
+      supabase.from('characters').select('id, data').eq('owner', userId).is('campaign_id', null).eq('data->>gameSystem', id).limit(8),
+    ]);
+    mine = [...((inCamps.data ?? []) as any[]), ...((solo.data ?? []) as any[])].map((c) => ({ id: c.id, name: c.data?.name || 'Unnamed', line: ['Level ' + (c.data?.level ?? 1), c.data?.race, c.data?.cls].filter(Boolean).join(' '), sample: false, data: c.data ?? {} }));
+  }
+  const characters = [...mine, ...samples];
+  const used = [...new Set(characters.flatMap((c) => [c.data.raceId, c.data.clsId, c.data.subId, c.data.bgId, ...(c.data.feats ?? [])]).filter(Boolean))] as string[];
+  const { data: entities } = used.length ? await supabase.from('entities').select(cols).in('id', used) : { data: [] };
+  return { characters, entities: (entities ?? []) as any[] };
+}
+export type SystemPreview = Awaited<ReturnType<typeof systemPreview>>;

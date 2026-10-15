@@ -5,9 +5,10 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AFFECTS, JOBS, SECTIONS, type SectionKey, type Sys, type TextRename } from './model';
+import { AFFECTS, JOBS, SECTIONS, applyText, sheetSystem, type SectionKey, type Sys, type TextRename } from './model';
+import { Sheet5e } from '@/components/Sheet5e';
 import { createSystem, findText, updateSystem } from './actions';
-import type { SystemUsage } from './data';
+import type { SystemPreview, SystemUsage } from './data';
 import * as S from './sections';
 import './systems.css';
 
@@ -40,7 +41,7 @@ function withRenames(sys: Sys, picked: TextRename[]): Sys {
   return { ...sys, text: { replace: list.filter((x) => x.from !== x.to) } };
 }
 
-export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: string | null; mine: boolean; usage: SystemUsage }) {
+export function SystemEditor({ start, id, mine, usage, preview }: { start: Sys; id: string | null; mine: boolean; usage: SystemUsage; preview: SystemPreview }) {
   const router = useRouter();
   const [sys, setSys] = useState<Sys>(start);
   const [saved, setSavedSys] = useState<Sys>(start); // as last saved, to compare with
@@ -48,6 +49,11 @@ export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: strin
   const [copyName, setCopyName] = useState('');
   const [section, setSection] = useState<SectionKey>('abilities');
   const [tab, setTab] = useState<'preview' | 'affects'>('preview');
+  // the preview: a real character (yours, or a ready-made sample) on the real sheet, worked out with the system as edited
+  const [who, setWho] = useState(preview.characters[0]?.id ?? '');
+  const shown = preview.characters.find((c) => c.id === who) ?? preview.characters[0];
+  const sheetSys = useMemo(() => sheetSystem(sys), [sys]);
+  const previewEntities = useMemo(() => applyText(preview.entities, sys), [preview.entities, sys]);
   const [fixes, setFixes] = useState<Record<string, string>>({});
   const [showImpacts, setShowImpacts] = useState(false);
   const [dialog, setDialog] = useState<null | { how: 'over' | 'copy'; stage: 'renames' | 'campaigns'; pending: Sys }>(null);
@@ -130,7 +136,18 @@ export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: strin
             <button type="button" className={tab === 'preview' ? 'on' : ''} onClick={() => setTab('preview')}>Preview</button>
             <button type="button" className={tab === 'affects' ? 'on' : ''} onClick={() => setTab('affects')}>Affects</button>
           </div>
-          {tab === 'preview' ? <><SheetPreview sys={sys} /><MonsterPreview sys={sys} /></> : (
+          {tab === 'preview' ? (
+            <>
+              {shown ? (
+                <div className="sm-real">
+                  <label className="sm-who">Preview<select value={shown.id} onChange={(e) => setWho(e.target.value)}>{preview.characters.map((c) => <option key={c.id} value={c.id}>{c.name}: {c.line}</option>)}</select></label>
+                  <p className="dim sm-note">The real character sheet, worked out by the rules as you edit them. Nothing on it is saved.</p>
+                  <Sheet5e key={shown.id} character={{ id: shown.id, data: shown.data }} entities={previewEntities} readOnly system={sheetSys} />
+                </div>
+              ) : <SheetPreview sys={sys} />}
+              <MonsterPreview sys={sys} />
+            </>
+          ) : (
             <div className="sm-affects">
               <p className="dim">Pages that <b>{SECTIONS.find((s) => s.key === section)!.label}</b> changes:</p>
               {AFFECTS[section].map(([page, what]) => <div key={page} className="sm-aff"><b>{page}</b><span>{what}</span></div>)}
