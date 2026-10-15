@@ -9,13 +9,16 @@ type Stage = { id: string; label: string };
 type Member = { user_id: string; display_name: string };
 type Beat = { id: string; title: string };
 
+// The session a trigger starts at: the one after the last that has started, if the page knows it.
+const firstSession = (next?: number) => (next && next >= 1 ? next : 1);
+
 // "Who sees this?" (Visibility.png): the one control for visibility on every kind of content.
 // It shows the current answer in words and a Change button; the button opens a dialog that
 // asks who and when. Nothing changes until Apply.
 //
 // This only chooses. Whether a player receives something is decided by the database.
-export function WhoSees({ value, onChange, stages = [], members = [], beats = [], canName = true, disabled }: {
-  value: VisValue; onChange: (v: VisValue) => void; stages?: Stage[]; members?: Member[]; beats?: Beat[]; canName?: boolean; disabled?: boolean;
+export function WhoSees({ value, onChange, stages = [], members = [], beats = [], canName = true, disabled, nextSession, label = 'Who sees it' }: {
+  value: VisValue; onChange: (v: VisValue) => void; stages?: Stage[]; members?: Member[]; beats?: Beat[]; canName?: boolean; disabled?: boolean; nextSession?: number; label?: string;
 }) {
   const id = useId();
   const anchor = useRef<HTMLSpanElement>(null);
@@ -40,7 +43,7 @@ export function WhoSees({ value, onChange, stages = [], members = [], beats = []
 
   return (
     <span className="vis2" ref={anchor}>
-      <span className="vis2-l">Who sees it</span>
+      <span className="vis2-l">{label}</span>
       {everyone ? <span className="vis2-open">Everyone</span> : <HiddenTag>{shortLabel(value, people, stages, beatNames)}</HiddenTag>}
       <button type="button" className="vis2-btn" disabled={disabled} onClick={open}>Change<span className="vis2-sr"> who sees it</span></button>
       {host ? createPortal(
@@ -73,14 +76,21 @@ export function WhoSees({ value, onChange, stages = [], members = [], beats = []
             {whenList.map(([w, label]) => (
               <div key={w} className="vis2-when">
                 <label className="vis2-opt">
-                  <input type="radio" name={id + 'when'} checked={draft.who !== 'dm' && draft.when === w} onChange={() => set({ when: w as When })} />
+                  <input type="radio" name={id + 'when'} checked={draft.who !== 'dm' && draft.when === w}
+                    onChange={() => set({ when: w as When, ...((w === 'started' || w === 'played') && !draft.session ? { session: firstSession(nextSession) } : {}) })} />
                   <span>{label}</span>
                 </label>
                 {w === 'stage' && draft.who !== 'dm' && draft.when === 'stage' ? (
-                  <select aria-label="Which stage" value={draft.stage ?? ''} onChange={(e) => set({ stage: e.target.value || null })}>
-                    <option value="">Choose a stage</option>
+                  <select aria-label="Which chapter" value={draft.stage ?? ''} onChange={(e) => set({ stage: e.target.value || null })}>
+                    <option value="">Choose a chapter</option>
                     {stages.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                   </select>
+                ) : null}
+                {(w === 'started' || w === 'played') && draft.who !== 'dm' && draft.when === w ? (
+                  <label className="vis2-num">Session
+                    <input type="number" min={1} max={999} inputMode="numeric" value={draft.session ?? ''}
+                      onChange={(e) => set({ session: e.target.value ? Math.trunc(Number(e.target.value)) : null })} />
+                  </label>
                 ) : null}
                 {w === 'entry' && draft.who !== 'dm' && draft.when === 'entry' ? (
                   <select aria-label="Which story beat" value={draft.entry ?? ''} onChange={(e) => set({ entry: e.target.value || null })}>

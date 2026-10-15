@@ -17,6 +17,7 @@ import { LogTool, NotesTool, WorldTool, ZeroTool } from '@/components/tools/Simp
 import { campaignSheetSystem } from '@/features/systems/data';
 import { flag } from '@/lib/flags';
 import { VisMode } from '@/features/hub/visibility/VisMode';
+import { revealFacts } from '@/features/hub/reveals/server';
 import { visDefaults } from '@/features/hub/settings/defaults';
 
 export async function generateMetadata({ params }: { params: Promise<{ tool: string }> }) {
@@ -115,5 +116,6 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
   // hub version 2 visibility: a DM gets "Who sees this?" with every choice, including the campaign's story beats
   const v2 = dm && (await flag('hub_v2_visibility'));
   const beats = v2 ? (await getEntries(ctx, ['beat'])).map((b) => ({ id: b.id, title: b.title })) : [];
-  return <div className="cs-guide"><VisMode on={v2} beats={beats} defaults={visDefaults(ctx.campaign.settings)}>{body}</VisMode><div className="wrap">{back}</div></div>;
+  const nextSession = v2 ? (await revealFacts(ctx.supabase, ctx.campaign, ctx.campaign.phase)).nextSession : undefined;
+  return <div className="cs-guide"><VisMode on={v2} beats={beats} defaults={visDefaults(ctx.campaign.settings)} nextSession={nextSession}>{body}</VisMode><div className="wrap">{back}</div></div>;
 }

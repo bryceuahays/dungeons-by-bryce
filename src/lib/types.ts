@@ -57,6 +57,8 @@ export type ContentRow = {
   hidden: boolean;
   from_stage?: string | null;
   only_players?: string[] | null;
+  // a hidden block that reveals itself once this trigger has happened (src/features/hub/reveals/triggers.ts)
+  reveal_when?: string | null;
   // set for the DM only: the phase in which players see this row (for the label)
   _phase?: string | null;
 };

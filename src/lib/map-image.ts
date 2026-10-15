@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from './supabase/admin';
 import { entryOpen, type Entry, type Viewer } from './entry-types';
+import { metKeys } from '@/features/hub/reveals/triggers';
 
 // Hands out a map picture.
 //
@@ -33,12 +34,15 @@ export async function serveMap(reader: SupabaseClient, campaign: { id: string },
 
   // Which regions are still hidden from this viewer? Worked out with the service role,
   // because a player's own login cannot (and must not) read hidden regions at all.
-  const [{ data: regions }, { data: beats }] = await Promise.all([
+  const [{ data: regions }, { data: beats }, { data: sessions }] = await Promise.all([
     admin.from('entries').select('id, live, vis, vis_players, vis_stage, vis_entry, data').eq('campaign_id', campaign.id).eq('kind', 'region').eq('parent', mapId),
     admin.from('entries').select('id').eq('campaign_id', campaign.id).eq('kind', 'beat').eq('status', 'hit'),
+    admin.from('sessions').select('number, status').eq('campaign_id', campaign.id),
   ]);
   const hit = new Set((beats ?? []).map((b) => b.id as string));
-  const hidden = ((regions ?? []) as Entry[]).filter((r) => !(r.live && entryOpen(r, viewer, hit)) && Array.isArray(r.data?.pts) && r.data.pts.length >= 3);
+  // reveal triggers: sessions, beats and chapters that have happened (src/features/hub/reveals)
+  const seen: Viewer = { ...viewer, met: metKeys({ sessions: (sessions ?? []).map((s) => ({ number: Number(s.number), status: String(s.status) })), hitBeats: [...hit], stages: viewer.stages, stage: viewer.stage }) };
+  const hidden = ((regions ?? []) as Entry[]).filter((r) => !(r.live && entryOpen(r, seen, hit)) && Array.isArray(r.data?.pts) && r.data.pts.length >= 3);
   if (!hidden.length) return (await sign(file)) ?? missing();
 
   const key = crypto.createHash('sha256').update(file + '|' + hidden.map((r) => r.id + ':' + JSON.stringify(r.data.pts)).sort().join('|')).digest('hex').slice(0, 24);

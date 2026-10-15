@@ -6,11 +6,12 @@ import { createContext, useContext, type ReactNode } from 'react';
 // The page decides on the server (the hub_v2_visibility flag) and hands down plain answers;
 // nothing here reads a flag.
 type Defaults = { newVis: 'dm' | 'all'; npcReveal: 'all' | 'portrait' | 'name'; named: boolean };
-type Mode = { on: boolean; beats: { id: string; title: string }[]; defaults: Defaults };
+// `nextSession` is where a "when a session starts" choice begins (issue 117).
+type Mode = { on: boolean; beats: { id: string; title: string }[]; defaults: Defaults; nextSession?: number };
 const DEFAULTS: Defaults = { newVis: 'dm', npcReveal: 'all', named: true };
 const Ctx = createContext<Mode>({ on: false, beats: [], defaults: DEFAULTS });
 
-export function VisMode({ on, beats = [], defaults = DEFAULTS, children }: { on: boolean; beats?: { id: string; title: string }[]; defaults?: Defaults; children: ReactNode }) {
-  return <Ctx.Provider value={{ on, beats, defaults }}>{children}</Ctx.Provider>;
+export function VisMode({ on, beats = [], defaults = DEFAULTS, nextSession, children }: { on: boolean; beats?: { id: string; title: string }[]; defaults?: Defaults; nextSession?: number; children: ReactNode }) {
+  return <Ctx.Provider value={{ on, beats, defaults, nextSession }}>{children}</Ctx.Provider>;
 }
 export const useVisMode = () => useContext(Ctx);

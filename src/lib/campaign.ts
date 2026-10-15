@@ -8,6 +8,7 @@ import type { Campaign, ContentRow, Section } from './types';
 import type { CampaignAccess } from './entitlements';
 import { entryOpen, type Viewer } from './entry-types';
 import { ALL_PERMS, NO_PERMS, permSet, type PermSet } from '@/config/co-dm';
+import { revealKeys } from '@/features/hub/reveals/server';
 import { RULES, rulesOf, type RulesChoice } from '@/config/rules';
 import { campaignSystem } from '@/features/systems/data';
 import { applyText } from '@/features/systems/model';
@@ -113,7 +114,8 @@ export function phaseLabel(campaign: Campaign, phase: string | null | undefined)
 // that players only see in one phase, so the page can label it.
 export async function getContent(ctx: CampaignCtx, opts: { section?: string; kinds?: string[] } = {}): Promise<ContentRow[]> {
   const { supabase, campaign, isDm } = ctx;
-  let q = supabase.from('content').select('*').eq('campaign_id', campaign.id).eq('hidden', false);
+  // a hidden block that reveals itself when something happens is fetched too, and kept below only once it has
+  let q = supabase.from('content').select('*').eq('campaign_id', campaign.id).or('hidden.eq.false,reveal_when.not.is.null');
   if (opts.section) q = q.eq('section', opts.section);
   if (opts.kinds) q = q.in('kind', opts.kinds);
   if (!isDm) {
@@ -121,7 +123,11 @@ export async function getContent(ctx: CampaignCtx, opts: { section?: string; kin
     q = campaign.phase ? q.or(`phase.is.null,phase.eq.${campaign.phase}`) : q.is('phase', null);
   }
   const { data } = await q.order('sort').order('visibility');
-  const all = (data ?? []) as ContentRow[];
+  // A real player's rows are already only the ones the database lets them read. The DM's own
+  // login reads everything, so for the DM (and a DM previewing) the trigger is checked here.
+  const realPlayer = !isDm && !ctx.asPlayer;
+  const met = realPlayer || !(data ?? []).some((r: any) => r.hidden && r.reveal_when) ? null : await revealKeys(supabase, campaign, campaign.phase);
+  const all = ((data ?? []) as ContentRow[]).filter((r: any) => !r.hidden || realPlayer || (!!r.reveal_when && !!met?.has(r.reveal_when)));
   if (!isDm) {
     // The database has already applied these two rules for a real player. They are
     // applied again here for a DM who is previewing as a player (whose login reads everything).
@@ -212,7 +218,7 @@ async function sheetEntities(ctx: CampaignCtx, types: string[], opts: { liteSpel
     const { data: beats } = rows.some((a) => a.vis === 'entry' || a.vis === 'players_entry')
       ? await ctx.supabase.from('entries').select('id').eq('campaign_id', ctx.campaign.id).eq('kind', 'beat').eq('status', 'hit') : { data: [] as any[] };
     const hit = new Set(((beats ?? []) as any[]).map((b) => b.id as string));
-    const viewer: Viewer = { player: ctx.viewAs.player, stage: ctx.campaign.phase, stages: ctx.campaign.phases.map((p) => p.id) };
+    const viewer: Viewer = { player: ctx.viewAs.player, stage: ctx.campaign.phase, stages: ctx.campaign.phases.map((p) => p.id), met: await revealKeys(ctx.supabase, ctx.campaign, ctx.campaign.phase) };
     open = (a: any) => a.entities.status !== 'draft' && entryOpen(a, viewer, hit);
   }
   const mine = opts.owner ? ((attached.data ?? []) as any[]) : ((attached.data ?? []) as any[])

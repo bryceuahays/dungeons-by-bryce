@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState, useTransition } from 'react';
 import { deleteContentRow, duplicateContentRow, moveContentRow, saveContentRow, saveSessionNotes } from '@/app/c/[slug]/actions';
+import { BlockReveal, blockSeen, type RevealInfo } from '@/features/hub/reveals/BlockReveal';
 import { ConfirmButton } from './ConfirmButton';
 import type { ContentRow } from '@/lib/types';
 
@@ -77,7 +78,7 @@ const KIND_LABEL: Record<string, string> = {
 };
 const AUTO = new Set(['faction-table', 'faction-cards', 'race-cards', 'race-browser', 'upgrade-table']);
 
-function RowEditor({ slug, row, twin, phases, members, canName }: { slug: string; row: ContentRow; twin?: ContentRow; phases: { id: string; label: string }[]; members: { user_id: string; display_name: string }[]; canName: boolean }) {
+function RowEditor({ slug, row, twin, phases, members, canName, reveal }: { slug: string; row: ContentRow; twin?: ContentRow; phases: { id: string; label: string }[]; members: { user_id: string; display_name: string }[]; canName: boolean; reveal?: RevealInfo }) {
   const [body, setBody] = useState<any>(row.body || {});
   const [title, setTitle] = useState(row.title);
   const [msg, setMsg] = useState<{ error?: string; note?: string } | null>(null);
@@ -103,27 +104,29 @@ function RowEditor({ slug, row, twin, phases, members, canName }: { slug: string
         <span className={'pillb ' + (isDm ? 'dm' : 'pl')}>{isDm ? 'DM only' : 'Players and DM'}</span>
         {twin ? <span className="pillb">{isDm ? 'your wording; players see another' : 'players’ wording; you see another'}</span> : null}
         {row.phase ? <span className="pillb">{phases.find((p) => p.id === row.phase)?.label ?? row.phase}</span> : null}
-        {row.from_stage ? <span className="pillb">from: {phases.find((p) => p.id === row.from_stage)?.label ?? row.from_stage}</span> : null}
+        {row.from_stage && !reveal ? <span className="pillb">from: {phases.find((p) => p.id === row.from_stage)?.label ?? row.from_stage}</span> : null}
         {row.only_players ? <span className="pillb dm">only {row.only_players.map((id) => members.find((m) => m.user_id === id)?.display_name ?? 'a player').join(', ')}</span> : null}
-        {row.hidden ? <span className="pillb">hidden</span> : null}
+        {reveal ? (!isDm && !blockSeen(row, phases, reveal) ? <span className="pillb">{row.reveal_when || (row.from_stage && !row.hidden) ? 'reveals itself' : 'hidden'}</span> : null)
+          : row.hidden ? <span className="pillb">hidden</span> : null}
       </summary>
       <div style={{ marginTop: 10 }}>
         {form}
         <div className="row" style={{ marginTop: 12 }}>
           {AUTO.has(row.kind) ? null : <button className="act" disabled={pending} onClick={() => save({ body, title })}>Save</button>}
-          <label className="row muted">Who sees it
+          <label className="row muted">{reveal ? 'Who it is for' : 'Who sees it'}
             <select className="small" value={row.visibility} disabled={pending} onChange={(e) => { const v = e.target.value as 'player' | 'dm'; save({ visibility: v }); }}>
-              <option value="dm">DM only</option><option value="player">Players and DM</option>
+              <option value="dm">{reveal ? 'Only DMs (your notes)' : 'DM only'}</option><option value="player">{reveal ? 'Players' : 'Players and DM'}</option>
             </select>
           </label>
-          {phases.length ? (
-            <label className="row muted">When
+          {reveal && row.visibility === 'player' ? <BlockReveal row={row} chapters={phases} info={reveal} pending={pending} save={save} /> : null}
+          {reveal && !row.phase ? null : phases.length ? (
+            <label className="row muted">{reveal ? 'Only during a chapter' : 'When'}
               <select className="small" value={row.phase ?? ''} disabled={pending} onChange={(e) => save({ phase: e.target.value || null })}>
                 <option value="">Always</option>{phases.map((p) => <option key={p.id} value={p.id}>Only: {p.label}</option>)}
               </select>
             </label>
           ) : null}
-          {phases.length > 1 && !row.phase ? (
+          {phases.length > 1 && !row.phase && !reveal ? (
             <label className="row muted">From
               <select className="small" value={row.from_stage ?? ''} disabled={pending} onChange={(e) => save({ from_stage: e.target.value || null })}>
                 <option value="">The start</option>{phases.slice(1).map((p) => <option key={p.id} value={p.id}>{p.label} onward</option>)}
@@ -142,7 +145,7 @@ function RowEditor({ slug, row, twin, phases, members, canName }: { slug: string
               <p>Tick players and only they (and you) get this block. Untick everyone to show it to the whole table again.</p>
             </details>
           ) : null}
-          <button className="act sm" disabled={pending} onClick={() => save({ hidden: !row.hidden })}>{row.hidden ? 'Show again' : 'Hide'}</button>
+          {reveal ? null : <button className="act sm" disabled={pending} onClick={() => save({ hidden: !row.hidden })}>{row.hidden ? 'Show again' : 'Hide'}</button>}
           <button className="act sm" disabled={pending} onClick={() => run(() => moveContentRow(slug, row.section, row.id, -1))}>Move up</button>
           <button className="act sm" disabled={pending} onClick={() => run(() => moveContentRow(slug, row.section, row.id, 1))}>Move down</button>
           <button className="act sm" disabled={pending} onClick={() => run(() => duplicateContentRow(slug, row.id))}>Duplicate</button>
@@ -155,15 +158,17 @@ function RowEditor({ slug, row, twin, phases, members, canName }: { slug: string
   );
 }
 
-export function ContentEditor({ slug, rows, phases, members = [], canName = false }: { slug: string; rows: ContentRow[]; phases: { id: string; label: string }[]; members?: { user_id: string; display_name: string }[]; canName?: boolean }) {
+// `reveal` is set where the hub version 2 reveal controls are on (issue 117): a switch and
+// "reveal it automatically" on each block, in place of Hide and the From list.
+export function ContentEditor({ slug, rows, phases, members = [], canName = false, reveal }: { slug: string; rows: ContentRow[]; phases: { id: string; label: string }[]; members?: { user_id: string; display_name: string }[]; canName?: boolean; reveal?: RevealInfo }) {
   const twinOf = (r: ContentRow) => rows.find((x) => x.id !== r.id && x.key === r.key && x.visibility !== r.visibility && !/-dm$/.test(x.kind) && !/-dm$/.test(r.kind) && x.kind === r.kind);
   const blocks = rows.filter((r) => r.sort < 1000);
   const entries = rows.filter((r) => r.sort >= 1000);
   return (
     <>
-      {blocks.map((r) => <RowEditor key={r.id + r.visibility + String(r.hidden) + (r.phase ?? '') + (r.from_stage ?? '') + (r.only_players ?? []).join()} slug={slug} row={r} twin={twinOf(r)} phases={phases} members={members} canName={canName} />)}
+      {blocks.map((r) => <RowEditor key={r.id + r.visibility + String(r.hidden) + (r.phase ?? '') + (r.from_stage ?? '') + (r.only_players ?? []).join() + (r.reveal_when ?? '')} slug={slug} row={r} twin={twinOf(r)} phases={phases} members={members} canName={canName} reveal={reveal} />)}
       {entries.length ? <><h2>Entries</h2><p className="muted">These fill in the automatic blocks above. To add one, duplicate an entry and change it.</p></> : null}
-      {entries.map((r) => <RowEditor key={r.id + r.visibility + String(r.hidden) + (r.phase ?? '')} slug={slug} row={r} phases={phases} members={members} canName={canName} />)}
+      {entries.map((r) => <RowEditor key={r.id + r.visibility + String(r.hidden) + (r.phase ?? '') + (r.reveal_when ?? '')} slug={slug} row={r} phases={phases} members={members} canName={canName} reveal={reveal} />)}
     </>
   );
 }
