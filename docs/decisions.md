@@ -342,3 +342,14 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 
 269. **A new campaign no longer has to be in a world.** This reverses decision 142. You asked for it: a one-off campaign should not need a world made first. The form offers "No world" first; a campaign without one stands alone and gets no world homebrew, and can be put in a world later from that world's page. Choosing a world works as before. The database never required a world, so nothing there changes.
 270. **A campaign made without a world opens itself when it is made** (or its Manage page, if text was pasted in). One made in a world still goes back to that world, where it now appears in the list.
+
+## Hub version 2, item 7: Campaign settings (14 October 2026)
+
+271. **Every part of the old Manage page is written once and placed in both layouts.** With the flag, the parts are grouped as Campaign settings; without it, they are drawn in the old order. A test checks every old heading is in both, and that the old layout keeps its order.
+272. **Where the old parts went.** The mockup's General section is the campaign's own details, so it holds the title and tagline, rules, theme, background picture, featured video, tabs, paste pages, table tools and preview. Reveal stages went under Visibility defaults, because a stage is when things become visible. Invite codes and members went under People and permissions. Deleting went under Archive or delete.
+273. **Visibility defaults work, not just show.** "New content starts as" sets how a new NPC (and anything else made with an empty choice) starts. "When an NPC is revealed, players see" sets a new NPC's reveal level. "Allow reveals to only some players" switched off takes "Only some players" out of the pickers; anything already set that way keeps it. Each new hub page that makes content should start from these too.
+274. **A campaign with no visibility defaults behaves as campaigns always have:** new content hidden, a new NPC showing everything once revealed, and reveals to only some players offered. The mockup shows "Name and portrait" chosen; I kept today's behaviour as the starting point so nothing changes until you choose.
+275. **"Post scheduled reveals to Discord" is shown switched off and cannot be turned on** until Discord exists (#40). The Discord section says it is not built.
+276. **Archiving is not built.** There is no archived state for a campaign yet, so the section says so and keeps Delete. Say if you want archiving; it needs its own change.
+277. **The parts that draw their own heading** (Pages and features, People and permissions, the dice rules) leave it out inside a section, so a heading is not shown twice.
+278. **The store test that opens a bought campaign's Manage page** now accepts either layout, because the test account it uses has the flag.

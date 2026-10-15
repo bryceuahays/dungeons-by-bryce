@@ -17,8 +17,9 @@ function NpcEditor({ n, p, fields, save, remove, close }: { n: Partial<Entry>; p
   const full = npcFull(n);
   const [pic, setPic] = useState<string>(String(full.data.file ?? ''));
   const [err, setErr] = useState('');
-  const [level, setLevel] = useState<Reveal>(revealOf(n.data));
-  const v2 = useVisMode().on;
+  const mode = useVisMode();
+  const [level, setLevel] = useState<Reveal>(n.id ? revealOf(n.data) : mode.defaults.npcReveal);
+  const v2 = mode.on;
   return (
     <div className="plate">
       <h3>{n.id ? 'Edit ' + n.title : 'New NPC'}</h3>

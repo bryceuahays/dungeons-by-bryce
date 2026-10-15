@@ -261,7 +261,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 | 4 | Visibility upgrades and partial NPC reveals | [#85](https://github.com/bryceuahays/dungeons-by-bryce/issues/85) | Must | Yes: `20261016000001_visibility.sql` | Waits for item 1, item 2 |
 | 5 | Dice rolling, public and private | [#86](https://github.com/bryceuahays/dungeons-by-bryce/issues/86) | Must | Yes: `20261017000001_dice.sql` | Waits for item 1, item 2, item 4 |
 | 6 | Co-DM screen and permissions | [#62](https://github.com/bryceuahays/dungeons-by-bryce/issues/62) (existing) | Must | Yes: `20261018000001_co_dm_permissions.sql` | Waits for item 1, item 5 |
-| 7 | Campaign settings page | [#87](https://github.com/bryceuahays/dungeons-by-bryce/issues/87) | Must | No | Waits for item 1, item 2, item 3, item 5, item 6 |
+| 7 | Campaign settings page | [#87](https://github.com/bryceuahays/dungeons-by-bryce/issues/87) | Must | No (settings kept in the campaign) | Waits for item 1, item 2, item 3, item 5, item 6 |
 | 8 | Header, page tabs, character sidebar and phone layout | [#88](https://github.com/bryceuahays/dungeons-by-bryce/issues/88) | Must | No | Waits for item 1, item 2, item 3, item 5 |
 | 9 | Welcome page | [#89](https://github.com/bryceuahays/dungeons-by-bryce/issues/89) | Should | No | Waits for item 1, item 2, item 3, item 8 |
 | 10 | NPCs page | [#90](https://github.com/bryceuahays/dungeons-by-bryce/issues/90) | Should | No | Waits for item 1, item 2, item 3, item 4, item 8 |
@@ -335,7 +335,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **What you do by hand, once:** apply the migration `20261017000001_dice.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Apply it before this is put live.
 - **Left for later items:** tap to roll for attacks and spells (with the sheet, item 8), and the Initiative tool rolling NPC initiative as a hidden roll (with the Combat page, item 12).
 
-### Item 6: co-DMs and permissions (built, waiting for its database change)
+### Item 6: co-DMs and permissions (built and live)
 
 - **What it is:** you can make someone in a campaign a co-DM and choose exactly what they may do.
 - **Where to find it:** a campaign's **Manage** page, **People and permissions**. It lists everyone in the campaign. A player has a "Make co-DM" button with a starting point; a co-DM has "Permissions", which opens ten tick boxes, and "Remove co-DM".
@@ -347,3 +347,17 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **Who sees the screen:** you, as a campaign's owner, behind the feature flag "Co-DM screen and permissions". The database rules apply to everyone as soon as the migration runs, and change nothing for an owner or for a co-DM without a shorter list.
 - **Where it lives:** `src/config/co-dm.ts` (the list), `src/features/hub/people/` (the screen), `src/lib/campaign.ts` (who counts as a DM), `tests/codm.test.mjs`. How it works is in `CLAUDE.md`, under "Co-DMs and Permissions".
 - **What you do by hand, once:** apply the migration `20261018000001_co_dm_permissions.sql` (in PowerShell: `cd "C:\Users\bryce\OneDrive\Desktop\Dungeons By Bryce\dungeons-by-bryce-handoff"`, then `npx.cmd supabase db push`). Apply it before this is put live.
+
+### New campaign: a world is optional (built and live)
+
+- A new campaign no longer has to be in a world. The form offers "No world" first; you can put a campaign in a world later from that world's page.
+
+### Item 7: Campaign settings (built)
+
+- **What it is:** the Manage page, reorganised to match the settings mockup. A list of sections down the side (along the top on a phone): General, Pages and features, Visibility defaults, Dice, People and permissions, Discord, Archive or delete.
+- **Everything that was on Manage is still there,** each part in the section it belongs to: title and tagline, rules, theme, background and featured video, tabs, paste pages, table tools and preview under General; reveal stages under Visibility defaults; invite codes and members under People and permissions; deleting the campaign under Archive or delete.
+- **New: Visibility defaults.** New content starts hidden or visible to every player; what players see when a new NPC is revealed (everything, name and portrait, or name only); and whether "Only some players" is offered at all. They take effect in the table tools straight away.
+- **Not built yet, and the page says so:** posting to Discord, and archiving a campaign.
+- **Who sees it:** you, behind the feature flag "Campaign settings page". Other DMs keep the Manage page as it is.
+- **Where it lives:** `src/features/hub/settings/`, and `src/app/c/[slug]/manage/page.tsx` (which now draws either layout from the same parts). `tests/settings.test.mjs`.
+- **What you do by hand:** nothing. No database change.

@@ -7,6 +7,7 @@ import { FEATURES } from '@/config/plans';
 import type { Entry } from '@/lib/entry-types';
 import { ConfirmButton } from '../ConfirmButton';
 import { VisPicker, type Member, type Stage, type Vis } from '../VisPicker';
+import { useVisMode } from '@/features/hub/visibility/VisMode';
 
 // The table tools write straight to the database from the browser, as the signed-in
 // person. The database decides what is allowed (who may write, what a plan includes),
@@ -103,7 +104,9 @@ export function EntryForm({ fields, entry, stages, members, beats, allowVis, can
   const [status, setStatus] = useState(entry.status ?? '');
   const [data, setData] = useState<Record<string, any>>(entry.data ?? {});
   const [secret, setSecret] = useState<Record<string, any>>(entry.secret ?? {});
-  const [vis, setVis] = useState<Vis>(visOf(entry));
+  // something new, with no visibility of its own yet, starts as the campaign's default (Campaign settings)
+  const { defaults } = useVisMode();
+  const [vis, setVis] = useState<Vis>(() => (entry.id || entry.vis !== undefined ? visOf(entry) : { ...visOf(entry), vis: defaults.newVis }));
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<Result | null>(null);
   const val = (f: F) => (f.title ? title : f.status ? status : (f.secret ? secret : data)[f.key] ?? f.def ?? (f.kind === 'check' ? false : ''));
