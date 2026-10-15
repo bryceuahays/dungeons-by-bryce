@@ -1,6 +1,6 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { HiddenTag } from '@/features/hub/ui/Hidden';
 import { formatResult } from '@/features/dice/notation';
@@ -112,13 +112,13 @@ export function Sidebar({ slug, campaignId }: { slug: string; campaignId: string
           {s.abilities ? (
             <>
               <h3 className="sb-h">Attributes {data.canRoll && s.abilities.some((a) => a.token) ? <small>Tap to roll</small> : null}</h3>
-              <div className="sb-abs">{s.abilities.map((a) => tap(a.token, <><small>{a.abbr}</small><b>{signed(a.mod)}</b><span>{a.score}</span></>, 'sb-ab', `${a.label} check`))}</div>
+              <div className="sb-abs">{s.abilities.map((a) => <Fragment key={a.key}>{tap(a.token, <><small>{a.abbr}</small><b>{signed(a.mod)}</b><span>{a.score}</span></>, 'sb-ab', `${a.label} check`)}</Fragment>)}</div>
             </>
           ) : null}
           {s.skills ? (
             <>
               <h3 className="sb-h">Skills <small>Prof. {signed(s.prof)}</small></h3>
-              <div className="sb-skills">{s.skills.map((k) => tap(k.token, <><i className={k.proficient ? 'yes' : ''} aria-label={k.proficient ? (k.expert ? 'expertise' : 'proficient') : undefined} /><span>{k.name}</span><b>{signed(k.bonus)}</b></>, 'sb-skill', k.name))}</div>
+              <div className="sb-skills">{s.skills.map((k) => <Fragment key={k.name}>{tap(k.token, <><i className={k.proficient ? 'yes' : ''} aria-label={k.proficient ? (k.expert ? 'expertise' : 'proficient') : undefined} /><span>{k.name}</span><b>{signed(k.bonus)}</b></>, 'sb-skill', k.name)}</Fragment>)}</div>
             </>
           ) : null}
         </>
