@@ -26,6 +26,7 @@ export function describeEffect(x: Effect, AB: Record<string, string> = Object.fr
     case 'hp': return `Hit point maximum +${x.n} per level${at}`;
     case 'ac': return `Armor class ${sgn(Number(x.n))}${x.when ? ' while ' + x.when : ''}${at}`;
     case 'bonus': return `${x.amount === 'prof' ? '+ Proficiency Bonus' : AB[x.amount] ? '+ ' + AB[x.amount] + ' modifier' : sgn(Number(x.amount))} to ${({ save: 'saving throws', check: 'ability checks', attack: 'attack rolls', initiative: 'Initiative', damage: 'damage rolls' } as Record<string, string>)[x.roll] ?? x.roll}${x.when ? ' ' + x.when : ''}${at}`;
+    case 'penalty': return `${AB[x.amount] ? '− ' + AB[x.amount] + ' modifier' : '−' + Math.abs(Number(x.amount) || 0)} to ${({ save: 'saving throws', check: 'ability checks', attack: 'attack rolls', initiative: 'Initiative', damage: 'damage rolls' } as Record<string, string>)[x.roll] ?? x.roll}${x.when ? ' ' + x.when : ''}${at}`;
     case 'dis': return `Disadvantage on ${x.roll === 'initiative' ? 'Initiative' : (x.ab ? (AB[x.ab] ?? x.ab) + ' ' : '') + ({ save: 'saving throws', check: 'checks', attack: 'attack rolls' } as Record<string, string>)[x.roll]}${x.when ? ' ' + x.when : ''}${at}`;
     case 'hazard': return `Takes ${x.amount} ${x.type ? x.type + ' ' : ''}damage ${({ turn: 'at the start of each of its turns', minute: 'every minute', hour: 'every hour', once: 'each time' } as Record<string, string>)[x.every] ?? ''}${x.when ? ' while ' + x.when.replace(/^while\s+/i, '') : ''}${at}`;
     case 'text': return x.text + at;

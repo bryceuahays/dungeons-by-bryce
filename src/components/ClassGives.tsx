@@ -25,7 +25,7 @@ export const SpellTools = createContext<{ spells: SpellOption[]; onSpellSaved: (
 const KINDS: [string, string][] = [
   ['prof', 'A proficiency'], ['ac', 'Armor class (bonus or penalty)'], ['speed', 'Speed (more or less)'], ['resist', 'Resistance, immunity or vulnerability'],
   ['condition', 'Immunity to a condition'], ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score (increase or decrease)'],
-  ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['dis', 'Disadvantage on a roll (a drawback)'], ['bonus', 'A bonus or penalty to a roll'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
+  ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['dis', 'Disadvantage on a roll (a drawback)'], ['bonus', 'A bonus to a roll'], ['penalty', 'A penalty to a roll (a drawback)'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
   ['hazard', 'Takes damage (a drawback, like sunlight)'], ['text', 'A note on the sheet'],
 ];
 export const GIVEN = KINDS.map(([k]) => k);
@@ -33,7 +33,7 @@ const blank = (t: string): any => ({
   prof: { t, kind: 'skill', v: 'Perception' }, ac: { t, n: 1 }, speed: { t, mode: 'walk', n: 10 }, resist: { t, v: 'fire', immune: false },
   sense: { t, v: 'Darkvision', n: 60 }, condition: { t, v: 'Charmed' }, hp: { t, n: 1 }, ability: { t, ab: 'str', n: 1 }, spell: { t, name: '' }, text: { t, text: '' },
   adv: { t, roll: 'save', ab: 'con', when: '' }, dis: { t, roll: 'attack', ab: '', when: '' },
-  hazard: { t, amount: '1d4', type: 'radiant', every: 'turn', when: 'in direct sunlight' }, bonus: { t, roll: 'attack', amount: 2, when: '' }, attacks: { t, n: 2, with: '' }, damage: { t, amount: '1d6', type: '', when: '' },
+  hazard: { t, amount: '1d4', type: 'radiant', every: 'turn', when: 'in direct sunlight' }, bonus: { t, roll: 'attack', amount: 2, when: '' }, penalty: { t, roll: 'check', amount: 2, when: '' }, attacks: { t, n: 2, with: '' }, damage: { t, amount: '1d6', type: '', when: '' },
 }[t]);
 const SENSES = ['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'];
 const ROLLS: [string, string][] = [['save', 'Saving throws'], ['check', 'Ability checks'], ['attack', 'Attack rolls'], ['initiative', 'Initiative']];
@@ -90,8 +90,16 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
       return <>
         <label>Roll<select value={g.roll} onChange={(e) => set({ roll: e.target.value })}>{[...ROLLS, ['damage', 'Damage rolls']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
         <label>Adds<select value={fixed ? 'n' : g.amount} onChange={(e) => set({ amount: e.target.value === 'n' ? 1 : e.target.value })}><option value="n">A number</option><option value="prof">Proficiency Bonus</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l} modifier</option>)}</select></label>
-        {fixed ? num('Change (use − for a penalty)', 'amount', { min: -20, max: 20 }) : null}
+        {fixed ? num('Bonus (+)', 'amount', { min: 1, max: 20 }) : null}
         <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: with Ranged weapons (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;
+    }
+    case 'penalty': {
+      const fixed = !ABILITIES.some(([k]) => k === g.amount);
+      return <>
+        <label>Roll<select value={g.roll} onChange={(e) => set({ roll: e.target.value })}>{[...ROLLS, ['damage', 'Damage rolls']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        <label>Takes away<select value={fixed ? 'n' : g.amount} onChange={(e) => set({ amount: e.target.value === 'n' ? 1 : e.target.value })}><option value="n">A number</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l} modifier</option>)}</select></label>
+        {fixed ? num('Penalty (−)', 'amount', { min: 1, max: 20 }) : null}
+        <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: in bright light (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;
     }
     case 'speed': return <><label>Kind<select value={g.mode} onChange={(e) => set({ mode: e.target.value, ...(e.target.value === 'walk' && g.n === 'walk' ? { n: 10 } : {}) })}>{[['walk', 'Walking (added)'], ['fly', 'Flying'], ['swim', 'Swimming'], ['climb', 'Climbing'], ['burrow', 'Burrowing']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
       {g.n === 'walk' ? null : num(g.mode === 'walk' ? 'Feet (use − to slow them)' : 'Feet', 'n', { min: g.mode === 'walk' ? -30 : 0, step: 5 })}

@@ -35,6 +35,7 @@ export type Effect = { at?: number } & (
   | { t: 'spell'; name: string; cast?: 'free' | 'perRest'; n?: number | 'prof'; recharge?: 'long' | 'short'; self?: boolean } // no cast: always prepared
   | { t: 'adv'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // advantage on a roll
   | { t: 'dis'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // disadvantage on a roll (a drawback)
+  | { t: 'penalty'; roll: 'save' | 'check' | 'attack' | 'initiative' | 'damage'; amount: number | string; when?: string } // taken off a roll (a drawback)
   | { t: 'hazard'; amount: string | number; type?: string; every: 'turn' | 'minute' | 'hour' | 'once'; when?: string } // damage it takes, like in sunlight
   | { t: 'attacks'; n: number; with?: string } // attacks per Attack action
   | { t: 'damage'; amount: string; type?: string; when?: string } // extra damage: dice ("1d8") or an ability modifier ("cha")
@@ -203,7 +204,10 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
   (c.langs ?? []).forEach((l) => profs.language.add(l));
   const expert = new Set([...(c.expert ?? []), ...picked.filter((p) => p.from === 'skills').flatMap((p) => p.v)]);
   // flat bonuses that always apply (Alert's Proficiency Bonus to Initiative, a +1 to saving throws); ones with a 'when' are situational
-  const bonusTo = (roll: string) => of('bonus').filter((x) => x.roll === roll && !x.when).reduce((n, x) => n + (x.amount === 'prof' ? prof : typeof x.amount === 'string' && x.amount in mods ? mods[x.amount as Ability] : Number(x.amount) || 0), 0);
+  // a penalty (a drawback) takes its amount away; its amount is written as a positive number or an ability
+  const amountOf = (a: number | string) => (a === 'prof' ? prof : typeof a === 'string' && a in mods ? mods[a as Ability] : Number(a) || 0);
+  const bonusTo = (roll: string) => of('bonus').filter((x) => x.roll === roll && !x.when).reduce((n, x) => n + amountOf(x.amount), 0)
+    - of('penalty').filter((x) => x.roll === roll && !x.when).reduce((n, x) => n + Math.abs(amountOf(x.amount)), 0);
   const saves = sys.abilities.filter((a) => a.save).map(({ key, label }) => ({ key: key as Ability, label, proficient: profs.save.has(key), bonus: (mods[key as Ability] ?? 0) + (profs.save.has(key) ? prof : 0) + bonusTo('save') }));
   const skills = sys.skills.map(({ name, ab: a, passive }) => ({ name, ability: a as Ability, passive, proficient: profs.skill.has(name), expert: expert.has(name), bonus: (mods[a as Ability] ?? 0) + (profs.skill.has(name) ? prof * (expert.has(name) ? 2 : 1) : 0) }));
 
@@ -293,6 +297,7 @@ export function effectPoints(x: Effect): number {
     case 'prof': return x.kind === 'save' ? 2 : x.kind === 'skill' ? 0.75 : 0.25;
     case 'resist': return x.vuln ? -1.5 : x.immune ? 3 : 1.5;
     case 'dis': return -1;
+    case 'penalty': return -Math.abs(Number(x.amount) || 1) / 2;
     case 'hazard': return x.every === 'once' ? -0.5 : -2;
     case 'condition': return 1;
     case 'speed': return x.mode === 'fly' ? 3 : x.mode === 'walk' ? Number(x.n) / 10 : 1;
