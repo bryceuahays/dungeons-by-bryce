@@ -70,7 +70,7 @@ export function NewCampaignForm({ pro, packs = [], worlds = [], world = '', syst
             <optgroup label="Ready-made">{SYSTEMS.filter((sys) => sys.id !== 'both').map((sys) => <option key={sys.id} value={sys.id}>{sys.name}</option>)}</optgroup>
             {systems.length ? <optgroup label="Your systems">{systems.map((s) => <option key={s.id} value={'custom:' + s.id}>{s.name} (built on Fifth Edition {s.base})</option>)}</optgroup> : null}
           </select></label>
-          <p className="dim">The rules this campaign plays by. Make your own under <Link href="/homebrew/systems">Homebrew</Link>.</p>
+          <p className="dim">The rules this campaign plays by. <Link className="button quiet small-btn" href="/homebrew/systems">Create or edit a system</Link></p>
           <fieldset className="multi">
             <legend>Genres (tick any that fit)</legend>
             {GENRES.map((g) => <label key={g} className="ckrow"><input type="checkbox" name="genre" value={g} /> <span>{g}</span></label>)}

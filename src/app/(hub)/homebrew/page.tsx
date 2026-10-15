@@ -19,7 +19,7 @@ export default async function Homebrew() {
     supabase.from('entities').select('id, type, name, status, depth, source, version, updated_at, origin, system:data->>system').eq('owner_id', user.id).order('type').order('name'),
     supabase.from('packs').select('id, name, description').eq('owner_id', user.id).order('created_at'),
     supabase.from('packs').select('id, name, description, free, owner_id').eq('official', true).neq('owner_id', user.id).order('created_at'),
-    supabase.from('campaigns').select('id, title').eq('owner_id', user.id).order('created_at'),
+    supabase.from('campaigns').select('id, title, settings').eq('owner_id', user.id).order('created_at'),
     supabase.from('campaign_faces').select('campaign_id, title').eq('phase', ''),
   ]);
   const real = new Map((faces ?? []).map((f) => [f.campaign_id, f.title]));
@@ -47,6 +47,17 @@ export default async function Homebrew() {
         <p className="inline"><Link className="button" href="/homebrew/import">Import homebrew <span className="beta-tag">Beta</span></Link></p>
       </div>
       {left <= 0 ? <UpgradeHint feature="homebrew" /> : null}
+
+      {/* your game systems (src/features/systems): open one, or make a new one from the ready-made rules */}
+      <h2>Game systems</h2>
+      <p className="dim">The rules your campaigns play by. Change abilities, skills, health, magic and more, then pick the system for a campaign when you create it.</p>
+      <div className="cards">
+        {systems.map((x) => {
+          const used = (myCampaigns ?? []).filter((c) => (c as { settings?: { system?: string } }).settings?.system === x.id).length;
+          return <Link key={x.id} className="ccard" href={'/homebrew/systems/' + x.id}><b>{x.name}</b><span>Built on Fifth Edition ({x.base}).</span><i>{used ? 'Used by ' + used + (used === 1 ? ' campaign' : ' campaigns') : 'Not used by a campaign yet'}</i></Link>;
+        })}
+        <Link className="ccard" href={'/homebrew/systems/new?from=' + sys.base}><b>Create a new system</b><span>Start from the ready-made Fifth Edition rules ({sys.base}) and change what you like.</span><i>New</i></Link>
+      </div>
 
       <h2>Make something new</h2>
       <div className="cards brewtypes">
