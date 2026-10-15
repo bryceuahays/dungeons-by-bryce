@@ -47,3 +47,9 @@ export async function campaignSheetSystem(ctx: { supabase: Supa; campaign: { set
   const sys = await campaignSystem(ctx);
   return sys ? sheetSystem(sys) : null;
 }
+
+// a character outside any campaign that plays one of its owner's own systems (data.gameSystem)
+export async function characterSheetSystem(supabase: Supa, userId: string, gameSystem: unknown) {
+  const sys = await loadSystem(supabase, gameSystem);
+  return sys && sys.ownerId === userId ? { id: sys.id, name: sys.name, sheet: sheetSystem(sys) } : null;
+}
