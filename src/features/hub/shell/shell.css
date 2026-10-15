@@ -1,7 +1,8 @@
 /* The hub version 2 frame (ShellFrame.tsx, Sidebar.tsx), after HubTop.png, Sidebar.png and Mobile.png. Theme variables only. */
 
 /* ---- header */
-.campaign .hs-top{position:relative; z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; padding:12px 24px; background:var(--deep); border-bottom:1px solid var(--line); font-family:var(--body)}
+/* pinned to the top of the screen; --hs-top-h is its measured height (ShellFrame.tsx) */
+.campaign .hs-top{position:sticky; top:0; z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; padding:12px 24px; background:var(--deep); border-bottom:1px solid var(--line); font-family:var(--body)}
 .campaign .hs-mark{flex:none; width:44px; height:44px; display:grid; place-items:center; border-radius:10px; background:var(--plate2); border:1px solid var(--line); color:var(--gold)}
 .campaign .hs-name{flex:1 1 220px; min-width:0; display:flex; flex-direction:column}
 .campaign .hs-name b{font-family:var(--display); font-weight:600; font-size:1.45rem; line-height:1.15; color:var(--vellum); overflow-wrap:anywhere}
@@ -19,7 +20,7 @@
 .campaign .hs-sr,.campaign .sb-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
 
 /* ---- tabs */
-.campaign .hs-tabs{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:color-mix(in srgb, var(--deep) 92%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid var(--line)}
+.campaign .hs-tabs{position:sticky; top:var(--hs-top-h, 69px); z-index:5; background:color-mix(in srgb, var(--deep) 92%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid var(--line)}
 .campaign .hs-tabrow{display:flex; gap:4px 18px; padding:0 24px; overflow-x:auto; scrollbar-width:thin}
 .campaign .hs-tabs a{flex:none; display:inline-flex; align-items:center; gap:8px; min-height:48px; padding:0 4px; font-family:var(--body); font-size:15px; color:var(--dim); text-decoration:none; border-bottom:2px solid transparent}
 .campaign .hs-tabs a:hover{color:var(--vellum)}
@@ -31,7 +32,7 @@
 .campaign .hs-body{position:relative; z-index:1; display:grid; grid-template-columns:300px minmax(0, 1fr); gap:24px; align-items:start; padding:20px 24px 0}
 .campaign .hs-body.solo{grid-template-columns:minmax(0, 1fr)}
 .campaign .hs-body > .page{min-width:0}
-.campaign .hs-side{position:sticky; top:64px; max-height:calc(100vh - 84px); overflow:auto; border-radius:14px; background:var(--plate); border:1px solid var(--line); scrollbar-width:thin}
+.campaign .hs-side{position:sticky; top:calc(var(--hs-top-h, 69px) + 64px); max-height:calc(100vh - var(--hs-top-h, 69px) - 84px); overflow:auto; border-radius:14px; background:var(--plate); border:1px solid var(--line); scrollbar-width:thin}
 .campaign[data-radius] .hs-side{border-radius:var(--radius)}
 .campaign .hs-grip{display:none}
 .campaign .hs-veil,.campaign .hs-bar,.campaign .hs-more{display:none}
@@ -83,8 +84,15 @@
 .campaign .sb button:focus-visible,.campaign .sb select:focus-visible,.campaign .sb input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 
 /* ---- phones and small tablets: the tabs become a bottom bar, the sidebar a drawer */
+/* a link to a part of a page lands below the pinned header, not under it */
+html:has(.campaign .hs-top){scroll-padding-top:calc(var(--hs-top-h, 69px) + 64px)}
 @media (max-width:960px){
   .campaign .hs-top{padding:10px 16px}
+  /* pinned, so kept short: the buttons stay on one row and scroll sideways if they do not fit */
+  .campaign .hs-acts{flex:1 1 100%; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:2px}
+  .campaign .hs-acts::-webkit-scrollbar{display:none}
+  .campaign .hs-acts > *{flex:none}
+  .campaign .hs-btn,.campaign .hs-seg a,.campaign .hs-seg button{white-space:nowrap}
   .campaign .hs-name b{font-size:1.2rem}
   .campaign .hs-name .hs-here{display:inline}
   .campaign .hs-name .hs-here:not(:empty) + .hs-session:not(:empty)::before{content:" · "}

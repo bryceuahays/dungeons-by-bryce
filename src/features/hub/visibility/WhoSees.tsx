@@ -17,8 +17,10 @@ const firstSession = (next?: number) => (next && next >= 1 ? next : 1);
 // asks who and when. Nothing changes until Apply.
 //
 // This only chooses. Whether a player receives something is decided by the database.
-export function WhoSees({ value, onChange, stages = [], members = [], beats = [], canName = true, disabled, nextSession, label = 'Who sees it' }: {
-  value: VisValue; onChange: (v: VisValue) => void; stages?: Stage[]; members?: Member[]; beats?: Beat[]; canName?: boolean; disabled?: boolean; nextSession?: number; label?: string;
+// `named`: whether the campaign lets reveals go to only some players (Campaign settings). When it
+// does, the choice is always there, also before anyone has joined.
+export function WhoSees({ value, onChange, stages = [], members = [], beats = [], canName = true, disabled, nextSession, label = 'Who sees it', named = true }: {
+  value: VisValue; onChange: (v: VisValue) => void; stages?: Stage[]; members?: Member[]; beats?: Beat[]; canName?: boolean; disabled?: boolean; nextSession?: number; label?: string; named?: boolean;
 }) {
   const id = useId();
   const anchor = useRef<HTMLSpanElement>(null);
@@ -35,7 +37,7 @@ export function WhoSees({ value, onChange, stages = [], members = [], beats = []
   const close = () => setHost(null);
 
   const set = (patch: Partial<Choice>) => setDraft({ ...draft, ...patch });
-  const whoList = WHO.filter(([w]) => w !== 'players' || members.length > 0);
+  const whoList = WHO.filter(([w]) => w !== 'players' || named || members.length > 0);
   const whenList = WHEN.filter(([w]) => (w !== 'stage' || stages.length > 0) && (w !== 'entry' || beats.length > 0));
   const stored = fromChoice(draft);
   const why = problem(draft);
@@ -60,6 +62,7 @@ export function WhoSees({ value, onChange, stages = [], members = [], beats = []
             ))}
             {draft.who === 'players' ? (
               <div className="vis2-people">
+                {members.length ? null : <p className="vis2-none">Nobody has joined this campaign yet. Once players join with your invite code, choose them here.</p>}
                 {members.map((m) => (
                   <label key={m.user_id} className="vis2-opt">
                     <input type="checkbox" checked={draft.players.includes(m.user_id)}

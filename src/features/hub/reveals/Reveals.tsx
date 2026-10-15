@@ -6,6 +6,7 @@ import { campaignCanMake } from '@/lib/entitlements';
 import { hasFeature } from '@/config/hub-features';
 import type { ContentRow } from '@/lib/types';
 import { revealFacts } from './server';
+import { visDefaults } from '@/features/hub/settings/defaults';
 import { schedule, type BlockRow, type BrewRow, type EntryRow } from './schedule';
 import { SessionStep } from './SessionStep';
 import { BlockWhen, EntryWhen, PlotSecretForm, RevealNowButton } from './RevealsForms';
@@ -48,9 +49,10 @@ export async function Reveals({ slug }: { slug: string }) {
   const brewById = new Map(brewRows.map((a) => [a.entity_id, a]));
   const blockById = new Map((blocks ?? []).map((b: any) => [b.id, b]));
   const visOf = (r: any) => ({ vis: r.vis, vis_players: r.vis_players ?? [], vis_stage: r.vis_stage ?? null, vis_entry: r.vis_entry ?? null });
-  const info = { met: [...facts.met], stage: campaign.phase, nextSession: facts.nextSession, beats: (beats ?? []).filter((b: any) => b.status !== 'hit').map((b: any) => ({ id: b.id, title: b.title })) };
-  const pickBeats = (beats ?? []).map((b: any) => ({ id: b.id, title: b.title }));
   const canName = campaignCanMake(ctx.access, 'player_secrets');
+  const named = visDefaults(settings).named;
+  const info = { met: [...facts.met], stage: campaign.phase, nextSession: facts.nextSession, beats: (beats ?? []).filter((b: any) => b.status !== 'hit').map((b: any) => ({ id: b.id, title: b.title })), people: members, named, canName };
+  const pickBeats = (beats ?? []).map((b: any) => ({ id: b.id, title: b.title }));
   // who may do what: the database decides; these only leave out buttons it would refuse
   const may = (type: string) => writable && (type === 'entry' ? perms.reveal : perms.edit);
   const total = groups.reduce((n, g) => n + g.items.length, 0);
@@ -94,7 +96,7 @@ export async function Reveals({ slug }: { slug: string }) {
                       <div className="rv-acts">
                         {it.ref.type === 'block' ? <BlockWhen slug={campaign.slug} row={blockById.get(it.ref.id) as ContentRow} chapters={chapters} info={info} />
                           : <EntryWhen slug={campaign.slug} item={it.ref} value={visOf(it.ref.type === 'entry' ? entryById.get(it.ref.id) : brewById.get(it.ref.id))}
-                              stages={chapters} members={members} beats={pickBeats} nextSession={facts.nextSession} canName={canName} />}
+                              stages={chapters} members={members} beats={pickBeats} nextSession={facts.nextSession} canName={canName} named={named} />}
                         <RevealNowButton slug={campaign.slug} item={it.ref} />
                       </div>
                     ) : null}

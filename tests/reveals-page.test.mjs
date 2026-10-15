@@ -136,3 +136,15 @@ test('a tab cannot take the hub\'s address', async () => {
   const imp = (await import('node:fs')).readFileSync(new URL('../src/lib/import.ts', import.meta.url), 'utf8');
   assert.match(imp, /'players', 'hub', 'tools'/);
 });
+
+test('"only some players" is offered before anyone has joined', async () => {
+  const slug = 'rvn-' + rnd();
+  const N = (await dm.client.from('campaigns').insert({ slug, title: 'Nobody Yet', phases: [], phase: '' }).select('id, slug').single()).data;
+  await dm.client.from('sections').insert({ campaign_id: N.id, slug: 'overview', title: 'Overview', sort: 10, audience: 'all', kind: 'content' });
+  await dm.client.from('content').insert({ campaign_id: N.id, section: 'overview', kind: 'html', key: 'k', sort: 10, title: 'A hidden block', visibility: 'player', hidden: true, reveal_when: null, body: { html: '<p>x</p>' } });
+  await dm.client.from('entries').insert({ campaign_id: N.id, kind: 'npc', title: 'A stranger', status: 'neutral', vis: 'dm', live: true, data: {} });
+  const edit = await page(`/c/${N.slug}/edit/overview`, dm.session);
+  assert.ok(edit.text.includes('Who can see it') && edit.text.includes('Only some players') && edit.text.includes('Every player'), 'the block offers it');
+  const rv = await page(`/c/${N.slug}/hub/reveals`, dm.session);
+  assert.ok(rv.text.includes('Who and when'), 'and the Reveals page has "Who and when" on each');
+});

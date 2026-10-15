@@ -12,6 +12,11 @@
 .br-auto select,.br-auto input{box-sizing:border-box; min-height:44px; max-width:100%; padding:0 10px; border-radius:8px; background:var(--void); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
 .br-auto input{width:6rem}
 .br-note{margin:0; font-size:14px; color:var(--dim)}
+.br-who{margin:0; padding:0; border:0; min-width:0; display:flex; flex-wrap:wrap; gap:4px 18px; align-items:center}
+.br-who legend{padding:0; margin:0 0 4px; font-size:13px; color:var(--dim)}
+.br-who label,.br-people label{display:inline-flex; align-items:center; gap:8px; min-height:44px; margin:0; font-size:14px; color:var(--vellum); text-transform:none; letter-spacing:0; cursor:pointer}
+.br-people{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:0 18px; padding:0 0 0 26px}
+.br-none{flex:1 1 100%; font-size:14px; color:var(--dim)}
 @media (max-width:480px){.br-auto{flex-direction:column; align-items:stretch}}
 
 /* The Reveals page (Reveals.tsx), after Secrets.png. Theme variables only. */
@@ -45,3 +50,15 @@
 .campaign .rv-change[open] summary{margin-bottom:8px}
 .campaign .rv-acts .vis2{display:inline-flex; flex-wrap:wrap; align-items:center; gap:6px}
 @media (max-width:480px){.campaign .rv-group{padding:14px} .campaign .rv-acts{width:100%} .campaign .rv-now{flex:1 1 auto}}
+/* the "Who can see it" choices, drawn from the theme (as in the "Who sees this?" dialog) */
+.br-who label,.br-people label{flex:none; white-space:nowrap}
+.br-who input[type=radio],.br-people input[type=checkbox]{flex:none; width:18px; height:18px; margin:0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:grid; place-content:center;
+  background:var(--field); border:1.5px solid var(--line-strong)}
+.br-who input[type=radio]{border-radius:50%}
+.br-people input[type=checkbox]{border-radius:4px}
+.br-who input[type=radio]:checked{border-color:var(--secret)}
+.br-who input[type=radio]:checked::after{content:""; width:10px; height:10px; border-radius:50%; background:var(--secret)}
+.br-people input[type=checkbox]:checked{background:var(--secret); border-color:var(--secret)}
+.br-people input[type=checkbox]:checked::after{content:""; width:4px; height:9px; border:solid var(--void); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}
+.br-who input:disabled{opacity:.5; cursor:default}
+.br-who input:focus-visible,.br-people input:focus-visible{outline:2px solid var(--secret); outline-offset:2px}

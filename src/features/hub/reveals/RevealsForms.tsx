@@ -25,15 +25,15 @@ export function RevealNowButton({ slug, item }: { slug: string; item: Ref }) {
 type Vis = { vis: string; vis_players: string[]; vis_stage: string | null; vis_entry?: string | null };
 
 // "Change when" on an entry or attached homebrew: the "Who sees this?" dialog.
-export function EntryWhen({ slug, item, value, stages, members, beats, nextSession, canName }: {
+export function EntryWhen({ slug, item, value, stages, members, beats, nextSession, canName, named }: {
   slug: string; item: Ref; value: Vis; stages: { id: string; label: string }[]; members: { user_id: string; display_name: string }[];
-  beats: { id: string; title: string }[]; nextSession: number; canName: boolean;
+  beats: { id: string; title: string }[]; nextSession: number; canName: boolean; named: boolean;
 }) {
   const [msg, setMsg] = useState<Msg>(null);
   const [pending, start] = useTransition();
   return (
     <>
-      <WhoSees value={value} stages={stages} members={members} beats={beats} nextSession={nextSession} canName={canName} disabled={pending} label="When"
+      <WhoSees value={value} stages={stages} members={members} beats={beats} nextSession={nextSession} canName={canName} named={named} disabled={pending} label="Who and when"
         onChange={(v) => start(async () => setMsg(await setWhen(slug, item, v)))} />
       <Say msg={msg} />
     </>
