@@ -1,0 +1,47 @@
+/* The Welcome page (Welcome.tsx), after Welcome.png and WelcomeDM.png. Theme variables only. */
+.campaign .wl{display:flex; flex-direction:column; gap:20px; padding-top:4px; padding-bottom:32px}
+.campaign .wl .wl-card{background:var(--plate); border:1px solid var(--line); border-radius:14px; padding:20px 24px; min-width:0; font-family:var(--body)}
+.campaign[data-radius] .wl .wl-card{border-radius:var(--radius)}
+.campaign .wl .wl-card.hid-box{background:var(--secret-bg); border:1px dashed var(--secret-line)}
+.campaign .wl h1,.campaign .wl h2{font-family:var(--display); font-weight:600; color:var(--vellum); margin:0}
+.campaign .wl h2{font-size:1.4rem}
+.campaign .wl h3{font-family:var(--display); font-size:1.05rem; margin:12px 0 4px}
+.campaign .wl p{margin:8px 0 0; max-width:none}
+.campaign .wl .wl-banner{padding:56px 32px 32px; background:linear-gradient(180deg, var(--plate2), var(--plate))}
+.campaign .wl .wl-banner h1{font-size:2.6rem; line-height:1.1}
+.campaign .wl .wl-eyebrow{display:block; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--gold)}
+.campaign .wl .wl-pitch{font-size:1.05rem; color:var(--vellum-soft)}
+.campaign .wl .wl-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap:20px}
+.campaign .wl .wl-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:4px 12px}
+.campaign .wl .wl-head small{font-size:13px; color:var(--dim)}
+.campaign .wl .wl-text{white-space:pre-wrap; overflow-wrap:anywhere}
+.campaign .wl .wl-when{font-family:var(--display); font-size:1.15rem; color:var(--vellum)}
+.campaign .wl .wl-dim{color:var(--dim); font-size:14px}
+.campaign .wl .wl-more summary{cursor:pointer; color:var(--gold); margin-top:10px; min-height:44px; display:flex; align-items:center}
+.campaign .wl .wl-list{list-style:none; margin:12px 0 0; padding:0; display:flex; flex-direction:column; gap:8px}
+.campaign .wl .wl-list li{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:var(--plate2); border:1px solid var(--line); min-width:0}
+.campaign .wl .wl-waiting .wl-list li{background:color-mix(in srgb, var(--secret) 6%, var(--plate))}
+.campaign .wl .wl-list li > span{min-width:0; overflow-wrap:anywhere}
+.campaign .wl .wl-list small{display:block; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--gold)}
+.campaign .wl .wl-waiting .wl-list small{color:var(--secret-text)}
+.campaign .wl .wl-list a{flex:none; font-size:13px; color:var(--dim)}
+.campaign .wl .wl-form{display:flex; flex-direction:column; gap:10px; margin-top:12px}
+.campaign .wl .wl-row{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:10px}
+.campaign .wl .wl-f{display:flex; flex-direction:column; gap:4px; margin:0; font-size:13px; color:var(--dim)}
+.campaign .wl .wl-num{max-width:140px}
+.campaign .wl input,.campaign .wl textarea{width:100%; box-sizing:border-box; min-height:44px; padding:8px 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:15px}
+.campaign .wl textarea{line-height:1.5; resize:vertical}
+.campaign .wl .wl-pill{font-size:12px; font-weight:600; border-radius:999px; padding:2px 10px; color:var(--secret-text); border:1px dashed var(--secret-line); background:var(--secret-bg)}
+.campaign .wl .wl-pill.on{color:var(--verd); border:1px solid color-mix(in srgb, var(--verd) 55%, var(--line)); background:none}
+.campaign .wl .wl-acts{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+.campaign .wl .wl-btn{display:inline-flex; align-items:center; min-height:44px; padding:0 14px; border-radius:8px; background:var(--plate2); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px; text-decoration:none; cursor:pointer}
+.campaign .wl .wl-go{min-height:48px; padding:0 18px; border-radius:8px; background:var(--gold); color:var(--on-gold); border:0; font:inherit; font-weight:600; cursor:pointer}
+.campaign .wl .wl-reveal{flex:none; min-height:44px; padding:0 12px; border-radius:8px; background:var(--secret); color:var(--void); border:0; font:inherit; font-size:13px; font-weight:600; cursor:pointer}
+.campaign .wl button:disabled{opacity:.5; cursor:default}
+.campaign .wl a:focus-visible,.campaign .wl button:focus-visible,.campaign .wl input:focus-visible,.campaign .wl textarea:focus-visible,.campaign .wl summary:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+.campaign .wl .wl-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+@media (max-width:600px){
+  .campaign .wl .wl-banner{padding:32px 18px 20px}
+  .campaign .wl .wl-banner h1{font-size:2rem}
+  .campaign .wl .wl-card{padding:16px}
+}

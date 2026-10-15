@@ -210,6 +210,12 @@ With the `hub_v2_shell` flag, every campaign page sits in `src/features/hub/shel
 - **The phone bar's two pages** are `settings.shell.bar` (`model.ts`), chosen on Manage.
 - **A new hub page gets its tab from the campaign's tabs.** Until the hub version 2 pages exist, the tabs are the campaign's own tabs, plus Table tools and Dice.
 
+## Hub Pages
+
+The hub version 2 pages live under `/c/<slug>/hub/<page>` (`src/app/c/[slug]/hub/`), so they never collide with a campaign's own tab; `hub` and the app's other page names cannot be taken by a new tab (`addSection` in `src/app/c/[slug]/actions.ts`, `RESERVED` in `src/lib/import.ts`). Each page sits behind its flag (`requireFlag`) and its feature switches, and is added to the frame's `lead` tabs in `src/app/c/[slug]/layout.tsx`.
+
+- **Welcome** (`src/features/hub/welcome/`): banner and pitch, the published recap, the next session, newly revealed (the reveal log), and for the DM the recap writer and what waits for the next stage. Published recaps and the next session are `settings.welcome`, which everyone in the campaign can read, so **only published things go there**; a recap's draft is the DM's session record (`sessions.summary`).
+
 ## Campaign Settings
 
 With the `hub_v2_settings` flag, a campaign's Manage page is **Campaign settings** (`src/features/hub/settings/`): sections for General, Pages and features, Visibility defaults, Dice, People and permissions, Discord, and Archive or delete. Without the flag it is the Manage page as it was.
