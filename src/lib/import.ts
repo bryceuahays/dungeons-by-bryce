@@ -20,7 +20,7 @@ export type ImportedBlock = { kind: 'heading' | 'html' | 'plate' | 'secret' | 't
 export type ImportedTab = { title: string; slug: string; audience: 'all' | 'dm'; blocks: ImportedBlock[] };
 export type Imported = { title: string; tagline: string; tabs: ImportedTab[]; notes: string[] };
 
-const RESERVED = new Set(['builder', 'manage', 'edit', 'media', 'session', 'bg', 'sheet', 'combat', 'sessions', 'players']);
+const RESERVED = new Set(['builder', 'manage', 'edit', 'media', 'session', 'bg', 'sheet', 'combat', 'sessions', 'players', 'hub', 'tools', 'sidebar', 'file', 'map', 'create']);
 export const MAX_IMPORT_CHARS = 200000;
 const MAX_TABS = 30, MAX_BLOCKS = 800;
 
