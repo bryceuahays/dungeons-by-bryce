@@ -72,7 +72,7 @@ test('the picker offers session triggers, and says them in words', () => {
 test('the database knows the same triggers as the code', () => {
   const sql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261019000001_reveal_triggers.sql'), 'utf8');
   const fn = sql.slice(sql.indexOf('create or replace function public.reveal_met'), sql.indexOf('$$;', sql.indexOf('create or replace function public.reveal_met')));
-  assert.deepEqual([...fn.matchAll(/kind = '([a-z]+)'/g)].map((m) => m[1]), ['session', 'beat', 'chapter']);
+  assert.deepEqual([...fn.matchAll(/(?:if|elsif) kind = '([a-z]+)'/g)].map((m) => m[1]), ['session', 'beat', 'chapter']);
   assert.match(fn, /what in \('started', 'played'\)/);
   assert.match(fn, /s\.status = 'played' or \(what = 'started' and s\.status = 'running'\)/, 'played counts as started, as in metKeys()');
   assert.match(fn, /return false;\s*end/, 'anything else never happens');
@@ -140,10 +140,10 @@ test('entries: shown when the session starts, or once it is played, to everyone 
 test('page blocks: hidden until a session is played or a beat happens, and the page HTML agrees', async () => {
   await setStatus('ready');
   const ins = await dm.client.from('content').insert([
-    { campaign_id: C.id, section: 'overview', kind: 'html', key: 'open', sort: 10, title: 'a', visibility: 'player', body: { html: '<p>The gates are open</p>' } },
+    { campaign_id: C.id, section: 'overview', kind: 'html', key: 'open', sort: 10, title: 'a', visibility: 'player', hidden: false, reveal_when: null, body: { html: '<p>The gates are open</p>' } },
     { campaign_id: C.id, section: 'overview', kind: 'html', key: 'played', sort: 20, title: 'b', visibility: 'player', hidden: true, reveal_when: 'session:2:played', body: { html: '<p>The vault was empty all along</p>' } },
     { campaign_id: C.id, section: 'overview', kind: 'html', key: 'beat', sort: 30, title: 'c', visibility: 'player', hidden: true, reveal_when: 'beat:' + BEAT_ID, body: { html: '<p>The river is uncrossable</p>' } },
-    { campaign_id: C.id, section: 'overview', kind: 'html', key: 'hand', sort: 40, title: 'd', visibility: 'player', hidden: true, body: { html: '<p>Held by hand</p>' } },
+    { campaign_id: C.id, section: 'overview', kind: 'html', key: 'hand', sort: 40, title: 'd', visibility: 'player', hidden: true, reveal_when: null, body: { html: '<p>Held by hand</p>' } },
     { campaign_id: C.id, section: 'overview', kind: 'html', key: 'dmonly', sort: 50, title: 'e', visibility: 'dm', hidden: true, reveal_when: 'session:2:played', body: { html: '<p>DM eyes only</p>' } },
   ]);
   assert.equal(ins.error, null);
