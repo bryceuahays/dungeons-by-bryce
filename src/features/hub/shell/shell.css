@@ -1,0 +1,110 @@
+/* The hub version 2 frame (ShellFrame.tsx, Sidebar.tsx), after HubTop.png, Sidebar.png and Mobile.png. Theme variables only. */
+
+/* ---- header */
+.campaign .hs-top{position:relative; z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; padding:12px 24px; background:var(--deep); border-bottom:1px solid var(--line); font-family:var(--body)}
+.campaign .hs-mark{flex:none; width:44px; height:44px; display:grid; place-items:center; border-radius:10px; background:var(--plate2); border:1px solid var(--line); color:var(--gold)}
+.campaign .hs-name{flex:1 1 220px; min-width:0; display:flex; flex-direction:column}
+.campaign .hs-name b{font-family:var(--display); font-weight:600; font-size:1.45rem; line-height:1.15; color:var(--vellum); overflow-wrap:anywhere}
+.campaign .hs-name small{font-size:13px; color:var(--dim)}
+.campaign .hs-name .hs-here{display:none}
+.campaign .hs-acts{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+.campaign .hs-acts form{margin:0}
+.campaign .hs-btn,.campaign .hs-seg a,.campaign .hs-seg button{display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 14px; border-radius:10px; font:inherit; font-size:14px; text-decoration:none; cursor:pointer; color:var(--vellum); background:var(--plate2); border:1px solid var(--line-strong)}
+.campaign .hs-btn.quiet{background:transparent; border-color:var(--line); color:var(--vellum-soft)}
+.campaign .hs-btn.icon{width:44px; padding:0; justify-content:center}
+.campaign .hs-seg{display:inline-flex; gap:4px; padding:4px; border-radius:12px; background:var(--plate); border:1px solid var(--line)}
+.campaign .hs-seg a,.campaign .hs-seg button{min-height:40px; border:0; background:transparent}
+.campaign .hs-seg a{background:var(--gold); color:var(--on-gold); font-weight:600}
+.campaign .hs-top a:focus-visible,.campaign .hs-top button:focus-visible,.campaign .hs-tabs a:focus-visible,.campaign .hs-bar a:focus-visible,.campaign .hs-bar button:focus-visible,.campaign .hs-more a:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+.campaign .hs-sr,.campaign .sb-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+
+/* ---- tabs */
+.campaign .hs-tabs{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:color-mix(in srgb, var(--deep) 92%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid var(--line)}
+.campaign .hs-tabrow{display:flex; gap:4px 18px; padding:0 24px; overflow-x:auto; scrollbar-width:thin}
+.campaign .hs-tabs a{flex:none; display:inline-flex; align-items:center; gap:8px; min-height:48px; padding:0 4px; font-family:var(--body); font-size:15px; color:var(--dim); text-decoration:none; border-bottom:2px solid transparent}
+.campaign .hs-tabs a:hover{color:var(--vellum)}
+.campaign .hs-tabs a[aria-current=page]{color:var(--vellum); border-bottom-color:var(--gold)}
+.campaign .hs-dm{font-size:11px; font-weight:600; color:var(--secret-text); border:1px solid var(--secret-line); border-radius:999px; padding:0 7px}
+.campaign .hs-editing{position:relative; z-index:4; padding:8px 24px; font-family:var(--body); font-size:13px; color:var(--secret-text); background:var(--secret-bg); border-bottom:1px dashed var(--secret-line)}
+
+/* ---- the page beside the sidebar */
+.campaign .hs-body{position:relative; z-index:1; display:grid; grid-template-columns:300px minmax(0, 1fr); gap:24px; align-items:start; padding:20px 24px 0}
+.campaign .hs-body.solo{grid-template-columns:minmax(0, 1fr)}
+.campaign .hs-body > .page{min-width:0}
+.campaign .hs-side{position:sticky; top:64px; max-height:calc(100vh - 84px); overflow:auto; border-radius:14px; background:var(--plate); border:1px solid var(--line); scrollbar-width:thin}
+.campaign[data-radius] .hs-side{border-radius:var(--radius)}
+.campaign .hs-grip{display:none}
+.campaign .hs-veil,.campaign .hs-bar,.campaign .hs-more{display:none}
+
+/* ---- the sidebar */
+.campaign .sb{display:flex; flex-direction:column; gap:10px; padding:16px; font-family:var(--body); font-size:14px; line-height:1.4; color:var(--vellum)}
+.campaign .sb-dim{margin:0; color:var(--dim); font-size:13px}
+.campaign .sb-pick{display:flex; flex-direction:column; gap:4px; margin:0; font-size:12px; color:var(--dim)}
+.campaign .sb select,.campaign .sb input{width:100%; box-sizing:border-box; min-height:44px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
+.campaign .sb-who{display:flex; align-items:center; gap:12px}
+.campaign .sb-face{flex:none; width:48px; height:48px; border-radius:50%; display:grid; place-items:center; background:var(--plate2); border:1px solid var(--line-strong); font-family:var(--display); font-size:1.2rem; color:var(--dim)}
+.campaign .sb-who b{display:block; font-family:var(--display); font-size:1.15rem; font-weight:600}
+.campaign .sb-who small{display:block; color:var(--dim); font-size:12px}
+.campaign .sb-hp{display:flex; justify-content:space-between; font-size:13px; color:var(--dim)}
+.campaign .sb-hp b{color:var(--vellum)}
+.campaign .sb-bar{height:7px; border-radius:999px; background:var(--field); overflow:hidden}
+.campaign .sb-bar i{display:block; height:100%; background:var(--verd)}
+.campaign .sb-bar i.low{background:var(--ember)}
+.campaign .sb-tiles,.campaign .sb-abs{display:grid; grid-template-columns:repeat(3, 1fr); gap:6px}
+.campaign .sb-tile,.campaign .sb-ab{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:56px; padding:6px; border-radius:10px; background:var(--plate2); border:1px solid var(--line); color:var(--vellum); font:inherit}
+.campaign .sb-tile small,.campaign .sb-ab small{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim)}
+.campaign .sb-tile b,.campaign .sb-ab b{font-family:var(--display); font-size:1.2rem; font-weight:600}
+.campaign .sb-ab span{font-size:11px; color:var(--dim)}
+.campaign .sb button.sb-tile,.campaign .sb button.sb-ab,.campaign .sb button.sb-skill{cursor:pointer}
+.campaign .sb button.sb-tile:hover,.campaign .sb button.sb-ab:hover,.campaign .sb button.sb-skill:hover{border-color:var(--gold)}
+.campaign .sb-h{display:flex; justify-content:space-between; align-items:baseline; margin:6px 0 0; font-family:var(--body); font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--dim)}
+.campaign .sb-h small{font-size:12px; letter-spacing:0; text-transform:none; font-weight:400}
+.campaign .sb-skills{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.campaign .sb-skill{display:flex; align-items:center; gap:6px; min-height:44px; padding:0 8px; border-radius:8px; background:var(--plate2); border:1px solid var(--line); color:var(--vellum); font:inherit; font-size:13px; text-align:left}
+.campaign .sb-skill span{flex:1; min-width:0; line-height:1.15}
+.campaign .sb-skill i{flex:none; width:7px; height:7px; border-radius:50%; border:1.5px solid var(--line-strong)}
+.campaign .sb-skill i.yes{background:var(--verd); border-color:var(--verd)}
+.campaign .sb-log{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px}
+.campaign .sb-log li,.campaign .sb-last{display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0; padding:6px 10px; border-radius:8px; background:var(--plate2); border:1px solid transparent; min-width:0}
+.campaign .sb-log li.priv,.campaign .sb-last.priv{background:var(--secret-bg); border:1px dashed var(--secret-line)}
+.campaign .sb-last.err{background:var(--ember-tint); color:var(--ember-text)}
+.campaign .sb-log li > span{min-width:0; overflow-wrap:anywhere}
+.campaign .sb-log small{display:block; font-size:12px; color:var(--dim)}
+.campaign .sb-log b,.campaign .sb-last b{font-family:var(--display); font-size:1.3rem; font-weight:600}
+.campaign .sb-dice{display:grid; grid-template-columns:repeat(4, 1fr); gap:6px}
+.campaign .sb-dice button,.campaign .sb-custom button{min-height:44px; border-radius:8px; background:var(--plate2); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-weight:600; cursor:pointer}
+.campaign .sb-custom{display:flex; gap:6px}
+.campaign .sb-custom button{padding:0 14px; background:var(--gold); color:var(--on-gold); border:0}
+.campaign .sb-seg{display:flex; gap:4px; padding:4px; border-radius:10px; background:var(--field); border:1px solid var(--line)}
+.campaign .sb-seg button{flex:1; min-height:40px; border:0; border-radius:7px; background:transparent; color:var(--vellum-soft); font:inherit; font-size:13px; cursor:pointer}
+.campaign .sb-seg button[aria-pressed=true]{background:var(--gold); color:var(--on-gold); font-weight:600}
+.campaign .sb-seg button.priv[aria-pressed=true]{background:var(--secret); color:var(--void)}
+.campaign .sb button:disabled{opacity:.5; cursor:default}
+.campaign .sb button:focus-visible,.campaign .sb select:focus-visible,.campaign .sb input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+
+/* ---- phones and small tablets: the tabs become a bottom bar, the sidebar a drawer */
+@media (max-width:960px){
+  .campaign .hs-top{padding:10px 16px}
+  .campaign .hs-name b{font-size:1.2rem}
+  .campaign .hs-name .hs-here{display:inline}
+  .campaign .hs-name .hs-here:not(:empty) + .hs-session:not(:empty)::before{content:" · "}
+  .campaign .hs-tabs{display:none}
+  /* no layer of its own here, so the drawer can sit above the dimming behind it */
+  .campaign .hs-body{grid-template-columns:minmax(0, 1fr); padding:12px 0 0; z-index:auto}
+  .campaign .hs-wide-only{display:none}
+  .campaign:has(.hs-bar){padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px))}
+  .campaign .hs-side{position:fixed; left:0; right:0; bottom:0; top:auto; z-index:31; max-height:82vh; border-radius:16px 16px 0 0; border-bottom:0;
+    transform:translateY(100%); visibility:hidden; transition:transform .2s ease, visibility 0s linear .2s; padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px))}
+  .campaign .hs-side.open{transform:none; visibility:visible; transition:transform .2s ease}
+  .campaign .hs-grip{display:flex; justify-content:center; align-items:center; width:100%; min-height:28px; background:none; border:0; cursor:pointer}
+  .campaign .hs-grip span{width:40px; height:4px; border-radius:999px; background:var(--line-strong)}
+  .campaign .hs-veil{display:block; position:fixed; inset:0; z-index:30; border:0; background:rgba(0,0,0,.45); cursor:pointer}
+  .campaign .hs-bar{display:flex; position:fixed; left:0; right:0; bottom:0; z-index:32; padding-bottom:env(safe-area-inset-bottom, 0px); background:var(--deep); border-top:1px solid var(--line)}
+  .campaign .hs-bar a,.campaign .hs-bar button{flex:1; min-width:0; display:flex; align-items:center; justify-content:center; min-height:56px; padding:0 4px; font-family:var(--body); font-size:13px; color:var(--dim); text-decoration:none; background:none; border:0; border-top:2px solid transparent; cursor:pointer}
+  .campaign .hs-bar span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .campaign .hs-bar [aria-current=page],.campaign .hs-bar [aria-expanded=true]{color:var(--gold); border-top-color:var(--gold)}
+  .campaign .hs-more{display:flex; flex-direction:column; position:fixed; left:12px; right:12px; bottom:calc(68px + env(safe-area-inset-bottom, 0px)); z-index:31; max-height:70vh; overflow:auto; padding:8px; border-radius:14px; background:var(--plate); border:1px solid var(--line)}
+  .campaign .hs-more a{display:flex; align-items:center; gap:8px; min-height:48px; padding:0 12px; border-radius:8px; font-family:var(--body); font-size:15px; color:var(--vellum); text-decoration:none}
+  .campaign .hs-more a[aria-current=page]{background:var(--gold-tint); color:var(--vellum)}
+}
+@media (prefers-reduced-motion: reduce){ .campaign .hs-side{transition:none} }

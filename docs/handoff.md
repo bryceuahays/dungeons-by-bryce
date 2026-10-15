@@ -352,7 +352,7 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 
 - A new campaign no longer has to be in a world. The form offers "No world" first; you can put a campaign in a world later from that world's page.
 
-### Item 7: Campaign settings (built)
+### Item 7: Campaign settings (built and live)
 
 - **What it is:** the Manage page, reorganised to match the settings mockup. A list of sections down the side (along the top on a phone): General, Pages and features, Visibility defaults, Dice, People and permissions, Discord, Archive or delete.
 - **Everything that was on Manage is still there,** each part in the section it belongs to: title and tagline, rules, theme, background and featured video, tabs, paste pages, table tools and preview under General; reveal stages under Visibility defaults; invite codes and members under People and permissions; deleting the campaign under Archive or delete.
@@ -360,4 +360,17 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 - **Not built yet, and the page says so:** posting to Discord, and archiving a campaign.
 - **Who sees it:** you, behind the feature flag "Campaign settings page". Other DMs keep the Manage page as it is.
 - **Where it lives:** `src/features/hub/settings/`, and `src/app/c/[slug]/manage/page.tsx` (which now draws either layout from the same parts). `tests/settings.test.mjs`.
+- **What you do by hand:** nothing. No database change.
+
+### How changes reach the live site now
+
+From 15 October 2026 every change is put on a test copy first: **https://dungeons-by-bryce-preview.vercel.app**. You try it there, and it goes live only when you say so. The test copy sits behind your Vercel login, uses the real database (what you save there is real), and has every hub version 2 piece switched on.
+
+### Item 8: header, tabs, character sidebar and phone layout (built)
+
+- **What it is:** a new frame around every campaign page. A header with the campaign's name and session, a settings button (Manage), and your "Edit this page" and "View as player". A row of page tabs, with DM-only tabs marked. A character sidebar beside the page.
+- **The character sidebar:** your character, worked out by the rules engine (with the campaign's own rules if it uses a custom system): hit points, armour class, speed, initiative, attributes and skills. Tap any of them to roll it. Below that, the party's latest rolls, the dice, and who sees your next roll. As the DM you choose whose sheet to look at.
+- **On a phone:** the tabs become a bar along the bottom: Home, two pages you choose, Character (opens the sidebar as a drawer) and More (everything else). You choose the two pages on Manage, under "Phone bar".
+- **Who sees it:** you, behind the feature flag "Header, page tabs, character sidebar and phone layout". Everyone else keeps the current header.
+- **Not in it yet:** search, Push handout, Go live and Message DM (their pieces are not built), tap to roll on the full character sheet, attacks and spells, and conditions.
 - **What you do by hand:** nothing. No database change.

@@ -44,6 +44,10 @@ function unseal(token: string, userId: string, campaignId: string): Sealed | nul
   } catch { return null; }
 }
 
+// One check sealed for the viewer to roll (the character sidebar seals its own list with this).
+export const sealCheck = (ctx: CampaignCtx, characterId: string, name: string, label: string, bonus: number) =>
+  seal({ u: ctx.user.id, k: ctx.campaign.id, c: characterId, n: String(name || 'Unnamed').slice(0, 80), l: label, b: Math.trunc(Number(bonus) || 0), x: Date.now() + 12 * 3600 * 1000 });
+
 // The checks of the viewer's own characters in this campaign, each sealed.
 export async function myChecks(ctx: CampaignCtx): Promise<{ id: string; name: string; checks: Check[] }[]> {
   const { data: chars } = await ctx.supabase.from('characters').select('id, data').eq('campaign_id', ctx.campaign.id).eq('owner', ctx.user.id).order('created_at');

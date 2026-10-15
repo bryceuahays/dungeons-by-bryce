@@ -201,6 +201,15 @@ One rule decides who receives anything in a campaign, and it is written twice: `
 - **A published copy of a campaign** has none of the original's players: anything for named players becomes DM only (`src/lib/store.ts`).
 - **Page blocks are separate.** They keep their own controls (DM only, hidden, a stage, named players). New hub pages are built on entries.
 
+## The Hub Frame (Header, Tabs, Sidebar, Phone)
+
+With the `hub_v2_shell` flag, every campaign page sits in `src/features/hub/shell/ShellFrame.tsx` instead of `CampaignChrome`: the header, the page tabs, the character sidebar beside the page, and on screens up to 960px a bottom bar (Home, two pages the DM picks, Character, More) with the sidebar as a drawer. The campaign layout chooses one or the other.
+
+- **The sidebar's data comes from `/c/<slug>/sidebar`** (`data.ts`), fetched after the page loads. It is read with the viewer's own login and holds only their own characters (a DM: anyone's), the rolls they may read, and checks sealed for rolling. The Character sidebar's feature switches leave out what is off; it is not sent.
+- **Rolling from the sidebar uses the dice route** (`/c/<slug>/tools/dice/roll`), like the Dice page. Never roll in the browser.
+- **The phone bar's two pages** are `settings.shell.bar` (`model.ts`), chosen on Manage.
+- **A new hub page gets its tab from the campaign's tabs.** Until the hub version 2 pages exist, the tabs are the campaign's own tabs, plus Table tools and Dice.
+
 ## Campaign Settings
 
 With the `hub_v2_settings` flag, a campaign's Manage page is **Campaign settings** (`src/features/hub/settings/`): sections for General, Pages and features, Visibility defaults, Dice, People and permissions, Discord, and Archive or delete. Without the flag it is the Manage page as it was.

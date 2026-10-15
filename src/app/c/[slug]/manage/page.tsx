@@ -24,6 +24,8 @@ import { visDefaults } from '@/features/hub/settings/defaults';
 import { DiceRulesForm } from '@/features/dice/DicePanel';
 import { diceRules } from '@/features/dice/model';
 import { checkNames } from '@/features/dice/server';
+import { PhoneBarForm } from '@/features/hub/shell/PhoneBar';
+import { barPages } from '@/features/hub/shell/model';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const metadata = { title: 'Manage' };
@@ -218,6 +220,13 @@ export default async function Manage({ params, searchParams }: { params: Promise
       <div className="plate"><CampaignForm slug={slug} campaign={campaign} faces={faces ?? []} /></div>
     </>
   );
+  const shellOn = await flag('hub_v2_shell');
+  const phonePart = shellOn ? (
+    <>
+      <h2 id="phone">Phone bar</h2>
+      <div className="plate"><PhoneBarForm slug={slug} tabs={sections.filter((s, i, all) => all.findIndex((x) => x.slug === s.slug) === i).map((s) => ({ slug: s.slug, title: s.title }))} value={barPages(campaign.settings, [...new Set(sections.map((s) => s.slug))])} /></div>
+    </>
+  ) : null;
   const deletePart = isOwner ? (
       <>
         <h2>Delete this campaign</h2>
@@ -237,7 +246,7 @@ export default async function Manage({ params, searchParams }: { params: Promise
         <div className="wrap">
           <SettingsLayout title="Campaign settings" lede={<>{realTitle}. {ctx.coDm ? 'You are a co-DM of this campaign.' : 'Only DMs and co-DMs with permission can change these.'}</>}
             intro={<>{ctx.coDm ? <YourPermissions perms={ctx.perms} /> : null}{imported ? <p className="okmsg" role="status">Your campaign was created, with {newBlocks} block{newBlocks === 1 ? '' : 's'} in {newTabs} tab{newTabs === 1 ? '' : 's'} from the text you pasted. Open a tab and choose Edit this page to change anything.</p> : null}</>} sections={{
-            general: <>{campaignPart}{rulesPart}{themePart}{bgPart}{homePart}{tabsPart}{pastePart}{toolsPart}{previewPart}</>,
+            general: <>{campaignPart}{rulesPart}{themePart}{bgPart}{homePart}{tabsPart}{phonePart}{pastePart}{toolsPart}{previewPart}</>,
             pages: <PagesAndFeatures slug={slug} settings={campaign.settings} heading={false} />,
             privacy: <><VisDefaultsForm slug={slug} value={visDefaults(campaign.settings)} />{stagesPart}</>,
             dice: dice ? <div className="dice one"><DiceRulesForm slug={slug} rules={diceRules(campaign.settings)} checkNames={dice} heading={false} /></div> : null,
@@ -264,6 +273,7 @@ export default async function Manage({ params, searchParams }: { params: Promise
         <People slug={slug} campaignId={campaign.id} isOwner={ctx.isOwner} members={memberList} />
 
         {tabsPart}
+        {phonePart}
         {pastePart}
         {rulesPart}
         {toolsPart}
