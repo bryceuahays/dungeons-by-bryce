@@ -353,3 +353,16 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 276. **Archiving is not built.** There is no archived state for a campaign yet, so the section says so and keeps Delete. Say if you want archiving; it needs its own change.
 277. **The parts that draw their own heading** (Pages and features, People and permissions, the dice rules) leave it out inside a section, so a heading is not shown twice.
 278. **The store test that opens a bought campaign's Manage page** now accepts either layout, because the test account it uses has the flag.
+
+## Hub version 2, item 8: the hub frame (15 October 2026)
+
+279. **The new frame replaces the old header only behind its flag.** The campaign layout draws either the new frame or the old header, never both, so turning the flag off puts every campaign back exactly as it was.
+280. **The tabs are the campaign's own tabs for now,** plus Table tools and Dice. The mockup's tabs (Welcome, NPCs, Lore and so on) are pages that are not built yet; each takes its place in the row when it is.
+281. **The header keeps the words the old one had** ("Edit this page", "View as player", "Manage", "Hide DM secrets"). The mockup says "Page editor"; keeping the old words means nothing a DM knows moves, and the existing tests that check them still mean what they meant.
+282. **Left out until their pieces exist:** the search box (item 21), Push handout (item 20), Go live (item 23) and Message DM (item 14). "Next up" shows the campaign's current session number; the DM's name is left out because players cannot read the owner's profile.
+283. **The sidebar fetches its own data after the page has loaded,** from a new server route. Working out a character needs the rules (the whole SRD), and doing that before every page would slow every page. It holds only what the viewer may read: a player's own characters, a DM's whole campaign, and the rolls the database lets them see.
+284. **Tap to roll is on the sidebar, not the full sheet.** The sheet (`Sheet5e.tsx`) is not changed. Attacks and spells are left out because the rules engine does not work out attack bonuses yet, and conditions because the sheet does not keep them yet (the "Conditions" switch governs nothing for now).
+285. **A DM rolling from a player's sheet rolls as the DM,** with that character's modifier, and the roll follows the DM's choices (everyone or DMs only).
+286. **On screens up to 960px wide the tabs become the bottom bar and the sidebar a drawer** (the mockup shows a phone; small tablets get the same so nothing is squeezed). Every tab, Table tools, Dice, Manage and the way back to all campaigns are under More.
+287. **The phone bar's two pages are a new campaign setting,** chosen on Manage ("Phone bar"). A campaign with none gets its second and third tabs. A player who cannot see a chosen tab (a DM-only one) gets the next tab instead.
+288. **The Head DM looking into someone else's campaign gets the frame without the sidebar,** since they have no character there and do not roll.

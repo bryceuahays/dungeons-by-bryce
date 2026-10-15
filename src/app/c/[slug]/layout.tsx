@@ -7,6 +7,9 @@ import Link from 'next/link';
 import { TimelineBanner } from '@/components/TimelineBanner';
 import { campaignCan } from '@/lib/entitlements';
 import { hasTool } from '@/config/tools';
+import { flag } from '@/lib/flags';
+import { ShellFrame } from '@/features/hub/shell/ShellFrame';
+import { barPages } from '@/features/hub/shell/model';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -22,6 +25,11 @@ export default async function CampaignLayout({ children, params }: { children: R
   const { campaign } = ctx;
   const fonts = safeFontHref(campaign.theme?.fonts?.href);
   const bg = campaign.background?.wide && campaign.background?.tall ? `?v=${campaign.background.v ?? 1}` : null;
+  // hub version 2: the new header, tabs, character sidebar and phone layout (src/features/hub/shell)
+  const [shell, dice] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice')]);
+  const tabs = ctx.sections.map((s) => ({ slug: s.slug, title: s.title, kind: s.kind, dmOnly: s.audience === 'dm' }));
+  const previewNote = ctx.asPlayer ? [ctx.viewAs.player ? 'one named player' : 'any player', ctx.viewAs.stage ? `at "${campaign.phases.find((p) => p.id === ctx.viewAs.stage)?.label ?? ctx.viewAs.stage}"` : ''].filter(Boolean).join(', ') : '';
+  const banner = campaignCan(ctx.access, 'timeline') && hasTool(ctx.campaign.settings, 'timeline') ? <TimelineBanner ctx={ctx} /> : null;
   return (
     <div className={'campaign' + (bg ? ' has-bg' : '')} style={themeStyle(campaign.theme)} data-radius={campaign.theme?.layout?.radius ? '' : undefined} data-wrap={campaign.theme?.layout?.wrap ? '' : undefined}>
       {fonts ? <link rel="stylesheet" href={fonts} precedence="default" /> : null}
@@ -35,6 +43,29 @@ export default async function CampaignLayout({ children, params }: { children: R
         </div>
       ) : null}
       {campaign.theme?.starfield ? <Starfield /> : null}
+      {shell ? (
+        <ShellFrame
+          slug={campaign.slug}
+          campaignId={campaign.id}
+          title={ctx.dmTitle}
+          playerTitle={ctx.isDm && ctx.dmTitle !== campaign.title ? campaign.title : null}
+          session={Number(campaign.settings?.session) || 0}
+          tabs={tabs}
+          extras={[{ href: `/c/${campaign.slug}/tools`, title: 'Table tools' }, ...(dice ? [{ href: `/c/${campaign.slug}/tools/dice`, title: 'Dice' }] : [])]}
+          isDm={ctx.isDm}
+          realDm={ctx.realDm}
+          asPlayer={ctx.asPlayer}
+          previewNote={previewNote}
+          headView={ctx.headView ? campaign.id : null}
+          readOnly={ctx.realDm && !ctx.access.writable}
+          bar={barPages(campaign.settings, tabs.map((t) => t.slug))}
+          sidebar={!ctx.headView}
+          banner={banner}
+        >
+          {children}
+        </ShellFrame>
+      ) : (
+      <>
       <CampaignChrome
         slug={campaign.slug}
         title={ctx.dmTitle}
@@ -43,12 +74,14 @@ export default async function CampaignLayout({ children, params }: { children: R
         isDm={ctx.isDm}
         realDm={ctx.realDm}
         asPlayer={ctx.asPlayer}
-        previewNote={ctx.asPlayer ? [ctx.viewAs.player ? 'one named player' : 'any player', ctx.viewAs.stage ? `at "${campaign.phases.find((p) => p.id === ctx.viewAs.stage)?.label ?? ctx.viewAs.stage}"` : ''].filter(Boolean).join(', ') : ''}
+        previewNote={previewNote}
         headView={ctx.headView ? campaign.id : null}
         readOnly={ctx.realDm && !ctx.access.writable}
       />
-      {campaignCan(ctx.access, 'timeline') && hasTool(ctx.campaign.settings, 'timeline') ? <TimelineBanner ctx={ctx} /> : null}
+      {banner}
       <div className="page">{children}</div>
+      </>
+      )}
       {(ctx.access.paid ?? campaignCan(ctx.access, 'no_footer')) ? null : <footer className="made">Made with <Link href="/">Dungeons by Bryce</Link></footer>}
     </div>
   );
