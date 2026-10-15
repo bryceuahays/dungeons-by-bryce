@@ -8,6 +8,7 @@ import { getEntries, getMembers } from '@/lib/entries';
 import { campaignCanMake } from '@/lib/entitlements';
 import { flag } from '@/lib/flags';
 import { revealFacts } from '@/features/hub/reveals/server';
+import { visDefaults } from '@/features/hub/settings/defaults';
 
 export const metadata = { title: 'Edit page' };
 
@@ -24,7 +25,8 @@ export default async function EditSection({ params }: { params: Promise<{ slug: 
   // hub version 2 reveals (issue 117): a switch on each block, and "reveal it automatically"
   const reveal = (await flag('hub_v2_visibility')) ? await (async () => {
     const [facts, beats] = await Promise.all([revealFacts(ctx.supabase, ctx.campaign, ctx.campaign.phase), getEntries(ctx, ['beat'])]);
-    return { met: [...facts.met], stage: ctx.campaign.phase, nextSession: facts.nextSession, beats: beats.map((b) => ({ id: b.id, title: b.title })) };
+    return { met: [...facts.met], stage: ctx.campaign.phase, nextSession: facts.nextSession, beats: beats.map((b) => ({ id: b.id, title: b.title })),
+      people: members, named: visDefaults(ctx.campaign.settings).named, canName: campaignCanMake(ctx.access, 'player_secrets') };
   })() : undefined;
   return (
     <div className="cs-guide">

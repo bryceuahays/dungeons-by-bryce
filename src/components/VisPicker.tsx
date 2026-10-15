@@ -25,7 +25,7 @@ export function VisPicker({ value, onChange, stages = [], members = [], beats: g
   const named = value.vis === 'players' || value.vis === 'players_stage' || value.vis === 'players_entry' || value.vis === 'players_when' || (value.vis === 'dm' && (value.vis_players ?? []).length > 0);
   if (!mode.defaults.named && !named) members = [];
   // A control that offers "DM only" is a DM's. The few that do not (a beat being logged) keep the short list.
-  if (mode.on && allow.includes('dm')) return <WhoSees value={value} onChange={onChange} stages={stages} members={members} beats={givenBeats ?? mode.beats} canName={canName} disabled={disabled} nextSession={mode.nextSession} />;
+  if (mode.on && allow.includes('dm')) return <WhoSees value={value} onChange={onChange} stages={stages} members={members} beats={givenBeats ?? mode.beats} canName={canName} disabled={disabled} nextSession={mode.nextSession} named={mode.defaults.named || named} />;
   const beats = givenBeats ?? [];
   const options = allow.filter((o) => (o !== 'stage' || stages.length > 0) && (o !== 'entry' || beats.length > 0) && (o !== 'players' || members.length > 0));
   const set = (patch: Partial<Vis>) => onChange({ ...value, ...patch });

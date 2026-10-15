@@ -239,7 +239,7 @@ export async function addSection(slug: string, _: ActionState, form: FormData): 
   const audience = form.get('audience') === 'dm' ? 'dm' : 'all';
   const s = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
   if (!s) return { error: 'Give the tab a name.' };
-  if (['builder', 'manage', 'edit', 'media', 'session'].includes(s)) return { error: 'That name is used by the app. Choose another.' };
+  if (['builder', 'manage', 'edit', 'media', 'session', 'hub', 'tools', 'sidebar', 'file', 'map', 'bg', 'create'].includes(s)) return { error: 'That name is used by the app. Choose another.' };
   const { data: last } = await supabase.from('sections').select('sort').eq('campaign_id', id).order('sort', { ascending: false }).limit(1);
   const { error } = await supabase.from('sections').insert({ campaign_id: id, slug: s, title, audience, kind: 'content', sort: (last?.[0]?.sort ?? 0) + 10 });
   if (error) return { error: 'A tab with that name already exists.' };
