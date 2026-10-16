@@ -5,7 +5,7 @@
 
 import { SKILL_NAMES } from '@/config/homebrew';
 import { TOOL_CHOICES, TOOL_GROUPS, WEAPONS } from '@/config/proficiencies';
-import { readProfs, writeProfs } from '@/components/ClassProfs';
+import { readProfs, writeProfs } from './class-profs';
 import type { SpellOption } from './class-spells';
 
 export const IMPORT_FORMAT = 'dungeons-by-bryce-class-1';
