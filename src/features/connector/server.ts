@@ -14,6 +14,13 @@ export const resourceOf = (origin: string) => origin + '/api/mcp';
 export const metadataOf = (origin: string) => origin + '/.well-known/oauth-protected-resource';
 
 // the token's client_id: which AI app this is (the token itself was checked by getUser)
+// the address the AI app used: behind a proxy or tunnel the request says it in the forwarded headers
+export const originOf = (req: Request) => {
+  const host = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const proto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  return host ? `${proto || 'https'}://${host}` : new URL(req.url).origin;
+};
+
 const clientOf = (token: string) => {
   try { return String(JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString()).client_id ?? ''); } catch { return ''; }
 };
@@ -27,12 +34,12 @@ export async function callerOf(req: Request): Promise<Caller | null> {
   });
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return null;
-  return { supabase, userId: data.user.id, clientId: clientOf(token), origin: new URL(req.url).origin };
+  return { supabase, userId: data.user.id, clientId: clientOf(token), origin: originOf(req) };
 }
 
 // what an AI app gets without a valid token: where to sign in (RFC 9728)
 export function unauthorized(req: Request) {
-  const origin = new URL(req.url).origin;
+  const origin = originOf(req);
   return new Response(JSON.stringify({ error: 'invalid_token', error_description: 'Sign in to Dungeons by Bryce to connect your AI.' }), {
     status: 401,
     headers: { 'content-type': 'application/json', 'WWW-Authenticate': `Bearer resource_metadata="${metadataOf(origin)}"` },
