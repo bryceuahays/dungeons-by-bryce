@@ -5,7 +5,7 @@
 
 import { SKILL_NAMES } from '@/config/homebrew';
 import { ALL_LANGUAGES } from '@/config/proficiencies';
-import { IMPORT_PROMPT, ab, abs, choiceOf, giveOf, int, parseClassImport, pickName, str, type ImportResult } from './class-import';
+import { IMPORT_PROMPT, MECHANICS_FIRST, ab, abs, choiceOf, giveOf, int, parseClassImport, pickName, str, type ImportResult } from './class-import';
 import { srdListFor, type SpellOption } from './class-spells';
 
 export const BREW_KINDS: [string, string][] = [
@@ -21,6 +21,7 @@ Rules:
 - Copy descriptions in my own words; do not rewrite them.
 - If my notes say this is a reskin, reflavor or variant of an official fifth edition one (from the SRD), put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
 - Use the structured keys (gives, grows, chooses, limit) for anything the rules track; keep "description" for the words players read.
+${MECHANICS_FIRST}
 - Answer with the JSON only: no explanation before or after it.
 
 Format (every key is optional except "format"):
@@ -46,7 +47,14 @@ const GIVES_DOC = `"gives": [                                // what it adds to 
         | { "type": "advantage", "on": "save" | "check" | "attack" | "initiative", "ability": "wis", "when": "against being Frightened" }
         | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
-        | { "type": "spell", "name": "a spell always prepared or known" }
+        | { "type": "spell", "name": "a spell", "cast": "free" | "perRest" (leave out for always prepared or known), "times": 1 | "proficiency", "recharge": "long" | "short", "onSelfOnly": true }   // "free": cast without a spell slot any time; "perRest": without a slot, "times" per rest
+        | { "type": "extraAttacks", "attacks": 2, "with": "your pact weapon" }   // attacks per Attack action ("Extra Attack" is 2); leave "with" out for any weapon
+        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": an ability key (like "str" or "cha") | "finesse", "reach": 5 (melee) OR "range": 30, "longRange": 120 (ranged or thrown), "when": "while transformed" }   // any attack of its own: a bite, claws, a summoned weapon
+        // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
+        | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }
+        | { "type": "vulnerability", "damage": "radiant" }
+        | { "type": "penalty", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 2 | "cha", "when": "while frightened" }
+        | { "type": "damageTaken", "amount": "1d4", "damageType": "radiant", "every": "turn" | "minute" | "hour" | "once", "when": "while in direct sunlight" }
         | { "type": "note", "text": "anything else" }
       ]`;
 const TRAIT_DOC = (word: string, levels: boolean) => `{

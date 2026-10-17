@@ -33,7 +33,7 @@ const lc = (s: unknown) => String(s ?? '').toLowerCase().trim();
 export function CharacterCreator({ slug, done, character, entities, weapons, armors, system }: { slug: string; done?: string; character: { id: string; data: any }; entities: Entity[]; weapons: Weapon[]; armors: Armor[]; system?: SheetSystem | null }) {
   const ABILITIES = (system ? system.rules.abilities.map((a) => [a.key, a.label]) : ABILITIES_5E) as [Ability, string][];
   const AB = Object.fromEntries(ABILITIES) as Record<Ability, string>;
-  const SKILL_NAMES = system ? system.rules.skills.map((x) => x.name) : SKILLS_5E.map(([n]) => n);
+  const SKILL_NAMES = system ? [...new Set(system.rules.skills.map((x) => x.name))] : SKILLS_5E.map(([n]) => n);
   const COST: Record<number, number> = system?.creation.pointBuy ? Object.fromEntries(Object.entries(system.creation.costs).map(([k, v]) => [Number(k), Number(v)])) : COST_5E;
   const BUDGET = system?.creation.budget ?? 27;
   const BUY_MIN = Math.min(...Object.keys(COST).map(Number)), BUY_MAX = Math.max(...Object.keys(COST).map(Number));
@@ -333,7 +333,7 @@ export function CharacterCreator({ slug, done, character, entities, weapons, arm
       <h3>Skills</h3>
       {classSkills}
       <div className="cc-skills">
-        {d.skills.map((x) => <div key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name} <small>{(AB[x.ability] ?? '—').slice(0, 3)}{skillFrom(x.name) ? ' · ' + skillFrom(x.name) : ''}{x.expert ? ' · expertise' : ''}</small></div>)}
+        {d.skills.map((x, i) => <div key={x.name + i} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name} <small>{(AB[x.ability] ?? '—').slice(0, 3)}{skillFrom(x.name) ? ' · ' + skillFrom(x.name) : ''}{x.expert ? ' · expertise' : ''}</small></div>)}
       </div>
     </>
   );

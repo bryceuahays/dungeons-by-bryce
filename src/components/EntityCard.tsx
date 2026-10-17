@@ -13,7 +13,7 @@ export function describeEffect(x: Effect, AB: Record<string, string> = Object.fr
   switch (x.t) {
     case 'ability': return `${x.ab === 'any' ? (x.among?.length ? x.among.map((k: string) => AB[k] ?? k).join(' or ') : 'One ability score of your choice') : AB[x.ab] ?? x.ab} ${sgn(Number(x.n))}${x.split ? ' (or +1 to two)' : ''}${x.max ? `, up to ${x.max}` : ''}${at}`;
     case 'prof': return `Proficiency: ${x.kind === 'save' ? (AB[x.v] ?? x.v) + ' saving throws' : x.v}${x.kind === 'skill' || x.kind === 'save' ? '' : ' (' + x.kind + ')'}${at}`;
-    case 'resist': return `${x.immune ? 'Immunity' : 'Resistance'} to ${x.v} damage${at}`;
+    case 'resist': return `${x.vuln ? 'Vulnerability' : x.immune ? 'Immunity' : 'Resistance'} to ${x.v} damage${at}`;
     case 'condition': return `Immunity to the ${x.v} condition${at}`;
     case 'speed': return x.mode === 'walk' ? `Walking speed ${sgn(Number(x.n))} feet${at}` : `${x.mode[0].toUpperCase() + x.mode.slice(1)} speed ${x.n === 'walk' ? 'equal to walking speed' : x.n + ' feet'}${at}`;
     case 'sense': return `${x.v} ${x.n} feet${x.what ? ' (' + x.what + ')' : ''}${at}`;
@@ -26,6 +26,10 @@ export function describeEffect(x: Effect, AB: Record<string, string> = Object.fr
     case 'hp': return `Hit point maximum +${x.n} per level${at}`;
     case 'ac': return `Armor class ${sgn(Number(x.n))}${x.when ? ' while ' + x.when : ''}${at}`;
     case 'bonus': return `${x.amount === 'prof' ? '+ Proficiency Bonus' : AB[x.amount] ? '+ ' + AB[x.amount] + ' modifier' : sgn(Number(x.amount))} to ${({ save: 'saving throws', check: 'ability checks', attack: 'attack rolls', initiative: 'Initiative', damage: 'damage rolls' } as Record<string, string>)[x.roll] ?? x.roll}${x.when ? ' ' + x.when : ''}${at}`;
+    case 'penalty': return `${AB[x.amount] ? '− ' + AB[x.amount] + ' modifier' : '−' + Math.abs(Number(x.amount) || 0)} to ${({ save: 'saving throws', check: 'ability checks', attack: 'attack rolls', initiative: 'Initiative', damage: 'damage rolls' } as Record<string, string>)[x.roll] ?? x.roll}${x.when ? ' ' + x.when : ''}${at}`;
+    case 'weapon': return `Attack: ${x.name} (${Array.isArray(x.steps) && x.steps.length ? x.steps.filter((s: any) => s[1]).map((s: any) => `${s[1]} from level ${s[0]}`).join(', ') : /^grows:/i.test(x.dice) ? x.dice.replace(/^grows:/i, '') + ' column' : x.dice}${x.type ? ' ' + x.type : ''}, using ${x.ab === 'finesse' ? 'Strength or Dexterity' : AB[x.ab ?? 'str'] ?? x.ab ?? 'Strength'}${x.range && x.range.normal > 0 ? ', range ' + x.range.normal + (x.range.long ? '/' + x.range.long : '') + ' ft' : Number(x.reach) > 5 ? ', reach ' + x.reach + ' ft' : ''})${x.when ? ' ' + x.when : ''}${at}`;
+    case 'dis': return `Disadvantage on ${x.roll === 'initiative' ? 'Initiative' : (x.ab ? (AB[x.ab] ?? x.ab) + ' ' : '') + ({ save: 'saving throws', check: 'checks', attack: 'attack rolls' } as Record<string, string>)[x.roll]}${x.when ? ' ' + x.when : ''}${at}`;
+    case 'hazard': return `Takes ${x.amount} ${x.type ? x.type + ' ' : ''}damage ${({ turn: 'at the start of each of its turns', minute: 'every minute', hour: 'every hour', once: 'each time' } as Record<string, string>)[x.every] ?? ''}${x.when ? ' while ' + x.when.replace(/^while\s+/i, '') : ''}${at}`;
     case 'text': return x.text + at;
   }
 }

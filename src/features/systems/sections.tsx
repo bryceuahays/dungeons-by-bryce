@@ -47,6 +47,8 @@ function LevelRow({ label, values, set, levels, prefix }: { label: string; value
 function Card({ title, children, note }: { title: string; children: React.ReactNode; note?: string }) {
   return <fieldset className="sm-card"><legend>{title}</legend>{note ? <p className="dim sm-note">{note}</p> : null}{children}</fieldset>;
 }
+// a name not in the list yet: New skill, New skill 2, New skill 3...
+const unique = (base: string, taken: string[]) => { const t = new Set(taken.map((x) => x.trim().toLowerCase())); let n = 1; while (t.has((n === 1 ? base : base + ' ' + n).toLowerCase())) n++; return n === 1 ? base : base + ' ' + n; };
 const abOpts = (sys: Sys): [string, string][] => [['', '(none)'], ...sys.abilities.list.map((a) => [a.id, a.name] as [string, string])];
 
 // ---------------------------------------------------------------- 1 abilities
@@ -104,8 +106,11 @@ export function Skills({ v, set, sys }: Props<'skills'>) {
         <div className="sm-skilllist">
           {v.list.map((s, i) => {
             const lost = !sys.abilities.list.some((a) => a.id === s.ab);
+            // a character's proficiency is kept by the skill's name, so two skills cannot share one
+            const twin = v.list.some((x, j) => j !== i && x.name.trim().toLowerCase() === s.name.trim().toLowerCase());
+            const blank = !s.name.trim();
             return (
-              <div key={s.id} className={'sm-skillrow' + (lost ? ' missing' : '')}>
+              <div key={s.id} className={'sm-skillrow' + (lost || twin || blank ? ' missing' : '')}>
                 <input aria-label="Skill name" value={s.name} onChange={(e) => put(i, { name: e.target.value })} />
                 <select aria-label="Ability" value={lost ? '' : s.ab} onChange={(e) => put(i, { ab: e.target.value })}>
                   {lost ? <option value="">(ability removed)</option> : null}
@@ -114,11 +119,12 @@ export function Skills({ v, set, sys }: Props<'skills'>) {
                 <input className="sm-desc" aria-label="Description" value={s.desc} onChange={(e) => put(i, { desc: e.target.value })} />
                 <Tog label="Passive" on={s.passive} set={(p) => put(i, { passive: p })} />
                 <button type="button" className="quiet small-btn" onClick={() => set({ list: v.list.filter((_, j) => j !== i) })} aria-label={'Remove ' + s.name}>✕</button>
+                {twin ? <p className="sm-warn sm-rowwarn">Another skill has this name. Give each skill its own name.</p> : blank ? <p className="sm-warn sm-rowwarn">Give this skill a name.</p> : null}
               </div>
             );
           })}
         </div>
-        <button type="button" className="quiet small-btn" onClick={() => set({ list: [...v.list, { id: 'sk' + Date.now(), name: 'New skill', ab: sys.abilities.list[0]?.id ?? '', desc: '', passive: false }] })}>+ Add a skill</button>
+        <button type="button" className="quiet small-btn" onClick={() => set({ list: [...v.list, { id: 'sk' + Date.now(), name: unique('New skill', v.list.map((x) => x.name)), ab: sys.abilities.list[0]?.id ?? '', desc: '', passive: false }] })}>+ Add a skill</button>
       </Card>
       <Card title="Expertise and tools">
         <Tog label="Expertise" hint="(a bigger bonus in a few skills)" on={v.expertise} set={(e) => set({ expertise: e })} />

@@ -3,7 +3,9 @@ import { createServerClient } from '@supabase/ssr';
 
 const PUBLIC = new Set(['/', '/sign-in', '/sign-up', '/robots.txt', '/sitemap.xml', '/opengraph-image']);
 // Public sections of the site. /join sends a signed-out visitor to sign-up itself, keeping the code.
-const PUBLIC_PREFIX = ['/legal', '/pricing', '/custom', '/store', '/demo', '/join/', '/api/stripe/webhook'];
+// Connect your AI (src/features/connector): the connector and its discovery document are reached with
+// the AI app's own token, not a site cookie; the consent screen sends a signed-out DM to sign in itself.
+const PUBLIC_PREFIX = ['/legal', '/pricing', '/custom', '/store', '/demo', '/join/', '/api/stripe/webhook', '/api/mcp', '/.well-known', '/oauth'];
 const isPublic = (path: string) => PUBLIC.has(path) || PUBLIC_PREFIX.some((p) => path === p || path.startsWith(p.endsWith('/') ? p : p + '/')) || path.endsWith('/opengraph-image');
 
 // Refreshes the Supabase session and requires a login for everything except the
@@ -34,8 +36,10 @@ export async function proxy(request: NextRequest) {
   if (user && (path === '/sign-in' || path === '/sign-up')) {
     const url = request.nextUrl.clone();
     const next = request.nextUrl.searchParams.get('next') || '';
-    url.pathname = next.startsWith('/') && !next.startsWith('//') ? next : '/campaigns';
-    url.search = '';
+    // the place they were going, with its query (the consent screen needs its authorization_id)
+    const to = next.startsWith('/') && !next.startsWith('//') ? new URL(next, request.url) : null;
+    url.pathname = to ? to.pathname : '/campaigns';
+    url.search = to ? to.search : '';
     return NextResponse.redirect(url);
   }
   return response;

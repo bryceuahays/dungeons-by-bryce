@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requireViewer } from '@/lib/auth';
+import { mySystems } from '@/features/systems/data';
 import { DeleteCharacterButton, MoveCharacterForm, NewCharacterForm } from '@/components/HubForms';
 import { SYSTEMS, isSystem, systemName, systemOf } from '@/config/systems';
 
@@ -17,6 +18,10 @@ export default async function Characters({ searchParams }: { searchParams: Promi
     supabase.from('campaign_faces').select('campaign_id, title').eq('phase', ''), // only for campaigns you run
   ]);
   const camp = new Map((campaigns ?? []).map((c) => [c.id, c]));
+  // your own game systems, by id: a campaign that plays one, or a character outside a campaign that does
+  const own = await mySystems(supabase, user.id);
+  const ownName = new Map(own.map((x) => [x.id, x.name]));
+  const systemLabel = (ch: { system: string; camp?: { settings?: { system?: string } }; data?: { gameSystem?: string } }) => ownName.get((ch.camp ? ch.camp.settings?.system : ch.data?.gameSystem) ?? '') ?? systemName(ch.system);
   const real = new Map((faces ?? []).map((f) => [f.campaign_id, f.title]));
   const titleOf = (c: { id: string; title: string }) => real.get(c.id) ?? c.title;
   // a character in a campaign has that campaign's system; outside one it keeps the system it was made for
@@ -51,7 +56,7 @@ export default async function Characters({ searchParams }: { searchParams: Promi
                     <li key={ch.id}>
                       <span>
                         <b>{d.name || 'Unnamed character'}</b> <span className="dim">{line}</span><br />
-                        <span className="dim">{systemName(ch.system)} · {c ? <><Link href={`/c/${c.slug}/sheet?c=${ch.id}`}>{titleOf(c)}</Link> · <Link href={`/c/${c.slug}/combat?c=${ch.id}`}>Combat</Link></> : ch.campaign_id ? 'Campaign no longer available' : <>Not in a campaign · <Link href={`/characters/${ch.id}`}>Sheet</Link> · <Link href={`/characters/${ch.id}/create`}>Creator</Link></>}</span>
+                        <span className="dim">{systemLabel(ch as any)} · {c ? <><Link href={`/c/${c.slug}/sheet?c=${ch.id}`}>{titleOf(c)}</Link> · <Link href={`/c/${c.slug}/combat?c=${ch.id}`}>Combat</Link></> : ch.campaign_id ? 'Campaign no longer available' : <>Not in a campaign · <Link href={`/characters/${ch.id}`}>Sheet</Link> · <Link href={`/characters/${ch.id}/create`}>Creator</Link></>}</span>
                       </span>
                       <span className="dim rowend">
                         <MoveCharacterForm id={ch.id} inCampaign={!!ch.campaign_id} options={options} />
@@ -68,7 +73,7 @@ export default async function Characters({ searchParams }: { searchParams: Promi
         <div className="panel narrow"><p className="dim">You have not made a character yet. Create one below, or open one of <Link href="/campaigns">your campaigns</Link> and choose My character.</p></div>
       )}
       <h2>Create a character</h2>
-      <NewCharacterForm />
+      <NewCharacterForm systems={own} />
     </>
   );
 }

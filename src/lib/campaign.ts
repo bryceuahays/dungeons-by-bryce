@@ -241,8 +241,9 @@ async function sheetEntities(ctx: CampaignCtx, types: string[], opts: { liteSpel
 
 // What a character that is NOT in a campaign can draw on: the SRD for its system, plus its
 // owner's own homebrew (opts.owner). A campaign's homebrew comes with the campaign.
-export function getSystemEntities(supabase: Awaited<ReturnType<typeof requireViewer>>['supabase'], system: RulesChoice, types?: string[], opts: { liteSpells?: boolean; keep?: string[]; owner?: string } = {}) {
-  const none = { supabase, campaign: { id: '00000000-0000-0000-0000-000000000000', settings: { rules: system } }, realDm: false, asPlayer: false } as unknown as CampaignCtx;
+// opts.custom: one of the owner's own game systems the character plays (its renamed words in written text)
+export function getSystemEntities(supabase: Awaited<ReturnType<typeof requireViewer>>['supabase'], system: RulesChoice, types?: string[], opts: { liteSpells?: boolean; keep?: string[]; owner?: string; custom?: string | null } = {}) {
+  const none = { supabase, campaign: { id: '00000000-0000-0000-0000-000000000000', settings: { rules: system, ...(opts.custom ? { system: opts.custom } : {}) } }, realDm: false, asPlayer: false } as unknown as CampaignCtx;
   return getSheetEntities(none, types, opts);
 }
 
