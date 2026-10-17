@@ -10,6 +10,15 @@ import type { SpellOption } from './class-spells';
 
 export const IMPORT_FORMAT = 'dungeons-by-bryce-class-1';
 
+// the rule every format repeats: the site tracks mechanics, so a rule that has a structured way in goes
+// there, and only what has none is left as words (src/features/connector/tools.ts checks for misses)
+export const MECHANICS_FIRST = `- MECHANICS FIRST. The website tracks rules on the character sheet, so go through every sentence of every description and ask: is there a structured way in this format to say this? If there is, put it there as well as in the description. Only a rule with no matching type stays as words alone. Never use a "note" give for something another type covers. Common ones:
+  "Advantage on ..." -> advantage; "Disadvantage on ..." -> disadvantage; "Resistance (or immunity) to fire damage" -> resistance; "can't be Charmed" -> conditionImmunity;
+  "your Speed increases by 10 feet", "a Climb Speed" -> speed; "Darkvision 60 feet" -> sense; "attack twice when you take the Attack action" -> extraAttacks;
+  "an extra 1d6 radiant damage" -> extraDamage; "+1 to saving throws" -> bonus; "+1 to Armor Class" -> armorClass; "proficiency in Stealth" -> proficiency;
+  "you can cast Misty Step once per Long Rest" -> spell with "cast"; a bite, claws or summoned weapon -> naturalWeapon; a number that gets bigger with level -> grows;
+  "once per Long Rest", "a number of times equal to ...", points or charges -> a limited use (a resource, or "limit" where the format has it).`;
+
 export const IMPORT_PROMPT = `I am going to give you my notes for a homebrew fifth edition class. Turn them into one JSON object in exactly the format below, so a website can fill in its class editor.
 
 Rules:
@@ -19,6 +28,7 @@ Rules:
 - If my notes say this is a reskin, reflavor or variant of an official fifth edition one (from the SRD), put the official name in "basedOn". For each part that reflavors an official part, put the official part's name in "reskinOf". Leave out everything my notes do not change: the website fills it in from the official one.
 - Patrons, oaths, paths, circles, colleges, domains and anything else a player picks one of to shape the class are subclasses: put each in "subclasses", never as a feature's choice.
 - Use the structured keys (gives, grows, chooses, resources) for anything the rules track; keep "description" for the words players read.
+${MECHANICS_FIRST}
 - Anything a character counts up or down or has a limited number of (points, charges, uses, a corruption or stress score) is a resource: give it a name, an amount and how it comes back ("never" for a score that only goes up), and have the features that change it use it.
 - A feature that gives a damage bonus, an advantage, a resistance or a proficiency gives it in "gives", even when it only applies in some situations (put the situation in "when" or the note).
 - Answer with the JSON only: no explanation before or after it.
@@ -86,7 +96,8 @@ Format (every key is optional except "format"):
         | { "type": "advantage", "on": "save" | "check" | "attack" | "initiative", "ability": "wis", "when": "against being Frightened" }
         | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
-        | { "type": "spell", "name": "spell always prepared" }
+        | { "type": "spell", "name": "a spell", "cast": "free" | "perRest" (leave out for always prepared), "times": 1 | "proficiency", "recharge": "long" | "short", "onSelfOnly": true }   // "free": cast without a spell slot any time; "perRest": without a slot, "times" per rest
+        | { "type": "extraAttacks", "attacks": 2, "with": "your pact weapon" }   // attacks per Attack action ("Extra Attack" is 2); leave "with" out for any weapon
         | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": an ability key (like "str" or "cha") | "finesse", "reach": 5 (melee) OR "range": 30, "longRange": 120 (ranged or thrown), "when": "while transformed" }   // any attack of its own: a bite, claws, a summoned weapon
         // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
         | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }
@@ -274,7 +285,14 @@ export function giveOf(g: any, feature: string, notes: string[]): any {
     case 'sense': { const v = SENSES.find((x) => x.toLowerCase() === str(g.sense).toLowerCase()); if (v) return { t: 'sense', v, n: int(g.feet, 5, 500) ?? 60 }; break; }
     case 'hitPointsPerLevel': { const n = int(g.amount, 1, 10); if (n) return { t: 'hp', n }; break; }
     case 'abilityIncrease': { const a = ab(g.ability) || (str(g.ability).toLowerCase() === 'any' ? 'any' : ''); const n = int(g.amount, -4, 4); if (a && n) return { t: 'ability', ab: a, n }; break; }
-    case 'spell': if (str(g.name)) return { t: 'spell', name: str(g.name, 80) }; break;
+    case 'spell': {
+      if (!str(g.name)) break;
+      // always prepared, or cast without a slot: any time, or a few times per rest
+      const cast = ['free', 'perRest'].includes(g.cast) ? g.cast : '';
+      const n = g.times === 'proficiency' ? 'prof' : int(g.times, 1, 20) ?? 1;
+      return { t: 'spell', name: str(g.name, 80), ...(cast ? { cast } : {}), ...(cast === 'perRest' ? { n, recharge: g.recharge === 'short' ? 'short' : 'long' } : {}), ...(cast && g.onSelfOnly ? { self: true } : {}) };
+    }
+    case 'extraAttacks': { const n = int(g.attacks, 2, 8); if (n) return { t: 'attacks', n, ...(str(g.with) ? { with: str(g.with, 80) } : {}) }; break; }
     case 'extraDamage': { const dice = str(g.amount).replace(/\s/g, ''); const amount = /^\d*d\d+$/.test(dice) ? dice : ab(g.amount); if (amount) return { t: 'damage', amount, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
     case 'bonus': { const roll = ['save', 'check', 'attack', 'initiative', 'damage'].includes(g.to) ? g.to : ''; const amount = g.amount === 'proficiency' ? 'prof' : ab(g.amount) || int(g.amount, -10, 20); if (roll && amount !== null && amount !== '') return { t: 'bonus', roll, amount, ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
     case 'advantage': { const roll = ['save', 'check', 'attack', 'initiative'].includes(g.on) ? g.on : ''; if (roll) return { t: 'adv', roll, ...(ab(g.ability) ? { ab: ab(g.ability) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }

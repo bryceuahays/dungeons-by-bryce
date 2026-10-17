@@ -112,6 +112,24 @@ test('an attack of its own can be ranged, like a summoned spear of light', async
   assert.equal(w.reach, undefined);
 });
 
+test('rules left as words only are pointed out, so the AI can make them mechanics', async () => {
+  const words = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Wordy Feat', category: 'General', benefits: [{ name: 'Keen', description: 'You have Advantage on Perception checks, Darkvision out to 60 feet, and you can attack twice when you take the Attack action.' }] } });
+  assert.equal(words.error, false, words.text);
+  assert.deepEqual(words.json.mechanicsLeftAsText.map((m) => m.use).sort(), ['advantage', 'extraAttacks', 'sense']);
+  assert.match(words.json.doThisNext, /update_draft/);
+  // the same rules given as mechanics: nothing to point out
+  const fixed = await tool(a, 'update_draft', { id: words.json.id, entry: { type: 'feat', name: 'Wordy Feat', category: 'General', benefits: [{ name: 'Keen', description: 'You have Advantage on Perception checks, Darkvision out to 60 feet, and you can attack twice when you take the Attack action.', gives: [
+    { type: 'advantage', on: 'check', when: 'Perception' }, { type: 'sense', sense: 'Darkvision', feet: 60 }, { type: 'extraAttacks', attacks: 2 },
+    { type: 'spell', name: 'Misty Step', cast: 'perRest', times: 'proficiency', recharge: 'long' },
+  ] }] } });
+  assert.equal(fixed.error, false, fixed.text);
+  assert.equal(fixed.json.mechanicsLeftAsText, undefined);
+  const row = (await admin.from('entities').select('data').eq('id', words.json.id).single()).data;
+  const fx = row.data.benefits[0].effects;
+  assert.deepEqual(fx.find((x) => x.t === 'attacks'), { t: 'attacks', n: 2 });
+  assert.deepEqual(fx.find((x) => x.t === 'spell'), { t: 'spell', name: 'Misty Step', cast: 'perRest', n: 'prof', recharge: 'long' });
+});
+
 test('it will not make a second entry of the same name: it is pointed to update_draft instead', async () => {
   const entry = { type: 'feat', name: 'Twice Made', category: 'General', benefits: [{ name: 'Benefit', description: 'Something.' }] };
   assert.equal((await tool(a, 'create_draft', { kind: 'feat', entry })).error, false);

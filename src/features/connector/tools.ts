@@ -11,6 +11,7 @@ import { setImportAbilities } from '@/lib/class-import';
 import { loadSpellOptions } from '@/lib/class-spells';
 import { loadSystem, mySystems } from '@/features/systems/data';
 import { applyText, editorRules, importPreamble, presetOf, type Sys } from '@/features/systems/model';
+import { missedMechanics } from './mechanics';
 import type { Caller } from './server';
 
 const KINDS = BREW_KINDS.map(([k]) => k) as [string, ...string[]];
@@ -36,9 +37,18 @@ async function systemFor(c: Caller, which: string | undefined): Promise<{ tag: s
 }
 const versionOf = (sys: Sys) => (sys.base === '2014' ? '5.1' : '5.2');
 
+// rules the words describe that were left as words only, though the format has a way to track them
+function mechanicsCheck(data: unknown) {
+  const misses = missedMechanics(data);
+  return misses.length ? {
+    mechanicsLeftAsText: misses,
+    doThisNext: 'The site tracks rules on the character sheet, and these look like rules that were only written as words. Before telling the DM it is done, call update_draft with the whole entry again, adding each one as the structured part named in "use" (keep the words too). If one really does not fit that type, leave it as words.',
+  } : {};
+}
+
 export function connectorServer(c: Caller) {
   const server = new McpServer({ name: 'Dungeons by Bryce', version: '1.0.0' }, {
-    instructions: 'Dungeons by Bryce is a site for running fifth edition tabletop campaigns. You can read the DM\'s game systems, the official 2014 and 2024 rules (the SRD) and their homebrew, and create homebrew as DRAFTS for them to review. Before creating something: call list_my_systems and get_system for the system it is for, call get_format for its kind, then create_draft with a JSON object in that format. Use the system\'s ability keys and names. Build only what the format describes, the way it describes it: the DM must be able to see and change everything you make in the site\'s own editor, so never invent tables, columns or links between entries to stand in for something. If the format has no way to do something, put it in the description and tell the DM. To change a draft, call update_draft with its id and the whole entry again with the changes; never create a second copy. Entries that are not drafts cannot be changed here. Tell the DM to open each draft (the link returned), check it, and press Save to finish it.',
+    instructions: 'Dungeons by Bryce is a site for running fifth edition tabletop campaigns. You can read the DM\'s game systems, the official 2014 and 2024 rules (the SRD) and their homebrew, and create homebrew as DRAFTS for them to review. Before creating something: call list_my_systems and get_system for the system it is for, call get_format for its kind, then create_draft with a JSON object in that format. Use the system\'s ability keys and names. Mechanics first: the site tracks rules on the character sheet, so every rule that has a structured way in the format (gives, grows, chooses, resources, limits) goes there, with the words kept in the description; only a rule with no matching type stays as words alone. If create_draft or update_draft answers with mechanicsLeftAsText, fix those with update_draft before telling the DM it is done. Build only what the format describes, the way it describes it: the DM must be able to see and change everything you make in the site\'s own editor, so never invent tables, columns or links between entries to stand in for something. If the format has no way to do something, put it in the description and tell the DM. To change a draft, call update_draft with its id and the whole entry again with the changes; never create a second copy. Entries that are not drafts cannot be changed here. Tell the DM to open each draft (the link returned), check it, and press Save to finish it.',
   });
 
   server.registerTool('list_my_systems', {
@@ -152,7 +162,7 @@ export function connectorServer(c: Caller) {
     };
     for (let n = 1; n < 30; n++) {
       const { data, error } = await c.supabase.from('entities').insert({ ...row, slug: slugOf(row.name) + (n > 1 ? '-' + n : '') }).select('id').single();
-      if (data) return text({ created: true, id: data.id, kind: KIND_LABEL[kind], name: row.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: siteOf(c) + '/homebrew/' + data.id, notes: made.notes, next: 'Tell the DM to open the link, check it, and press Save to finish it. To change it later, use update_draft with its id.' });
+      if (data) return text({ created: true, id: data.id, kind: KIND_LABEL[kind], name: row.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: siteOf(c) + '/homebrew/' + data.id, notes: made.notes, ...mechanicsCheck(made.data), next: 'Tell the DM to open the link, check it, and press Save to finish it. To change it later, use update_draft with its id.' });
       if (/upgrade:/i.test(error?.message ?? '')) return fail('The DM\'s free plan has used all its homebrew entries. They can upgrade to Pro, or delete an entry, to make more.');
       if (!/duplicate|unique/i.test(error?.message ?? '')) return fail('The draft could not be saved: ' + (error?.message ?? 'unknown error'));
     }
@@ -180,7 +190,7 @@ export function connectorServer(c: Caller) {
     if (same) return fail(`The DM already has another ${KIND_LABEL[kind].toLowerCase()} called "${made.name}". Keep this one's name, or pick another.`);
     const { error } = await c.supabase.from('entities').update({ name: made.name.slice(0, 120), data: { ...made.data, system: tag, madeWith: 'ai' } }).eq('id', id).eq('owner_id', c.userId).eq('status', 'draft');
     if (error) return fail('The change could not be saved: ' + error.message);
-    return text({ updated: true, id, kind: KIND_LABEL[kind], name: made.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: siteOf(c) + '/homebrew/' + id, notes: made.notes, next: 'Tell the DM to reopen the link to see the changes, check it, and press Save to finish it.' });
+    return text({ updated: true, id, kind: KIND_LABEL[kind], name: made.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: siteOf(c) + '/homebrew/' + id, notes: made.notes, ...mechanicsCheck(made.data), next: 'Tell the DM to reopen the link to see the changes, check it, and press Save to finish it.' });
   });
 
   return server;
