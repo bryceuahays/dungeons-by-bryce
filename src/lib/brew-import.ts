@@ -47,7 +47,7 @@ const GIVES_DOC = `"gives": [                                // what it adds to 
         | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "a spell always prepared or known" }
-        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": "str" | "dex" | "finesse", "reach": 5, "when": "while transformed" }
+        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": an ability key (like "str" or "cha") | "finesse", "reach": 5 (melee) OR "range": 30, "longRange": 120 (ranged or thrown), "when": "while transformed" }   // any attack of its own: a bite, claws, a summoned weapon
         // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
         | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }
         | { "type": "vulnerability", "damage": "radiant" }

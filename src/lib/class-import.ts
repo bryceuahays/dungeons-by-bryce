@@ -87,7 +87,7 @@ Format (every key is optional except "format"):
         | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "spell always prepared" }
-        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": "str" | "dex" | "finesse", "reach": 5, "when": "while transformed" }
+        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": an ability key (like "str" or "cha") | "finesse", "reach": 5 (melee) OR "range": 30, "longRange": 120 (ranged or thrown), "when": "while transformed" }   // any attack of its own: a bite, claws, a summoned weapon
         // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
         | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }
         | { "type": "vulnerability", "damage": "radiant" }
@@ -288,7 +288,9 @@ export function giveOf(g: any, feature: string, notes: string[]): any {
         .map((v: any) => [int(v?.[0], 1, 20) ?? 1, str(v?.[1], 12).replace(/\s/g, '')] as [number, string]).filter((v: [number, string]) => isDice(v[1]))
         .sort((x: [number, string], y: [number, string]) => x[0] - y[0]);
       const a = str(g.ability).toLowerCase() === 'finesse' ? 'finesse' : ab(g.ability) || 'str';
-      if (name && (steps.length || isDice(dice))) return { t: 'weapon', name, dice: steps[0]?.[1] ?? dice, ...(steps.length ? { steps } : {}), ab: a, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(int(g.reach, 5, 30) && int(g.reach, 5, 30) !== 5 ? { reach: int(g.reach, 5, 30) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) };
+      if (name && (steps.length || isDice(dice))) return { t: 'weapon', name, dice: steps[0]?.[1] ?? dice, ...(steps.length ? { steps } : {}), ab: a, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(int(g.range, 5, 1000)
+        ? { range: { normal: int(g.range, 5, 1000)!, ...(int(g.longRange, 5, 2000) ? { long: int(g.longRange, 5, 2000)! } : {}) } }
+        : int(g.reach, 5, 30) && int(g.reach, 5, 30) !== 5 ? { reach: int(g.reach, 5, 30) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) };
       break;
     }
     case 'disadvantage': { const roll = ['save', 'check', 'attack', 'initiative'].includes(g.on) ? g.on : ''; if (roll) return { t: 'dis', roll, ...(ab(g.ability) ? { ab: ab(g.ability) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }

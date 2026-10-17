@@ -136,7 +136,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
     <section className="s5-block">
       <h3>Attacks</h3>
       {d.weapons.map((w, i) => (
-        <p key={w.name + i} className="kv"><b>{w.name}</b> {sgn(w.toHit)} to hit, {w.damage || '?'}{w.type ? ' ' + w.type : ''}{w.reach > 5 ? `, reach ${w.reach} ft` : ''}{w.when ? <small> ({w.when})</small> : null} <small>· {w.from}</small></p>
+        <p key={w.name + i} className="kv"><b>{w.name}</b> {sgn(w.toHit)} to hit, {w.damage || '?'}{w.type ? ' ' + w.type : ''}{w.range ? `, range ${w.range.normal}${w.range.long ? '/' + w.range.long : ''} ft` : w.reach > 5 ? `, reach ${w.reach} ft` : ''}{w.when ? <small> ({w.when})</small> : null} <small>· {w.from}</small></p>
       ))}
     </section>
   ) : null;

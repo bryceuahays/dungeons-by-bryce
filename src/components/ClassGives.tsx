@@ -26,7 +26,7 @@ const KINDS: [string, string][] = [
   ['prof', 'A proficiency'], ['ac', 'Armor class (bonus or penalty)'], ['speed', 'Speed (more or less)'], ['resist', 'Resistance, immunity or vulnerability'],
   ['condition', 'Immunity to a condition'], ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score (increase or decrease)'],
   ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['dis', 'Disadvantage on a roll (a drawback)'], ['bonus', 'A bonus to a roll'], ['penalty', 'A penalty to a roll (a drawback)'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
-  ['weapon', 'A natural weapon (an attack, like a bite or claws)'], ['hazard', 'Takes damage (a drawback, like sunlight)'], ['text', 'A note on the sheet'],
+  ['weapon', 'An attack of its own (bite, claws, a summoned weapon…)'], ['hazard', 'Takes damage (a drawback, like sunlight)'], ['text', 'A note on the sheet'],
 ];
 export const GIVEN = KINDS.map(([k]) => k);
 const blank = (t: string): any => ({
@@ -149,8 +149,15 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
           : <label>Dice<input value={g.dice ?? ''} maxLength={12} placeholder="1d6" onChange={(e) => set({ dice: e.target.value })} /></label>}
         <label>Type<select value={g.type ?? ''} onChange={(e) => set({ type: e.target.value })}><option value="">No type</option>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}</select></label>
         <label>Uses<select value={g.ab ?? 'str'} onChange={(e) => set({ ab: e.target.value })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="finesse">The better of Strength and Dexterity (finesse)</option></select></label>
-        {num('Reach (feet)', 'reach', { min: 5, max: 30, step: 5 })}
-        <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: while transformed (blank: always)" onChange={(e) => set({ when: e.target.value })} /></label></>;
+        <label>Attack<select value={g.range ? 'ranged' : 'melee'} onChange={(e) => set(e.target.value === 'ranged' ? { range: { normal: 30, long: 120 }, reach: undefined } : { range: undefined })}>
+          <option value="melee">Melee (reach)</option><option value="ranged">Ranged or thrown (range)</option></select></label>
+        {g.range
+          ? <>
+              <label>Range (feet)<input type="number" min={5} max={1000} step={5} value={g.range.normal ?? ''} onChange={(e) => set({ range: { ...g.range, normal: Number(e.target.value) || 0 } })} /></label>
+              <label>Long range (feet)<input type="number" min={0} max={2000} step={5} value={g.range.long || ''} placeholder="none" onChange={(e) => set({ range: { ...g.range, long: Number(e.target.value) || undefined } })} /></label>
+            </>
+          : num('Reach (feet)', 'reach', { min: 5, max: 30, step: 5 })}
+        <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: while transformed, or while the spear is summoned (blank: always)" onChange={(e) => set({ when: e.target.value })} /></label></>;
     }
     case 'hazard': return <>
       <label>Damage<input value={g.amount ?? ''} maxLength={12} placeholder="1d4 or 2" onChange={(e) => set({ amount: e.target.value })} /></label>

@@ -99,6 +99,19 @@ test('a natural weapon whose dice grow keeps them on the weapon, where the edito
   assert.doesNotMatch(JSON.stringify(row.data), /grows:/);
 });
 
+test('an attack of its own can be ranged, like a summoned spear of light', async () => {
+  const made = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Spear of Light', category: 'General', benefits: [{ name: 'Divine Arsenal', description: 'You summon a spear.', gives: [
+    { type: 'naturalWeapon', name: 'Radiant Spear', damage: '1d8', damageType: 'radiant', ability: 'cha', range: 30, longRange: 120, when: 'while the spear is summoned' },
+  ] }] } });
+  assert.equal(made.error, false, made.text);
+  const row = (await admin.from('entities').select('data').eq('id', made.json.id).single()).data;
+  let w = null;
+  JSON.stringify(row.data, (k, v) => { if (v && v.t === 'weapon') w = v; return v; });
+  assert.equal(w.ab, 'cha');
+  assert.deepEqual(w.range, { normal: 30, long: 120 });
+  assert.equal(w.reach, undefined);
+});
+
 test('it will not make a second entry of the same name: it is pointed to update_draft instead', async () => {
   const entry = { type: 'feat', name: 'Twice Made', category: 'General', benefits: [{ name: 'Benefit', description: 'Something.' }] };
   assert.equal((await tool(a, 'create_draft', { kind: 'feat', entry })).error, false);
