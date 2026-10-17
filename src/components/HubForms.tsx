@@ -70,7 +70,7 @@ export function NewCampaignForm({ pro, packs = [], worlds = [], world = '', syst
             <optgroup label="Ready-made">{SYSTEMS.filter((sys) => sys.id !== 'both').map((sys) => <option key={sys.id} value={sys.id}>{sys.name}</option>)}</optgroup>
             {systems.length ? <optgroup label="Your systems">{systems.map((s) => <option key={s.id} value={'custom:' + s.id}>{s.name} (built on Fifth Edition {s.base})</option>)}</optgroup> : null}
           </select></label>
-          <p className="dim">The rules this campaign plays by. Make your own under <Link href="/homebrew/systems">Homebrew</Link>.</p>
+          <p className="dim">The rules this campaign plays by. <Link className="button quiet small-btn" href="/homebrew/systems">Create or edit a system</Link></p>
           <fieldset className="multi">
             <legend>Genres (tick any that fit)</legend>
             {GENRES.map((g) => <label key={g} className="ckrow"><input type="checkbox" name="genre" value={g} /> <span>{g}</span></label>)}
@@ -121,7 +121,8 @@ export function NewCampaignForm({ pro, packs = [], worlds = [], world = '', syst
 }
 
 // A new character outside any campaign: choose its system, and the creator opens.
-export function NewCharacterForm() {
+// systems: your own game systems (src/features/systems), offered after the ready-made rules
+export function NewCharacterForm({ systems = [] }: { systems?: { id: string; name: string; base: string }[] }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createMyCharacter, null);
   return (
     <form action={action} className="panel narrow">
@@ -129,6 +130,7 @@ export function NewCharacterForm() {
       <fieldset className="multi">
         <legend>System</legend>
         {SYSTEMS.map((sys) => <label key={sys.id} className="ckrow"><input type="radio" name="system" value={sys.id} defaultChecked={sys.id === NEW_CAMPAIGN_RULES} style={{ flexShrink: 0 }} /> <span><b>{sys.name}</b> <span className="dim">{sys.what}</span></span></label>)}
+        {systems.map((s) => <label key={s.id} className="ckrow"><input type="radio" name="system" value={'custom:' + s.id} style={{ flexShrink: 0 }} /> <span><b>{s.name}</b> <span className="dim">Your own system, built on Fifth Edition {s.base}.</span></span></label>)}
       </fieldset>
       <Msg state={state} />
       <button type="submit" disabled={pending}>{pending ? 'Creating' : 'Create character'}</button>

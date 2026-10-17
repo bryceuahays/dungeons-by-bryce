@@ -6,7 +6,7 @@ import { JoinForm } from '@/components/HubForms';
 import type { Campaign } from '@/lib/types';
 import { COMMISSION_TIERS, tierPrice } from '@/config/commissions';
 
-export const metadata = { title: 'My campaigns' };
+export const metadata = { title: 'Campaigns' };
 
 export default async function Campaigns() {
   const { supabase, user } = await requireViewer();
@@ -44,8 +44,9 @@ export default async function Campaigns() {
       <h2>Campaigns you run</h2>
       {mine.length ? <div className="cards">{mine.map(card)}</div>
         : <div className="panel narrow"><p className="dim">You are not running a campaign yet. Anyone can start one: you are its DM, and you invite your own players.</p></div>}
-      <p><Link className="button quiet" href="/new-campaign">Create a new campaign</Link></p>
+      <h2>Create a new campaign</h2>
       <div className="cards">
+        <Link className="ccard" href="/new-campaign"><b>Create new campaign</b><span>Set one up yourself in a couple of minutes. You are its DM, and you invite your own players.</span><i>Free</i></Link>
         <Link className="ccard service" href="/custom"><b>Have Bryce build it</b><span>Send your notes and references and have your campaign set up for you, with a look made for it, then handed over to your account.</span><i>From {tierPrice(COMMISSION_TIERS[0])}</i></Link>
         <Link className="ccard service" href="/store"><b>Start from a ready-made campaign</b><span>Campaigns and homebrew packs in the store. A bought campaign does not use up your free plan&apos;s one campaign.</span><i>Store</i></Link>
       </div>

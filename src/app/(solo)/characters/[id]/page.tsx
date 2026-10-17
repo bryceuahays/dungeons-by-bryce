@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { requireViewer } from '@/lib/auth';
 import { getSystemEntities } from '@/lib/campaign';
 import { Sheet5e } from '@/components/Sheet5e';
+import { characterSheetSystem } from '@/features/systems/data';
 import { isSystem, systemName } from '@/config/systems';
 
 // The sheet of a character that is not in a campaign. Only its owner can open it. A character
@@ -22,13 +23,15 @@ export default async function SoloCharacter({ params }: { params: Promise<{ id: 
   const d = (ch.data ?? {}) as any;
   // what this character already uses stays on its sheet
   const keep = [d.raceId, d.clsId, d.subId, d.bgId, ...(d.feats ?? []), ...(d.spells ?? [])].filter(Boolean) as string[];
-  const entities = await getSystemEntities(supabase, system, undefined, { liteSpells: true, keep, owner: user.id });
+  // one of your own game systems, if the character plays one
+  const custom = await characterSheetSystem(supabase, user.id, d.gameSystem);
+  const entities = await getSystemEntities(supabase, system, undefined, { liteSpells: true, keep, owner: user.id, custom: custom?.id });
   return (
     <div className="cs-guide">
       <div className="wrap">
-        <p className="who">{systemName(system)}. This character is not in a campaign. You can add it to one that uses the same system from <Link href="/characters">My characters</Link>.</p>
+        <p className="who">{custom ? custom.name + ' (built on ' + systemName(system) + ')' : systemName(system)}. This character is not in a campaign. You can add it to one that uses the same system from <Link href="/characters">My characters</Link>.</p>
         <p className="row"><Link className="act sm" href={`/characters/${ch.id}/create`}>{d.built ? 'Change it in the character creator' : 'Continue in the character creator'}</Link></p>
-        <Sheet5e key={ch.id} character={{ id: ch.id, data: ch.data }} entities={entities as any} />
+        <Sheet5e key={ch.id} character={{ id: ch.id, data: ch.data }} entities={entities as any} system={custom?.sheet ?? null} />
       </div>
     </div>
   );

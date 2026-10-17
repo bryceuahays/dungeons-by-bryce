@@ -16,7 +16,7 @@ export function CampaignSystemForm({ slug, value, systems }: { slug: string; val
         </select></label>
         {msg?.error ? <span className="bad">{msg.error}</span> : msg?.note ? <span className="ok">{msg.note}</span> : null}
       </p>
-      <p className="dim">Your own systems are made under <Link href="/homebrew/systems">Homebrew → Game systems</Link>. Choosing one also sets the rules version to the one it is built on.</p>
+      <p className="dim">Choosing one of your systems also sets the rules version to the one it is built on. <Link className="button quiet small-btn" href="/homebrew/systems">Create or edit a system</Link></p>
     </>
   );
 }
