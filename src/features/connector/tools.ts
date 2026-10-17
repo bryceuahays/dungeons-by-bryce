@@ -16,6 +16,9 @@ import type { Caller } from './server';
 const KINDS = BREW_KINDS.map(([k]) => k) as [string, ...string[]];
 const KIND_LABEL = Object.fromEntries(BREW_KINDS) as Record<string, string>;
 const DRAFTS_PER_HOUR = 30;
+// links for the DM to open: the site's own address (the AI app may have connected through another,
+// like a tunnel while testing); the address it connected to if none is set
+const siteOf = (c: Caller) => (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '') || c.origin;
 const isId = (s: unknown): s is string => typeof s === 'string' && /^[0-9a-f-]{36}$/.test(s);
 const slugOf = (s: string) => s.toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'entry';
 const text = (value: unknown) => ({ content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value, null, 1) }] });
@@ -105,7 +108,7 @@ export function connectorServer(c: Caller) {
     let q = c.supabase.from('entities').select('id, type, name, status, system:data->>system').eq('owner_id', c.userId).neq('source', 'srd').order('updated_at', { ascending: false }).limit(100);
     if (kind) q = q.eq('type', kind);
     const { data } = await q;
-    const rows = ((data ?? []) as any[]).map((r) => ({ id: r.id, kind: r.type, name: r.name, status: r.status, system: r.system || '2024', link: c.origin + '/homebrew/' + r.id }));
+    const rows = ((data ?? []) as any[]).map((r) => ({ id: r.id, kind: r.type, name: r.name, status: r.status, system: r.system || '2024', link: siteOf(c) + '/homebrew/' + r.id }));
     return text(system ? rows.filter((r) => r.system === system) : rows);
   });
 
@@ -168,7 +171,7 @@ export function connectorServer(c: Caller) {
     };
     for (let n = 1; n < 30; n++) {
       const { data, error } = await c.supabase.from('entities').insert({ ...row, slug: slugOf(row.name) + (n > 1 ? '-' + n : '') }).select('id').single();
-      if (data) return text({ created: true, kind: KIND_LABEL[kind], name: row.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: c.origin + '/homebrew/' + data.id, notes: made.notes, next: 'Tell the DM to open the link, check it, and press Save to finish it.' });
+      if (data) return text({ created: true, kind: KIND_LABEL[kind], name: row.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: siteOf(c) + '/homebrew/' + data.id, notes: made.notes, next: 'Tell the DM to open the link, check it, and press Save to finish it.' });
       if (/upgrade:/i.test(error?.message ?? '')) return fail('The DM\'s free plan has used all its homebrew entries. They can upgrade to Pro, or delete an entry, to make more.');
       if (!/duplicate|unique/i.test(error?.message ?? '')) return fail('The draft could not be saved: ' + (error?.message ?? 'unknown error'));
     }
