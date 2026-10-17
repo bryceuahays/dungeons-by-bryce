@@ -28,8 +28,8 @@ export default function ConnectYourAI() {
 
       <h2>What it can and cannot do</h2>
       <div className="panel">
-        <p><b>It can:</b> look at your game systems (so it uses your own abilities, skills and names), the official fifth edition rules, and your homebrew; and create drafts of species, classes, subclasses, backgrounds, feats, spells, items, monsters and custom resources, including versions of official ones (&ldquo;a cold-themed Warlock&rdquo;).</p>
-        <p><b>It cannot:</b> change or delete anything, touch your campaigns or characters, or show anything to your players. It can make at most 30 drafts an hour, and drafts count toward the free plan&apos;s homebrew limit like any other entry.</p>
+        <p><b>It can:</b> look at your game systems (so it uses your own abilities, skills and names), the official fifth edition rules, and your homebrew; and create drafts of species, classes, subclasses, backgrounds, feats, spells, items, monsters and custom resources, including versions of official ones (&ldquo;a cold-themed Warlock&rdquo;); and change any of your drafts in place, so asking it for a fix does not make a copy.</p>
+        <p><b>It cannot:</b> change anything that is not a draft (once you set an entry live, only you can change it), delete anything, touch your campaigns or characters, or show anything to your players. It can make at most 30 drafts an hour, and drafts count toward the free plan&apos;s homebrew limit like any other entry.</p>
         <p><b>Drafts wait for you.</b> Open one, check it over (AI makes mistakes), and press Save to finish it. Players only ever see homebrew you have set live and added to a campaign.</p>
         <p>Disconnect it any time on your <Link href="/account">Account</Link> page. Prefer copying and pasting? <Link href="/homebrew/import">Import homebrew</Link> works with any AI.</p>
       </div>

@@ -42,7 +42,7 @@ test('signed in, it lists only the tools for looking and creating drafts', async
   const r = await call(a, 'tools/list');
   assert.equal(r.status, 200);
   const names = r.body.result.tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ['create_draft', 'get_entry', 'get_format', 'get_system', 'list_my_homebrew', 'list_my_systems', 'search_official']);
+  assert.deepEqual(names, ['create_draft', 'get_entry', 'get_format', 'get_system', 'list_my_homebrew', 'list_my_systems', 'search_official', 'update_draft']);
 });
 
 test('it reads systems, the official rules and the format for a kind', async () => {
@@ -88,12 +88,44 @@ test('an AI can give natural weapons and drawbacks as real entries, not notes', 
   assert.deepEqual(kinds.sort(), ['ability:-2', 'dis', 'hazard', 'resist:vuln', 'weapon']);
 });
 
-test('it will not make a second entry of the same name (it cannot change one, so it would only copy)', async () => {
+test('it will not make a second entry of the same name: it is pointed to update_draft instead', async () => {
   const entry = { type: 'feat', name: 'Twice Made', category: 'General', benefits: [{ name: 'Benefit', description: 'Something.' }] };
   assert.equal((await tool(a, 'create_draft', { kind: 'feat', entry })).error, false);
   const again = await tool(a, 'create_draft', { kind: 'feat', entry });
   assert.equal(again.error, true);
-  assert.match(again.text, /already has a feat called "Twice Made"/);
+  assert.match(again.text, /already has a draft feat called "Twice Made".*update_draft/);
+});
+
+test('update_draft changes a draft in place: same entry, no copy', async () => {
+  const made = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Change Me', category: 'General', benefits: [{ name: 'Old', description: 'Before.' }] } });
+  const id = made.json.id;
+  const before = (await admin.from('entities').select('id', { count: 'exact', head: true }).eq('owner_id', a.id)).count;
+  const up = await tool(a, 'update_draft', { id, entry: { type: 'feat', name: 'Changed', category: 'General', benefits: [{ name: 'New', description: 'After.' }] } });
+  assert.equal(up.error, false, up.text);
+  assert.equal(up.json.id, id);
+  const after = (await admin.from('entities').select('id', { count: 'exact', head: true }).eq('owner_id', a.id)).count;
+  assert.equal(after, before, 'no new entry');
+  const row = (await admin.from('entities').select('name, status, data').eq('id', id).single()).data;
+  assert.equal(row.name, 'Changed');
+  assert.equal(row.status, 'draft');
+  assert.match(JSON.stringify(row.data), /After\./);
+  assert.doesNotMatch(JSON.stringify(row.data), /Before\./);
+});
+
+test('update_draft will not touch a finished entry or someone else\'s', async () => {
+  const made = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Finished One', category: 'General', benefits: [{ name: 'B', description: 'Kept.' }] } });
+  const id = made.json.id;
+  // another account's AI cannot change it
+  const theirs = await tool(b, 'update_draft', { id, entry: { type: 'feat', name: 'Stolen', category: 'General', benefits: [] } });
+  assert.equal(theirs.error, true);
+  // once the DM sets it live, it is theirs to change
+  await admin.from('entities').update({ status: 'live' }).eq('id', id);
+  const live = await tool(a, 'update_draft', { id, entry: { type: 'feat', name: 'Finished One', category: 'General', benefits: [{ name: 'B', description: 'Changed.' }] } });
+  assert.equal(live.error, true);
+  assert.match(live.text, /not a draft/);
+  const row = (await admin.from('entities').select('name, data').eq('id', id).single()).data;
+  assert.equal(row.name, 'Finished One');
+  assert.match(JSON.stringify(row.data), /Kept\./);
 });
 
 test('a broken entry gets a clear error, not a crash', async () => {

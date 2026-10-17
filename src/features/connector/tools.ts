@@ -1,8 +1,8 @@
 import 'server-only';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Connect your AI, level 1: what a DM's own AI may do on the site. It may LOOK (their game systems,
-// the official rules, their own homebrew) and CREATE DRAFTS. It may not change or delete anything,
-// touch campaigns, or show anything to players: a draft is only used once the DM opens it in the
+// the official rules, their own homebrew), CREATE DRAFTS and CHANGE THOSE DRAFTS. It may not change
+// anything the DM has finished, delete anything, touch campaigns, or show anything to players: a draft is only used once the DM opens it in the
 // editor, checks it and saves it. Every call runs as the DM (src/features/connector/server.ts).
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
@@ -38,7 +38,7 @@ const versionOf = (sys: Sys) => (sys.base === '2014' ? '5.1' : '5.2');
 
 export function connectorServer(c: Caller) {
   const server = new McpServer({ name: 'Dungeons by Bryce', version: '1.0.0' }, {
-    instructions: 'Dungeons by Bryce is a site for running fifth edition tabletop campaigns. You can read the DM\'s game systems, the official 2014 and 2024 rules (the SRD) and their homebrew, and create homebrew as DRAFTS for them to review. Before creating something: call list_my_systems and get_system for the system it is for, call get_format for its kind, then create_draft with a JSON object in that format. Use the system\'s ability keys and names. Tell the DM to open each draft (the link create_draft returns), check it, and press Save to finish it.',
+    instructions: 'Dungeons by Bryce is a site for running fifth edition tabletop campaigns. You can read the DM\'s game systems, the official 2014 and 2024 rules (the SRD) and their homebrew, and create homebrew as DRAFTS for them to review. Before creating something: call list_my_systems and get_system for the system it is for, call get_format for its kind, then create_draft with a JSON object in that format. Use the system\'s ability keys and names. To change a draft, call update_draft with its id and the whole entry again with the changes; never create a second copy. Entries that are not drafts cannot be changed here. Tell the DM to open each draft (the link returned), check it, and press Save to finish it.',
   });
 
   server.registerTool('list_my_systems', {
@@ -133,18 +133,70 @@ export function connectorServer(c: Caller) {
     const { count } = await c.supabase.from('entities').select('id', { count: 'exact', head: true }).eq('owner_id', c.userId).eq('data->>madeWith', 'ai').gte('created_at', since);
     if ((count ?? 0) >= DRAFTS_PER_HOUR) return fail(`That is ${DRAFTS_PER_HOUR} drafts in the last hour, the most allowed. Ask the DM to review those first.`);
 
+    const b = await build(kind, entry, system);
+    if ('error' in b) return fail(b.error as string);
+    const { made, tag, sys, own } = b;
+
+    // one of a name and kind: a change to an existing draft goes through update_draft, not a copy
+    const same = await sameName(kind, made.name);
+    if (same) return fail(same.status === 'draft'
+      ? `The DM already has a draft ${KIND_LABEL[kind].toLowerCase()} called "${made.name}" (id ${same.id}). To change it, use update_draft with that id instead of making a copy.`
+      : `The DM already has a ${KIND_LABEL[kind].toLowerCase()} called "${made.name}" that is finished (${same.status}), so it cannot be changed from here. Ask the DM to change it in the editor, or give this one another name.`);
+
+    // saved as a draft for that system, marked as made by an AI; the plan decides the depth (the
+    // database refuses the full builder on the free plan, and still counts the free plan's limit)
+    const { data: plan } = await c.supabase.rpc('my_plan');
+    const row = {
+      type: kind, name: made.name.slice(0, 120), status: 'draft', depth: plan?.pro ? 'advanced' : 'quick', source: 'homebrew',
+      data: { ...made.data, system: tag, madeWith: 'ai' }, owner_id: c.userId,
+    };
+    for (let n = 1; n < 30; n++) {
+      const { data, error } = await c.supabase.from('entities').insert({ ...row, slug: slugOf(row.name) + (n > 1 ? '-' + n : '') }).select('id').single();
+      if (data) return text({ created: true, id: data.id, kind: KIND_LABEL[kind], name: row.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: siteOf(c) + '/homebrew/' + data.id, notes: made.notes, next: 'Tell the DM to open the link, check it, and press Save to finish it. To change it later, use update_draft with its id.' });
+      if (/upgrade:/i.test(error?.message ?? '')) return fail('The DM\'s free plan has used all its homebrew entries. They can upgrade to Pro, or delete an entry, to make more.');
+      if (!/duplicate|unique/i.test(error?.message ?? '')) return fail('The draft could not be saved: ' + (error?.message ?? 'unknown error'));
+    }
+    return fail('The draft could not be saved (too many entries with that name).');
+  });
+
+  server.registerTool('update_draft', {
+    title: 'Change a homebrew draft',
+    description: 'Change one of the DM\'s DRAFT entries in place (no copy). Give the whole entry again, in the format from get_format, with the changes made (get_entry shows what it has now). Only drafts can be changed: once the DM sets an entry live, it is theirs to change in the editor.',
+    inputSchema: {
+      id: z.string().describe('the draft\'s id (from create_draft or list_my_homebrew)'),
+      entry: z.union([z.string(), z.record(z.string(), z.any())]).describe('the whole entry with its changes, as JSON in the format from get_format'),
+      system: z.string().optional().describe('only to move it to another system; leave out to keep its system'),
+    },
+  }, async ({ id, entry, system }) => {
+    if (!isId(id)) return fail('That is not an entry id. Use list_my_homebrew to find it.');
+    const { data: cur } = await c.supabase.from('entities').select('id, type, name, status, data').eq('id', id).eq('owner_id', c.userId).neq('source', 'srd').maybeSingle();
+    if (!cur) return fail('None of the DM\'s homebrew has that id.');
+    if (cur.status !== 'draft') return fail(`"${cur.name}" is not a draft (it is ${cur.status}), so it cannot be changed from here. The DM can change it in the editor, or set it back to draft.`);
+    const kind = cur.type as string;
+    const b = await build(kind, entry, system ?? (cur.data?.system as string | undefined));
+    if ('error' in b) return fail(b.error as string);
+    const { made, tag, sys, own } = b;
+    const same = made.name.trim().toLowerCase() !== String(cur.name).trim().toLowerCase() ? await sameName(kind, made.name) : null;
+    if (same) return fail(`The DM already has another ${KIND_LABEL[kind].toLowerCase()} called "${made.name}". Keep this one's name, or pick another.`);
+    const { error } = await c.supabase.from('entities').update({ name: made.name.slice(0, 120), data: { ...made.data, system: tag, madeWith: 'ai' } }).eq('id', id).eq('owner_id', c.userId).eq('status', 'draft');
+    if (error) return fail('The change could not be saved: ' + error.message);
+    return text({ updated: true, id, kind: KIND_LABEL[kind], name: made.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: siteOf(c) + '/homebrew/' + id, notes: made.notes, next: 'Tell the DM to reopen the link to see the changes, check it, and press Save to finish it.' });
+  });
+
+  return server;
+
+  // an entry in the get_format format, read the way Import homebrew reads it: the system's own
+  // abilities understood, and a reskin ("basedOn") started from the entry it is based on
+  async function build(kind: string, entry: unknown, system: string | undefined) {
     const { tag, sys, own } = await systemFor(c, system);
     const answer = typeof entry === 'string' ? entry : JSON.stringify(entry);
     const spells = await loadSpellOptions(c.supabase, c.userId);
-    // read it the way Import homebrew does, understanding the system's own abilities
-    // (nothing awaits between setting and reading them, so another request cannot get in between)
+    // (nothing awaits between setting and reading the abilities, so another request cannot get in between)
     setImportAbilities(own ? editorRules(sys).card : null);
     const r = parseBrewImport(kind, answer, spells);
     setImportAbilities(null);
-    if (!r.ok) return fail(r.error);
+    if (!r.ok) return { error: r.error };
     let made = { name: r.name, data: r.data, notes: r.notes };
-
-    // a reskin starts from that entry: the DM's own by that exact name, else the official one
     const { name: basedOn } = basedOnOf(answer);
     if (basedOn) {
       const said = basedOn.trim().replace(/^(the|a|an) /i, '').replace(/[%_]/g, '');
@@ -161,26 +213,12 @@ export function connectorServer(c: Caller) {
         setImportAbilities(null);
       } else made.notes = [`It says it is based on "${basedOn}", but there is no ${KIND_LABEL[kind].toLowerCase()} by that name, so only what was given is filled in.`, ...made.notes];
     }
+    return { made, tag, sys, own };
+  }
 
-    // one of a name: this connector cannot change an entry, so a second try would only make a copy
-    const { data: same } = await c.supabase.from('entities').select('id').eq('owner_id', c.userId).neq('source', 'srd').eq('type', kind).ilike('name', made.name.trim().replace(/[%_]/g, '')).limit(1);
-    if (same?.[0]) return fail(`The DM already has a ${KIND_LABEL[kind].toLowerCase()} called "${made.name}" (${siteOf(c)}/homebrew/${same[0].id}). This connector cannot change existing entries, so it will not make a copy. Ask the DM to change that one in the editor, or delete it first, or give this one another name.`);
-
-    // saved as a draft for that system, marked as made by an AI; the plan decides the depth (the
-    // database refuses the full builder on the free plan, and still counts the free plan's limit)
-    const { data: plan } = await c.supabase.rpc('my_plan');
-    const row = {
-      type: kind, name: made.name.slice(0, 120), status: 'draft', depth: plan?.pro ? 'advanced' : 'quick', source: 'homebrew',
-      data: { ...made.data, system: tag, madeWith: 'ai' }, owner_id: c.userId,
-    };
-    for (let n = 1; n < 30; n++) {
-      const { data, error } = await c.supabase.from('entities').insert({ ...row, slug: slugOf(row.name) + (n > 1 ? '-' + n : '') }).select('id').single();
-      if (data) return text({ created: true, kind: KIND_LABEL[kind], name: row.name, status: 'draft', system: own ? sys.name : 'Fifth Edition (' + sys.base + ')', link: siteOf(c) + '/homebrew/' + data.id, notes: made.notes, next: 'Tell the DM to open the link, check it, and press Save to finish it.' });
-      if (/upgrade:/i.test(error?.message ?? '')) return fail('The DM\'s free plan has used all its homebrew entries. They can upgrade to Pro, or delete an entry, to make more.');
-      if (!/duplicate|unique/i.test(error?.message ?? '')) return fail('The draft could not be saved: ' + (error?.message ?? 'unknown error'));
-    }
-    return fail('The draft could not be saved (too many entries with that name).');
-  });
-
-  return server;
+  // the DM's own entry of this kind with this name, if there is one
+  async function sameName(kind: string, name: string) {
+    const { data } = await c.supabase.from('entities').select('id, status').eq('owner_id', c.userId).neq('source', 'srd').eq('type', kind).ilike('name', name.trim().replace(/[%_]/g, '')).limit(1);
+    return (data?.[0] as { id: string; status: string } | undefined) ?? null;
+  }
 }

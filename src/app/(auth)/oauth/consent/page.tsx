@@ -30,9 +30,9 @@ export default async function Consent({ searchParams }: { searchParams: Promise<
             <p>It will be able to:</p>
             <ul>
               <li>look at your game systems, the official fifth edition rules, and your homebrew</li>
-              <li>create <b>draft</b> homebrew for you (species, classes, spells, items, monsters and more)</li>
+              <li>create <b>draft</b> homebrew for you (species, classes, spells, items, monsters and more), and change your drafts</li>
             </ul>
-            <p>It will <b>not</b> be able to change or delete anything, touch your campaigns, or show anything to your players. Drafts wait for you: open one, check it, and save it to finish it.</p>
+            <p>It will <b>not</b> be able to change anything you have finished, delete anything, touch your campaigns, or show anything to your players. Drafts wait for you: open one, check it, and save it to finish it.</p>
             <p className="dim">You can disconnect it at any time on your Account page.</p>
             <ConsentForm authorizationId={details.authorization_id} />
           </div>
