@@ -36,10 +36,11 @@ export type Effect = { at?: number } & (
   | { t: 'adv'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // advantage on a roll
   | { t: 'dis'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // disadvantage on a roll (a drawback)
   | { t: 'penalty'; roll: 'save' | 'check' | 'attack' | 'initiative' | 'damage'; amount: number | string; when?: string } // taken off a roll (a drawback)
-  // a natural weapon (Bite, Claws): an attack of its own. dice: '1d8', or 'grows:<a growing number's name>'
+  // a natural weapon (Bite, Claws): an attack of its own. dice: '1d8', or steps: [[1,'1d8'],[11,'1d10']] when it gets bigger with level
+  // (the older 'grows:<a growing number's name>' still reads)
   // (like the class's Natural weapon damage column); ab: the ability it uses, or 'finesse' for the better of
   // the might and agility abilities
-  | { t: 'weapon'; name: string; dice: string; type?: string; ab?: string; reach?: number; when?: string }
+  | { t: 'weapon'; name: string; dice: string; steps?: [number, string][]; type?: string; ab?: string; reach?: number; when?: string }
   | { t: 'hazard'; amount: string | number; type?: string; every: 'turn' | 'minute' | 'hour' | 'once'; when?: string } // damage it takes, like in sunlight
   | { t: 'attacks'; n: number; with?: string } // attacks per Attack action
   | { t: 'damage'; amount: string; type?: string; when?: string } // extra damage: dice ("1d8") or an ability modifier ("cha")
@@ -237,7 +238,8 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
   // natural weapons: to hit is the ability's modifier plus proficiency; damage is the dice plus that modifier
   const weapons = of('weapon').map((x) => {
     const grows = String(x.dice ?? '').match(/^grows:(.+)$/i);
-    const dice = grows ? scales.find((sc) => sc.name.toLowerCase() === grows[1].trim().toLowerCase())?.value ?? '' : String(x.dice ?? '');
+    const dice = Array.isArray(x.steps) && x.steps.length ? scaleAt(x.steps, level)
+      : grows ? scales.find((sc) => sc.name.toLowerCase() === grows[1].trim().toLowerCase())?.value ?? '' : String(x.dice ?? '');
     const m = x.ab === 'finesse' ? Math.max(jobMod('might'), jobMod('agility')) : x.ab && x.ab in mods ? mods[x.ab as Ability] : jobMod('might');
     return { name: x.name, toHit: m + prof, damage: dice ? dice + (m ? (m > 0 ? ' + ' : ' − ') + Math.abs(m) : '') : '', type: x.type ?? '', reach: Number(x.reach) || 5, when: x.when ?? '', from: x.from };
   });

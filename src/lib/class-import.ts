@@ -87,7 +87,7 @@ Format (every key is optional except "format"):
         | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "spell always prepared" }
-        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "growsWith": "the name of a growing number (grows) whose values are the damage, if it grows", "damageType": "piercing", "ability": "str" | "dex" | "finesse", "reach": 5, "when": "while transformed" }
+        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": "str" | "dex" | "finesse", "reach": 5, "when": "while transformed" }
         // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
         | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }
         | { "type": "vulnerability", "damage": "radiant" }
@@ -282,9 +282,13 @@ export function giveOf(g: any, feature: string, notes: string[]): any {
     case 'naturalWeapon': {
       const name = str(g.name, 40);
       const dice = str(g.damage).replace(/\s/g, '');
-      const grows = str(g.growsWith, 60);
+      const isDice = (s: string) => /^\d*d\d+([+-]\d+)?$/i.test(s);
+      // dice that get bigger with level are kept on the weapon itself, where the editor shows them
+      const steps = (Array.isArray(g.damageByLevel) ? g.damageByLevel : [])
+        .map((v: any) => [int(v?.[0], 1, 20) ?? 1, str(v?.[1], 12).replace(/\s/g, '')] as [number, string]).filter((v: [number, string]) => isDice(v[1]))
+        .sort((x: [number, string], y: [number, string]) => x[0] - y[0]);
       const a = str(g.ability).toLowerCase() === 'finesse' ? 'finesse' : ab(g.ability) || 'str';
-      if (name && (grows || /^\d*d\d+([+-]\d+)?$/i.test(dice))) return { t: 'weapon', name, dice: grows ? 'grows:' + grows : dice, ab: a, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(int(g.reach, 5, 30) && int(g.reach, 5, 30) !== 5 ? { reach: int(g.reach, 5, 30) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) };
+      if (name && (steps.length || isDice(dice))) return { t: 'weapon', name, dice: steps[0]?.[1] ?? dice, ...(steps.length ? { steps } : {}), ab: a, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(int(g.reach, 5, 30) && int(g.reach, 5, 30) !== 5 ? { reach: int(g.reach, 5, 30) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) };
       break;
     }
     case 'disadvantage': { const roll = ['save', 'check', 'attack', 'initiative'].includes(g.on) ? g.on : ''; if (roll) return { t: 'dis', roll, ...(ab(g.ability) ? { ab: ab(g.ability) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }

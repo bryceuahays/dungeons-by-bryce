@@ -88,6 +88,17 @@ test('an AI can give natural weapons and drawbacks as real entries, not notes', 
   assert.deepEqual(kinds.sort(), ['ability:-2', 'dis', 'hazard', 'resist:vuln', 'weapon']);
 });
 
+test('a natural weapon whose dice grow keeps them on the weapon, where the editor shows them', async () => {
+  const made = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Growing Claws', category: 'General', benefits: [{ name: 'Claws', description: 'Claws.', gives: [
+    { type: 'naturalWeapon', name: 'Claws', damage: '1d6', damageByLevel: [[11, '1d10'], [1, '1d6'], [5, '1d8']], damageType: 'slashing', ability: 'finesse' },
+  ] }] } });
+  assert.equal(made.error, false, made.text);
+  const row = (await admin.from('entities').select('data').eq('id', made.json.id).single()).data;
+  const w = JSON.stringify(row.data).match(/\{[^{}]*"t":"weapon"[^{}]*\}|\{"t":"weapon".*?\]\]\}/)?.[0] ?? '';
+  assert.match(w, /"steps":\[\[1,"1d6"\],\[5,"1d8"\],\[11,"1d10"\]\]/);
+  assert.doesNotMatch(JSON.stringify(row.data), /grows:/);
+});
+
 test('it will not make a second entry of the same name: it is pointed to update_draft instead', async () => {
   const entry = { type: 'feat', name: 'Twice Made', category: 'General', benefits: [{ name: 'Benefit', description: 'Something.' }] };
   assert.equal((await tool(a, 'create_draft', { kind: 'feat', entry })).error, false);
