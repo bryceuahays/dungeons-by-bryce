@@ -74,6 +74,20 @@ test('a draft it creates is the DM\'s own, a draft, made for its system, and nob
   assert.ok((await tool(a, 'list_my_homebrew', { kind: 'race' })).json.some((x) => x.id === id));
 });
 
+test('an AI can give natural weapons and drawbacks as real entries, not notes', async () => {
+  const made = await tool(a, 'create_draft', { kind: 'race', entry: { type: 'race', name: 'Fanged Folk', sizes: ['Medium'], speed: 30, traits: [{ name: 'Fangs', description: 'A bite.', gives: [
+    { type: 'naturalWeapon', name: 'Bite', damage: '1d6', damageType: 'piercing', ability: 'str' },
+    { type: 'vulnerability', damage: 'radiant' },
+    { type: 'disadvantage', on: 'attack', when: 'while in direct sunlight' },
+    { type: 'damageTaken', amount: '1d4', damageType: 'radiant', every: 'minute', when: 'while in direct sunlight' },
+    { type: 'abilityIncrease', ability: 'cha', amount: -2 },
+  ] }] } });
+  assert.equal(made.error, false, made.text);
+  const row = (await admin.from('entities').select('data').eq('id', made.json.link.split('/').pop()).single()).data;
+  const kinds = row.data.features.flatMap((f) => f.effects ?? []).map((e) => e.t + (e.vuln ? ':vuln' : '') + (e.t === 'ability' ? ':' + e.n : ''));
+  assert.deepEqual(kinds.sort(), ['ability:-2', 'dis', 'hazard', 'resist:vuln', 'weapon']);
+});
+
 test('a broken entry gets a clear error, not a crash', async () => {
   const bad = await tool(a, 'create_draft', { kind: 'spell', entry: 'this is not json' });
   assert.equal(bad.error, true);

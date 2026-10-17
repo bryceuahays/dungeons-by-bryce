@@ -47,6 +47,12 @@ const GIVES_DOC = `"gives": [                                // what it adds to 
         | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "a spell always prepared or known" }
+        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "growsWith": "the name of a growing number, if the damage grows", "damageType": "piercing", "ability": "str" | "dex" | "finesse", "reach": 5, "when": "while transformed" }
+        // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
+        | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }
+        | { "type": "vulnerability", "damage": "radiant" }
+        | { "type": "penalty", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 2 | "cha", "when": "while frightened" }
+        | { "type": "damageTaken", "amount": "1d4", "damageType": "radiant", "every": "turn" | "minute" | "hour" | "once", "when": "while in direct sunlight" }
         | { "type": "note", "text": "anything else" }
       ]`;
 const TRAIT_DOC = (word: string, levels: boolean) => `{

@@ -87,6 +87,12 @@ Format (every key is optional except "format"):
         | { "type": "extraDamage", "amount": "1d4" | "cha", "damageType": "radiant", "when": "against Undead" }
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "spell always prepared" }
+        | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "growsWith": "the name of a growing number (grows) whose values are the damage, if it grows", "damageType": "piercing", "ability": "str" | "dex" | "finesse", "reach": 5, "when": "while transformed" }
+        // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
+        | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }
+        | { "type": "vulnerability", "damage": "radiant" }
+        | { "type": "penalty", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 2 | "cha", "when": "while frightened" }
+        | { "type": "damageTaken", "amount": "1d4", "damageType": "radiant", "every": "turn" | "minute" | "hour" | "once", "when": "while in direct sunlight" }
         | { "type": "note", "text": "anything else, like advantage on certain saves" }
       ]
     }
@@ -262,17 +268,29 @@ export function giveOf(g: any, feature: string, notes: string[]): any {
       if (kind && str(g.what)) return { t: 'prof', kind, v: str(g.what, 60) };
       break;
     }
-    case 'armorClass': { const n = int(g.bonus, 1, 10); if (n) return { t: 'ac', n }; break; }
-    case 'speed': { const n = int(g.feet, 0, 200); if (n !== null) return { t: 'speed', mode: ['walk', 'fly', 'swim', 'climb', 'burrow'].includes(g.kind) ? g.kind : 'walk', n }; break; }
+    case 'armorClass': { const n = int(g.bonus, -10, 10); if (n) return { t: 'ac', n }; break; }
+    case 'speed': { const mode = ['walk', 'fly', 'swim', 'climb', 'burrow'].includes(g.kind) ? g.kind : 'walk'; const n = int(g.feet, mode === 'walk' ? -30 : 0, 200); if (n !== null) return { t: 'speed', mode, n }; break; }
     case 'resistance': { const v = str(g.damage).toLowerCase(); if (DAMAGE.includes(v)) return { t: 'resist', v, immune: !!g.immune }; break; }
     case 'sense': { const v = SENSES.find((x) => x.toLowerCase() === str(g.sense).toLowerCase()); if (v) return { t: 'sense', v, n: int(g.feet, 5, 500) ?? 60 }; break; }
     case 'hitPointsPerLevel': { const n = int(g.amount, 1, 10); if (n) return { t: 'hp', n }; break; }
-    case 'abilityIncrease': { const a = ab(g.ability) || (str(g.ability).toLowerCase() === 'any' ? 'any' : ''); const n = int(g.amount, 1, 4); if (a && n) return { t: 'ability', ab: a, n }; break; }
+    case 'abilityIncrease': { const a = ab(g.ability) || (str(g.ability).toLowerCase() === 'any' ? 'any' : ''); const n = int(g.amount, -4, 4); if (a && n) return { t: 'ability', ab: a, n }; break; }
     case 'spell': if (str(g.name)) return { t: 'spell', name: str(g.name, 80) }; break;
     case 'extraDamage': { const dice = str(g.amount).replace(/\s/g, ''); const amount = /^\d*d\d+$/.test(dice) ? dice : ab(g.amount); if (amount) return { t: 'damage', amount, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
     case 'bonus': { const roll = ['save', 'check', 'attack', 'initiative', 'damage'].includes(g.to) ? g.to : ''; const amount = g.amount === 'proficiency' ? 'prof' : ab(g.amount) || int(g.amount, -10, 20); if (roll && amount !== null && amount !== '') return { t: 'bonus', roll, amount, ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
     case 'advantage': { const roll = ['save', 'check', 'attack', 'initiative'].includes(g.on) ? g.on : ''; if (roll) return { t: 'adv', roll, ...(ab(g.ability) ? { ab: ab(g.ability) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
     case 'conditionImmunity': if (str(g.condition)) return { t: 'condition', v: str(g.condition, 30) }; break;
+    case 'naturalWeapon': {
+      const name = str(g.name, 40);
+      const dice = str(g.damage).replace(/\s/g, '');
+      const grows = str(g.growsWith, 60);
+      const a = str(g.ability).toLowerCase() === 'finesse' ? 'finesse' : ab(g.ability) || 'str';
+      if (name && (grows || /^\d*d\d+([+-]\d+)?$/i.test(dice))) return { t: 'weapon', name, dice: grows ? 'grows:' + grows : dice, ab: a, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(int(g.reach, 5, 30) && int(g.reach, 5, 30) !== 5 ? { reach: int(g.reach, 5, 30) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) };
+      break;
+    }
+    case 'disadvantage': { const roll = ['save', 'check', 'attack', 'initiative'].includes(g.on) ? g.on : ''; if (roll) return { t: 'dis', roll, ...(ab(g.ability) ? { ab: ab(g.ability) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
+    case 'vulnerability': { const v = str(g.damage).toLowerCase(); if (DAMAGE.includes(v)) return { t: 'resist', v, vuln: true }; break; }
+    case 'penalty': { const roll = ['save', 'check', 'attack', 'initiative', 'damage'].includes(g.to) ? g.to : ''; const amount = ab(g.amount) || Math.abs(int(g.amount, -20, 20) ?? 0); if (roll && amount) return { t: 'penalty', roll, amount, ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
+    case 'damageTaken': { const amount = str(g.amount).replace(/\s/g, ''); if (/^(\d*d\d+([+-]\d+)?|\d+)$/i.test(amount)) return { t: 'hazard', amount, every: ['turn', 'minute', 'hour', 'once'].includes(g.every) ? g.every : 'turn', ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }
     case 'note': if (str(g.text)) return { t: 'text', text: str(g.text, 300) }; break;
   }
   notes.push(`Something "${feature}" gives could not be read (${str(JSON.stringify(g), 80)}), so it was left out.`);

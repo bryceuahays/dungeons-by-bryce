@@ -36,6 +36,10 @@ export type Effect = { at?: number } & (
   | { t: 'adv'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // advantage on a roll
   | { t: 'dis'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // disadvantage on a roll (a drawback)
   | { t: 'penalty'; roll: 'save' | 'check' | 'attack' | 'initiative' | 'damage'; amount: number | string; when?: string } // taken off a roll (a drawback)
+  // a natural weapon (Bite, Claws): an attack of its own. dice: '1d8', or 'grows:<a growing number's name>'
+  // (like the class's Natural weapon damage column); ab: the ability it uses, or 'finesse' for the better of
+  // the might and agility abilities
+  | { t: 'weapon'; name: string; dice: string; type?: string; ab?: string; reach?: number; when?: string }
   | { t: 'hazard'; amount: string | number; type?: string; every: 'turn' | 'minute' | 'hour' | 'once'; when?: string } // damage it takes, like in sunlight
   | { t: 'attacks'; n: number; with?: string } // attacks per Attack action
   | { t: 'damage'; amount: string; type?: string; when?: string } // extra damage: dice ("1d8") or an ability modifier ("cha")
@@ -230,6 +234,13 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
     if (max > 0 && !resources.some((r) => r.name === e.name)) resources.push({ name: e.name, recharge: e.data.recharge ?? 'long', max, unlimited: max >= 99, from: 'This campaign' });
   });
   const scales = of('scale').map((x) => ({ name: x.name, value: scaleAt(x.steps, level), from: x.from })).filter((s) => s.value);
+  // natural weapons: to hit is the ability's modifier plus proficiency; damage is the dice plus that modifier
+  const weapons = of('weapon').map((x) => {
+    const grows = String(x.dice ?? '').match(/^grows:(.+)$/i);
+    const dice = grows ? scales.find((sc) => sc.name.toLowerCase() === grows[1].trim().toLowerCase())?.value ?? '' : String(x.dice ?? '');
+    const m = x.ab === 'finesse' ? Math.max(jobMod('might'), jobMod('agility')) : x.ab && x.ab in mods ? mods[x.ab as Ability] : jobMod('might');
+    return { name: x.name, toHit: m + prof, damage: dice ? dice + (m ? (m > 0 ? ' + ' : ' − ') + Math.abs(m) : '') : '', type: x.type ?? '', reach: Number(x.reach) || 5, when: x.when ?? '', from: x.from };
+  });
   const granted = [...of('spell').map((x) => ({ name: x.name, from: x.from })),
     ...picked.filter((p) => p.from === 'spells').flatMap((p) => p.v.map((id) => ({ name: byId.get(id)?.name ?? '', from: p.who }))).filter((g) => g.name)];
   const riders = [...of('text').map((x) => ({ text: x.text, from: x.from })), ...picked.filter((p) => p.from === 'weapons').map((p) => ({ text: p.v.join(', '), from: p.who }))];
@@ -252,7 +263,7 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
   // entries that changed since this character last looked at them
   const changed = chosen.filter((e) => e.source !== 'srd' && (e.version ?? 1) > ((c.seen ?? {})[e.id] ?? 1)).map((e) => ({ id: e.id, name: e.name, version: e.version ?? 1, note: e.change_note ?? '' }));
 
-  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, vulnerable, disadvantages, hazards, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: agile + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? skills.find((s) => s.passive)?.bonus ?? 0), passives: skills.filter((s) => s.passive).map((s) => ({ name: s.name, value: 10 + s.bonus })), abilities: sys.abilities, casting, changed, cls, race, chosen };
+  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, vulnerable, weapons, disadvantages, hazards, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: agile + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? skills.find((s) => s.passive)?.bonus ?? 0), passives: skills.filter((s) => s.passive).map((s) => ({ name: s.name, value: 10 + s.bonus })), abilities: sys.abilities, casting, changed, cls, race, chosen };
 }
 
 // ---------------------------------------------------------------- class table (levels 1 to 20)
@@ -297,6 +308,7 @@ export function effectPoints(x: Effect): number {
     case 'prof': return x.kind === 'save' ? 2 : x.kind === 'skill' ? 0.75 : 0.25;
     case 'resist': return x.vuln ? -1.5 : x.immune ? 3 : 1.5;
     case 'dis': return -1;
+    case 'weapon': return 1;
     case 'penalty': return -Math.abs(Number(x.amount) || 1) / 2;
     case 'hazard': return x.every === 'once' ? -0.5 : -2;
     case 'condition': return 1;
