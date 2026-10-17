@@ -162,6 +162,10 @@ export function connectorServer(c: Caller) {
       } else made.notes = [`It says it is based on "${basedOn}", but there is no ${KIND_LABEL[kind].toLowerCase()} by that name, so only what was given is filled in.`, ...made.notes];
     }
 
+    // one of a name: this connector cannot change an entry, so a second try would only make a copy
+    const { data: same } = await c.supabase.from('entities').select('id').eq('owner_id', c.userId).neq('source', 'srd').eq('type', kind).ilike('name', made.name.trim().replace(/[%_]/g, '')).limit(1);
+    if (same?.[0]) return fail(`The DM already has a ${KIND_LABEL[kind].toLowerCase()} called "${made.name}" (${siteOf(c)}/homebrew/${same[0].id}). This connector cannot change existing entries, so it will not make a copy. Ask the DM to change that one in the editor, or delete it first, or give this one another name.`);
+
     // saved as a draft for that system, marked as made by an AI; the plan decides the depth (the
     // database refuses the full builder on the free plan, and still counts the free plan's limit)
     const { data: plan } = await c.supabase.rpc('my_plan');

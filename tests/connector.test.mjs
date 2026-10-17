@@ -88,6 +88,14 @@ test('an AI can give natural weapons and drawbacks as real entries, not notes', 
   assert.deepEqual(kinds.sort(), ['ability:-2', 'dis', 'hazard', 'resist:vuln', 'weapon']);
 });
 
+test('it will not make a second entry of the same name (it cannot change one, so it would only copy)', async () => {
+  const entry = { type: 'feat', name: 'Twice Made', category: 'General', benefits: [{ name: 'Benefit', description: 'Something.' }] };
+  assert.equal((await tool(a, 'create_draft', { kind: 'feat', entry })).error, false);
+  const again = await tool(a, 'create_draft', { kind: 'feat', entry });
+  assert.equal(again.error, true);
+  assert.match(again.text, /already has a feat called "Twice Made"/);
+});
+
 test('a broken entry gets a clear error, not a crash', async () => {
   const bad = await tool(a, 'create_draft', { kind: 'spell', entry: 'this is not json' });
   assert.equal(bad.error, true);
