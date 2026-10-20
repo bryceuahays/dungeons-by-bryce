@@ -10,6 +10,7 @@
 // (DM-only page blocks, encounters, the reveal log, players' own notes).
 
 import { parseTrigger } from './triggers.ts';
+import { LORE_CATEGORIES } from '../../../config/lore-categories.ts';
 
 export type Named = { id: string; label: string };
 export type Ref = { type: 'entry' | 'brew' | 'block'; id: string };
@@ -81,7 +82,7 @@ export function schedule(a: { entries: EntryRow[]; brew: BrewRow[]; blocks: Bloc
     if (!at) continue;
     const reveal = e.kind === 'npc' ? String(e.data?.reveal ?? '') : '';
     const sees = reveal === 'name' ? 'Players will see: name only' : reveal === 'portrait' ? 'Players will see: name and portrait' : e.kind === 'npc' ? 'Players will see: everything' : '';
-    items.push({ ref: { type: 'entry', id: e.id }, type: (named(e) ? 'Per-player · ' : '') + (TYPE_NAMES[e.kind] ?? e.kind), title: e.title || 'Untitled', note: [whoNote(e, w), sees, !e.live ? 'Kept out of the feed' : ''].filter(Boolean).join(' · '), when: timing(at.key), key: at.key, group: at.group });
+    items.push({ ref: { type: 'entry', id: e.id }, type: (named(e) ? 'Per-player · ' : '') + (e.kind === 'lore' ? 'Lore · ' + (LORE_CATEGORIES.find((c) => c.id === e.data?.cat)?.short ?? 'Your own') : TYPE_NAMES[e.kind] ?? e.kind), title: e.title || 'Untitled', note: [whoNote(e, w), sees, !e.live ? 'Kept out of the feed' : ''].filter(Boolean).join(' · '), when: timing(at.key), key: at.key, group: at.group });
   }
   for (const b of a.brew) {
     const at = whenOf(b, true, w);

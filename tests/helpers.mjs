@@ -71,7 +71,7 @@ export async function cleanup() {
       const paths = [`user/${u.id}/wide`, `user/${u.id}/tall`, ...(owned ?? []).flatMap((c) => [`campaign/${c.id}/wide`, `campaign/${c.id}/tall`])];
       await admin.storage.from('backgrounds').remove(paths);
       // pictures of table tools in campaigns they made, and frozen copies of products they published
-      for (const c of owned ?? []) for (const dir of ['maps', 'maps-painted', 'npc']) {
+      for (const c of owned ?? []) for (const dir of ['maps', 'maps-painted', 'npc', 'lore']) {
         const { data: files } = await admin.storage.from('campaign-files').list(`${c.id}/${dir}`, { limit: 200 });
         if (files?.length) await admin.storage.from('campaign-files').remove(files.map((f) => `${c.id}/${dir}/${f.name}`));
       }
