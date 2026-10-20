@@ -180,7 +180,7 @@ export function LorePage(p: ToolProps & { initial: Entry[]; npcs: Named[]; lore:
         <section className="lr-sec lr-addcats" aria-labelledby="lore-add">
           <h2 id="lore-add">Add a category</h2>
           {addable.length ? <p className="lr-chips lr-pick">{addable.map((c) => <button key={c.id} type="button" disabled={pending} title={c.what} onClick={() => changeCats({ ...lore, cats: [...lore.cats, c.id] })}>+ {c.name}</button>)}</p> : null}
-          <form className="lr-own" onSubmit={(e) => { e.preventDefault(); const name = ownName.trim(); if (!name) return; changeCats({ cats: lore.cats, custom: [...lore.custom, { id: 'c-' + Math.random().toString(36).slice(2, 10), name }] }); setOwnName(''); }}>
+          <form className="lr-own" onSubmit={(e) => { e.preventDefault(); const name = ownName.trim(); if (!name) return; const id = 'c-' + Math.random().toString(36).slice(2, 10).padEnd(8, '0'); changeCats({ cats: [...lore.cats, id], custom: [...lore.custom, { id, name }] }); setOwnName(''); }}>
             <label className="f">Make your own category<input value={ownName} maxLength={40} placeholder="Noble houses" onChange={(e) => setOwnName(e.target.value)} /></label>
             <button className="act" disabled={pending || !ownName.trim()}>Add it</button>
           </form>
