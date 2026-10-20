@@ -27,13 +27,16 @@ export type EntityType = (typeof ENTITY_TYPES)[number];
 export type Effect = { at?: number } & (
   | { t: 'ability'; ab: Ability | 'any'; n: number; max?: number; among?: string[]; split?: boolean } // any: the player's choice (from the listed ones)
   | { t: 'prof'; kind: 'skill' | 'save' | 'armor' | 'weapon' | 'tool' | 'language'; v: string }
-  | { t: 'resist'; v: string; immune?: boolean }
+  | { t: 'resist'; v: string; immune?: boolean; vuln?: boolean } // vuln: takes double damage of that type
   | { t: 'condition'; v: string } // immunity to a condition, like Charmed
   | { t: 'speed'; mode: 'walk' | 'fly' | 'swim' | 'climb' | 'burrow'; n: number | 'walk' } // 'walk': equal to the walking speed
   | { t: 'sense'; v: string; n: number; what?: string }
   | { t: 'resource'; name: string; max: string; recharge: 'short' | 'short1' | 'long' | 'none' } // short1: one use back on a short rest, all on a long rest
   | { t: 'spell'; name: string; cast?: 'free' | 'perRest'; n?: number | 'prof'; recharge?: 'long' | 'short'; self?: boolean } // no cast: always prepared
   | { t: 'adv'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // advantage on a roll
+  | { t: 'dis'; roll: 'save' | 'check' | 'attack' | 'initiative'; ab?: string; when?: string } // disadvantage on a roll (a drawback)
+  | { t: 'penalty'; roll: 'save' | 'check' | 'attack' | 'initiative' | 'damage'; amount: number | string; when?: string } // taken off a roll (a drawback)
+  | { t: 'hazard'; amount: string | number; type?: string; every: 'turn' | 'minute' | 'hour' | 'once'; when?: string } // damage it takes, like in sunlight
   | { t: 'attacks'; n: number; with?: string } // attacks per Attack action
   | { t: 'damage'; amount: string; type?: string; when?: string } // extra damage: dice ("1d8") or an ability modifier ("cha")
   | { t: 'scale'; name: string; steps: [number, string][] }
@@ -201,7 +204,10 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
   (c.langs ?? []).forEach((l) => profs.language.add(l));
   const expert = new Set([...(c.expert ?? []), ...picked.filter((p) => p.from === 'skills').flatMap((p) => p.v)]);
   // flat bonuses that always apply (Alert's Proficiency Bonus to Initiative, a +1 to saving throws); ones with a 'when' are situational
-  const bonusTo = (roll: string) => of('bonus').filter((x) => x.roll === roll && !x.when).reduce((n, x) => n + (x.amount === 'prof' ? prof : typeof x.amount === 'string' && x.amount in mods ? mods[x.amount as Ability] : Number(x.amount) || 0), 0);
+  // a penalty (a drawback) takes its amount away; its amount is written as a positive number or an ability
+  const amountOf = (a: number | string) => (a === 'prof' ? prof : typeof a === 'string' && a in mods ? mods[a as Ability] : Number(a) || 0);
+  const bonusTo = (roll: string) => of('bonus').filter((x) => x.roll === roll && !x.when).reduce((n, x) => n + amountOf(x.amount), 0)
+    - of('penalty').filter((x) => x.roll === roll && !x.when).reduce((n, x) => n + Math.abs(amountOf(x.amount)), 0);
   const saves = sys.abilities.filter((a) => a.save).map(({ key, label }) => ({ key: key as Ability, label, proficient: profs.save.has(key), bonus: (mods[key as Ability] ?? 0) + (profs.save.has(key) ? prof : 0) + bonusTo('save') }));
   const skills = sys.skills.map(({ name, ab: a, passive }) => ({ name, ability: a as Ability, passive, proficient: profs.skill.has(name), expert: expert.has(name), bonus: (mods[a as Ability] ?? 0) + (profs.skill.has(name) ? prof * (expert.has(name) ? 2 : 1) : 0) }));
 
@@ -211,7 +217,11 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
   of('speed').filter((x) => x.mode === 'walk').forEach((x) => { speed.walk += Number(x.n) || 0; });
   of('speed').filter((x) => x.mode !== 'walk').forEach((x) => { speed[x.mode] = Math.max(speed[x.mode] ?? 0, x.n === 'walk' ? speed.walk : Number(x.n) || 0); });
   const senses = of('sense').reduce<Record<string, number>>((m, x) => { m[x.v] = Math.max(m[x.v] ?? 0, Number(x.n)); return m; }, {});
-  const resist = [...new Set(of('resist').filter((x) => !x.immune).map((x) => x.v))];
+  const resist = [...new Set(of('resist').filter((x) => !x.immune && !x.vuln).map((x) => x.v))];
+  const vulnerable = [...new Set(of('resist').filter((x) => x.vuln).map((x) => x.v))];
+  // drawbacks: rolls with disadvantage, and damage it takes in some situation (the sheet offers to apply it)
+  const disadvantages = of('dis').map((x) => ({ roll: x.roll, ab: x.ab ?? '', when: x.when ?? '', from: x.from }));
+  const hazards = of('hazard').map((x) => ({ amount: String(x.amount ?? ''), type: x.type ?? '', every: x.every ?? 'turn', when: x.when ?? '', from: x.from }));
   const immune = [...new Set([...of('resist').filter((x) => x.immune).map((x) => x.v), ...of('condition').map((x) => x.v)])];
   const resources = of('resource').map((x) => { const max = evalMax(x.max, { level, mods, prof }); return { name: x.name, recharge: x.recharge, max, unlimited: unlimited(x.max, max), from: x.from }; }).filter((r) => r.max > 0);
   // a custom resource attached to the campaign (a pool of favour, say) is a pool every character has
@@ -242,7 +252,7 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
   // entries that changed since this character last looked at them
   const changed = chosen.filter((e) => e.source !== 'srd' && (e.version ?? 1) > ((c.seen ?? {})[e.id] ?? 1)).map((e) => ({ id: e.id, name: e.name, version: e.version ?? 1, note: e.change_note ?? '' }));
 
-  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: agile + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? skills.find((s) => s.passive)?.bonus ?? 0), passives: skills.filter((s) => s.passive).map((s) => ({ name: s.name, value: 10 + s.bonus })), abilities: sys.abilities, casting, changed, cls, race, chosen };
+  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, vulnerable, disadvantages, hazards, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: agile + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? skills.find((s) => s.passive)?.bonus ?? 0), passives: skills.filter((s) => s.passive).map((s) => ({ name: s.name, value: 10 + s.bonus })), abilities: sys.abilities, casting, changed, cls, race, chosen };
 }
 
 // ---------------------------------------------------------------- class table (levels 1 to 20)
@@ -285,7 +295,10 @@ export function effectPoints(x: Effect): number {
   switch (x.t) {
     case 'ability': return Number(x.n) * (x.ab === 'any' ? 1.2 : 1);
     case 'prof': return x.kind === 'save' ? 2 : x.kind === 'skill' ? 0.75 : 0.25;
-    case 'resist': return x.immune ? 3 : 1.5;
+    case 'resist': return x.vuln ? -1.5 : x.immune ? 3 : 1.5;
+    case 'dis': return -1;
+    case 'penalty': return -Math.abs(Number(x.amount) || 1) / 2;
+    case 'hazard': return x.every === 'once' ? -0.5 : -2;
     case 'condition': return 1;
     case 'speed': return x.mode === 'fly' ? 3 : x.mode === 'walk' ? Number(x.n) / 10 : 1;
     case 'sense': return Number(x.n) >= 120 ? 1 : 0.5;

@@ -247,8 +247,9 @@ test('the custom campaign service is easy to find, shows three tiers from config
   assert.ok(link((await page('/pricing', null)).text), 'pricing, beside the plans, and the signed-out navigation');
   for (const p of ['/campaigns', '/homebrew', '/upgrade']) assert.ok(link((await page(p, free.session)).text), 'signed-in navigation and footer on ' + p);
   assert.ok((await page('/campaigns', free.session)).text.includes('class="ccard service" href="/custom"'), 'a card on the DM dashboard');
-  const create = await page('/new-campaign', free.session);
-  assert.ok(create.text.includes('Build it myself') && create.text.includes('Have Bryce build it'), 'both options in campaign creation');
+  // both ways to start a campaign are boxes on My campaigns (the New campaign page is just the form)
+  const mine = (await page('/campaigns', free.session)).text;
+  assert.ok(mine.includes('Create new campaign') && mine.includes('href="/new-campaign"') && mine.includes('Have Bryce build it'), 'both options where a campaign is started');
 
   // the page
   const pg = await page('/custom?tier=premium', null);

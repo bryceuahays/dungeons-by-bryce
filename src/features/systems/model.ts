@@ -296,10 +296,28 @@ export const AFFECTS: Record<SectionKey, [string, string][]> = {
 export function editorRules(sys: Sys) {
   return {
     abilities: sys.abilities.list.map((a) => [a.id, a.name] as [string, string]),
-    skills: sys.skills.list.map((s) => s.name),
+    skills: [...new Set(sys.skills.list.map((s) => s.name.trim()).filter(Boolean))], // a repeated name is offered once
     damage: sys.combat.damage,
     conditions: sys.combat.conditions.map((c) => c.name),
     name: sys.name,
     card: sys.abilities.list.map((a) => ({ key: a.id, label: a.name, abbr: a.abbr })), // for EntityCard
   };
+}
+
+// What Import homebrew tells the DM's AI about a custom system, put on top of the usual prompt.
+export function importPreamble(sys: Sys) {
+  const base = presetOf(sys.base);
+  const gone = base.abilities.list.filter((a) => !sys.abilities.list.some((b) => b.id === a.id));
+  const lines = [
+    `THIS GAME'S RULES: "${sys.name}", built on fifth edition (${sys.base}). Where the instructions below mention fifth edition's abilities, skills or terms, use these instead.`,
+    `Abilities (use the key in quotes wherever an ability key is asked for): ${sys.abilities.list.map((a) => `"${a.id}" = ${a.name} (${a.abbr})`).join(', ')}.`,
+    ...(gone.length ? [`This game has no ${gone.map((a) => a.name).join(' or ')}. Do not use ${gone.map((a) => `"${a.id}"`).join(' or ')}; use the closest ability above instead.`] : []),
+    `Skills: ${sys.skills.list.map((s) => `${s.name} (${sys.abilities.list.find((a) => a.id === s.ab)?.abbr ?? '?'})`).join(', ')}.`,
+    `Conditions: ${sys.combat.conditions.map((c) => c.name).join(', ')}.`,
+    `Damage types: ${sys.combat.damage.join(', ')}.`,
+    `In this game a species is called a "${sys.names.species}", a class a "${sys.names.class}", a subclass a "${sys.names.subclass}", a background a "${sys.names.background}" and a feat a "${sys.names.feat}".`,
+    ...(sys.magic.on ? [] : ['This game has no magic: leave out spellcasting and spells.']),
+    ...(sys.trackers.list.length ? [`It also tracks: ${sys.trackers.list.map((t) => t.name).join(', ')}. Mention them in plain text where the notes do.`] : []),
+  ];
+  return lines.join('\n') + '\n\n';
 }

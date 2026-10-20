@@ -99,6 +99,38 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
     </section>
   );
 
+  // drawbacks: damage it takes in some situation (Take it rolls it and applies it, minding resistance,
+  // immunity and vulnerability), rolls it makes with disadvantage, and damage it is vulnerable to
+  const [took, setTook] = useState('');
+  const rollAmount = (a: string) => {
+    const m = a.replace(/\s/g, '').match(/^(\d*)d(\d+)([+-]\d+)?$/i);
+    if (!m) return Math.max(0, Math.round(Number(a)) || 0);
+    let t = 0; for (let i = 0; i < Math.min(20, Number(m[1]) || 1); i++) t += 1 + Math.floor(Math.random() * Number(m[2]));
+    return Math.max(0, t + (Number(m[3]) || 0));
+  };
+  const takeHazard = (h: (typeof d.hazards)[number]) => {
+    const rolled = rollAmount(h.amount);
+    const n = d.immune.includes(h.type) ? 0 : d.vulnerable.includes(h.type) ? rolled * 2 : d.resist.includes(h.type) ? Math.floor(rolled / 2) : rolled;
+    const how = d.immune.includes(h.type) ? ' (immune)' : d.vulnerable.includes(h.type) ? ' (doubled: vulnerable)' : d.resist.includes(h.type) ? ' (halved: resistant)' : '';
+    if (wounds) { if (n > 0) up({ wounds: Math.min(system!.health.wounds, woundsTaken + 1) } as any); setTook(n > 0 ? `Rolled ${rolled}${how}: one wound marked.` : `Rolled ${rolled}${how}: no wound.`); return; }
+    const temp = Number(c.temp) || 0, fromTemp = Math.min(temp, n);
+    up({ temp: temp - fromTemp, hp: Math.max(0, hp - (n - fromTemp)) });
+    setTook(`Rolled ${rolled}${how}: took ${n} ${h.type} damage${fromTemp ? ` (${fromTemp} from temporary hit points)` : ''}.`);
+  };
+  const EVERY: Record<string, string> = { turn: 'at the start of each of its turns', minute: 'every minute', hour: 'every hour', once: 'each time' };
+  const ROLL: Record<string, string> = { save: 'saving throws', check: 'checks', attack: 'attack rolls', initiative: 'Initiative' };
+  const drawbacks = d.hazards.length || d.disadvantages.length || d.vulnerable.length ? (
+    <section className="s5-block">
+      <h3>Drawbacks</h3>
+      {d.hazards.map((h, i) => (
+        <p key={'h' + i} className="s5-changed" role="note"><b>{h.amount} {h.type} damage</b> {EVERY[h.every] ?? ''}{h.when ? ' while ' + h.when.replace(/^while\s+/i, '') : ''} <small>({h.from})</small> {readOnly ? null : <button type="button" className="act sm" onClick={() => takeHazard(h)}>Take it</button>}</p>
+      ))}
+      {took ? <p className="who" role="status">{took}</p> : null}
+      {d.disadvantages.map((x, i) => <p key={'d' + i} className="kv"><b>Disadvantage</b> on {x.roll === 'initiative' ? 'Initiative' : (x.ab ? (d.abilities.find((a) => a.key === x.ab)?.label ?? x.ab) + ' ' : '') + ROLL[x.roll]}{x.when ? ' ' + x.when : ''} <small>({x.from})</small></p>)}
+      {d.vulnerable.length ? <p className="kv"><b>Vulnerable to:</b> {d.vulnerable.join(', ')} damage (it takes double)</p> : null}
+    </section>
+  ) : null;
+
   const resources = d.resources.length || d.scales.length || system?.trackers.length ? (
     <section className="s5-block">
       <h3>Resources</h3>
@@ -173,7 +205,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
       <p className="s5-chips">{d.saves.map((x) => <span key={x.key} className={x.proficient ? 'on' : ''}>{x.label.slice(0, 3)} {sgn(x.bonus)}</span>)}</p>
       <h3>Skills</h3>
       <div className="s5-skills">
-        {d.skills.map((x) => <span key={x.name} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name}{system ? <small> ({d.abilities.find((a) => a.key === x.ability)?.abbr ?? '—'})</small> : null}{x.expert ? ' (expertise)' : ''}</span>)}
+        {d.skills.map((x, i) => <span key={x.name + i} className={x.proficient ? 'on' : ''}><b>{sgn(x.bonus)}</b> {x.name}{system ? <small> ({d.abilities.find((a) => a.key === x.ability)?.abbr ?? '—'})</small> : null}{x.expert ? ' (expertise)' : ''}</span>)}
       </div>
     </section>
   );
@@ -214,7 +246,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
         <p key={ch.id} className="s5-changed" role="status"><b>{ch.name} was updated</b> (version {ch.version}){ch.note ? ': ' + ch.note : '.'} {readOnly ? null : <button type="button" className="act sm" onClick={() => up({ seen: { ...(c.seen ?? {}), [ch.id]: ch.version } })}>Got it</button>}</p>
       ))}
       <h2 className="s5-name">{c.name || 'Unnamed character'} <small>Level {d.level} {d.race?.name ?? c.race} {d.cls?.name ?? c.cls}</small></h2>
-      {play ? <>{vitals}{resources}{magic}{features}{abilities}</> : <>{identity}{vitals}{abilities}{defence}{resources}{magic}{features}{notes}</>}
+      {play ? <>{vitals}{drawbacks}{resources}{magic}{features}{abilities}</> : <>{identity}{vitals}{drawbacks}{abilities}{defence}{resources}{magic}{features}{notes}</>}
     </fieldset>
   );
 }

@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { requireViewer } from '@/lib/auth';
 import { getSystemEntities } from '@/lib/campaign';
 import { CharacterCreator } from '@/components/CharacterCreator';
+import { characterSheetSystem } from '@/features/systems/data';
 import { isSystem } from '@/config/systems';
 
 export const metadata = { title: 'Create a character' };
@@ -23,9 +24,11 @@ export default async function SoloCreate({ params }: { params: Promise<{ id: str
   const system = isSystem(row.system) ? row.system : '2024';
   const mine = (row.data ?? {}) as any;
   const keep = [mine.raceId, mine.clsId, mine.subId, mine.bgId, ...(mine.feats ?? []), ...(mine.spells ?? [])].filter(Boolean) as string[];
+  // one of your own game systems, if the character plays one
+  const custom = await characterSheetSystem(supabase, user.id, mine.gameSystem);
   const [entities, items] = await Promise.all([
-    getSystemEntities(supabase, system, ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], { liteSpells: true, keep, owner: user.id }),
-    getSystemEntities(supabase, system, ['item'], { owner: user.id }),
+    getSystemEntities(supabase, system, ['race', 'class', 'subclass', 'background', 'feat', 'spell', 'resource'], { liteSpells: true, keep, owner: user.id, custom: custom?.id }),
+    getSystemEntities(supabase, system, ['item'], { owner: user.id, custom: custom?.id }),
   ]);
   // weapons for Weapon Mastery, and what an item is, for the equipment step
   const weapons = (items as any[]).filter((i) => i.data?.kind === 'Weapon' && i.data?.weapon?.mastery).map((i) => ({ name: i.name, mastery: String(i.data.weapon.mastery), cat: String(i.data.weapon.cat ?? '') }));
@@ -33,7 +36,7 @@ export default async function SoloCreate({ params }: { params: Promise<{ id: str
   return (
     <div className="cs-guide">
       <div className="wrap">
-        <CharacterCreator slug="" done={`/characters/${row.id}`} character={{ id: row.id, data: row.data }} entities={entities as any} weapons={weapons} armors={armors} />
+        <CharacterCreator slug="" done={`/characters/${row.id}`} character={{ id: row.id, data: row.data }} entities={entities as any} weapons={weapons} armors={armors} system={custom?.sheet ?? null} />
       </div>
     </div>
   );

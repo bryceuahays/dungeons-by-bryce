@@ -23,16 +23,17 @@ import { useRules } from '@/features/systems/RulesContext';
 export const SpellTools = createContext<{ spells: SpellOption[]; onSpellSaved: (s: SpellOption) => void; pro: boolean }>({ spells: [], onSpellSaved: () => {}, pro: false });
 
 const KINDS: [string, string][] = [
-  ['prof', 'A proficiency'], ['ac', 'Armor class bonus'], ['speed', 'Speed'], ['resist', 'Resistance or immunity'],
-  ['condition', 'Immunity to a condition'], ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score increase'],
-  ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['bonus', 'A bonus to a roll'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
-  ['text', 'A note on the sheet'],
+  ['prof', 'A proficiency'], ['ac', 'Armor class (bonus or penalty)'], ['speed', 'Speed (more or less)'], ['resist', 'Resistance, immunity or vulnerability'],
+  ['condition', 'Immunity to a condition'], ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score (increase or decrease)'],
+  ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['dis', 'Disadvantage on a roll (a drawback)'], ['bonus', 'A bonus to a roll'], ['penalty', 'A penalty to a roll (a drawback)'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
+  ['hazard', 'Takes damage (a drawback, like sunlight)'], ['text', 'A note on the sheet'],
 ];
 export const GIVEN = KINDS.map(([k]) => k);
 const blank = (t: string): any => ({
   prof: { t, kind: 'skill', v: 'Perception' }, ac: { t, n: 1 }, speed: { t, mode: 'walk', n: 10 }, resist: { t, v: 'fire', immune: false },
   sense: { t, v: 'Darkvision', n: 60 }, condition: { t, v: 'Charmed' }, hp: { t, n: 1 }, ability: { t, ab: 'str', n: 1 }, spell: { t, name: '' }, text: { t, text: '' },
-  adv: { t, roll: 'save', ab: 'con', when: '' }, bonus: { t, roll: 'attack', amount: 2, when: '' }, attacks: { t, n: 2, with: '' }, damage: { t, amount: '1d6', type: '', when: '' },
+  adv: { t, roll: 'save', ab: 'con', when: '' }, dis: { t, roll: 'attack', ab: '', when: '' },
+  hazard: { t, amount: '1d4', type: 'radiant', every: 'turn', when: 'in direct sunlight' }, bonus: { t, roll: 'attack', amount: 2, when: '' }, penalty: { t, roll: 'check', amount: 2, when: '' }, attacks: { t, n: 2, with: '' }, damage: { t, amount: '1d6', type: '', when: '' },
 }[t]);
 const SENSES = ['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'];
 const ROLLS: [string, string][] = [['save', 'Saving throws'], ['check', 'Ability checks'], ['attack', 'Attack rolls'], ['initiative', 'Initiative']];
@@ -83,7 +84,7 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
           </>}
       </>
     );
-    case 'ac': return <>{num('Bonus (+)', 'n', { min: 0 })}<label className="give-wide">Only while<input value={g.when ?? ''} maxLength={120} placeholder="For example: wearing Light, Medium or Heavy armor (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;
+    case 'ac': return <>{num('Change (use − for a penalty)', 'n', { min: -10, max: 10 })}<label className="give-wide">Only while<input value={g.when ?? ''} maxLength={120} placeholder="For example: wearing Light, Medium or Heavy armor (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;
     case 'bonus': {
       const fixed = !ABILITIES.some(([k]) => k === g.amount) && g.amount !== 'prof';
       return <>
@@ -92,10 +93,18 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
         {fixed ? num('Bonus (+)', 'amount', { min: 1, max: 20 }) : null}
         <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: with Ranged weapons (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;
     }
+    case 'penalty': {
+      const fixed = !ABILITIES.some(([k]) => k === g.amount);
+      return <>
+        <label>Roll<select value={g.roll} onChange={(e) => set({ roll: e.target.value })}>{[...ROLLS, ['damage', 'Damage rolls']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+        <label>Takes away<select value={fixed ? 'n' : g.amount} onChange={(e) => set({ amount: e.target.value === 'n' ? 1 : e.target.value })}><option value="n">A number</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l} modifier</option>)}</select></label>
+        {fixed ? num('Penalty (−)', 'amount', { min: 1, max: 20 }) : null}
+        <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: in bright light (blank: always)" onChange={(e) => set({ when: e.target.value || undefined })} /></label></>;
+    }
     case 'speed': return <><label>Kind<select value={g.mode} onChange={(e) => set({ mode: e.target.value, ...(e.target.value === 'walk' && g.n === 'walk' ? { n: 10 } : {}) })}>{[['walk', 'Walking (added)'], ['fly', 'Flying'], ['swim', 'Swimming'], ['climb', 'Climbing'], ['burrow', 'Burrowing']].map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
-      {g.n === 'walk' ? null : num('Feet', 'n', { min: 0, step: 5 })}
+      {g.n === 'walk' ? null : num(g.mode === 'walk' ? 'Feet (use − to slow them)' : 'Feet', 'n', { min: g.mode === 'walk' ? -30 : 0, step: 5 })}
       {g.mode !== 'walk' ? <label className="ckrow"><input type="checkbox" checked={g.n === 'walk'} onChange={(e) => set({ n: e.target.checked ? 'walk' : 30 })} /> Equal to walking speed</label> : null}</>;
-    case 'resist': return <><label>Damage type<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}</select></label><label className="ckrow"><input type="checkbox" checked={!!g.immune} onChange={(e) => set({ immune: e.target.checked })} /> Immune, not just resistant</label></>;
+    case 'resist': return <><label>Damage type<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}</select></label><label>Takes<select value={g.vuln ? 'vuln' : g.immune ? 'immune' : 'resist'} onChange={(e) => set({ immune: e.target.value === 'immune' || undefined, vuln: e.target.value === 'vuln' || undefined })}><option value="resist">Half damage (resistance)</option><option value="immune">No damage (immunity)</option><option value="vuln">Double damage (vulnerability, a drawback)</option></select></label></>;
     case 'condition': return <label>Condition<select value={g.v} onChange={(e) => set({ v: e.target.value })}>{CONDITIONS.map((s) => <option key={s}>{s}</option>)}</select></label>;
     case 'sense': {
       const usual = SENSES.includes(g.v);
@@ -108,6 +117,15 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
       <label>Roll<select value={g.roll} onChange={(e) => set({ roll: e.target.value })}>{ROLLS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
       {g.roll === 'initiative' ? null : <label>Ability<select value={g.ab ?? ''} onChange={(e) => set({ ab: e.target.value })}><option value="">Any</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>}
       <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: to keep Concentration (blank: always)" onChange={(e) => set({ when: e.target.value })} /></label></>;
+    case 'dis': return <>
+      <label>Roll<select value={g.roll} onChange={(e) => set({ roll: e.target.value })}>{ROLLS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+      {g.roll === 'initiative' ? null : <label>Ability<select value={g.ab ?? ''} onChange={(e) => set({ ab: e.target.value })}><option value="">Any</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>}
+      <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: while in direct sunlight (blank: always)" onChange={(e) => set({ when: e.target.value })} /></label></>;
+    case 'hazard': return <>
+      <label>Damage<input value={g.amount ?? ''} maxLength={12} placeholder="1d4 or 2" onChange={(e) => set({ amount: e.target.value })} /></label>
+      <label>Type<select value={g.type ?? ''} onChange={(e) => set({ type: e.target.value })}><option value="">No type</option>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}</select></label>
+      <label>How often<select value={g.every ?? 'turn'} onChange={(e) => set({ every: e.target.value })}><option value="turn">At the start of each of its turns</option><option value="minute">Every minute</option><option value="hour">Every hour</option><option value="once">Once, each time it happens</option></select></label>
+      <label className="give-wide">While<input value={g.when ?? ''} maxLength={160} placeholder="For example: in direct sunlight" onChange={(e) => set({ when: e.target.value })} /></label></>;
     case 'attacks': return <>
       {num('Attacks per Attack action', 'n', { min: 2, max: 8 })}
       <label className="give-wide">With<input value={g.with ?? ''} maxLength={80} placeholder="Any weapon (blank), or for example: your pact weapon" onChange={(e) => set({ with: e.target.value })} /></label></>;
@@ -122,7 +140,7 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
     case 'hp': return num('Hit points per level', 'n', { min: 0 });
     case 'ability': return <>
       <label>Ability<select value={g.ab} onChange={(e) => set({ ab: e.target.value, ...(e.target.value === 'any' ? {} : { among: undefined, split: undefined }) })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="any">Player&apos;s choice</option></select></label>
-      {num('Increase', 'n', { min: 1 })}
+      {num('Change (use − to lower it)', 'n', { min: -10, max: 10 })}
       <label>Up to<input type="number" min={1} max={30} placeholder="20" value={g.max ?? ''} onChange={(e) => set({ max: e.target.value === '' ? undefined : Number(e.target.value) })} /></label>
       {g.ab === 'any' ? <>
         <span className="give-wide give-abs">Choose from: {ABILITIES.map(([k, l]) => <label key={k} className="ckrow"><input type="checkbox" checked={!g.among?.length || g.among.includes(k)} onChange={(e) => { const all = ABILITIES.map(([x]) => x); const cur: string[] = g.among?.length ? g.among : all; const next = e.target.checked ? [...cur, k] : cur.filter((x) => x !== k); set({ among: next.length === all.length ? undefined : next }); }} /> {l}</label>)}</span>

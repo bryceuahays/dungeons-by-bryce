@@ -115,7 +115,7 @@ export default async function Manage({ params, searchParams }: { params: Promise
     <>
       <h2>Invite codes</h2>
       <div className="plate">
-        <p>Send a player the link. It takes them through making an account and straight into this campaign. (The code on its own also works: they enter it under My campaigns.)</p>
+        <p>Send a player the link. It takes them through making an account and straight into this campaign. (The code on its own also works: they enter it under Campaigns.)</p>
         {ctx.access.pro ? null : <p className="who">The free plan holds up to {FREE_LIMITS.players} players in a campaign. {memberList.length} have joined.</p>}
         <InviteForm slug={slug} />
         <div style={{ marginTop: 14 }}>

@@ -71,9 +71,13 @@ export async function deleteMyCharacter(characterId: string): Promise<FormState>
 // the step-by-step creator. It can be added to a campaign on that system later.
 export async function createMyCharacter(_: FormState, form: FormData): Promise<FormState> {
   const { supabase, user, profile } = await requireViewer();
-  const system = form.get('system');
+  // a ready-made system, or one of your own (it plays the rules it is built on; data.gameSystem says which)
+  const picked = String(form.get('system') ?? '');
+  const customId = picked.startsWith('custom:') ? picked.slice(7) : '';
+  const { data: custom } = /^[0-9a-f-]{36}$/.test(customId) ? await supabase.from('game_systems').select('id, base').eq('id', customId).eq('owner_id', user.id).maybeSingle() : { data: null };
+  const system = custom ? custom.base : picked;
   if (!isSystem(system)) return { error: 'Choose the system this character is for.' };
-  const { data: row, error } = await supabase.from('characters').insert({ owner: user.id, campaign_id: null, system, data: { ...blankV2(), player: profile.display_name, t: Date.now() } }).select('id').single();
+  const { data: row, error } = await supabase.from('characters').insert({ owner: user.id, campaign_id: null, system, data: { ...blankV2(), player: profile.display_name, t: Date.now(), ...(custom ? { gameSystem: custom.id } : {}) } }).select('id').single();
   if (error || !row) return { error: 'The character could not be created. Try again in a moment.' };
   revalidatePath('/characters');
   redirect('/characters/' + row.id + '/create');

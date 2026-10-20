@@ -2,12 +2,13 @@
 // The System editor: sections on the left, the editor in the middle, a live preview and the pages
 // each section changes on the right, saving at the bottom. Renaming something offers to change the
 // word in written text too (findText); saving over a system that campaigns play asks first.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AFFECTS, JOBS, SECTIONS, type SectionKey, type Sys, type TextRename } from './model';
+import { AFFECTS, JOBS, SECTIONS, applyText, sheetSystem, type SectionKey, type Sys, type TextRename } from './model';
+import { Sheet5e } from '@/components/Sheet5e';
 import { createSystem, findText, updateSystem } from './actions';
-import type { SystemUsage } from './data';
+import type { SystemPreview, SystemUsage } from './data';
 import * as S from './sections';
 import './systems.css';
 
@@ -40,14 +41,23 @@ function withRenames(sys: Sys, picked: TextRename[]): Sys {
   return { ...sys, text: { replace: list.filter((x) => x.from !== x.to) } };
 }
 
-export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: string | null; mine: boolean; usage: SystemUsage }) {
+export function SystemEditor({ start, id, mine, usage, preview }: { start: Sys; id: string | null; mine: boolean; usage: SystemUsage; preview: SystemPreview }) {
   const router = useRouter();
   const [sys, setSys] = useState<Sys>(start);
   const [saved, setSavedSys] = useState<Sys>(start); // as last saved, to compare with
   const [name, setName] = useState(mine ? start.name : start.name + ' (my version)');
   const [copyName, setCopyName] = useState('');
-  const [section, setSection] = useState<SectionKey>('abilities');
+  // the section open, kept for this browser tab so a save (which moves to the system's own address) or a
+  // refresh comes back to it
+  const [section, setSectionState] = useState<SectionKey>('abilities');
+  useEffect(() => { try { const v = sessionStorage.getItem('sm-section'); if (SECTIONS.some((x) => x.key === v)) setSectionState(v as SectionKey); if (sessionStorage.getItem('sm-saved')) { sessionStorage.removeItem('sm-saved'); setMsg('Saved.'); } } catch { /* starts at Abilities */ } }, []);
+  const setSection = (k: SectionKey) => { setSectionState(k); try { sessionStorage.setItem('sm-section', k); } catch { /* not kept */ } };
   const [tab, setTab] = useState<'preview' | 'affects'>('preview');
+  // the preview: a real character (yours, or a ready-made sample) on the real sheet, worked out with the system as edited
+  const [who, setWho] = useState(preview.characters[0]?.id ?? '');
+  const shown = preview.characters.find((c) => c.id === who) ?? preview.characters[0];
+  const sheetSys = useMemo(() => sheetSystem(sys), [sys]);
+  const previewEntities = useMemo(() => applyText(preview.entities, sys), [preview.entities, sys]);
   const [fixes, setFixes] = useState<Record<string, string>>({});
   const [showImpacts, setShowImpacts] = useState(false);
   const [dialog, setDialog] = useState<null | { how: 'over' | 'copy'; stage: 'renames' | 'campaigns'; pending: Sys }>(null);
@@ -56,11 +66,14 @@ export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: strin
   const [ticks, setTicks] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  // the saved system being edited; a ready-made one has none until its first Save, which makes it yours
+  const [currentId, setCurrentId] = useState<string | null>(id);
+  const owned = mine || !!currentId;
 
   const set = <K extends SectionKey>(k: K) => (patch: Partial<Sys[K]>) => { setMsg(''); setSys((s) => ({ ...s, [k]: { ...s[k], ...patch } })); };
   const changed = (k: SectionKey) => JSON.stringify(sys[k]) !== JSON.stringify(saved[k]);
   const changedSections = SECTIONS.filter((s) => changed(s.key));
-  const dirty = changedSections.length > 0 || (mine && name !== saved.name);
+  const dirty = changedSections.length > 0 || (owned && name !== saved.name);
   const impacts = useMemo(() => impactsOf(saved, sys, usage, setSys), [saved, sys, usage]);
 
   // 1. renamed something? offer to change the written text  2. used by campaigns? ask  3. save
@@ -77,16 +90,19 @@ export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: strin
     setDialog({ how, stage: 'renames', pending: sys });
   };
   const next = (how: 'over' | 'copy', s: Sys) => {
-    if (how === 'over' && usage.campaigns.length) return setDialog({ how, stage: 'campaigns', pending: s });
+    if (how === 'over' && currentId && usage.campaigns.length) return setDialog({ how, stage: 'campaigns', pending: s });
     return commit(how, s);
   };
   const commit = async (how: 'over' | 'copy', s: Sys) => {
     setDialog(null); setBusy(true); setMsg('');
-    const res = how === 'over' && id ? await updateSystem(id, s, name) : await createSystem(s, (mine ? copyName || name + ' (copy)' : name));
+    // Save: the first one makes the system, the next ones save over it, and the page stays where it is.
+    // Save as a copy: a separate system, opened in its own editor.
+    const res = how === 'over' && currentId ? await updateSystem(currentId, s, name) : await createSystem(s, how === 'copy' ? copyName || name + ' (copy)' : name);
     setBusy(false);
     if (res.error) return setMsg(res.error);
-    if (how === 'over' && id) { setSys(s); setSavedSys({ ...s, name }); setFixes({}); setMsg('Saved.'); router.refresh(); return; }
-    router.push('/homebrew/systems/' + res.id);
+    if (how === 'copy') return router.push('/homebrew/systems/' + res.id);
+    if (!currentId && res.id) { setCurrentId(res.id); try { sessionStorage.setItem('sm-saved', '1'); window.history.replaceState(null, '', '/homebrew/systems/' + res.id); } catch { /* the address just stays */ } }
+    setSys(s); setSavedSys({ ...s, name }); setFixes({}); setMsg('Saved.');
   };
   const confirmRenames = (apply: boolean) => {
     if (!dialog) return;
@@ -104,7 +120,7 @@ export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: strin
         <label className="sm-name">System name<input value={name} maxLength={80} onChange={(e) => { setName(e.target.value); setMsg(''); }} /></label>
         <p className="dim">Built on Fifth Edition ({sys.base}).{usage.campaigns.length ? ` Used by ${usage.campaigns.map((c) => c.title).join(', ')}.` : ''}</p>
       </div>
-      <p className="dim">{mine ? 'Anything not changed here, homebrew included, comes from the ready-made rules it is built on.' : 'A ready-made system. Change anything, then save it as your own new system; what you do not change stays as published.'}</p>
+      <p className="dim">{owned ? 'Anything not changed here, homebrew included, comes from the ready-made rules it is built on.' : 'Starting from a ready-made system. Change anything; Save makes it your own system (the ready-made one stays as published).'}</p>
 
       <div className="sm-layout">
         <nav className="sm-nav" aria-label="Sections">
@@ -130,7 +146,18 @@ export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: strin
             <button type="button" className={tab === 'preview' ? 'on' : ''} onClick={() => setTab('preview')}>Preview</button>
             <button type="button" className={tab === 'affects' ? 'on' : ''} onClick={() => setTab('affects')}>Affects</button>
           </div>
-          {tab === 'preview' ? <><SheetPreview sys={sys} /><MonsterPreview sys={sys} /></> : (
+          {tab === 'preview' ? (
+            <>
+              {shown ? (
+                <div className="sm-real">
+                  <label className="sm-who">Preview<select value={shown.id} onChange={(e) => setWho(e.target.value)}>{preview.characters.map((c) => <option key={c.id} value={c.id}>{c.name}: {c.line}</option>)}</select></label>
+                  <p className="dim sm-note">The real character sheet, worked out by the rules as you edit them. Nothing on it is saved.</p>
+                  <Sheet5e key={shown.id} character={{ id: shown.id, data: shown.data }} entities={previewEntities} readOnly system={sheetSys} />
+                </div>
+              ) : <SheetPreview sys={sys} />}
+              <MonsterPreview sys={sys} />
+            </>
+          ) : (
             <div className="sm-affects">
               <p className="dim">Pages that <b>{SECTIONS.find((s) => s.key === section)!.label}</b> changes:</p>
               {AFFECTS[section].map(([page, what]) => <div key={page} className="sm-aff"><b>{page}</b><span>{what}</span></div>)}
@@ -145,13 +172,13 @@ export function SystemEditor({ start, id, mine, usage }: { start: Sys; id: strin
           {impacts.length ? <button type="button" className="sm-impbtn" onClick={() => setShowImpacts(!showImpacts)}>What this affects ({impacts.length}) {showImpacts ? '▾' : '▸'}</button> : null}
         </div>
         <div className="sm-savebtns">
-          {mine ? (
+          <button type="button" disabled={busy || !name.trim() || (!!currentId && !dirty)} onClick={() => begin('over')}>{busy ? 'Saving…' : 'Save'}</button>
+          {currentId ? (
             <>
-              <button type="button" disabled={!dirty || busy} onClick={() => begin('over')}>Save over {saved.name}</button>
               <input aria-label="Name for the copy" value={copyName} placeholder={name + ' (copy)'} onChange={(e) => setCopyName(e.target.value)} />
-              <button type="button" className="quiet" disabled={busy} onClick={() => begin('copy')}>Save as a new copy</button>
+              <button type="button" className="quiet" disabled={busy} onClick={() => begin('copy')}>Save as a copy</button>
             </>
-          ) : <button type="button" disabled={busy || !name.trim()} onClick={() => begin('copy')}>Save as a new system</button>}
+          ) : null}
         </div>
         {showImpacts && impacts.length ? (
           <div className="sm-impacts">
@@ -245,6 +272,10 @@ function impactsOf(from: Sys, to: Sys, use: SystemUsage, setSys: (f: (s: Sys) =>
   for (const j of JOBS) if (!to.abilities.jobs[j.key] || !has(to.abilities.jobs[j.key])) {
     if (!out.some((m) => m.key === 'job-' + j.key)) out.push({ key: 'job-' + j.key, text: `No ability does ${j.label} (${j.does.toLowerCase()}).`, fix: { label: 'Use which ability?', options: abOptions, apply: (v) => setSys((s) => ({ ...s, abilities: { ...s.abilities, jobs: { ...s.abilities.jobs, [j.key]: v } } })) } });
   }
+  // skills that share a name: a character's proficiency in one would count for the other
+  const seen = new Map<string, number>();
+  to.skills.list.forEach((x) => { const k = x.name.trim().toLowerCase(); seen.set(k, (seen.get(k) ?? 0) + 1); });
+  for (const [k, n] of seen) if (n > 1) out.push({ key: 'twin-' + k, text: `${n} skills are called "${to.skills.list.find((x) => x.name.trim().toLowerCase() === k)!.name.trim() || '(no name)'}". Give each its own name, or a character proficient in one counts as proficient in all of them.` });
   for (const s of from.skills.list.filter((x) => !to.skills.list.some((y) => y.id === x.id))) out.push({ key: 'skill-' + s.id, text: `${s.name} removed: classes and backgrounds that offer it will offer one skill fewer${inUse ? ', and characters lose it' : ''}.`, fix: { label: 'Replace it with…', options: to.skills.list.map((x) => [x.id, x.name]) } });
   if (from.abilities.list.length !== to.abilities.list.length && to.creation.array && to.creation.arrayValues.length !== to.abilities.list.length) out.push({ key: 'array', text: `The standard array has ${to.creation.arrayValues.length} numbers for ${to.abilities.list.length} abilities.`, fix: { label: 'Fix it', options: [['fit', `Make it ${to.abilities.list.length} numbers`]], apply: () => setSys((s) => ({ ...s, creation: { ...s.creation, arrayValues: Array.from({ length: s.abilities.list.length }, (_, i) => s.creation.arrayValues[i] ?? 10) } })) } });
   if (from.magic.on && !to.magic.on) out.push({ key: 'magic', text: `Magic is off: ${casters.length} classes lose spellcasting (${casters.slice(0, 6).join(', ')}${casters.length > 6 ? ', …' : ''}); spell homebrew is hidden, not deleted${inUse ? '; characters lose their spells and slots' : ''}.` });
