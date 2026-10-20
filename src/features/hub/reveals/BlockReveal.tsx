@@ -6,9 +6,12 @@ import './reveals.css';
 
 // What the block editor knows about the campaign for reveals (issue 117): the triggers that have
 // happened, the chapter it is at, the chapters, its story beats, and the next session's number.
-export type RevealInfo = { met: string[]; stage: string | null; beats: { id: string; title: string }[]; nextSession: number };
+// `people` are the campaign's players; `named` is whether it lets things go to only some of them
+// (Campaign settings), and `canName` whether its plan does (Pro).
+export type RevealInfo = { met: string[]; stage: string | null; beats: { id: string; title: string }[]; nextSession: number;
+  people?: { user_id: string; display_name: string }[]; named?: boolean; canName?: boolean };
 type Chapter = { id: string; label: string };
-type Patch = { hidden?: boolean; reveal_when?: string | null; from_stage?: string | null };
+type Patch = { hidden?: boolean; reveal_when?: string | null; from_stage?: string | null; only_players?: string[] | null };
 type Auto = 'self' | 'started' | 'played' | 'beat' | 'chapter';
 
 const AUTO: [Auto, string][] = [['self', 'No, I will reveal it myself'], ['started', 'When a session starts'], ['played', 'When a session is marked played'], ['beat', 'Once a story beat happens'], ['chapter', 'When a chapter starts']];
@@ -29,16 +32,25 @@ export function blockSeen(row: Pick<ContentRow, 'visibility' | 'hidden' | 'from_
   return reached(row.from_stage, chapters, info.stage);
 }
 
+// Who the block is for, in words: "Players", or "Only Mira and Tobin".
+const list = (names: string[]) => (names.length <= 1 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names.at(-1));
+export function blockWho(row: { only_players?: string[] | null }, info: RevealInfo): { who: string; one: boolean } {
+  const ids = row.only_players ?? [];
+  if (!ids.length) return { who: 'Players', one: false };
+  return { who: 'Only ' + list(ids.map((id) => info.people?.find((p) => p.user_id === id)?.display_name || 'a player')), one: ids.length === 1 };
+}
+
 // The block's reveal as one sentence, for the editor and the block's label.
-export function blockRevealWords(row: Pick<ContentRow, 'visibility' | 'hidden' | 'from_stage' | 'phase'> & { reveal_when?: string | null }, chapters: Chapter[], info: RevealInfo): string {
+export function blockRevealWords(row: Pick<ContentRow, 'visibility' | 'hidden' | 'from_stage' | 'phase'> & { reveal_when?: string | null; only_players?: string[] | null }, chapters: Chapter[], info: RevealInfo): string {
   const names = { chapters, beats: info.beats.map((b) => ({ id: b.id, label: b.title })) };
   if (row.visibility !== 'player') return 'Only DMs see this block.';
   const seen = blockSeen(row, chapters, info);
-  if (row.hidden && row.reveal_when) return seen ? `Players can see this. It was revealed when ${past(triggerWords(row.reveal_when, names))}.` : `Hidden. It reveals itself when ${triggerWords(row.reveal_when, names)}.`;
-  if (row.hidden) return 'Hidden. Players see it when you reveal it.';
+  const { who, one } = blockWho(row, info);
+  if (row.hidden && row.reveal_when) return seen ? `${who} can see this. It was revealed when ${past(triggerWords(row.reveal_when, names))}.` : `Hidden. It reveals itself when ${triggerWords(row.reveal_when, names)}.`;
+  if (row.hidden) return `Hidden. ${who} ${one ? 'sees' : 'see'} it when you reveal it.`;
   if (!seen && row.from_stage) return `Hidden. It reveals itself when ${triggerWords('chapter:' + row.from_stage, names)}.`;
   if (!seen) return 'Hidden: players only see this during another chapter.';
-  return 'Players can see this.';
+  return `${who} can see this.`;
 }
 const past = (s: string) => s.replace(/ starts$/, ' started').replace(/ is marked played$/, ' was marked played').replace(/ happens$/, ' happened');
 
@@ -65,6 +77,12 @@ export function BlockReveal({ row, chapters, info, pending, save }: {
     else save({ hidden: false, reveal_when: null, from_stage: later[0]?.id ?? null });
   };
   const okSession = (n: number) => Number.isInteger(n) && n >= 1 && n <= 999;
+  // who: every player, or only some (the block's only_players)
+  const chosen = row.only_players ?? [];
+  const [some, setSome] = useState(chosen.length > 0);
+  const people = info.people ?? [];
+  const canName = info.canName !== false;
+  const tick = (id: string, on: boolean) => { const next = on ? [...chosen, id] : chosen.filter((x) => x !== id); save({ only_players: next.length ? next : null }); };
 
   if (row.phase) return <p className="br-note">Players see this only during {chapters.find((c) => c.id === row.phase)?.label ?? 'one chapter'}. Choose “Always” under When to reveal it another way.</p>;
 
@@ -72,7 +90,7 @@ export function BlockReveal({ row, chapters, info, pending, save }: {
     <div className="br">
       <button type="button" role="switch" aria-checked={seen} className={'br-switch' + (seen ? ' on' : '')} disabled={pending} onClick={flip}>
         <span className="br-knob" aria-hidden="true" />
-        <span>{seen ? 'Players can see this' : 'Hidden from players'}</span>
+        <span>{seen ? `${blockWho(row, info).who} can see this` : 'Hidden from players'}</span>
       </button>
       {!seen ? (
         <div className="br-auto">
@@ -104,6 +122,20 @@ export function BlockReveal({ row, chapters, info, pending, save }: {
             </label>
           ) : null}
         </div>
+      ) : null}
+      {info.named !== false || chosen.length ? (
+        <fieldset className="br-who" disabled={pending}>
+          <legend>Who can see it</legend>
+          <label><input type="radio" checked={!some} onChange={() => { setSome(false); if (chosen.length) save({ only_players: null }); }} /> Every player</label>
+          <label><input type="radio" checked={some} disabled={!canName && !some} onChange={() => setSome(true)} /> Only some players{canName ? '' : ' (Pro)'}</label>
+          {some ? (people.length ? (
+            <span className="br-people">
+              {people.map((m) => (
+                <label key={m.user_id}><input type="checkbox" checked={chosen.includes(m.user_id)} disabled={!canName} onChange={(e) => tick(m.user_id, e.target.checked)} /> {m.display_name || 'Unnamed'}</label>
+              ))}
+            </span>
+          ) : <span className="br-none">Nobody has joined this campaign yet. Once players join with your invite code, choose them here.</span>) : null}
+        </fieldset>
       ) : null}
       <p className="br-note" role="status">{blockRevealWords(row, chapters, info)}</p>
     </div>
