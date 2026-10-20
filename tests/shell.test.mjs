@@ -134,12 +134,13 @@ test('the Character sidebar\'s switches leave out what is switched off, and the 
   assert.equal(e.sheet.abilities, null);
   assert.deepEqual(e.choices, ['all'], 'private rolls switched off: players roll in the open');
   await set({ features: { off: [] }, shell: { bar: ['vault'] } });
-  // the phone bar: the DM chose the Vault; a player, who has no Vault, gets the next tabs
+  // the phone bar: the DM chose the Vault; a player, who has no Vault, gets the next tabs.
+  // (Welcome is Home here, since the test accounts have its flag, so the campaign's own first tab can be on the bar.)
   const dmPage = (await page(`/c/${C.slug}/overview`, dm.session)).text;
   const bar = (t) => (t.match(/<nav class="hs-bar"[\s\S]*?<\/nav>/) ?? [''])[0];
-  assert.ok(bar(dmPage).includes(`/c/${C.slug}/vault`) && bar(dmPage).includes(`/c/${C.slug}/lore`));
+  assert.ok(bar(dmPage).includes(`/c/${C.slug}/vault`) && bar(dmPage).includes(`/c/${C.slug}/overview`) && bar(dmPage).includes(`/c/${C.slug}/hub/welcome`));
   const playerBar = bar((await page(`/c/${C.slug}/overview`, a.session)).text);
-  assert.ok(!playerBar.includes('vault') && playerBar.includes(`/c/${C.slug}/lore`) && playerBar.includes('>Home<') && playerBar.includes('>Character<') && playerBar.includes('>More<'));
+  assert.ok(!playerBar.includes('vault') && playerBar.includes(`/c/${C.slug}/overview`) && playerBar.includes(`/c/${C.slug}/lore`) && playerBar.includes('>Home<') && playerBar.includes('>Character<') && playerBar.includes('>More<'));
   // only the DM changes it
   const tried = await a.client.from('campaigns').update({ settings: { shell: { bar: ['lore'] } } }).eq('id', C.id).select('id');
   assert.ok(tried.error || (tried.data ?? []).length === 0);
