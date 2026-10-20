@@ -131,6 +131,16 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
     </section>
   ) : null;
 
+  // natural weapons (a bite, claws): to hit and damage worked out by the rules engine
+  const attacks = d.weapons.length ? (
+    <section className="s5-block">
+      <h3>Attacks</h3>
+      {d.weapons.map((w, i) => (
+        <p key={w.name + i} className="kv"><b>{w.name}</b> {sgn(w.toHit)} to hit, {w.damage || '?'}{w.type ? ' ' + w.type : ''}{w.range ? `, range ${w.range.normal}${w.range.long ? '/' + w.range.long : ''} ft` : w.reach > 5 ? `, reach ${w.reach} ft` : ''}{w.when ? <small> ({w.when})</small> : null} <small>· {w.from}</small></p>
+      ))}
+    </section>
+  ) : null;
+
   const resources = d.resources.length || d.scales.length || system?.trackers.length ? (
     <section className="s5-block">
       <h3>Resources</h3>
@@ -246,7 +256,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
         <p key={ch.id} className="s5-changed" role="status"><b>{ch.name} was updated</b> (version {ch.version}){ch.note ? ': ' + ch.note : '.'} {readOnly ? null : <button type="button" className="act sm" onClick={() => up({ seen: { ...(c.seen ?? {}), [ch.id]: ch.version } })}>Got it</button>}</p>
       ))}
       <h2 className="s5-name">{c.name || 'Unnamed character'} <small>Level {d.level} {d.race?.name ?? c.race} {d.cls?.name ?? c.cls}</small></h2>
-      {play ? <>{vitals}{drawbacks}{resources}{magic}{features}{abilities}</> : <>{identity}{vitals}{drawbacks}{abilities}{defence}{resources}{magic}{features}{notes}</>}
+      {play ? <>{vitals}{attacks}{drawbacks}{resources}{magic}{features}{abilities}</> : <>{identity}{vitals}{attacks}{drawbacks}{abilities}{defence}{resources}{magic}{features}{notes}</>}
     </fieldset>
   );
 }

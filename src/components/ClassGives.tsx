@@ -26,13 +26,14 @@ const KINDS: [string, string][] = [
   ['prof', 'A proficiency'], ['ac', 'Armor class (bonus or penalty)'], ['speed', 'Speed (more or less)'], ['resist', 'Resistance, immunity or vulnerability'],
   ['condition', 'Immunity to a condition'], ['sense', 'A sense (like darkvision)'], ['hp', 'Extra hit points per level'], ['ability', 'Ability score (increase or decrease)'],
   ['spell', 'A spell (always prepared, or cast without a slot)'], ['adv', 'Advantage on a roll'], ['dis', 'Disadvantage on a roll (a drawback)'], ['bonus', 'A bonus to a roll'], ['penalty', 'A penalty to a roll (a drawback)'], ['attacks', 'Extra attacks'], ['damage', 'Extra damage'],
-  ['hazard', 'Takes damage (a drawback, like sunlight)'], ['text', 'A note on the sheet'],
+  ['weapon', 'An attack of its own (bite, claws, a summoned weapon…)'], ['hazard', 'Takes damage (a drawback, like sunlight)'], ['text', 'A note on the sheet'],
 ];
 export const GIVEN = KINDS.map(([k]) => k);
 const blank = (t: string): any => ({
   prof: { t, kind: 'skill', v: 'Perception' }, ac: { t, n: 1 }, speed: { t, mode: 'walk', n: 10 }, resist: { t, v: 'fire', immune: false },
   sense: { t, v: 'Darkvision', n: 60 }, condition: { t, v: 'Charmed' }, hp: { t, n: 1 }, ability: { t, ab: 'str', n: 1 }, spell: { t, name: '' }, text: { t, text: '' },
   adv: { t, roll: 'save', ab: 'con', when: '' }, dis: { t, roll: 'attack', ab: '', when: '' },
+  weapon: { t, name: 'Bite', dice: '1d6', type: 'piercing', ab: 'str', when: '' },
   hazard: { t, amount: '1d4', type: 'radiant', every: 'turn', when: 'in direct sunlight' }, bonus: { t, roll: 'attack', amount: 2, when: '' }, penalty: { t, roll: 'check', amount: 2, when: '' }, attacks: { t, n: 2, with: '' }, damage: { t, amount: '1d6', type: '', when: '' },
 }[t]);
 const SENSES = ['Darkvision', 'Blindsight', 'Tremorsense', 'Truesight'];
@@ -121,6 +122,43 @@ function GiveFields({ g, onChange, spellNames }: { g: any; onChange: (x: any) =>
       <label>Roll<select value={g.roll} onChange={(e) => set({ roll: e.target.value })}>{ROLLS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
       {g.roll === 'initiative' ? null : <label>Ability<select value={g.ab ?? ''} onChange={(e) => set({ ab: e.target.value })}><option value="">Any</option>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>}
       <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: while in direct sunlight (blank: always)" onChange={(e) => set({ when: e.target.value })} /></label></>;
+    case 'weapon': {
+      // the damage dice, the same at every level or bigger from some levels on, set right here
+      const steps: [number, string][] = Array.isArray(g.steps) ? g.steps : [];
+      const byLevel = steps.length > 0 || /^grows:/i.test(g.dice ?? '');
+      const setSteps = (next: [number, string][]) => set({ steps: next, dice: next[0]?.[1] ?? '' });
+      return <>
+        <label>Name<input value={g.name ?? ''} maxLength={40} placeholder="Bite" onChange={(e) => set({ name: e.target.value })} /></label>
+        <label>Damage<select value={byLevel ? 'level' : 'dice'} onChange={(e) => e.target.value === 'level'
+          ? setSteps([[1, /^grows:/i.test(g.dice ?? '') ? '1d6' : g.dice || '1d6'], [11, '']])
+          : set({ steps: undefined, dice: steps[0]?.[1] || '1d6' })}>
+          <option value="dice">The same at every level</option><option value="level">Gets bigger with level</option></select></label>
+        {byLevel
+          ? <div className="give-wide res-steps">
+              {steps.map(([l, v], k) => (
+                <span key={k} className="res-step">
+                  from level <input type="number" min={1} max={20} aria-label="From level" value={l} onChange={(e) => setSteps(steps.map((s, j) => (j === k ? [Number(e.target.value) || 1, s[1]] : s)))} />
+                  : <input value={v} maxLength={12} placeholder="1d8" aria-label="Dice" style={{ width: '5em' }} onChange={(e) => setSteps(steps.map((s, j) => (j === k ? [s[0], e.target.value] : s)))} />
+                  {steps.length > 1 ? <button type="button" className="quiet small-btn" aria-label="Remove this step" onClick={() => setSteps(steps.filter((_, j) => j !== k))}>✕</button> : null}
+                </span>
+              ))}
+              {!steps.length ? <span className="dim hint">This used a column of the class table ({String(g.dice).replace(/^grows:/i, '')}). Add the dice here instead:</span> : null}
+              <button type="button" className="quiet small-btn" onClick={() => setSteps([...steps, [Math.min(20, (steps[steps.length - 1]?.[0] ?? 0) + (steps.length ? 4 : 1)), '']])}>+ step</button>
+              <span className="dim hint" style={{ flexBasis: '100%' }}>From each level listed on, it uses those dice (until the next step).</span>
+            </div>
+          : <label>Dice<input value={g.dice ?? ''} maxLength={12} placeholder="1d6" onChange={(e) => set({ dice: e.target.value })} /></label>}
+        <label>Type<select value={g.type ?? ''} onChange={(e) => set({ type: e.target.value })}><option value="">No type</option>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}</select></label>
+        <label>Uses<select value={g.ab ?? 'str'} onChange={(e) => set({ ab: e.target.value })}>{ABILITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}<option value="finesse">The better of Strength and Dexterity (finesse)</option></select></label>
+        <label>Attack<select value={g.range ? 'ranged' : 'melee'} onChange={(e) => set(e.target.value === 'ranged' ? { range: { normal: 30, long: 120 }, reach: undefined } : { range: undefined })}>
+          <option value="melee">Melee (reach)</option><option value="ranged">Ranged or thrown (range)</option></select></label>
+        {g.range
+          ? <>
+              <label>Range (feet)<input type="number" min={5} max={1000} step={5} value={g.range.normal ?? ''} onChange={(e) => set({ range: { ...g.range, normal: Number(e.target.value) || 0 } })} /></label>
+              <label>Long range (feet)<input type="number" min={0} max={2000} step={5} value={g.range.long || ''} placeholder="none" onChange={(e) => set({ range: { ...g.range, long: Number(e.target.value) || undefined } })} /></label>
+            </>
+          : num('Reach (feet)', 'reach', { min: 5, max: 30, step: 5 })}
+        <label className="give-wide">Only when<input value={g.when ?? ''} maxLength={160} placeholder="For example: while transformed, or while the spear is summoned (blank: always)" onChange={(e) => set({ when: e.target.value })} /></label></>;
+    }
     case 'hazard': return <>
       <label>Damage<input value={g.amount ?? ''} maxLength={12} placeholder="1d4 or 2" onChange={(e) => set({ amount: e.target.value })} /></label>
       <label>Type<select value={g.type ?? ''} onChange={(e) => set({ type: e.target.value })}><option value="">No type</option>{DAMAGE_TYPES.map((s) => <option key={s}>{s}</option>)}</select></label>

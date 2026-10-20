@@ -29,6 +29,7 @@ export default async function ImportBrew({ searchParams }: { searchParams: Promi
   return (
     <>
       <h1>Import homebrew <span className="beta-tag">Beta</span></h1>
+      <p className="dim">Or skip the copying and pasting: <a href="/help/connect-your-ai">connect your AI</a> and it saves drafts straight into your homebrew.</p>
       <p className="dim">This is new and still being tested with different AIs. If something comes through wrong, fill it in by hand in the editor, and let us know through Feedback.</p>
       {custom ? <p className="dim">For <b>{custom.sys.name}</b>: the prompt tells your AI this system's abilities, skills and names.</p> : null}
       <RulesProvider value={custom?.rules ?? null}>
