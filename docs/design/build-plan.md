@@ -7,7 +7,7 @@
 - Every new page or feature sits behind its feature flag (item 1) and behind its on/off switch in campaign settings (item 3).
 - Every new permission, visibility or privacy rule gets a test that signs in as a player and proves the hidden thing is absent from the page HTML, the database API and the Realtime feed.
 - Extend what exists before adding anything new: VisPicker and entry_open()/entryOpen() for visibility, the entries table for table-tool content, getCampaign() for reading, the Manage page for settings, PartyLive's Realtime pattern for live updates.
-- In the mockups "Session N" in a reveal means a reveal stage or a story beat. Use the app's stages and beats.
+- In the mockups "Session N" in a reveal is now a real session trigger ("when Session N starts", "when Session N is marked played"), since issue 117. Stages are called chapters on screen.
 - "Draft recap from notes" in the mockups uses AI. Leave it out (it belongs to #45).
 - A database migration: announce it on the issue, make sure no other migration is open, write it additively, do not apply it, and say in the pull request that Bryce must apply it.
 - Run `npm run build && npm run test:local` before opening each pull request. Never run tests while someone else's migration is open.

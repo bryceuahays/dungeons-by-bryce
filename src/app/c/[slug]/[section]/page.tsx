@@ -17,6 +17,9 @@ import { CharacterChooser } from '@/components/CharacterChooser';
 import { TYPES } from '@/config/homebrew';
 import { createCharacterV2, deleteCharacter } from '../actions';
 import type { CharacterRow, Section, SessionRow } from '@/lib/types';
+import { flag } from '@/lib/flags';
+import { sessionWaiting } from '@/features/hub/reveals/server';
+import { SESSION_STATUSES } from '@/features/hub/reveals/triggers';
 
 type Props = { params: Promise<{ slug: string; section: string }>; searchParams: Promise<{ race?: string; c?: string }> };
 
@@ -139,6 +142,10 @@ async function Sessions({ ctx, section }: { ctx: CampaignCtx; section: Section }
   const slug = ctx.campaign.slug;
   const { data } = await ctx.supabase.from('sessions').select('id, number, title, summary, meta, status, content').eq('campaign_id', ctx.campaign.id).order('number');
   const sessions = (data ?? []) as SessionRow[];
+  // hub version 2 reveals (issue 117): where each session stands, and what waits for it
+  const steps = ctx.realDm && (await flag('hub_v2_visibility'));
+  const waiting = steps ? await sessionWaiting(ctx.supabase, ctx.campaign.id, sessions.map((s) => s.number)) : null;
+  const STATUS: Record<string, string> = Object.fromEntries(SESSION_STATUSES);
   return (
     <div className="cs-guide">
       <div className="wrap">
@@ -151,6 +158,7 @@ async function Sessions({ ctx, section }: { ctx: CampaignCtx; section: Section }
                 <h3>{s.title}</h3>
                 <p className="who">{s.meta}</p>
                 <p>{s.summary}</p>
+                {waiting ? <p className="who">{STATUS[s.status] ?? s.status}{(() => { const w = waiting.get(s.number); const n = w ? (s.status === 'played' ? 0 : (s.status === 'running' ? 0 : w.started) + w.played) : 0; return n ? `. ${n} waiting to be revealed` : ''; })()}</p> : null}
                 <p className="kv"><b>Open</b></p>
               </Link>
             );

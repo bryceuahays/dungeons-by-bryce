@@ -58,7 +58,7 @@ test('a player reads the published recap and the next session, and never the dra
   const mine = await page(`/c/${C.slug}/hub/welcome`, a.session);
   assert.equal(mine.status, 200);
   for (const words of ['Welcome to', 'The Hollow Tide', 'Gulls wheel over the drowned bells', 'Previously on', 'Session 2', 'The party crossed the tidal flats.', 'Next session', 'Friday, 7pm', 'Where we left off: At the gates of Saltmere']) assert.ok(mine.text.includes(words), words);
-  for (const words of ['DRAFT', 'Leviathan', 'Write the Session', 'Publish recap', 'Save next session', 'Goes live at', 'Reveal now', 'Edit welcome section']) assert.ok(!mine.text.includes(words), 'not for a player: ' + words);
+  for (const words of ['DRAFT', 'Leviathan', 'Write the Session', 'Publish recap', 'Save next session', 'Goes live when', 'Reveal now', 'Edit welcome section']) assert.ok(!mine.text.includes(words), 'not for a player: ' + words);
   assert.equal(((await a.client.from('sessions').select('id').eq('campaign_id', C.id)).data ?? []).length, 0, 'the draft is not readable through the database either');
   // the DM sees the draft in the writer, and the forms
   const theirs = await page(`/c/${C.slug}/hub/welcome`, dm.session);
@@ -95,7 +95,7 @@ test('the DM sees what waits for the next stage, and a player sees none of it', 
   const waiting = (await dm.client.from('entries').insert({ campaign_id: C.id, kind: 'npc', title: 'The Drowned Abbot', live: true, vis: 'stage', vis_stage: 's2' }).select('id').single()).data;
   const forOne = (await dm.client.from('entries').insert({ campaign_id: C.id, kind: 'pin', parent: null, title: 'Sunken reliquary', live: true, vis: 'players_stage', vis_players: [a.id], vis_stage: 's2' }).select('id').single());
   const theirs = await page(`/c/${C.slug}/hub/welcome`, dm.session);
-  assert.ok(theirs.text.includes('Goes live at Act two') && theirs.text.includes('The Drowned Abbot') && theirs.text.includes('Reveal now'));
+  assert.ok(theirs.text.includes('Goes live when Act two starts') && theirs.text.includes('The Drowned Abbot') && theirs.text.includes('Reveal now'));
   if (!forOne.error) assert.ok(theirs.text.includes('named players'));
   for (const who of [a, b]) {
     const t = (await page(`/c/${C.slug}/hub/welcome`, who.session)).text;

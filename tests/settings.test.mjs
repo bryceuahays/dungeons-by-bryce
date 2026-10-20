@@ -41,12 +41,14 @@ test('with the flag, Manage is Campaign settings: the seven sections, and every 
     assert.ok(pg.text.includes(`href="#set-${id}"`) && pg.text.includes(`id="set-${id}"`), title + ' is listed and is there');
     assert.ok(pg.text.includes(`id="set-h-${id}" class="set-h">${title}</h2>`), title + ' has its heading');
   }
-  for (const part of PARTS) assert.ok(pg.text.includes(`>${part}</h2>`), 'kept: ' + part);
+  // with hub version 2 visibility on, stages are called chapters (issue 117)
+  const NEW_PARTS = PARTS.map((p) => (p === 'Reveal stages' ? 'Chapters' : p));
+  for (const part of NEW_PARTS) assert.ok(pg.text.includes(`>${part}</h2>`), 'kept: ' + part);
   // in the sections they belong to
   const at = (s) => pg.text.indexOf(`id="set-${s}"`);
   const where = (part) => pg.text.indexOf(`>${part}</h2>`);
   assert.ok(where('Invite codes') > at('people') && where('Members') > at('people') && where('Invite codes') < at('discord'), 'invites and members under People and permissions');
-  assert.ok(where('Reveal stages') > at('privacy') && where('Reveal stages') < at('dice'), 'reveal stages under Visibility defaults');
+  assert.ok(where('Chapters') > at('privacy') && where('Chapters') < at('dice'), 'chapters under Visibility defaults');
   assert.ok(where('Delete this campaign') > at('danger'), 'delete under Archive or delete');
   assert.ok(where('Theme') > at('general') && where('Theme') < at('pages'), 'the theme under General');
   // the new parts

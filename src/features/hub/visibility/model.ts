@@ -6,15 +6,22 @@
 // questions instead, who and when, and this file turns one into the other.
 //
 // It also holds NPC partial reveals: how much of an NPC players are given.
+//
+// Stages are called chapters on screen (issue 117); what is stored did not change. A session
+// trigger ("when Session 4 is marked played") is stored as vis 'when' or 'players_when' with
+// its key in vis_stage (src/features/hub/reveals/triggers.ts).
+
+import { parseTrigger } from '../reveals/triggers.ts';
 
 export type VisValue = { vis: string; vis_players: string[]; vis_stage: string | null; vis_entry?: string | null };
 
 export type Who = 'all' | 'dm' | 'players';
-export type When = 'now' | 'hold' | 'stage' | 'entry';
-export type Choice = { who: Who; when: When; players: string[]; stage: string | null; entry: string | null };
+export type When = 'now' | 'hold' | 'stage' | 'entry' | 'started' | 'played';
+// `session` is only there for a session trigger: the session's number.
+export type Choice = { who: Who; when: When; players: string[]; stage: string | null; entry: string | null; session?: number | null };
 
 export const WHO: [Who, string][] = [['all', 'Every player'], ['dm', 'Only DMs (hidden)'], ['players', 'Only some players']];
-export const WHEN: [When, string][] = [['now', 'Right away'], ['hold', 'When I reveal it'], ['stage', 'From a stage onward'], ['entry', 'Once a story beat happens']];
+export const WHEN: [When, string][] = [['now', 'Right away'], ['hold', 'When I reveal it'], ['stage', 'When a chapter starts'], ['entry', 'Once a story beat happens'], ['started', 'When a session starts'], ['played', 'When a session is marked played']];
 
 // The stored value as the two questions.
 export function toChoice(v: VisValue): Choice {
@@ -26,6 +33,14 @@ export function toChoice(v: VisValue): Choice {
     case 'players': return { who: 'players', when: 'now', players, stage, entry };
     case 'players_stage': return { who: 'players', when: 'stage', players, stage, entry };
     case 'players_entry': return { who: 'players', when: 'entry', players, stage, entry };
+    case 'when': case 'players_when': {
+      const who: Who = v.vis === 'when' ? 'all' : 'players';
+      const t = parseTrigger(v.vis_stage);
+      if (t?.kind === 'session') return { who, when: t.when, players, stage: null, entry, session: t.n };
+      if (t?.kind === 'chapter') return { who, when: 'stage', players, stage: t.id, entry };
+      if (t?.kind === 'beat') return { who, when: 'entry', players, stage: null, entry: t.id };
+      return { who: who === 'players' ? 'players' : 'dm', when: 'hold', players, stage: null, entry };
+    }
     // DM only. If players are named, it is "those players, when I reveal it": the names are
     // kept so revealing it later is one step.
     default: return players.length ? { who: 'players', when: 'hold', players, stage, entry } : { who: 'dm', when: 'now', players, stage, entry };
@@ -39,15 +54,17 @@ export function fromChoice(c: Choice): VisValue {
   if (c.who === 'dm') return { vis: 'dm', vis_players: [], ...keep };
   const players = c.who === 'players' ? c.players : [];
   if (c.when === 'hold') return { vis: 'dm', vis_players: players, ...keep };
+  if (c.when === 'started' || c.when === 'played') return { vis: c.who === 'players' ? 'players_when' : 'when', vis_players: players, vis_stage: `session:${c.session ?? 0}:${c.when}`, vis_entry: c.entry };
   const base = c.when === 'now' ? '' : c.when;   // '', 'stage' or 'entry'
   const vis = c.who === 'players' ? (base ? 'players_' + base : 'players') : base || 'all';
   return { vis, vis_players: players, ...keep };
 }
 
 // Does the stored value name players, wait for a stage, wait for a beat?
-export const namesPlayers = (vis: string) => vis === 'players' || vis === 'players_stage' || vis === 'players_entry';
+export const namesPlayers = (vis: string) => vis === 'players' || vis === 'players_stage' || vis === 'players_entry' || vis === 'players_when';
 export const waitsForStage = (vis: string) => vis === 'stage' || vis === 'players_stage';
 export const waitsForBeat = (vis: string) => vis === 'entry' || vis === 'players_entry';
+export const waitsForTrigger = (vis: string) => vis === 'when' || vis === 'players_when';
 
 type Named = { id: string; label: string };
 const list = (names: string[]) => (names.length <= 1 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names.at(-1));
@@ -59,7 +76,9 @@ export function describe(v: VisValue, people: Named[] = [], stages: Named[] = []
   const sees = c.who === 'players' && c.players.length === 1 ? 'sees' : 'see';
   if (c.who === 'dm') return 'Hidden from players. Only DMs see this.';
   if (c.when === 'hold') return `Hidden from players for now. ${who} will see this when you reveal it.`;
-  if (c.when === 'stage') return `${who} will see this from ${stages.find((s) => s.id === c.stage)?.label ?? 'the stage you choose'} onward.`;
+  if (c.when === 'stage') return `${who} will see this from ${stages.find((s) => s.id === c.stage)?.label ?? 'the chapter you choose'} onward.`;
+  if (c.when === 'started') return `${who} will see this when Session ${c.session ?? '?'} starts.`;
+  if (c.when === 'played') return `${who} will see this once Session ${c.session ?? '?'} is marked played.`;
   if (c.when === 'entry') return `${who} will see this once "${beats.find((b) => b.id === c.entry)?.label ?? 'the beat you choose'}" has happened.`;
   return c.who === 'all' ? 'Every player sees this.' : `${who} ${sees} this.`;
 }
@@ -69,7 +88,7 @@ export function shortLabel(v: VisValue, people: Named[] = [], stages: Named[] = 
   const c = toChoice(v);
   if (c.who === 'dm') return 'Hidden from players';
   const who = c.who === 'players' ? `Only ${list(c.players.map((id) => people.find((p) => p.id === id)?.label ?? 'a player')) || 'named players'}` : '';
-  const when = c.when === 'hold' ? 'when you reveal it' : c.when === 'stage' ? `from ${stages.find((s) => s.id === c.stage)?.label ?? 'a stage'}` : c.when === 'entry' ? `after "${beats.find((b) => b.id === c.entry)?.label ?? 'a beat'}"` : '';
+  const when = c.when === 'hold' ? 'when you reveal it' : c.when === 'stage' ? `from ${stages.find((s) => s.id === c.stage)?.label ?? 'a chapter'}` : c.when === 'started' ? `when Session ${c.session ?? '?'} starts` : c.when === 'played' ? `after Session ${c.session ?? '?'} is played` : c.when === 'entry' ? `after "${beats.find((b) => b.id === c.entry)?.label ?? 'a beat'}"` : '';
   if (!who && !when) return 'Everyone';
   if (!who) return c.when === 'hold' ? 'Hidden from players' : 'Reveals ' + when;
   return who + (when ? ', ' + when : '');
@@ -78,7 +97,8 @@ export function shortLabel(v: VisValue, people: Named[] = [], stages: Named[] = 
 // What is still missing before a choice can be saved (the picker says so instead of saving it).
 export function problem(c: Choice): string | null {
   if (c.who === 'players' && !c.players.length) return 'Choose at least one player.';
-  if (c.who !== 'dm' && c.when === 'stage' && !c.stage) return 'Choose a stage.';
+  if (c.who !== 'dm' && c.when === 'stage' && !c.stage) return 'Choose a chapter.';
+  if (c.who !== 'dm' && (c.when === 'started' || c.when === 'played') && !(Number.isInteger(c.session) && c.session! >= 1 && c.session! <= 999)) return 'Choose a session.';
   if (c.who !== 'dm' && c.when === 'entry' && !c.entry) return 'Choose a story beat.';
   return null;
 }

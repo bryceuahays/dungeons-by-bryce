@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { getCampaign } from '@/lib/campaign';
 import { getEntries } from '@/lib/entries';
+import { flag } from '@/lib/flags';
 import { hasFeature } from '@/config/hub-features';
 import { HiddenBox, HiddenTag } from '@/features/hub/ui/Hidden';
 import { KIND_NAMES, REVEAL_LINKS, welcomeOf } from './model';
@@ -23,6 +24,7 @@ export async function Welcome({ slug }: { slug: string }) {
   const on = (f: 'banner' | 'recap' | 'next' | 'revealed') => hasFeature(settings, `welcome.${f}`);
   const w = welcomeOf(settings);
   const dm = ctx.realDm && !ctx.asPlayer;
+  const reveals = dm && (await flag('hub_v2_reveals'));
   const session = Number(settings?.session) || 0;
 
   // newly revealed: the latest lines of the reveal log that this viewer may read and that the
@@ -90,7 +92,7 @@ export async function Welcome({ slug }: { slug: string }) {
 
           {dm && next ? (
             <HiddenBox label={`Hidden from players until ${next.label}`} className="wl-card wl-waiting">
-              <h2>Goes live at {next.label}</h2>
+              <h2>Goes live when {next.label} starts</h2>
               {waiting.length ? (
                 <ul className="wl-list">
                   {waiting.map((e) => (
@@ -101,7 +103,7 @@ export async function Welcome({ slug }: { slug: string }) {
                   ))}
                 </ul>
               ) : <p className="wl-dim">Nothing in the table tools is waiting for {next.label}.</p>}
-              <p className="wl-dim">Tabs and blocks set to appear from a stage change with the stage; they are on each page.</p>
+              <p className="wl-dim">{reveals ? <>Everything else that is hidden, including what waits for a session or a story beat, is on <Link href={`${base}/hub/reveals`}>Reveals</Link>.</> : 'Tabs and blocks set to appear from a chapter change with the chapter; they are on each page.'}</p>
             </HiddenBox>
           ) : null}
 

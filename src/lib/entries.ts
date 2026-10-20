@@ -8,6 +8,7 @@ import type { CampaignCtx } from './campaign';
 // reads everything, so the same rule is applied here, in code, before anything is sent.
 
 import { entryOpen, type Entry, type Viewer } from './entry-types';
+import { revealKeys } from '@/features/hub/reveals/server';
 export type { Entry, Viewer };
 
 // who the page is being built for: the signed-in person, or the player and stage a DM is previewing
@@ -23,7 +24,7 @@ export async function getEntries(ctx: CampaignCtx, kinds: string[], opts: { secr
   const { data } = await ctx.supabase.from('entries').select('*').eq('campaign_id', ctx.campaign.id).in('kind', kinds).order('sort').order('created_at');
   let rows = (data ?? []) as Entry[];
   if (ctx.asPlayer) {
-    const v = viewerOf(ctx);
+    const v = { ...viewerOf(ctx), met: await revealKeys(ctx.supabase, ctx.campaign, ctx.campaign.phase) };
     // beats that have happened (needed for "once a story beat happens")
     const { data: beats } = kinds.includes('beat') ? { data: rows.filter((r) => r.kind === 'beat') } : await ctx.supabase.from('entries').select('id, status').eq('campaign_id', ctx.campaign.id).eq('kind', 'beat');
     const hit = new Set(((beats ?? []) as any[]).filter((b) => b.status === 'hit').map((b) => b.id as string));

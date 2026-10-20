@@ -1,5 +1,6 @@
 'use server';
 import { cookies } from 'next/headers';
+import { parseTrigger } from '@/features/hub/reveals/triggers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireViewer } from '@/lib/auth';
@@ -276,7 +277,7 @@ export async function updateSection(slug: string, sectionId: string, patch: { ti
 
 // ---------------------------------------------------------------- DM: content editor
 
-export async function saveContentRow(slug: string, rowId: string, patch: { title?: string; body?: unknown; visibility?: 'player' | 'dm'; hidden?: boolean; phase?: string | null; from_stage?: string | null; only_players?: string[] | null }): Promise<ActionState> {
+export async function saveContentRow(slug: string, rowId: string, patch: { title?: string; body?: unknown; visibility?: 'player' | 'dm'; hidden?: boolean; phase?: string | null; from_stage?: string | null; only_players?: string[] | null; reveal_when?: string | null }): Promise<ActionState> {
   const { supabase } = await requireViewer();
   const p: Record<string, unknown> = {};
   if (typeof patch.title === 'string') p.title = patch.title.slice(0, 120);
@@ -286,6 +287,8 @@ export async function saveContentRow(slug: string, rowId: string, patch: { title
   if (patch.phase !== undefined) p.phase = patch.phase || null;
   if (patch.from_stage !== undefined) p.from_stage = patch.from_stage || null;
   if (patch.only_players !== undefined) p.only_players = patch.only_players && patch.only_players.length ? patch.only_players.filter((x) => /^[0-9a-f-]{36}$/.test(x)) : null;
+  // a hidden block that reveals itself when something happens (src/features/hub/reveals/triggers.ts)
+  if (patch.reveal_when !== undefined) p.reveal_when = patch.reveal_when && parseTrigger(patch.reveal_when) ? patch.reveal_when : null;
   const { data: saved, error } = await supabase.from('content').update(p).eq('id', rowId).select('campaign_id, section, visibility, hidden, only_players').maybeSingle();
   if (error) return /upgrade:/.test(error.message) ? { error: 'Blocks for named players are part of Pro.' } : { error: 'That did not save.' };
   // the reveal log: a block has just been shown to players
@@ -386,7 +389,7 @@ export async function updateSession(slug: string, sessionId: string, _: ActionSt
     title: String(form.get('title') || '').trim().slice(0, 120),
     meta: String(form.get('meta') || '').trim().slice(0, 200),
     summary: String(form.get('summary') || '').trim(),
-    status: String(form.get('status') || 'planned'),
+    status: ['unplanned', 'planned', 'ready', 'running', 'played'].includes(String(form.get('status'))) ? String(form.get('status')) : 'planned',
   };
   if (!patch.title) return { error: 'The title cannot be empty.' };
   const { error } = await supabase.from('sessions').update(patch).eq('id', sessionId);

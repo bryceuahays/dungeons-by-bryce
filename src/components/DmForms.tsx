@@ -23,14 +23,15 @@ export function SessionForm({ slug }: { slug: string }) {
   );
 }
 
-export function SessionEditForm({ slug, session }: { slug: string; session: { id: string; title: string; meta: string; summary: string; status: string } }) {
+// `running` offers "Under way" (hub version 2 reveals, issue 117).
+export function SessionEditForm({ slug, session, running }: { slug: string; session: { id: string; title: string; meta: string; summary: string; status: string }; running?: boolean }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(updateSession.bind(null, slug, session.id), null);
   return (
     <form action={action}>
       <div className="fields wide">
         <label className="f">Title<input name="title" defaultValue={session.title} required maxLength={120} /></label>
         <label className="f">Short line (length, level)<input name="meta" defaultValue={session.meta} maxLength={200} /></label>
-        <label className="f">Status<select name="status" defaultValue={session.status}><option value="unplanned">Not planned yet</option><option value="planned">Planned</option><option value="ready">Ready to run</option><option value="played">Played</option></select></label>
+        <label className="f">Status<select name="status" defaultValue={session.status}><option value="unplanned">Not planned yet</option><option value="planned">Planned</option><option value="ready">Ready to run</option>{running || session.status === 'running' ? <option value="running">Under way</option> : null}<option value="played">Played</option></select></label>
       </div>
       <label className="f" style={{ marginTop: 10 }}>Summary<textarea name="summary" rows={3} defaultValue={session.summary} /></label>
       <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Save</button> <Msg state={state} /></p>
@@ -123,9 +124,18 @@ export function ToolsForm({ slug, tools, on }: { slug: string; tools: { id: stri
   );
 }
 
-// The ordered list of reveal stages, one per line.
-export function StagesForm({ slug, stages, pro }: { slug: string; stages: { id: string; label: string }[]; pro: boolean }) {
+// The ordered list of reveal stages, one per line. `chapters`: called chapters (issue 117).
+export function StagesForm({ slug, stages, pro, chapters }: { slug: string; stages: { id: string; label: string }[]; pro: boolean; chapters?: boolean }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveStages.bind(null, slug), null);
+  if (chapters) return (
+    <form action={action}>
+      <label className="f">Chapters, one per line, in the order they happen
+        <textarea name="stages" rows={Math.max(3, stages.length + 1)} defaultValue={stages.map((s) => s.label).join('\n')} placeholder={'Chapter one: The road north\nChapter two: The fallen city'} />
+      </label>
+      <p className="muted" style={{ marginTop: 6 }}>{pro ? 'As many chapters as your story needs.' : 'Two chapters on the free plan. More are part of Pro.'} Renaming a chapter keeps everything tagged with it. Removing one leaves its blocks tagged for a chapter that no longer exists, so players stop seeing them until you retag them.</p>
+      <p className="row" style={{ marginTop: 10 }}><button className="act" disabled={pending}>Save chapters</button> <Msg state={state} /></p>
+    </form>
+  );
   return (
     <form action={action}>
       <label className="f">Stages, one per line, in the order they happen

@@ -106,7 +106,7 @@ Every screen must work well on a phone.
 `src/lib/campaign.ts` is the only place campaign content is read. `getCampaign()` returns the viewer's role, the reveal stage, "view as" state and plan access; `getContent()` and `getSheetEntities()` apply them. `src/app/c/[slug]/actions.ts` holds the DM's server actions.
 
 ### Reveal stages
-Each campaign has ordered, named stages (`campaigns.phases`, `campaigns.phase`). Content, sections and titles can belong to a stage or start at one (`from_stage`), and blocks can be limited to named players (`only_players`). "View as" lets the DM preview as any player at any stage.
+Each campaign has ordered, named stages (`campaigns.phases`, `campaigns.phase`). Content, sections and titles can belong to a stage or start at one (`from_stage`), and blocks can be limited to named players (`only_players`). "View as" lets the DM preview as any player at any stage. Where hub version 2 visibility is on, stages are called **chapters** on screen; the stored names did not change.
 
 ### Rules content and sheets
 - `entities` holds SRD and homebrew rules: `source`, `srd_version` (5.1 or 5.2), `type`, `status` (draft, playtest, live), `depth`, `version`, `origin` (`own` or `product`). SRD rows have no owner.
@@ -181,6 +181,20 @@ Environment variable names (values are never written down here): `NEXT_PUBLIC_SU
 - Only Bryce deploys, or a session he has told to in that session. Preview deployments sit behind a Vercel login.
 - Order for a change that needs the database: apply the additive migration first, deploy the code, then run any import or seed script.
 
+### Bryce tests a preview before anything goes live
+
+Bryce's rule (15 October 2026): every change gets a link he can test before it is merged and put live.
+
+1. When the pull request is ready (build and tests pass), deploy a preview of the branch: `npx vercel --yes` (no `--prod`).
+2. Point the fixed test address at it: `npx vercel alias set <the preview's own address> dungeons-by-bryce-preview.vercel.app`. One address means Bryce can bookmark it and stays signed in there.
+3. Send Bryce **https://dungeons-by-bryce-preview.vercel.app** with what to try, and remind him that:
+   - it sits behind Vercel's login (he signs in to Vercel once in that browser);
+   - it uses the one live database, so what he saves there is real;
+   - every hub version 2 feature flag is on in a preview (`src/lib/flags.ts`), so it shows unreleased pieces too.
+4. Merge and `npx vercel --prod` only when Bryce says so.
+
+A change with a migration: Bryce applies the migration first, then the preview is made, because the preview runs against the live database.
+
 ## Hub Design
 
 New hub pages follow `docs/design/design-system.md`.
@@ -194,12 +208,14 @@ New hub pages follow `docs/design/design-system.md`.
 
 One rule decides who receives anything in a campaign, and it is written twice: `entry_open()` in the database and `entryOpen()` in `src/lib/entry-types.ts`. **Change both or neither.** A test fails if they stop knowing the same values, and another compares their answers on the live database for every value.
 
-- **Seven stored values** (`vis`, with `vis_players`, `vis_stage`, `vis_entry` beside it): `all`, `dm`, `players`, `stage`, `entry` (once a story beat has happened), and the two that combine who with when, `players_stage` and `players_entry`. Table-tool entries and homebrew attached to a campaign both use them.
+- **Nine stored values** (`vis`, with `vis_players`, `vis_stage`, `vis_entry` beside it): `all`, `dm`, `players`, `stage`, `entry` (once a story beat has happened), the two that combine who with when, `players_stage` and `players_entry`, and the trigger pair `when` and `players_when` (once the trigger whose key is in `vis_stage` has happened). Table-tool entries and homebrew attached to a campaign both use them.
+- **Reveal triggers** (`src/features/hub/reveals/triggers.ts`, and `reveal_met()` in the database: change both or neither). A trigger is a short key: `session:<n>:started` (the session is under way or played), `session:<n>:played`, `beat:<id>`, `chapter:<stage id>`. A key that is not understood, or points at another campaign, never happens. The rule is live, not one-shot: moving a session back hides again what it revealed. Marking a session started or played, and a beat happening, write the reveal log lines (`sessions_reveal_log`, `beats_block_reveal_log`). Code that applies the rule itself (a DM previewing, map pictures) passes the keys that have happened as `met` on the viewer (`revealKeys()` in `src/features/hub/reveals/server.ts`); without them, nothing waiting for a trigger is open.
 - **The control is `VisPicker`.** Never build another. Where the page has turned on hub version 2 visibility (`<VisMode on>`, from the `hub_v2_visibility` flag), a DM's picker is the "Who sees this?" dialog in `src/features/hub/visibility/`, which asks who and when and offers every choice on every kind of content. `model.ts` there turns the two questions into the stored value and back, and writes the sentence that says who will see it.
 - **NPC partial reveals.** `data.reveal` on an NPC is how much of them players get: everything (not set), `portrait` (name and portrait) or `name` (name only). Who can see the NPC at all is still `vis`. What is held back is stored with the DM-only secrets (`entry_secrets`, under `held`), never on the NPC's own row; use `npcSplit()` to save and `npcFull()` for the DM's view. The database refuses a partly shown NPC that carries anything but its name (and, at `portrait`, its picture). **A new NPC field is held back by default.**
 - **The DM previewing as a player** reads with the DM's own login, which the database lets read everything, so the same rule is applied in code before anything is sent (`getEntries`, `getSheetEntities`, `serveMap`). Anything new a player can be shown needs that step too.
 - **A published copy of a campaign** has none of the original's players: anything for named players becomes DM only (`src/lib/store.ts`).
-- **Page blocks are separate.** They keep their own controls (DM only, hidden, a stage, named players). New hub pages are built on entries.
+- **The Reveals page** (`/c/<slug>/hub/reveals`, `src/features/hub/reveals/`, flag `hub_v2_reveals`) is the DM's list of everything hidden, grouped by when it comes out (`schedule()` in `schedule.ts`, pure), with Reveal now, Change when, Start session and Add plot secret. DM only: a player, and a DM previewing as one, get "not found" and no link. Its "From your players" inbox waits for player messages (issue 120). Anything new that can be hidden needs adding to `schedule()`.
+- **Page blocks are separate.** They keep their own controls (DM only, hidden, a stage, named players), plus `reveal_when`: a hidden block with a trigger shows once it has happened. Where hub version 2 visibility is on, the block editor has one switch for "players can see this" and a "reveal it automatically" choice (`BlockReveal.tsx`). New hub pages are built on entries.
 
 ## The Hub Frame (Header, Tabs, Sidebar, Phone)
 

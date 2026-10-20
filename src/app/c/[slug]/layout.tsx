@@ -26,7 +26,7 @@ export default async function CampaignLayout({ children, params }: { children: R
   const fonts = safeFontHref(campaign.theme?.fonts?.href);
   const bg = campaign.background?.wide && campaign.background?.tall ? `?v=${campaign.background.v ?? 1}` : null;
   // hub version 2: the new header, tabs, character sidebar and phone layout (src/features/hub/shell)
-  const [shell, dice, welcome] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice'), flag('hub_v2_welcome')]);
+  const [shell, dice, welcome, reveals] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice'), flag('hub_v2_welcome'), flag('hub_v2_reveals')]);
   const tabs = ctx.sections.map((s) => ({ slug: s.slug, title: s.title, kind: s.kind, dmOnly: s.audience === 'dm' }));
   const previewNote = ctx.asPlayer ? [ctx.viewAs.player ? 'one named player' : 'any player', ctx.viewAs.stage ? `at "${campaign.phases.find((p) => p.id === ctx.viewAs.stage)?.label ?? ctx.viewAs.stage}"` : ''].filter(Boolean).join(', ') : '';
   const banner = campaignCan(ctx.access, 'timeline') && hasTool(ctx.campaign.settings, 'timeline') ? <TimelineBanner ctx={ctx} /> : null;
@@ -52,7 +52,9 @@ export default async function CampaignLayout({ children, params }: { children: R
           session={Number(campaign.settings?.session) || 0}
           tabs={tabs}
           lead={welcome ? [{ href: `/c/${campaign.slug}/hub/welcome`, title: 'Welcome' }] : []}
-          extras={[{ href: `/c/${campaign.slug}/tools`, title: 'Table tools' }, ...(dice ? [{ href: `/c/${campaign.slug}/tools/dice`, title: 'Dice' }] : [])]}
+          extras={[{ href: `/c/${campaign.slug}/tools`, title: 'Table tools' }, ...(dice ? [{ href: `/c/${campaign.slug}/tools/dice`, title: 'Dice' }] : []),
+            // the Reveals page (item 14): the DM's own, so a player and a DM previewing as one get no link
+            ...(reveals && ctx.realDm && !ctx.asPlayer ? [{ href: `/c/${campaign.slug}/hub/reveals`, title: 'Reveals' }] : [])]}
           isDm={ctx.isDm}
           realDm={ctx.realDm}
           asPlayer={ctx.asPlayer}
