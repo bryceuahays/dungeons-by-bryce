@@ -390,3 +390,12 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 307. **"Next session" is the session after the campaign's current session number,** and the recap writer starts at the current one (the session just played). The DM can change the number.
 308. **Left out until they exist:** RSVP and attendance (#49), Discord (#40), active quests (item 17), the handouts shelf (item 20), and Message DM (items 13 and 14). The banner image is the campaign's existing intro video link; an uploaded banner picture is not built.
 309. **With Welcome as Home, the campaign's own first tab can be on the phone bar.** The Welcome page takes the Home button, so the bar fills from the campaign's first tab instead of its second.
+
+## Hub version 2, item 10: the NPCs page (19 October 2026)
+
+310. **Attitude, role and "met in session" are kept in the NPC's data,** not new columns: no database change, and like every NPC field they are held back from players when an NPC is only partly revealed (decision on partial reveals, item 4).
+311. **"Hostile" and "Allied" were statuses; they now count as attitudes.** An NPC from before keeps its status and shows that attitude. On this page's form, status is only alive, dead or missing, and saving moves the old one over. The table tool's form is unchanged.
+312. **"Players see" on each card sets who and how much in one choice:** Everything, Name and portrait, Name only (all players, with that reveal level), Nothing (hidden), or Only some players… (opens "Who sees this?" on that choice). "Who and when" beside it opens the full dialog, for sessions, chapters and story beats.
+313. **Connections wait for the Relationship web (item 19),** as the plan says. The switch for them is kept.
+314. **The NPCs tab comes after Welcome**, before the campaign's own tabs, in the mockup's order. On phones, Home is only ever Welcome or the campaign's first tab, never another hub page.
+315. **The table tool's NPC list stays,** for campaigns without hub version 2. Both edit the same NPCs.
