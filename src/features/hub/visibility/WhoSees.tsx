@@ -19,8 +19,10 @@ const firstSession = (next?: number) => (next && next >= 1 ? next : 1);
 // This only chooses. Whether a player receives something is decided by the database.
 // `named`: whether the campaign lets reveals go to only some players (Campaign settings). When it
 // does, the choice is always there, also before anyone has joined.
-export function WhoSees({ value, onChange, stages = [], members = [], beats = [], canName = true, disabled, nextSession, label = 'Who sees it', named = true }: {
-  value: VisValue; onChange: (v: VisValue) => void; stages?: Stage[]; members?: Member[]; beats?: Beat[]; canName?: boolean; disabled?: boolean; nextSession?: number; label?: string; named?: boolean;
+// `openSignal`: when it changes (and is not 0), the dialog opens on "Only some players" (the NPC
+// card's "Only some players…" choice).
+export function WhoSees({ value, onChange, stages = [], members = [], beats = [], canName = true, disabled, nextSession, label = 'Who sees it', named = true, openSignal = 0 }: {
+  value: VisValue; onChange: (v: VisValue) => void; stages?: Stage[]; members?: Member[]; beats?: Beat[]; canName?: boolean; disabled?: boolean; nextSession?: number; label?: string; named?: boolean; openSignal?: number;
 }) {
   const id = useId();
   const anchor = useRef<HTMLSpanElement>(null);
@@ -35,6 +37,13 @@ export function WhoSees({ value, onChange, stages = [], members = [], beats = []
   const open = () => { setDraft(toChoice(value)); setHost(anchor.current?.closest('.campaign, .hub') ?? document.body); };
   useEffect(() => { if (host && dialog.current && !dialog.current.open) dialog.current.showModal(); }, [host]);
   const close = () => setHost(null);
+  useEffect(() => {
+    if (!openSignal) return;
+    const c = toChoice(value);
+    setDraft({ ...c, who: 'players', when: c.when === 'hold' ? 'now' : c.when });
+    setHost(anchor.current?.closest('.campaign, .hub') ?? document.body);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSignal]);
 
   const set = (patch: Partial<Choice>) => setDraft({ ...draft, ...patch });
   const whoList = WHO.filter(([w]) => w !== 'players' || named || members.length > 0);

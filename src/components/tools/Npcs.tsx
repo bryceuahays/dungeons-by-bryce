@@ -9,10 +9,29 @@ import type { SheetSystem } from '@/features/systems/model';
 import { HiddenTag } from '@/features/hub/ui/Hidden';
 import { useVisMode } from '@/features/hub/visibility/VisMode';
 import { REVEAL, npcFull, npcSplit, revealLabel, revealOf, type Reveal } from '@/features/hub/visibility/model';
+import { ATTITUDES, attitudeOf } from '@/features/hub/npcs/model';
 
-const STATUSES: [string, string][] = [['alive', 'Alive'], ['dead', 'Dead'], ['missing', 'Missing'], ['hostile', 'Hostile'], ['allied', 'Allied']];
+export const STATUSES: [string, string][] = [['alive', 'Alive'], ['dead', 'Dead'], ['missing', 'Missing'], ['hostile', 'Hostile'], ['allied', 'Allied']];
 
-function NpcEditor({ n, p, fields, save, remove, close }: { n: Partial<Entry>; p: ToolProps; fields: F[]; save: ReturnType<typeof useEntries>['save']; remove: ReturnType<typeof useEntries>['remove']; close: () => void }) {
+// The NPC form's fields. `v2` (the hub version 2 NPCs page) adds role, attitude and the session they
+// were met in; like every NPC field, they are held back from players when an NPC is partly revealed.
+export function npcFields(monsters: { id: string; name: string; source: string }[], v2 = false): F[] {
+  return [
+    { key: 'name', label: 'Name', title: true },
+    ...(v2 ? [{ key: 'role', label: 'Role', help: 'Innkeeper, guard captain, cult enforcer…' } as F] : []),
+    { key: 'status', label: 'Status', status: true, kind: 'select', options: v2 ? STATUSES.filter(([s]) => s !== 'hostile' && s !== 'allied') : STATUSES, def: 'alive' },
+    ...(v2 ? [{ key: 'attitude', label: 'Attitude to the party', kind: 'select', options: ATTITUDES, def: 'neutral' } as F, { key: 'met', label: 'Met in session (number)', kind: 'number' } as F] : []),
+    { key: 'location', label: 'Location' },
+    { key: 'faction', label: 'Faction' },
+    { key: 'known', label: 'What the players know', kind: 'long', help: 'Players who can see this NPC read this.' },
+    { key: 'wants', label: 'What they want', kind: 'long', secret: true },
+    { key: 'relations', label: 'Relationships to the characters and to other NPCs', kind: 'long', secret: true },
+    { key: 'secret', label: 'Secrets', kind: 'long', secret: true },
+    { key: 'stat', label: 'Stat block', kind: 'select', secret: true, options: [['', 'None'], ...monsters.map((m) => [m.id, m.name + (m.source === 'srd' ? '' : ' (homebrew)')] as [string, string])] },
+  ];
+}
+
+export function NpcEditor({ n, p, fields, save, remove, close }: { n: Partial<Entry>; p: ToolProps; fields: F[]; save: ReturnType<typeof useEntries>['save']; remove: ReturnType<typeof useEntries>['remove']; close: () => void }) {
   // The NPC as the DM edits it: the details held back from players (a partial reveal) put back in place.
   const full = npcFull(n);
   const [pic, setPic] = useState<string>(String(full.data.file ?? ''));
@@ -20,10 +39,13 @@ function NpcEditor({ n, p, fields, save, remove, close }: { n: Partial<Entry>; p
   const mode = useVisMode();
   const [level, setLevel] = useState<Reveal>(n.id ? revealOf(n.data) : mode.defaults.npcReveal);
   const v2 = mode.on;
+  // an NPC from before attitudes were their own field: "hostile" and "allied" were statuses
+  const fromStatus = v2 && !full.data.attitude && (full.status === 'hostile' || full.status === 'allied');
+  const start = fromStatus ? { status: 'alive', data: { ...full.data, attitude: attitudeOf(full) } } : full;
   return (
     <div className="plate">
       <h3>{n.id ? 'Edit ' + n.title : 'New NPC'}</h3>
-      <EntryForm fields={fields} entry={{ ...n, status: full.status || 'alive', data: full.data }} stages={p.stages} members={p.members} canName={p.make.player_secrets}
+      <EntryForm fields={fields} entry={{ ...n, status: start.status || 'alive', data: start.data }} stages={p.stages} members={p.members} canName={p.make.player_secrets}
         onCancel={() => close()} onDelete={n.id ? () => { void remove(n.id!); close(); } : undefined}
         onSave={async (patch, secret) => {
           // what players may read goes on the NPC itself; anything held back goes with the DM-only notes
@@ -65,17 +87,7 @@ export function NpcTool(p: ToolProps & { initial: Entry[]; monsters: { id: strin
     return (!q || hay.includes(q.toLowerCase())) && (!filter.location || n.data.location === filter.location) && (!filter.faction || n.data.faction === filter.faction) && (!filter.status || n.status === filter.status);
   }).sort((a, b) => a.title.localeCompare(b.title)), [npcs, q, filter]);
 
-  const fields: F[] = [
-    { key: 'name', label: 'Name', title: true },
-    { key: 'status', label: 'Status', status: true, kind: 'select', options: STATUSES, def: 'alive' },
-    { key: 'location', label: 'Location' },
-    { key: 'faction', label: 'Faction' },
-    { key: 'known', label: 'What the players know', kind: 'long', help: 'Players who can see this NPC read this.' },
-    { key: 'wants', label: 'What they want', kind: 'long', secret: true },
-    { key: 'relations', label: 'Relationships to the characters and to other NPCs', kind: 'long', secret: true },
-    { key: 'secret', label: 'Secrets', kind: 'long', secret: true },
-    { key: 'stat', label: 'Stat block', kind: 'select', secret: true, options: [['', 'None'], ...p.monsters.map((m) => [m.id, m.name + (m.source === 'srd' ? '' : ' (homebrew)')] as [string, string])] },
-  ];
+  const fields = npcFields(p.monsters);
 
   return (
     <div className="wrap">

@@ -57,6 +57,7 @@ export function ShellFrame(p: {
   const home = p.tabs[0];
   const barTabs = p.bar.map((s) => p.tabs.find((t) => t.slug === s)).filter(Boolean) as Tab[];
   const lead = p.lead ?? [];
+  const welcomeLink = lead.find((x) => x.href.endsWith('/hub/welcome'));
   const leadHere = lead.find((x) => path === x.href || path.startsWith(x.href + '/'))?.href ?? '';
   const extraHere = [...p.extras].sort((a, b) => b.href.length - a.href.length).find((x) => path === x.href || path.startsWith(x.href + '/'))?.href ?? '';
   const here = lead.find((x) => x.href === leadHere)?.title ?? (leadHere || extraHere ? '' : p.tabs.find((t) => t.slug === current)?.title) ?? p.extras.find((x) => x.href === extraHere)?.title ?? '';
@@ -135,7 +136,8 @@ export function ShellFrame(p: {
         </div>
       ) : null}
       <nav className="hs-bar" aria-label="Quick links">
-        {lead[0] ? <Link href={lead[0].href} aria-current={lead[0].href === leadHere ? 'page' : undefined}><span>Home</span></Link>
+        {/* Home is the Welcome page when it is on, otherwise the campaign's first tab */}
+        {welcomeLink ? <Link href={welcomeLink.href} aria-current={welcomeLink.href === leadHere ? 'page' : undefined}><span>Home</span></Link>
           : home ? <Link href={tabHref(home.slug)} aria-current={onTab(home.slug) ? 'page' : undefined}><span>Home</span></Link> : null}
         {barTabs.map((t) => <Link key={t.slug} href={tabHref(t.slug)} aria-current={onTab(t.slug) ? 'page' : undefined}><span>{t.title}</span></Link>)}
         {p.sidebar ? <button type="button" aria-expanded={drawer} aria-controls="hs-side" onClick={() => { setMore(false); setDrawer(!drawer); }}><span>Character</span></button> : null}

@@ -1,0 +1,49 @@
+/* The NPCs page (NpcsPage.tsx), after NPCs.png. Theme variables only. */
+.campaign .np{display:flex; flex-direction:column; gap:16px; padding-top:4px; padding-bottom:32px}
+.campaign .np h1{font-family:var(--display); font-weight:600; font-size:2.2rem; line-height:1.15; color:var(--vellum); margin:0}
+.campaign .np-top{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px 20px}
+.campaign .np-lede{margin:6px 0 0; color:var(--vellum-soft)}
+.campaign .np-add{min-height:44px; padding:0 18px; border-radius:8px; border:1px solid var(--gold); background:var(--gold); color:var(--on-gold); font:inherit; font-size:15px; font-weight:600; cursor:pointer}
+
+/* search and filters */
+.campaign .np-bar{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+.campaign .np-search{flex:1 1 260px; margin:0}
+.campaign .np-search input{box-sizing:border-box; width:100%; min-height:44px; padding:0 16px; border-radius:999px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:15px}
+.campaign .np-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.campaign .np-chips{display:flex; flex-wrap:wrap; gap:8px}
+.campaign .np-chips button{min-height:44px; padding:0 16px; border-radius:999px; font:inherit; font-size:14px; cursor:pointer; background:var(--plate2); color:var(--vellum-soft); border:1px solid var(--line)}
+.campaign .np-chips button[aria-pressed=true]{background:var(--vellum); color:var(--void); border-color:var(--vellum); font-weight:600}
+
+/* the cards */
+.campaign .np-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap:16px; align-items:start}
+.campaign .np-card{display:flex; flex-direction:column; min-width:0; overflow:hidden; border-radius:14px; background:var(--plate); border:1px solid var(--line); font-family:var(--body)}
+.campaign[data-radius] .np-card{border-radius:var(--radius)}
+.campaign .np-card.hid{background:var(--secret-bg); border:1px dashed var(--secret-line)}
+.campaign .np-pic{position:relative; aspect-ratio:16/9; background:var(--plate2); display:grid; place-items:center; overflow:hidden}
+.campaign .np-pic img{width:100%; height:100%; object-fit:cover; display:block}
+.campaign .np-nopic{display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--dim)}
+.campaign .np-nopic small{font-size:12px}
+.campaign .np-pictag{position:absolute; left:10px; bottom:8px}
+.campaign .np-body{display:flex; flex-direction:column; gap:4px; padding:14px 16px 12px}
+.campaign .np-name{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.campaign .np-name h3{font-family:var(--display); font-weight:600; font-size:1.15rem; line-height:1.2; color:var(--vellum); margin:0; overflow-wrap:anywhere}
+.campaign .np-att{flex:none; font-size:12px; font-weight:600; color:var(--vellum-soft)}
+.campaign .np-att.ally{color:var(--verd)}
+.campaign .np-att.hostile{color:var(--ember)}
+.campaign .np-role{margin:0; font-size:14px; color:var(--dim)}
+.campaign .np-status{margin:0; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ember-text)}
+.campaign .np-bg{margin:2px 0 0; font-size:14px; color:var(--vellum-soft); white-space:pre-wrap; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden}
+.campaign .np-bg.held{color:var(--secret-text); font-style:italic}
+.campaign .np-met{margin:2px 0 0; font-size:13px; color:var(--dim)}
+.campaign .np-sees{margin-top:auto; padding:12px 16px 14px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:8px}
+.campaign .np-sees > label{display:flex; flex-direction:column; gap:4px; margin:0; font-size:13px; color:var(--dim); text-transform:none; letter-spacing:0}
+.campaign .np-sees select{box-sizing:border-box; width:100%; min-height:44px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
+.campaign .np-sees select.held{background:var(--secret-bg); border:1px dashed var(--secret-line)}
+.campaign .np-acts{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px 10px}
+.campaign .np-acts .vis2{display:inline-flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:13px}
+.campaign .np-edit-btn{min-height:44px; padding:0 14px; border-radius:8px; border:1px solid var(--line-strong); background:transparent; color:var(--vellum); font:inherit; font-size:14px; cursor:pointer}
+.campaign .np-new{min-height:220px; align-items:center; justify-content:center; gap:6px; background:transparent; border:1px dashed var(--line-strong); color:var(--vellum-soft); font:inherit; font-size:15px; cursor:pointer}
+.campaign .np-new span{font-size:1.6rem; line-height:1}
+.campaign .np-edit{grid-column:1 / -1; min-width:0}
+.campaign .np-empty{color:var(--dim)}
+.campaign .np-add:focus-visible,.campaign .np-chips button:focus-visible,.campaign .np-edit-btn:focus-visible,.campaign .np-new:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
