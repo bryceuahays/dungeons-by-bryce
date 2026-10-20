@@ -366,11 +366,20 @@ To build one item: start a fresh Claude Code session and give it the "build one 
 
 From 15 October 2026 every change is put on a test copy first: **https://dungeons-by-bryce-preview.vercel.app**. You try it there, and it goes live only when you say so. The test copy sits behind your Vercel login, uses the real database (what you save there is real), and has every hub version 2 piece switched on.
 
-### Item 8: header, tabs, character sidebar and phone layout (built)
+### Item 8: header, tabs, character sidebar and phone layout (built and live)
 
 - **What it is:** a new frame around every campaign page. A header with the campaign's name and session, a settings button (Manage), and your "Edit this page" and "View as player". A row of page tabs, with DM-only tabs marked. A character sidebar beside the page.
 - **The character sidebar:** your character, worked out by the rules engine (with the campaign's own rules if it uses a custom system): hit points, armour class, speed, initiative, attributes and skills. Tap any of them to roll it. Below that, the party's latest rolls, the dice, and who sees your next roll. As the DM you choose whose sheet to look at.
 - **On a phone:** the tabs become a bar along the bottom: Home, two pages you choose, Character (opens the sidebar as a drawer) and More (everything else). You choose the two pages on Manage, under "Phone bar".
 - **Who sees it:** you, behind the feature flag "Header, page tabs, character sidebar and phone layout". Everyone else keeps the current header.
 - **Not in it yet:** search, Push handout, Go live and Message DM (their pieces are not built), tap to roll on the full character sheet, attacks and spells, and conditions.
+- **What you do by hand:** nothing. No database change.
+
+### Item 9: the Welcome page (built)
+
+- **What it is:** the hub's home page, the first tab in the new frame and Home on a phone. It shows the campaign's name and pitch, the last session's recap ("Previously on…", with every earlier recap underneath), the next session (when, and where the party left off), and what has newly been revealed.
+- **What you do there as the DM:** write the session's recap and save it as a draft (players do not see a draft) or publish it; set the next session; and see everything waiting for the next stage, with "Reveal now" on each.
+- **Newly revealed** is the reveal log, so it shows players only once the campaign's "newly revealed" feed is on (Table tools > Reveal log), as it does today.
+- **Left out for now:** drafting a recap from notes with AI (#45), "I'm in / Can't make it" and attendance (#49), Discord (#40), active quests (item 17) and the handouts shelf (item 20).
+- **Who sees it:** you, behind the feature flag "Welcome page".
 - **What you do by hand:** nothing. No database change.

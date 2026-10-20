@@ -214,6 +214,7 @@ One rule decides who receives anything in a campaign, and it is written twice: `
 - **NPC partial reveals.** `data.reveal` on an NPC is how much of them players get: everything (not set), `portrait` (name and portrait) or `name` (name only). Who can see the NPC at all is still `vis`. What is held back is stored with the DM-only secrets (`entry_secrets`, under `held`), never on the NPC's own row; use `npcSplit()` to save and `npcFull()` for the DM's view. The database refuses a partly shown NPC that carries anything but its name (and, at `portrait`, its picture). **A new NPC field is held back by default.**
 - **The DM previewing as a player** reads with the DM's own login, which the database lets read everything, so the same rule is applied in code before anything is sent (`getEntries`, `getSheetEntities`, `serveMap`). Anything new a player can be shown needs that step too.
 - **A published copy of a campaign** has none of the original's players: anything for named players becomes DM only (`src/lib/store.ts`).
+- **The Reveals page** (`/c/<slug>/hub/reveals`, `src/features/hub/reveals/`, flag `hub_v2_reveals`) is the DM's list of everything hidden, grouped by when it comes out (`schedule()` in `schedule.ts`, pure), with Reveal now, Change when, Start session and Add plot secret. DM only: a player, and a DM previewing as one, get "not found" and no link. Its "From your players" inbox waits for player messages (issue 120). Anything new that can be hidden needs adding to `schedule()`.
 - **Page blocks are separate.** They keep their own controls (DM only, hidden, a stage, named players), plus `reveal_when`: a hidden block with a trigger shows once it has happened. Where hub version 2 visibility is on, the block editor has one switch for "players can see this" and a "reveal it automatically" choice (`BlockReveal.tsx`). New hub pages are built on entries.
 
 ## The Hub Frame (Header, Tabs, Sidebar, Phone)
@@ -224,6 +225,12 @@ With the `hub_v2_shell` flag, every campaign page sits in `src/features/hub/shel
 - **Rolling from the sidebar uses the dice route** (`/c/<slug>/tools/dice/roll`), like the Dice page. Never roll in the browser.
 - **The phone bar's two pages** are `settings.shell.bar` (`model.ts`), chosen on Manage.
 - **A new hub page gets its tab from the campaign's tabs.** Until the hub version 2 pages exist, the tabs are the campaign's own tabs, plus Table tools and Dice.
+
+## Hub Pages
+
+The hub version 2 pages live under `/c/<slug>/hub/<page>` (`src/app/c/[slug]/hub/`), so they never collide with a campaign's own tab; `hub` and the app's other page names cannot be taken by a new tab (`addSection` in `src/app/c/[slug]/actions.ts`, `RESERVED` in `src/lib/import.ts`). Each page sits behind its flag (`requireFlag`) and its feature switches, and is added to the frame's `lead` tabs in `src/app/c/[slug]/layout.tsx`.
+
+- **Welcome** (`src/features/hub/welcome/`): banner and pitch, the published recap, the next session, newly revealed (the reveal log), and for the DM the recap writer and what waits for the next stage. Published recaps and the next session are `settings.welcome`, which everyone in the campaign can read, so **only published things go there**; a recap's draft is the DM's session record (`sessions.summary`).
 
 ## Campaign Settings
 

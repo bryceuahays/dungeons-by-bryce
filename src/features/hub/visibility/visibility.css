@@ -25,6 +25,7 @@ dialog.vis2-dialog fieldset:disabled{opacity:.45}
 dialog.vis2-dialog legend{padding:0; margin:0 0 4px; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--dim)}
 dialog.vis2-dialog label.vis2-opt{display:flex; align-items:center; gap:12px; min-height:44px; margin:0; padding:0; cursor:pointer; color:var(--vellum); font-size:15px; font-weight:400; text-transform:none; letter-spacing:0}
 dialog.vis2-dialog .vis2-people{background:var(--field); border-radius:10px; padding:4px 14px; margin:4px 0 0 30px}
+dialog.vis2-dialog .vis2-none{margin:8px 0; font-size:14px; color:var(--dim)}
 dialog.vis2-dialog .vis2-when{display:flex; flex-wrap:wrap; align-items:center; gap:0 12px}
 dialog.vis2-dialog select{width:auto; max-width:100%; min-height:44px; margin:0 0 6px 30px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
 dialog.vis2-dialog label.vis2-num{display:flex; align-items:center; gap:8px; margin:0 0 6px 30px; color:var(--vellum); font-size:14px; text-transform:none; letter-spacing:0}

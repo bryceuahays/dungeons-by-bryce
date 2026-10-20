@@ -26,7 +26,7 @@ export default async function CampaignLayout({ children, params }: { children: R
   const fonts = safeFontHref(campaign.theme?.fonts?.href);
   const bg = campaign.background?.wide && campaign.background?.tall ? `?v=${campaign.background.v ?? 1}` : null;
   // hub version 2: the new header, tabs, character sidebar and phone layout (src/features/hub/shell)
-  const [shell, dice] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice')]);
+  const [shell, dice, welcome, reveals] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice'), flag('hub_v2_welcome'), flag('hub_v2_reveals')]);
   const tabs = ctx.sections.map((s) => ({ slug: s.slug, title: s.title, kind: s.kind, dmOnly: s.audience === 'dm' }));
   const previewNote = ctx.asPlayer ? [ctx.viewAs.player ? 'one named player' : 'any player', ctx.viewAs.stage ? `at "${campaign.phases.find((p) => p.id === ctx.viewAs.stage)?.label ?? ctx.viewAs.stage}"` : ''].filter(Boolean).join(', ') : '';
   const banner = campaignCan(ctx.access, 'timeline') && hasTool(ctx.campaign.settings, 'timeline') ? <TimelineBanner ctx={ctx} /> : null;
@@ -51,14 +51,18 @@ export default async function CampaignLayout({ children, params }: { children: R
           playerTitle={ctx.isDm && ctx.dmTitle !== campaign.title ? campaign.title : null}
           session={Number(campaign.settings?.session) || 0}
           tabs={tabs}
-          extras={[{ href: `/c/${campaign.slug}/tools`, title: 'Table tools' }, ...(dice ? [{ href: `/c/${campaign.slug}/tools/dice`, title: 'Dice' }] : [])]}
+          lead={welcome ? [{ href: `/c/${campaign.slug}/hub/welcome`, title: 'Welcome' }] : []}
+          extras={[{ href: `/c/${campaign.slug}/tools`, title: 'Table tools' }, ...(dice ? [{ href: `/c/${campaign.slug}/tools/dice`, title: 'Dice' }] : []),
+            // the Reveals page (item 14): the DM's own, so a player and a DM previewing as one get no link
+            ...(reveals && ctx.realDm && !ctx.asPlayer ? [{ href: `/c/${campaign.slug}/hub/reveals`, title: 'Reveals' }] : [])]}
           isDm={ctx.isDm}
           realDm={ctx.realDm}
           asPlayer={ctx.asPlayer}
           previewNote={previewNote}
           headView={ctx.headView ? campaign.id : null}
           readOnly={ctx.realDm && !ctx.access.writable}
-          bar={barPages(campaign.settings, tabs.map((t) => t.slug))}
+          // with Welcome as Home, the campaign's first tab can be on the bar too
+          bar={barPages(campaign.settings, welcome ? ['', ...tabs.map((t) => t.slug)] : tabs.map((t) => t.slug))}
           sidebar={!ctx.headView}
           banner={banner}
         >

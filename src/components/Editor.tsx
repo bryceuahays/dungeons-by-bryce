@@ -133,7 +133,7 @@ function RowEditor({ slug, row, twin, phases, members, canName, reveal }: { slug
               </select>
             </label>
           ) : null}
-          {row.visibility === 'player' && members.length ? (
+          {row.visibility === 'player' && members.length && !reveal ? (
             <details className="muted" style={{ flex: '1 1 100%' }}>
               <summary style={{ cursor: 'pointer' }}>Only for named players{row.only_players ? ` (${row.only_players.length})` : ''}{canName ? '' : ' (Pro)'}</summary>
               <p className="row">

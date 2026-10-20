@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setViewAsPlayer } from '@/app/c/[slug]/actions';
 import { headReveal } from '@/app/(hub)/actions';
 import { Sidebar } from './Sidebar';
@@ -15,6 +15,7 @@ type Tab = { slug: string; title: string; kind: string; dmOnly: boolean };
 // Behind the hub_v2_shell flag; without it the campaign keeps CampaignChrome.
 export function ShellFrame(p: {
   slug: string; campaignId: string; title: string; playerTitle: string | null; session: number; tabs: Tab[]; extras: { href: string; title: string }[];
+  lead?: { href: string; title: string }[];   // hub version 2 pages (Welcome first), before the campaign's own tabs
   isDm: boolean; realDm: boolean; asPlayer: boolean; headView: string | null; readOnly: boolean; previewNote: string; bar: string[];
   sidebar: boolean; banner: ReactNode; children: ReactNode;
 }) {
@@ -24,6 +25,18 @@ export function ShellFrame(p: {
   const current = rest[0] === 'edit' ? rest[1] : rest[0] === 'session' ? 'sessions' : rest[0] || p.tabs[0]?.slug;
   const onContent = p.tabs.find((t) => t.slug === rest[0])?.kind === 'content';
   const editing = rest[0] === 'edit';
+  // The header stays at the top of the screen, with the tabs pinned just under it. Its height
+  // changes (the buttons wrap on narrower screens), so it is measured, for the tabs and sidebar.
+  const top = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = top.current, frame = el?.closest<HTMLElement>('.campaign');
+    if (!el || !frame || typeof ResizeObserver === 'undefined') return;
+    const set = () => frame.style.setProperty('--hs-top-h', el.offsetHeight + 'px');
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const [drawer, setDrawer] = useState(false);
   const [more, setMore] = useState(false);
   useEffect(() => { setDrawer(false); setMore(false); }, [path]);
@@ -43,8 +56,11 @@ export function ShellFrame(p: {
   const tabHref = (slug: string) => `${base}/${slug}`;
   const home = p.tabs[0];
   const barTabs = p.bar.map((s) => p.tabs.find((t) => t.slug === s)).filter(Boolean) as Tab[];
+  const lead = p.lead ?? [];
+  const leadHere = lead.find((x) => path === x.href || path.startsWith(x.href + '/'))?.href ?? '';
   const extraHere = [...p.extras].sort((a, b) => b.href.length - a.href.length).find((x) => path === x.href || path.startsWith(x.href + '/'))?.href ?? '';
-  const here = p.tabs.find((t) => t.slug === current)?.title ?? p.extras.find((x) => x.href === extraHere)?.title ?? '';
+  const here = lead.find((x) => x.href === leadHere)?.title ?? (leadHere || extraHere ? '' : p.tabs.find((t) => t.slug === current)?.title) ?? p.extras.find((x) => x.href === extraHere)?.title ?? '';
+  const onTab = (slug: string) => !leadHere && !extraHere && current === slug;
 
   return (
     <>
@@ -66,7 +82,7 @@ export function ShellFrame(p: {
         </div>
       ) : null}
 
-      <header className="hs-top">
+      <header className="hs-top" ref={top}>
         <Link href="/campaigns" className="hs-mark" aria-label="Back to Dungeons by Bryce"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z" /><path d="M12 2.5v19M3.5 7 12 12l8.5-5" /></svg></Link>
         <div className="hs-name">
           <b>{p.title}{p.playerTitle ? <> <span className="phase-note">players see: {p.playerTitle}</span></> : null}</b>
@@ -87,8 +103,9 @@ export function ShellFrame(p: {
       </header>
       <nav className="hs-tabs" aria-label="Sections">
         <div className="hs-tabrow">
+          {lead.map((x) => <Link key={x.href} href={x.href} aria-current={x.href === leadHere ? 'page' : undefined}>{x.title}</Link>)}
           {p.tabs.map((t) => (
-            <Link key={t.slug} href={tabHref(t.slug)} aria-current={current === t.slug ? 'page' : undefined}>{t.title}{t.dmOnly ? <span className="hs-dm">DM only</span> : null}</Link>
+            <Link key={t.slug} href={tabHref(t.slug)} aria-current={onTab(t.slug) ? 'page' : undefined}>{t.title}{t.dmOnly ? <span className="hs-dm">DM only</span> : null}</Link>
           ))}
           {p.extras.map((x) => <Link key={x.href} href={x.href} aria-current={x.href === extraHere ? 'page' : undefined}>{x.title}</Link>)}
         </div>
@@ -109,7 +126,8 @@ export function ShellFrame(p: {
 
       {more ? (
         <div className="hs-more" id="hs-more" role="dialog" aria-label="More">
-          {p.tabs.map((t) => <Link key={t.slug} href={tabHref(t.slug)} aria-current={current === t.slug ? 'page' : undefined}>{t.title}{t.dmOnly ? <span className="hs-dm">DM only</span> : null}</Link>)}
+          {lead.map((x) => <Link key={x.href} href={x.href} aria-current={x.href === leadHere ? 'page' : undefined}>{x.title}</Link>)}
+          {p.tabs.map((t) => <Link key={t.slug} href={tabHref(t.slug)} aria-current={onTab(t.slug) ? 'page' : undefined}>{t.title}{t.dmOnly ? <span className="hs-dm">DM only</span> : null}</Link>)}
           {p.extras.map((x) => <Link key={x.href} href={x.href}>{x.title}</Link>)}
           {p.isDm && p.realDm ? <Link href={`${base}/manage`}>Manage</Link> : null}
           {!p.realDm ? <Link href="/account">Account</Link> : null}
@@ -117,8 +135,9 @@ export function ShellFrame(p: {
         </div>
       ) : null}
       <nav className="hs-bar" aria-label="Quick links">
-        {home ? <Link href={tabHref(home.slug)} aria-current={current === home.slug ? 'page' : undefined}><span>Home</span></Link> : null}
-        {barTabs.map((t) => <Link key={t.slug} href={tabHref(t.slug)} aria-current={current === t.slug ? 'page' : undefined}><span>{t.title}</span></Link>)}
+        {lead[0] ? <Link href={lead[0].href} aria-current={lead[0].href === leadHere ? 'page' : undefined}><span>Home</span></Link>
+          : home ? <Link href={tabHref(home.slug)} aria-current={onTab(home.slug) ? 'page' : undefined}><span>Home</span></Link> : null}
+        {barTabs.map((t) => <Link key={t.slug} href={tabHref(t.slug)} aria-current={onTab(t.slug) ? 'page' : undefined}><span>{t.title}</span></Link>)}
         {p.sidebar ? <button type="button" aria-expanded={drawer} aria-controls="hs-side" onClick={() => { setMore(false); setDrawer(!drawer); }}><span>Character</span></button> : null}
         <button type="button" aria-expanded={more} aria-controls="hs-more" onClick={() => { setDrawer(false); setMore(!more); }}><span>More</span></button>
       </nav>

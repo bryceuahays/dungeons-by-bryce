@@ -12,4 +12,53 @@
 .br-auto select,.br-auto input{box-sizing:border-box; min-height:44px; max-width:100%; padding:0 10px; border-radius:8px; background:var(--void); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
 .br-auto input{width:6rem}
 .br-note{margin:0; font-size:14px; color:var(--dim)}
+.br-who{margin:0; padding:0; border:0; min-width:0; display:flex; flex-wrap:wrap; gap:4px 18px; align-items:center}
+.br-who legend{padding:0; margin:0 0 4px; font-size:13px; color:var(--dim)}
+.br-who label,.br-people label{display:inline-flex; align-items:center; gap:8px; min-height:44px; margin:0; font-size:14px; color:var(--vellum); text-transform:none; letter-spacing:0; cursor:pointer}
+.br-people{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:0 18px; padding:0 0 0 26px}
+.br-none{flex:1 1 100%; font-size:14px; color:var(--dim)}
 @media (max-width:480px){.br-auto{flex-direction:column; align-items:stretch}}
+
+/* The Reveals page (Reveals.tsx), after Secrets.png. Theme variables only. */
+.campaign .rv{display:flex; flex-direction:column; gap:18px; padding-top:4px; padding-bottom:32px}
+.campaign .rv h1,.campaign .rv h2{font-family:var(--display); font-weight:600; color:var(--vellum); margin:0}
+.campaign .rv h1{font-size:2.2rem; line-height:1.15}
+.campaign .rv-top{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px 20px}
+.campaign .rv-lede{margin:6px 0 0; color:var(--vellum-soft)}
+.campaign .rv-dim,.campaign .rv-empty{margin:0; color:var(--dim); font-size:15px}
+.campaign .rv-empty{background:var(--plate); border:1px solid var(--line); border-radius:14px; padding:20px 24px; color:var(--vellum-soft)}
+.campaign .rv-group{background:var(--plate); border:1px solid var(--line); border-radius:14px; padding:18px 20px; min-width:0}
+.campaign[data-radius] .rv-group,.campaign[data-radius] .rv-empty{border-radius:var(--radius)}
+.campaign .rv-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:4px 12px; margin:0 0 12px}
+.campaign .rv-head h2{font-size:1.4rem}
+.campaign .rv-head small{font-size:13px; color:var(--dim)}
+.campaign .rv-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px}
+.campaign .rv-item{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px}
+.campaign .rv-what{display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 240px}
+.campaign .rv-type{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--secret-text)}
+.campaign .rv-name{font-size:16px; color:var(--vellum); overflow-wrap:anywhere}
+.campaign .rv-note{font-size:14px; color:var(--dim)}
+.campaign .rv-acts{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+.campaign .rv-now{min-height:44px; padding:0 16px; border-radius:8px; border:1px solid var(--secret-line); background:var(--secret); color:var(--void); font:inherit; font-size:14px; font-weight:600; cursor:pointer}
+.campaign .rv-now:disabled{opacity:.6; cursor:default}
+.campaign .rv-add{min-height:44px; padding:0 18px; border-radius:8px; border:1px solid var(--gold); background:var(--gold); color:var(--on-gold); font:inherit; font-size:15px; font-weight:600; cursor:pointer}
+.campaign .rv-now:focus-visible,.campaign .rv-add:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+.campaign .rv-form{flex:1 1 320px; max-width:520px; background:var(--plate); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+.campaign .rv-change{flex:0 1 auto}
+.campaign .rv-change[open]{flex:1 1 100%}
+.campaign .rv-change summary{cursor:pointer; min-height:44px; display:inline-flex; align-items:center; padding:0 14px; border:1px solid var(--line-strong); border-radius:8px; color:var(--vellum); font-size:14px}
+.campaign .rv-change[open] summary{margin-bottom:8px}
+.campaign .rv-acts .vis2{display:inline-flex; flex-wrap:wrap; align-items:center; gap:6px}
+@media (max-width:480px){.campaign .rv-group{padding:14px} .campaign .rv-acts{width:100%} .campaign .rv-now{flex:1 1 auto}}
+/* the "Who can see it" choices, drawn from the theme (as in the "Who sees this?" dialog) */
+.br-who label,.br-people label{flex:none; white-space:nowrap}
+.br-who input[type=radio],.br-people input[type=checkbox]{flex:none; width:18px; height:18px; margin:0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:grid; place-content:center;
+  background:var(--field); border:1.5px solid var(--line-strong)}
+.br-who input[type=radio]{border-radius:50%}
+.br-people input[type=checkbox]{border-radius:4px}
+.br-who input[type=radio]:checked{border-color:var(--secret)}
+.br-who input[type=radio]:checked::after{content:""; width:10px; height:10px; border-radius:50%; background:var(--secret)}
+.br-people input[type=checkbox]:checked{background:var(--secret); border-color:var(--secret)}
+.br-people input[type=checkbox]:checked::after{content:""; width:4px; height:9px; border:solid var(--void); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}
+.br-who input:disabled{opacity:.5; cursor:default}
+.br-who input:focus-visible,.br-people input:focus-visible{outline:2px solid var(--secret); outline-offset:2px}
