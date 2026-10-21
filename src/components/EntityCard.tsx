@@ -6,6 +6,16 @@ import { areaText, saveText, spellText } from '@/lib/spell-rules.mjs';
 import { equipLine, multiclassLine } from '@/lib/class-equip';
 import { TYPES } from '@/config/homebrew';
 
+// an amount as words: a number, dice, an ability's modifier, proficiency or level
+const amountWords = (a: string | number, AB: Record<string, string>) => (a === 'prof' ? 'your Proficiency Bonus' : a === 'level' ? 'your level' : AB[a as string] ? 'your ' + AB[a as string] + ' modifier' : String(a));
+// what a save is against, and what failing it does
+function savePart(x: { save?: string; dcAb?: string; dcN?: number; condition?: string; duration?: string; damage?: string; type?: string; half?: boolean }, AB: Record<string, string>) {
+  const what = [x.damage ? `${x.damage}${x.type ? ' ' + x.type : ''} damage` : '', x.condition ? `the ${x.condition} condition${x.duration ? ' ' + x.duration : ''}` : ''].filter(Boolean).join(' and ');
+  if (!x.save) return what ? 'takes ' + what : '';
+  const dc = Number(x.dcN) > 0 ? `DC ${x.dcN}` : `DC 8 + Proficiency Bonus + ${AB[x.dcAb ?? ''] ?? 'ability'} modifier`;
+  return `makes a ${AB[x.save] ?? x.save} saving throw (${dc}): on a failure, ${what || 'the effect'}${x.half && x.damage ? ', half the damage on a success' : ''}`;
+}
+
 // One sentence for one effect, in plain words.
 // AB: the ability names to use (a custom game system's; fifth edition's by default)
 export function describeEffect(x: Effect, AB: Record<string, string> = Object.fromEntries(ABILITIES)): string {
@@ -29,6 +39,11 @@ export function describeEffect(x: Effect, AB: Record<string, string> = Object.fr
     case 'penalty': return `${AB[x.amount] ? '− ' + AB[x.amount] + ' modifier' : '−' + Math.abs(Number(x.amount) || 0)} to ${({ save: 'saving throws', check: 'ability checks', attack: 'attack rolls', initiative: 'Initiative', damage: 'damage rolls' } as Record<string, string>)[x.roll] ?? x.roll}${x.when ? ' ' + x.when : ''}${at}`;
     case 'weapon': return `Attack: ${x.name} (${Array.isArray(x.steps) && x.steps.length ? x.steps.filter((s: any) => s[1]).map((s: any) => `${s[1]} from level ${s[0]}`).join(', ') : /^grows:/i.test(x.dice) ? x.dice.replace(/^grows:/i, '') + ' column' : x.dice}${x.type ? ' ' + x.type : ''}, using ${x.ab === 'finesse' ? 'Strength or Dexterity' : AB[x.ab ?? 'str'] ?? x.ab ?? 'Strength'}${x.range && x.range.normal > 0 ? ', range ' + x.range.normal + (x.range.long ? '/' + x.range.long : '') + ' ft' : Number(x.reach) > 5 ? ', reach ' + x.reach + ' ft' : ''})${x.when ? ' ' + x.when : ''}${at}`;
     case 'dis': return `Disadvantage on ${x.roll === 'initiative' ? 'Initiative' : (x.ab ? (AB[x.ab] ?? x.ab) + ' ' : '') + ({ save: 'saving throws', check: 'checks', attack: 'attack rolls' } as Record<string, string>)[x.roll]}${x.when ? ' ' + x.when : ''}${at}`;
+    case 'onhit': return `On a hit${x.with ? ' with ' + x.with : ''}${x.once ? ' (once per turn)' : ''}: ${savePart(x, AB)}${x.when ? ' ' + x.when : ''}${at}`;
+    case 'area': return `${x.name || 'Area'}: ${x.size ? x.size + '-foot ' : ''}${x.shape}, each creature in it ${savePart({ ...x, damage: Array.isArray(x.steps) && x.steps.length ? x.steps.filter((s) => s[1]).map((s) => `${s[1]} from level ${s[0]}`).join(', ') : x.damage }, AB)}${x.when ? ' ' + x.when : ''}${at}`;
+    case 'regen': return `Regains ${amountWords(x.amount, AB)}${x.min1 ? ' (at least 1)' : ''} hit points at the start of each of its turns${x.when ? ' ' + x.when : ''}${at}`;
+    case 'reduce': return `Damage taken is reduced by ${amountWords(x.amount, AB)}${x.min1 ? ' (at least 1)' : ''} (${x.types === 'bps' ? 'bludgeoning, piercing and slashing' : !x.types || x.types === 'all' ? 'all damage' : x.types})${x.when ? ' ' + x.when : ''}${at}`;
+    case 'size': return `Size: ${x.to === 'larger' ? 'one size larger' : x.to === 'smaller' ? 'one size smaller' : x.to}${x.when ? ' ' + x.when : ''}${at}`;
     case 'hazard': return `Takes ${x.amount} ${x.type ? x.type + ' ' : ''}damage ${({ turn: 'at the start of each of its turns', minute: 'every minute', hour: 'every hour', once: 'each time' } as Record<string, string>)[x.every] ?? ''}${x.when ? ' while ' + x.when.replace(/^while\s+/i, '') : ''}${at}`;
     case 'text': return x.text + at;
   }

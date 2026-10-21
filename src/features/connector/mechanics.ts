@@ -17,6 +17,11 @@ const CHECKS: [RegExp, string[], string][] = [
   [/\+\d+ (bonus )?to (your )?armor class\b|\barmor class increases\b/i, ['ac'], 'armorClass'],
   [/\b(gain|have) proficiency (in|with)\b|\byou are proficient (in|with)\b/i, ['prof'], 'proficiency'],
   [/\byou (can|know the|learn the) cast\b|\byou can cast\b/i, ['spell'], 'spell'],
+  [/\b(when|whenever|if) you hit\b[^.]*\bsaving throw\b|\b(when|whenever|if) you hit\b[^.]*\b(has|have|is|be|becomes?) (the )?(blinded|charmed|deafened|frightened|grappled|incapacitated|paralyzed|poisoned|prone|restrained|stunned)\b/i, ['onhit'], 'onHit'],
+  [/\beach creature (in|within)\b[^.]*\b(cone|radius|sphere|emanation|line|cube)\b|\b\d+-foot (cone|radius|sphere|emanation|line|cube)\b[^.]*\bsaving throw\b/i, ['area'], 'areaEffect'],
+  [/\bregains? [^.]*hit points at the start of (each of )?(your|its) turns?\b/i, ['regen'], 'healingEachTurn'],
+  [/\breduce (the|that|this) damage\b|\bdamage (you|it) takes? is reduced\b|\bwhenever you take damage, reduce it\b/i, ['reduce'], 'damageReduction'],
+  [/\b(you|it) (become|becomes|grow|grows) (one size )?(larger|smaller|tiny|small|medium|large|huge|gargantuan)\b|\byou are (large|huge)\b|\b(your|its) size (increases|becomes)\b|\b(grows|becomes) one size (larger|smaller)\b/i, ['size'], 'size'],
   [/\bonce per (short|long) rest\b|\buntil you finish a (short|long) rest\b|\bnumber of times equal to\b|\btimes per (short|long) rest\b/i, ['uses'], 'a limited use (a resource the feature uses, or "limit")'],
 ];
 

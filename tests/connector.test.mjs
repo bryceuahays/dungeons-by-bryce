@@ -130,6 +130,29 @@ test('rules left as words only are pointed out, so the AI can make them mechanic
   assert.deepEqual(fx.find((x) => x.t === 'spell'), { t: 'spell', name: 'Misty Step', cast: 'perRest', n: 'prof', recharge: 'long' });
 });
 
+test('saves on a hit, areas, healing each turn, damage reduction and size come through as mechanics', async () => {
+  const description = 'When you hit with your bite, the target makes a Strength saving throw or has the Prone condition. Each creature in a 15-foot cone makes a Constitution saving throw. You regain 5 hit points at the start of each of your turns. Whenever you take damage, reduce it by 3. You become Large.';
+  const made = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Beastly Feat', category: 'General', benefits: [{ name: 'Beastly', description, gives: [
+    { type: 'onHit', with: 'your bite', oncePerTurn: true, save: 'str', dcAbility: 'con', condition: 'Prone', duration: 'until it stands up' },
+    { type: 'areaEffect', name: 'Screech', shape: 'cone', size: 15, save: 'con', dcAbility: 'con', damage: '2d8', damageByLevel: [[11, '3d8'], [1, '2d8']], damageType: 'thunder', halfOnSuccess: true },
+    { type: 'healingEachTurn', amount: 5, when: 'while above 0 hit points' },
+    { type: 'damageReduction', amount: 'con', minimum1: true, damage: 'bludgeoning, piercing and slashing' },
+    { type: 'size', size: 'larger', when: 'while transformed' },
+  ] }] } });
+  assert.equal(made.error, false, made.text);
+  assert.equal(made.json.mechanicsLeftAsText, undefined, JSON.stringify(made.json.mechanicsLeftAsText));
+  const fx = (await admin.from('entities').select('data').eq('id', made.json.id).single()).data.data.benefits[0].effects;
+  const by = (t) => fx.find((x) => x.t === t);
+  assert.deepEqual(by('onhit'), { t: 'onhit', with: 'your bite', once: true, save: 'str', dcAb: 'con', condition: 'Prone', duration: 'until it stands up' });
+  assert.deepEqual(by('area'), { t: 'area', name: 'Screech', shape: 'cone', size: 15, save: 'con', dcAb: 'con', half: true, damage: '2d8', steps: [[1, '2d8'], [11, '3d8']], type: 'thunder' });
+  assert.deepEqual(by('regen'), { t: 'regen', amount: 5, when: 'while above 0 hit points' });
+  assert.deepEqual(by('reduce'), { t: 'reduce', amount: 'con', min1: true, types: 'bps' });
+  assert.deepEqual(by('size'), { t: 'size', to: 'larger', when: 'while transformed' });
+  // and words alone are pointed out
+  const words = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Beastly Words', category: 'General', benefits: [{ name: 'Beastly', description }] } });
+  assert.deepEqual(words.json.mechanicsLeftAsText.map((m) => m.use).sort(), ['areaEffect', 'damageReduction', 'healingEachTurn', 'onHit', 'size']);
+});
+
 test('it will not make a second entry of the same name: it is pointed to update_draft instead', async () => {
   const entry = { type: 'feat', name: 'Twice Made', category: 'General', benefits: [{ name: 'Benefit', description: 'Something.' }] };
   assert.equal((await tool(a, 'create_draft', { kind: 'feat', entry })).error, false);
