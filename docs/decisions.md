@@ -399,3 +399,9 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 313. **Connections wait for the Relationship web (item 19),** as the plan says. The switch for them is kept.
 314. **The NPCs tab comes after Welcome**, before the campaign's own tabs, in the mockup's order. On phones, Home is only ever Welcome or the campaign's first tab, never another hub page.
 315. **The table tool's NPC list stays,** for campaigns without hub version 2. Both edit the same NPCs.
+
+## Downloading a campaign before deleting it (20 October 2026)
+
+322. **Bryce chose a download over quietly removing a deleted campaign's pictures.** Before a campaign is deleted, a pop-up offers "Download everything first?": Download, Delete without downloading, or Keep the campaign. The owner can also download a copy at any time, beside the delete button. What deleting removes is unchanged (a campaign's table-tool pictures still stay in storage, unreadable).
+323. **The .zip is built in the browser,** from the campaign's data and one-hour signed links to its pictures, because a server response on Vercel is limited to about 4.5 MB. The zip library is fflate 0.8.2 (February 2024, no dependencies).
+324. **What is in it:** a README; every page as an HTML file anyone can open (DM-only and hidden blocks marked); the campaign, pages, characters, every table-tool entry by kind with its DM notes, sessions, attached homebrew, the players' names and the secrets written for them, as JSON; and every picture. Players' own private notes are not in it: not even the DM can read them. Only the owner can download; a co-DM, a player and the Head DM cannot.

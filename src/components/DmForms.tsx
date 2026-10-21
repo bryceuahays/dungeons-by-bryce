@@ -1,6 +1,8 @@
 'use client';
 import { useActionState, useState, useTransition } from 'react';
 import { ConfirmButton } from './ConfirmButton';
+import { DownloadFirst } from '@/features/campaign-export/DownloadFirst';
+import { ExportButton } from '@/features/campaign-export/ExportButton';
 import { addContentRow, addSection, addSession, createInvite, deleteCampaign, importPages, saveSetting, saveStages, updateCampaign, updateSection, updateSession, type ActionState } from '@/app/c/[slug]/actions';
 
 function Msg({ state }: { state: ActionState }) {
@@ -212,10 +214,19 @@ export function ImportPagesForm({ slug }: { slug: string }) {
   );
 }
 
+// Deleting a campaign: first a pop-up offering to download everything in it, then the confirmation.
+// A copy can also be downloaded at any time, without deleting.
 export function DeleteCampaignForm({ slug, title, characters, members }: { slug: string; title: string; characters: number; members: number }) {
-  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<'closed' | 'ask' | 'confirm'>('closed');
+  const open = step === 'confirm';
+  const setOpen = (on: boolean) => setStep(on ? 'confirm' : 'closed');
   const [state, action, pending] = useActionState<ActionState, FormData>(deleteCampaign.bind(null, slug), null);
-  if (!open) return <p><button type="button" className="act danger" onClick={() => setOpen(true)}>Delete this campaign…</button></p>;
+  if (!open) return (
+    <>
+      <p className="row"><button type="button" className="act danger" onClick={() => setStep('ask')}>Delete this campaign…</button> <ExportButton slug={slug} label="Download a copy (.zip)" /></p>
+      {step === 'ask' ? <DownloadFirst slug={slug} title={title} onContinue={() => setStep('confirm')} onCancel={() => setStep('closed')} /> : null}
+    </>
+  );
   return (
     <form action={action}>
       <p className="err">You are about to delete &quot;{title}&quot;{members || characters ? `, with ${members} player${members === 1 ? '' : 's'} and ${characters} character${characters === 1 ? '' : 's'}` : ''}.</p>
