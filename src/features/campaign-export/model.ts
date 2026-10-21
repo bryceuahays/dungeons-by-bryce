@@ -75,3 +75,44 @@ export function exportFiles(x: ExportInput): ExportBundle {
 
   return { name: `${safeName(c.title, 'campaign')}-${day}.zip`, text, files: x.links };
 }
+
+// Everything an account owns, before it is deleted: each of its campaigns laid out as above in its
+// own folder, then its characters, homebrew, game systems, worlds, its own private notes, and its
+// pictures.
+export type AccountInput = {
+  profile: { name: string; email: string }; campaigns: ExportInput[]; characters: Row[]; homebrew: Row[]; systems: Row[]; worlds: Row[]; notes: Row[];
+  files: { zip: string; url: string }[];
+};
+export function exportAccountFiles(x: AccountInput): ExportBundle {
+  const day = new Date().toISOString().slice(0, 10);
+  const text: Record<string, string> = {};
+  const files: { zip: string; url: string }[] = [...x.files];
+  text['README.txt'] = [
+    `Everything ${x.profile.name || 'your account'} kept on Dungeons by Bryce, downloaded on ${day}.`,
+    '',
+    'campaigns/   each campaign you created, laid out like a campaign download (open its README.txt)',
+    'characters/  every character you made, in any campaign or on their own',
+    'homebrew.json   your homebrew entries',
+    'game-systems.json   the game systems you built',
+    'worlds.json     your worlds',
+    'my-notes.json   your own private notes in campaigns you play in',
+    'profile.json    your name and email address',
+    'files/       your hub background and the banners on your homebrew',
+    '',
+  ].join('\n');
+  text['profile.json'] = json(x.profile);
+  const used = new Set<string>();
+  const unique = (base: string) => { let n = base, i = 2; while (used.has(n)) n = `${base}-${i++}`; used.add(n); return n; };
+  for (const c of x.campaigns) {
+    const b = exportFiles(c);
+    const dir = `campaigns/${unique(safeName(c.campaign.title, 'campaign'))}`;
+    for (const [p, body] of Object.entries(b.text)) text[`${dir}/${p}`] = body;
+    for (const f of b.files) files.push({ zip: `${dir}/${f.zip}`, url: f.url });
+  }
+  for (const ch of x.characters) text[`characters/${unique('c-' + safeName(ch.data?.name, 'character'))}.json`] = json(ch);
+  text['homebrew.json'] = json(x.homebrew);
+  text['game-systems.json'] = json(x.systems);
+  text['worlds.json'] = json(x.worlds);
+  text['my-notes.json'] = json(x.notes);
+  return { name: `dungeons-by-bryce-${safeName(x.profile.name, 'account')}-${day}.zip`, text, files };
+}

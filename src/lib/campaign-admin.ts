@@ -41,7 +41,7 @@ export async function removeCampaignFiles(campaignId: string) {
     const { data } = await admin.storage.from('campaign-media').list(`${campaignId}/${dir}`, { limit: 1000 });
     if (data?.length) await admin.storage.from('campaign-media').remove(data.map((o) => `${campaignId}/${dir}/${o.name}`));
   }
-  await admin.storage.from('backgrounds').remove([`campaign/${campaignId}/wide`, `campaign/${campaignId}/tall`]);
+  await admin.storage.from('backgrounds').remove([`campaign/${campaignId}/wide`, `campaign/${campaignId}/tall`, `campaign/${campaignId}/hero`]);
   // the table tools' pictures: maps, painted maps, NPC portraits and lore pictures (Bryce, 20 October
   // 2026: the owner is offered a download of all of it first, src/features/campaign-export)
   for (const dir of CAMPAIGN_FILE_DIRS) {
