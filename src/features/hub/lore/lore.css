@@ -1,0 +1,100 @@
+/* The Lore page (LorePage.tsx), after Lore.png. Theme variables only. */
+.campaign .lr{display:flex; flex-direction:column; gap:16px; padding-top:4px; padding-bottom:32px}
+.campaign .lr h1{font-family:var(--display); font-weight:600; font-size:2.2rem; line-height:1.15; color:var(--vellum); margin:0}
+.campaign .lr h2{font-family:var(--display); font-weight:600; font-size:1.4rem; color:var(--vellum); margin:0}
+.campaign .lr h3{font-family:var(--display); font-weight:600; font-size:1.08rem; line-height:1.25; color:var(--vellum); margin:0; overflow-wrap:anywhere}
+.campaign .lr p{margin:0; max-width:none}
+.campaign .lr-top{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px 20px}
+.campaign .lr-lede{margin-top:6px !important; color:var(--vellum-soft)}
+.campaign .lr-search{flex:0 1 280px; margin:0}
+.campaign .lr-search input{box-sizing:border-box; width:100%; min-height:44px; padding:0 16px; border-radius:999px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:15px}
+.campaign .lr-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* jumps to each category */
+.campaign .lr-jumps{display:flex; flex-wrap:wrap; gap:8px}
+.campaign .lr-jumps a{display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 16px; border-radius:999px; background:var(--plate2); border:1px solid var(--line); color:var(--vellum); font-size:14px; text-decoration:none}
+.campaign .lr-jumps a span{font-size:12px; color:var(--dim)}
+.campaign .lr-jumps a:hover{border-color:var(--line-strong)}
+
+/* a category */
+.campaign .lr-sec{background:var(--plate); border:1px solid var(--line); border-radius:14px; padding:18px 20px; min-width:0; display:flex; flex-direction:column; gap:12px; scroll-margin-top:140px}
+.campaign[data-radius] .lr-sec{border-radius:var(--radius)}
+.campaign .lr-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:6px 12px}
+.campaign .lr-headacts{display:inline-flex; flex-wrap:wrap; align-items:center; gap:8px 14px; font-size:14px}
+.campaign .lr-headacts a{color:var(--gold)}
+.campaign .lr-addbtn,.campaign .lr-editbtn,.campaign .lr-quiet{min-height:44px; padding:0 14px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; background:transparent; color:var(--vellum); border:1px solid var(--line-strong)}
+.campaign .lr-quiet{border-color:transparent; color:var(--dim); text-decoration:underline}
+.campaign .lr-editbtn{align-self:flex-start; min-height:36px; padding:0 12px; font-size:13px; margin-top:4px}
+.campaign .lr-text{font-size:15px; color:var(--vellum-soft); white-space:pre-wrap; overflow-wrap:anywhere}
+.campaign .lr-dim{font-size:13px; color:var(--dim); overflow-wrap:anywhere}
+.campaign .lr-label{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); margin-top:6px !important}
+.campaign .lr-more summary{cursor:pointer; color:var(--gold); font-size:14px; min-height:36px; display:inline-flex; align-items:center}
+.campaign .lr-more p{font-size:14px; color:var(--vellum-soft); white-space:pre-wrap; margin-top:6px}
+.campaign .lr article{min-width:0; display:flex; flex-direction:column; gap:4px}
+.campaign .lr article.hid{background:var(--secret-bg); border:1px dashed var(--secret-line); border-radius:10px; padding:10px 12px}
+.campaign .lr article.hid > .hid-tag{align-self:flex-start; margin-bottom:4px}
+
+/* history as a timeline */
+.campaign .lr-time{display:grid; grid-template-columns:repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap:16px}
+.campaign .lr-era{border-top:3px solid var(--line-strong); padding-top:12px}
+.campaign .lr-era.hid{border-top:3px dashed var(--secret-line)}
+.campaign .lr-when{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold)}
+.campaign .lr-span{grid-column:1 / -1}
+
+/* places in their regions */
+.campaign .lr-region{display:flex; flex-direction:column; gap:10px}
+.campaign .lr-rhead{font-size:15px; color:var(--vellum)}
+.campaign .lr-cards{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(230px, 100%), 1fr)); gap:14px}
+.campaign .lr-card{overflow:hidden; border-radius:12px; background:var(--plate2); border:1px solid var(--line)}
+.campaign .lr-card.hid{padding:0}
+.campaign .lr-card.hid > .hid-tag{margin:10px 12px 0}
+.campaign .lr-card > .lr-editbtn{margin:0 14px 12px}
+.campaign .lr-pic{aspect-ratio:16/9; background:var(--plate); display:grid; place-items:center; overflow:hidden}
+.campaign .lr-pic img{width:100%; height:100%; object-fit:cover; display:block}
+.campaign .lr-cbody{display:flex; flex-direction:column; gap:4px; padding:12px 14px}
+.campaign .lr-plain .lr-cbody{padding:14px}
+.campaign .lr-type{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold)}
+
+/* factions, religions, bestiary, items: rows */
+.campaign .lr-row{flex-direction:row !important; flex-wrap:wrap; align-items:flex-start; gap:12px !important; background:var(--plate2); border:1px solid var(--line); border-radius:12px; padding:12px 14px}
+.campaign .lr-row > .hid-tag,.campaign .lr-row > .lr-editbtn{flex-basis:100%; max-width:max-content}
+.campaign .lr-rbody{flex:1 1 220px; min-width:0; display:flex; flex-direction:column; gap:4px}
+.campaign .lr-name{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:4px 10px}
+.campaign .lr-sym{flex:none; width:52px; height:52px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:var(--plate); border:1px solid var(--line); font-size:11px; color:var(--dim)}
+.campaign .lr-sym img{width:100%; height:100%; object-fit:cover}
+.campaign .lr-square{border-radius:10px}
+.campaign .lr-stand{font-size:12px; font-weight:600; color:var(--vellum-soft)}
+.campaign .lr-stand.friendly{color:var(--verd)}
+.campaign .lr-stand.hostile{color:var(--ember)}
+.campaign .lr-chips{display:flex; flex-wrap:wrap; gap:6px}
+.campaign .lr-chips span{font-size:13px; padding:3px 10px; border-radius:6px; background:var(--plate); border:1px solid var(--line); color:var(--vellum)}
+.campaign .lr-rarity{font-size:14px; color:var(--star)}
+.campaign .lr-facts{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px}
+.campaign .lr-facts li{display:flex; justify-content:space-between; gap:10px; font-size:14px; color:var(--vellum)}
+.campaign .lr-facts small{flex:none; font-size:12px; color:var(--dim)}
+.campaign .lr-facts .lr-unlearned span{color:var(--secret-text); font-style:italic}
+.campaign .lr-facts .lr-unknown span{color:var(--dim)}
+
+.campaign .lr-waiting{padding:14px 18px; border-radius:12px; border:1px dashed var(--line-strong); color:var(--vellum-soft); font-size:15px}
+
+/* the editor */
+.campaign .lr-edit{min-width:0}
+.campaign .lr-form{display:flex; flex-direction:column; gap:12px}
+.campaign .lr-links{border:0; padding:0; margin:0; display:flex; flex-wrap:wrap; gap:0 16px}
+.campaign .lr-links legend{padding:0; margin-bottom:4px; font-size:13px; color:var(--dim)}
+.campaign .lr-facts legend{font-size:13px; color:var(--dim)}
+.campaign fieldset.lr-facts{border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:0; gap:8px}
+.campaign .lr-fact{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+.campaign .lr-fact input:not([type=checkbox]){box-sizing:border-box; min-height:44px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
+.campaign .lr-fact input:first-child{flex:1 1 200px}
+.campaign .lr-fact input[type=number]{width:6rem}
+.campaign .lr-notes textarea{background:var(--secret-bg); border:1px dashed var(--secret-line)}
+.campaign .lr-vis .vis2{display:inline-flex; flex-wrap:wrap; align-items:center; gap:8px}
+.campaign .lr-ck{align-self:end}
+
+/* adding categories */
+.campaign .lr-pick button{min-height:40px; padding:0 12px; border-radius:999px; background:var(--plate2); border:1px solid var(--line); color:var(--vellum-soft); font:inherit; font-size:14px; cursor:pointer}
+.campaign .lr-own{display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px}
+.campaign .lr-own .f{flex:1 1 220px; margin:0}
+.campaign .lr-jumps a:focus-visible,.campaign .lr-addbtn:focus-visible,.campaign .lr-editbtn:focus-visible,.campaign .lr-quiet:focus-visible,.campaign .lr-pick button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+@media (max-width:480px){.campaign .lr-sec{padding:14px}}

@@ -400,6 +400,15 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 314. **The NPCs tab comes after Welcome**, before the campaign's own tabs, in the mockup's order. On phones, Home is only ever Welcome or the campaign's first tab, never another hub page.
 315. **The table tool's NPC list stays,** for campaigns without hub version 2. Both edit the same NPCs.
 
+## Hub version 2, item 11: the Lore page (19 October 2026)
+
+316. **Lore entries belong to a campaign, not to the homebrew library.** The plan (the newer text on issue 51) makes Lore a hub page; the first reading of the issue imagined reusable homebrew lore with drafts and packs. That is left for later, if Bryce wants it. Lore is a table-tool entry of kind `lore`, so it gets the one visibility rule, reveal triggers, the Reveals page and the reveal log for free.
+317. **One migration: entries accept the kind `lore`.** Nothing else in the database changes. Lore is not a Pro feature; naming players stays Pro, as for everything.
+318. **Categories and their fields are a list in the code** (`src/config/lore-categories.ts`), from the plan and Setup2Lore.png. The five starting ones are on for every campaign, including those made before. The DM adds any of the ten others, or names their own (general fields, shown as cards). A category with entries cannot be removed, so nothing is lost.
+319. **Each category has its own look:** history as a timeline (ordered by a position the DM sets), places nested in regions (a place of type Region holds the others), factions with leader, base, goal and party standing, religions with domain chips, a bestiary of what the party has learned, items with rarity and attunement. The rest are cards.
+320. **A creature's facts are not separate entries.** What the party has learned is on the creature itself; what it has not is with the DM-only secrets until the DM ticks it. A fact can therefore never be read while its creature is hidden. Players are told how many facts are left ("2 more"), as the mockup shows.
+321. **Left for later:** importing lore from a document (the switch is kept), in-world dates on the timeline from the calendar (item 15), and pins on the map from a place (item 16). Places link to the map page.
+
 ## Downloading a campaign before deleting it (20 October 2026)
 
 322. **Bryce chose a download over quietly removing a deleted campaign's pictures.** Before a campaign is deleted, a pop-up offers "Download everything first?": Download, Delete without downloading, or Keep the campaign. The owner can also download a copy at any time, beside the delete button. Deleting then removes everything of the campaign's from storage, its table-tool pictures included (maps, painted maps, NPC portraits, lore pictures), as Bryce asked once the download was offered.
