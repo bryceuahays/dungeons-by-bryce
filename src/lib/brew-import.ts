@@ -5,7 +5,7 @@
 
 import { SKILL_NAMES } from '@/config/homebrew';
 import { ALL_LANGUAGES } from '@/config/proficiencies';
-import { IMPORT_PROMPT, MECHANICS_FIRST, ab, abs, choiceOf, giveOf, int, parseClassImport, pickName, str, type ImportResult } from './class-import';
+import { IMPORT_PROMPT, MECHANICS_FIRST, SAVE_GIVES_DOC, ab, abs, choiceOf, giveOf, int, parseClassImport, pickName, str, type ImportResult } from './class-import';
 import { srdListFor, type SpellOption } from './class-spells';
 
 export const BREW_KINDS: [string, string][] = [
@@ -49,6 +49,7 @@ const GIVES_DOC = `"gives": [                                // what it adds to 
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "a spell", "cast": "free" | "perRest" (leave out for always prepared or known), "times": 1 | "proficiency", "recharge": "long" | "short", "onSelfOnly": true }   // "free": cast without a spell slot any time; "perRest": without a slot, "times" per rest
         | { "type": "extraAttacks", "attacks": 2, "with": "your pact weapon" }   // attacks per Attack action ("Extra Attack" is 2); leave "with" out for any weapon
+${SAVE_GIVES_DOC}
         | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": an ability key (like "str" or "cha") | "finesse", "reach": 5 (melee) OR "range": 30, "longRange": 120 (ranged or thrown), "when": "while transformed" }   // any attack of its own: a bite, claws, a summoned weapon
         // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
         | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }

@@ -17,7 +17,17 @@ export const MECHANICS_FIRST = `- MECHANICS FIRST. The website tracks rules on t
   "your Speed increases by 10 feet", "a Climb Speed" -> speed; "Darkvision 60 feet" -> sense; "attack twice when you take the Attack action" -> extraAttacks;
   "an extra 1d6 radiant damage" -> extraDamage; "+1 to saving throws" -> bonus; "+1 to Armor Class" -> armorClass; "proficiency in Stealth" -> proficiency;
   "you can cast Misty Step once per Long Rest" -> spell with "cast"; a bite, claws or summoned weapon -> naturalWeapon; a number that gets bigger with level -> grows;
-  "once per Long Rest", "a number of times equal to ...", points or charges -> a limited use (a resource, or "limit" where the format has it).`;
+  "once per Long Rest", "a number of times equal to ...", points or charges -> a limited use (a resource, or "limit" where the format has it);
+  "when you hit, the target makes a Strength saving throw or is knocked Prone" -> onHit; "each creature in a 15-foot cone makes a Dexterity saving throw, taking 2d6 fire damage, or half on a success" -> areaEffect;
+  "you regain 5 hit points at the start of each of your turns" -> healingEachTurn; "reduce the damage by 3" -> damageReduction; "you become Large" -> size.`;
+
+// the "gives" types for saves a hit or an area forces, healing each turn, damage reduction and size, in every format
+export const SAVE_GIVES_DOC = `        // a save a hit or an area forces: "save" is an ability key (leave it out if there is no save); the DC is 8 + Proficiency Bonus + "dcAbility"'s modifier, or a set "dc": 14
+        | { "type": "onHit", "with": "your bite" (leave out for any weapon attack), "oncePerTurn": true, "save": "str", "dcAbility": "con", "condition": "Prone", "duration": "until the end of your next turn", "damage": "2d6", "damageType": "poison", "when": "while transformed" }   // a condition, extra damage, or both
+        | { "type": "areaEffect", "name": "Screech", "shape": "cone" | "sphere" | "emanation" | "line" | "cube", "size": 15, "save": "con", "dcAbility": "con", "damage": "3d8", "damageByLevel": [[1, "2d6"], [11, "3d6"]] (only if it grows), "damageType": "thunder", "halfOnSuccess": true, "condition": "Deafened", "duration": "until the end of your next turn", "when": "as an action while transformed" }
+        | { "type": "healingEachTurn", "amount": 5 | "1d6" | "con" | "proficiency" | "level", "minimum1": true, "when": "while above 0 hit points" }   // hit points regained at the start of each of its turns
+        | { "type": "damageReduction", "amount": 3 | "con" | "proficiency" | "level", "minimum1": true, "damage": "all" | "bludgeoning, piercing and slashing" | "fire", "when": "while transformed" }
+        | { "type": "size", "size": "Large" | "larger" | "smaller", "when": "while transformed" }   // "larger": one size larger`;
 
 export const IMPORT_PROMPT = `I am going to give you my notes for a homebrew fifth edition class. Turn them into one JSON object in exactly the format below, so a website can fill in its class editor.
 
@@ -98,6 +108,7 @@ Format (every key is optional except "format"):
         | { "type": "bonus", "to": "save" | "check" | "attack" | "initiative" | "damage", "amount": 1 | "proficiency" | "cha", "when": "while in your aura" }
         | { "type": "spell", "name": "a spell", "cast": "free" | "perRest" (leave out for always prepared), "times": 1 | "proficiency", "recharge": "long" | "short", "onSelfOnly": true }   // "free": cast without a spell slot any time; "perRest": without a slot, "times" per rest
         | { "type": "extraAttacks", "attacks": 2, "with": "your pact weapon" }   // attacks per Attack action ("Extra Attack" is 2); leave "with" out for any weapon
+${SAVE_GIVES_DOC}
         | { "type": "naturalWeapon", "name": "Bite", "damage": "1d8", "damageByLevel": [[1, "1d8"], [11, "1d10"]] (only if the dice get bigger with level; leave out otherwise), "damageType": "piercing", "ability": an ability key (like "str" or "cha") | "finesse", "reach": 5 (melee) OR "range": 30, "longRange": 120 (ranged or thrown), "when": "while transformed" }   // any attack of its own: a bite, claws, a summoned weapon
         // drawbacks: an ability, speed or armor class "amount" or "bonus" may be negative (-2), and:
         | { "type": "disadvantage", "on": "save" | "check" | "attack" | "initiative", "ability": "cha", "when": "while in direct sunlight" }
@@ -291,6 +302,37 @@ export function giveOf(g: any, feature: string, notes: string[]): any {
       const cast = ['free', 'perRest'].includes(g.cast) ? g.cast : '';
       const n = g.times === 'proficiency' ? 'prof' : int(g.times, 1, 20) ?? 1;
       return { t: 'spell', name: str(g.name, 80), ...(cast ? { cast } : {}), ...(cast === 'perRest' ? { n, recharge: g.recharge === 'short' ? 'short' : 'long' } : {}), ...(cast && g.onSelfOnly ? { self: true } : {}) };
+    }
+    case 'onHit': case 'areaEffect': {
+      // the save it forces: an ability, and a DC of 8 + proficiency + an ability's modifier, or a set number
+      const save = ab(g.save) || '';
+      const dc = save ? (int(g.dc, 1, 30) ? { dcN: int(g.dc, 1, 30)! } : { dcAb: ab(g.dcAbility) || ab(g.save) }) : {};
+      const cond = str(g.condition, 30);
+      const dmg = str(g.damage).replace(/\s/g, '');
+      const steps = (Array.isArray(g.damageByLevel) ? g.damageByLevel : []).map((v: any) => [int(v?.[0], 1, 20) ?? 1, str(v?.[1], 12).replace(/\s/g, '')] as [number, string])
+        .filter((v: [number, string]) => /^\d*d\d+([+-]\d+)?$/i.test(v[1])).sort((x: [number, string], y: [number, string]) => x[0] - y[0]);
+      const hurt = /^\d*d\d+([+-]\d+)?$/i.test(dmg) || steps.length ? { damage: steps[0]?.[1] ?? dmg, ...(steps.length && g.type === 'areaEffect' ? { steps } : {}), ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}) } : {};
+      const rest = { ...(cond ? { condition: cond, ...(str(g.duration) ? { duration: str(g.duration, 80) } : {}) } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) };
+      if (!cond && !('damage' in hurt)) break;
+      if (g.type === 'onHit') return { t: 'onhit', ...(str(g.with) ? { with: str(g.with, 80) } : {}), ...(g.oncePerTurn ? { once: true } : {}), ...(save ? { save, ...dc } : {}), ...hurt, ...rest };
+      const shape = ['cone', 'sphere', 'emanation', 'line', 'cube'].includes(g.shape) ? g.shape : 'sphere';
+      return { t: 'area', name: str(g.name, 40), shape, size: int(g.size, 5, 500) ?? 15, ...(save ? { save, ...dc, ...(g.halfOnSuccess && 'damage' in hurt ? { half: true } : {}) } : {}), ...hurt, ...rest };
+    }
+    case 'healingEachTurn': case 'damageReduction': {
+      // an amount: a number, dice, an ability modifier, "proficiency" or "level"
+      const a = g.amount === 'proficiency' ? 'prof' : g.amount === 'level' ? 'level' : ab(g.amount) || (/^\d*d\d+$/i.test(str(g.amount).replace(/\s/g, '')) ? str(g.amount).replace(/\s/g, '') : int(g.amount, 1, 100));
+      if (!a) break;
+      const min1 = g.minimum1 && ab(g.amount) ? { min1: true } : {};
+      const when = str(g.when) ? { when: str(g.when, 120) } : {};
+      if (g.type === 'healingEachTurn') return { t: 'regen', amount: a, ...min1, ...when };
+      const d = str(g.damage).toLowerCase();
+      return { t: 'reduce', amount: a, ...min1, types: !d || d === 'all' ? 'all' : /bludgeoning.*piercing.*slashing|^bps$|nonmagical|physical/.test(d) ? 'bps' : d.split(/[ ,]/)[0], ...when };
+    }
+    case 'size': {
+      const s = str(g.size).toLowerCase();
+      const to = /larger|bigger|grow/.test(s) ? 'larger' : /smaller|shrink/.test(s) ? 'smaller' : ['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'].includes(s) ? s[0].toUpperCase() + s.slice(1) : '';
+      if (to) return { t: 'size', to, ...(str(g.when) ? { when: str(g.when, 120) } : {}) };
+      break;
     }
     case 'extraAttacks': { const n = int(g.attacks, 2, 8); if (n) return { t: 'attacks', n, ...(str(g.with) ? { with: str(g.with, 80) } : {}) }; break; }
     case 'extraDamage': { const dice = str(g.amount).replace(/\s/g, ''); const amount = /^\d*d\d+$/.test(dice) ? dice : ab(g.amount); if (amount) return { t: 'damage', amount, ...(str(g.damageType) ? { type: str(g.damageType, 20).toLowerCase() } : {}), ...(str(g.when) ? { when: str(g.when, 120) } : {}) }; break; }

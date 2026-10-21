@@ -42,7 +42,7 @@ test('signed in, it lists only the tools for looking and creating drafts', async
   const r = await call(a, 'tools/list');
   assert.equal(r.status, 200);
   const names = r.body.result.tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ['create_draft', 'get_entry', 'get_format', 'get_system', 'list_my_homebrew', 'list_my_systems', 'search_official', 'update_draft']);
+  assert.deepEqual(names, ['create_draft', 'get_entry', 'get_format', 'get_system', 'find_gaps', 'list_my_homebrew', 'list_my_systems', 'review_balance', 'search_official', 'update_draft', 'update_words'].sort());
 });
 
 test('it reads systems, the official rules and the format for a kind', async () => {
@@ -128,6 +128,90 @@ test('rules left as words only are pointed out, so the AI can make them mechanic
   const fx = row.data.benefits[0].effects;
   assert.deepEqual(fx.find((x) => x.t === 'attacks'), { t: 'attacks', n: 2 });
   assert.deepEqual(fx.find((x) => x.t === 'spell'), { t: 'spell', name: 'Misty Step', cast: 'perRest', n: 'prof', recharge: 'long' });
+});
+
+test('saves on a hit, areas, healing each turn, damage reduction and size come through as mechanics', async () => {
+  const description = 'When you hit with your bite, the target makes a Strength saving throw or has the Prone condition. Each creature in a 15-foot cone makes a Constitution saving throw. You regain 5 hit points at the start of each of your turns. Whenever you take damage, reduce it by 3. You become Large.';
+  const made = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Beastly Feat', category: 'General', benefits: [{ name: 'Beastly', description, gives: [
+    { type: 'onHit', with: 'your bite', oncePerTurn: true, save: 'str', dcAbility: 'con', condition: 'Prone', duration: 'until it stands up' },
+    { type: 'areaEffect', name: 'Screech', shape: 'cone', size: 15, save: 'con', dcAbility: 'con', damage: '2d8', damageByLevel: [[11, '3d8'], [1, '2d8']], damageType: 'thunder', halfOnSuccess: true },
+    { type: 'healingEachTurn', amount: 5, when: 'while above 0 hit points' },
+    { type: 'damageReduction', amount: 'con', minimum1: true, damage: 'bludgeoning, piercing and slashing' },
+    { type: 'size', size: 'larger', when: 'while transformed' },
+  ] }] } });
+  assert.equal(made.error, false, made.text);
+  assert.equal(made.json.mechanicsLeftAsText, undefined, JSON.stringify(made.json.mechanicsLeftAsText));
+  const fx = (await admin.from('entities').select('data').eq('id', made.json.id).single()).data.data.benefits[0].effects;
+  const by = (t) => fx.find((x) => x.t === t);
+  assert.deepEqual(by('onhit'), { t: 'onhit', with: 'your bite', once: true, save: 'str', dcAb: 'con', condition: 'Prone', duration: 'until it stands up' });
+  assert.deepEqual(by('area'), { t: 'area', name: 'Screech', shape: 'cone', size: 15, save: 'con', dcAb: 'con', half: true, damage: '2d8', steps: [[1, '2d8'], [11, '3d8']], type: 'thunder' });
+  assert.deepEqual(by('regen'), { t: 'regen', amount: 5, when: 'while above 0 hit points' });
+  assert.deepEqual(by('reduce'), { t: 'reduce', amount: 'con', min1: true, types: 'bps' });
+  assert.deepEqual(by('size'), { t: 'size', to: 'larger', when: 'while transformed' });
+  // and words alone are pointed out
+  const words = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Beastly Words', category: 'General', benefits: [{ name: 'Beastly', description }] } });
+  assert.deepEqual(words.json.mechanicsLeftAsText.map((m) => m.use).sort(), ['areaEffect', 'damageReduction', 'healingEachTurn', 'onHit', 'size']);
+});
+
+test('review_balance gives the editor\'s balance hint, the closest official entries and the heaviest parts', async () => {
+  const made = await tool(a, 'create_draft', { kind: 'race', entry: { type: 'race', name: 'Balance Folk', sizes: ['Medium'], speed: 30, traits: [
+    { name: 'Wings', description: 'You have a Fly Speed of 30 feet.', gives: [{ type: 'speed', kind: 'fly', feet: 30 }] },
+    { name: 'Hard Skin', description: 'You have Resistance to fire damage.', gives: [{ type: 'resistance', damage: 'fire' }] },
+    { name: 'Old Tales', description: 'You know many stories.' },
+  ] } });
+  assert.equal(made.error, false, made.text);
+  const r = await tool(a, 'review_balance', { id: made.json.id });
+  assert.equal(r.error, false, r.text);
+  assert.match(r.json.verdict, /official/);
+  assert.ok(r.json.reasons.length > 0);
+  assert.equal(typeof r.json.points, 'number');
+  assert.equal(r.json.closest_official.length, 5);
+  assert.equal(r.json.heaviest_parts[0].name, 'Wings');
+  // another account's entry cannot be reviewed
+  assert.equal((await tool(b, 'review_balance', { id: made.json.id })).error, true);
+});
+
+test('find_gaps finds classes with no subclasses, lost subclasses, spells that do not exist and missing words', async () => {
+  const ins = async (type, name, data, status = 'draft') => (await admin.from('entities').insert({ type, name, slug: 'gap-' + name.toLowerCase().replace(/\W+/g, '-'), status, depth: 'advanced', source: 'homebrew', owner_id: a.id, data }).select('id').single()).data.id;
+  await ins('class', 'Lonely Class', { desc: 'A class.', hd: 8, features: [{ level: 1, name: 'Start', text: 'Words.' }] });
+  await ins('subclass', 'Lost Path', { desc: 'A path.', parent: 'Nowhere Class', features: [{ level: 3, name: 'Silent', text: '' }] });
+  await ins('feat', 'Spelly Feat', { benefits: [{ name: 'Magic', text: 'You can cast a spell.', effects: [{ t: 'spell', name: 'Not A Real Spell' }] }], effects: [{ t: 'spell', name: 'Not A Real Spell' }] }, 'live');
+  const g = await tool(a, 'find_gaps', {});
+  assert.equal(g.error, false, g.text);
+  assert.ok(g.json.classes_without_subclasses.some((x) => x.name === 'Lonely Class'));
+  assert.ok(g.json.subclasses_without_their_class.some((x) => x.name === 'Lost Path' && x.class_named === 'Nowhere Class'));
+  assert.ok(g.json.spells_that_do_not_exist.some((x) => x.spell === 'Not A Real Spell'));
+  assert.ok(g.json.no_description.some((x) => x.name === 'Spelly Feat'));
+  assert.ok(g.json.parts_with_no_words.some((x) => x.part === 'Silent'));
+  assert.ok(g.json.drafts_waiting.some((x) => x.name === 'Lonely Class'));
+  assert.ok(!g.json.drafts_waiting.some((x) => x.name === 'Spelly Feat'), 'a live entry is not a waiting draft');
+  // a class that has a subclass is not reported; only one kind can be asked for
+  const only = await tool(a, 'find_gaps', { kind: 'feat' });
+  assert.equal(only.json.classes_without_subclasses, undefined);
+  assert.ok(only.json.drafts_waiting.every((x) => x.kind === 'Feat'));
+});
+
+test('update_words changes only words: every rule stays, and only on drafts', async () => {
+  const made = await tool(a, 'create_draft', { kind: 'feat', entry: { type: 'feat', name: 'Wordsmith', category: 'General', description: 'Old.', benefits: [
+    { name: 'Tough', description: 'Old tough.', gives: [{ type: 'hitPointsPerLevel', amount: 1 }] },
+  ] } });
+  const before = (await admin.from('entities').select('data').eq('id', made.json.id).single()).data.data;
+  const up = await tool(a, 'update_words', { id: made.json.id, description: 'A feat of stubborn people.', parts: [{ name: 'tough', description: 'Your body refuses to quit.' }, { name: 'Nope', description: 'x' }] });
+  assert.equal(up.error, false, up.text);
+  assert.deepEqual(up.json.changed, ['description', 'Tough']);
+  assert.deepEqual(up.json.not_found, ['Nope']);
+  const after = (await admin.from('entities').select('data').eq('id', made.json.id).single()).data.data;
+  assert.equal(after.desc, 'A feat of stubborn people.');
+  assert.equal(after.benefits[0].text, 'Your body refuses to quit.');
+  assert.deepEqual(after.benefits[0].effects, before.benefits[0].effects, 'the rules are untouched');
+  assert.deepEqual(after.effects, before.effects);
+  // not on a finished entry, not on a spell, not someone else's
+  assert.equal((await tool(b, 'update_words', { id: made.json.id, description: 'Mine now.' })).error, true);
+  await admin.from('entities').update({ status: 'live' }).eq('id', made.json.id);
+  assert.match((await tool(a, 'update_words', { id: made.json.id, description: 'Late.' })).text, /not a draft/);
+  const spell = await tool(a, 'create_draft', { kind: 'spell', entry: { type: 'spell', name: 'Wordy Bolt', level: 1, school: 'Evocation', castingTime: 'Action', range: '60 feet', components: ['V'], duration: 'Instantaneous', description: 'A bolt.' } });
+  assert.equal(spell.error, false, spell.text);
+  assert.match((await tool(a, 'update_words', { id: spell.json.id, description: 'Nicer.' })).text, /update_draft/);
 });
 
 test('it will not make a second entry of the same name: it is pointed to update_draft instead', async () => {
