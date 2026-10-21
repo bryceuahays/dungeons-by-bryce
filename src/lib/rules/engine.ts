@@ -42,6 +42,19 @@ export type Effect = { at?: number } & (
   // or ranged when it has a range (feet, and a long range it can still hit at with Disadvantage)
   | { t: 'weapon'; name: string; dice: string; steps?: [number, string][]; type?: string; ab?: string; reach?: number; range?: { normal: number; long?: number }; when?: string }
   | { t: 'hazard'; amount: string | number; type?: string; every: 'turn' | 'minute' | 'hour' | 'once'; when?: string } // damage it takes, like in sunlight
+  // What the target of a hit, or the creatures in an area, must save against. The DC is 8 + proficiency + an
+  // ability's modifier (dcAb), or a set number (dcN). No save: it simply happens.
+  // on a hit: with (blank: any weapon attack), once per turn or every hit; a condition, extra damage, or both
+  | { t: 'onhit'; with?: string; save?: string; dcAb?: string; dcN?: number; condition?: string; duration?: string; damage?: string; type?: string; once?: boolean; when?: string }
+  // an area: a cone, a sphere or emanation around you, a line or a cube, of so many feet; damage (dice, or dice by
+  // level in steps) with half on a success, and/or a condition
+  | { t: 'area'; name: string; shape: 'cone' | 'sphere' | 'emanation' | 'line' | 'cube'; size: number; save?: string; dcAb?: string; dcN?: number; damage?: string; steps?: [number, string][]; type?: string; half?: boolean; condition?: string; duration?: string; when?: string }
+  // hit points regained at the start of each of its turns: a number, dice, an ability modifier, 'prof' or 'level'
+  | { t: 'regen'; amount: string | number; min1?: boolean; when?: string }
+  // damage taken is reduced by an amount (as above); types: 'all', 'bps' (bludgeoning, piercing and slashing) or one type
+  | { t: 'reduce'; amount: string | number; min1?: boolean; types?: string; when?: string }
+  // its size: a set size, or one size larger ('larger') or smaller ('smaller')
+  | { t: 'size'; to: string; when?: string }
   | { t: 'attacks'; n: number; with?: string } // attacks per Attack action
   | { t: 'damage'; amount: string; type?: string; when?: string } // extra damage: dice ("1d8") or an ability modifier ("cha")
   | { t: 'scale'; name: string; steps: [number, string][] }
@@ -244,6 +257,23 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
     return { name: x.name, toHit: m + prof, damage: dice ? dice + (m ? (m > 0 ? ' + ' : ' − ') + Math.abs(m) : '') : '', type: x.type ?? '', reach: Number(x.reach) || 5,
       range: Number(x.range?.normal) > 0 ? { normal: Number(x.range!.normal), long: Number(x.range!.long) || 0 } : null, when: x.when ?? '', from: x.from };
   });
+  // saves it forces: the DC (8 + proficiency + an ability's modifier, or a set number) and the save's ability name
+  const dcOf = (x: { dcAb?: string; dcN?: number }) => (Number(x.dcN) > 0 ? Number(x.dcN) : 8 + prof + (x.dcAb && x.dcAb in mods ? mods[x.dcAb as Ability] : 0));
+  const abName = (k?: string) => (k ? sys.abilities.find((a) => a.key === k)?.label ?? k : '');
+  const onHits = of('onhit').map((x) => ({ with: x.with ?? '', save: x.save ? abName(x.save) : '', dc: x.save ? dcOf(x) : 0, condition: x.condition ?? '', duration: x.duration ?? '',
+    damage: x.damage ?? '', type: x.type ?? '', once: !!x.once, when: x.when ?? '', from: x.from }));
+  const areas = of('area').map((x) => ({ name: x.name, shape: x.shape, size: Number(x.size) || 0, save: x.save ? abName(x.save) : '', dc: x.save ? dcOf(x) : 0,
+    damage: Array.isArray(x.steps) && x.steps.length ? scaleAt(x.steps, level) : x.damage ?? '', type: x.type ?? '', half: !!x.half, condition: x.condition ?? '', duration: x.duration ?? '', when: x.when ?? '', from: x.from }));
+  // an amount that may be dice ("1d6", rolled on the sheet) or a number worked out here (a modifier, proficiency, level)
+  const amountText = (a: string | number, min1?: boolean) => (/^\d*d\d+([+-]\d+)?$/i.test(String(a).replace(/\s/g, '')) ? String(a).replace(/\s/g, '')
+    : String(a === 'level' ? level : min1 ? Math.max(1, amountOf(a)) : amountOf(a)));
+  const regen = of('regen').map((x) => ({ amount: amountText(x.amount, x.min1), when: x.when ?? '', from: x.from }));
+  const reduce = of('reduce').map((x) => ({ amount: Number(amountText(x.amount, x.min1)) || 0, types: x.types || 'all', when: x.when ?? '', from: x.from }));
+  const SIZES = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'];
+  const baseSize = String(race?.data.size || race?.data.sizes?.[0] || 'Medium').split(/[ ,]/)[0];
+  const sizes = of('size').map((x) => { const i = SIZES.indexOf(baseSize); return { to: x.to === 'larger' ? SIZES[Math.min(5, i + 1)] : x.to === 'smaller' ? SIZES[Math.max(0, i - 1)] : x.to, when: x.when ?? '', from: x.from }; });
+  // a size change with no "when" is just its size
+  const size = sizes.find((s) => !s.when)?.to ?? baseSize;
   const granted = [...of('spell').map((x) => ({ name: x.name, from: x.from })),
     ...picked.filter((p) => p.from === 'spells').flatMap((p) => p.v.map((id) => ({ name: byId.get(id)?.name ?? '', from: p.who }))).filter((g) => g.name)];
   const riders = [...of('text').map((x) => ({ text: x.text, from: x.from })), ...picked.filter((p) => p.from === 'weapons').map((p) => ({ text: p.v.join(', '), from: p.who }))];
@@ -266,7 +296,7 @@ export function derive(c: CharacterV2, entities: Entity[], sys: RulesSystem = FI
   // entries that changed since this character last looked at them
   const changed = chosen.filter((e) => e.source !== 'srd' && (e.version ?? 1) > ((c.seen ?? {})[e.id] ?? 1)).map((e) => ({ id: e.id, name: e.name, version: e.version ?? 1, note: e.change_note ?? '' }));
 
-  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, vulnerable, weapons, disadvantages, hazards, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: agile + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? skills.find((s) => s.passive)?.bonus ?? 0), passives: skills.filter((s) => s.passive).map((s) => ({ name: s.name, value: 10 + s.bonus })), abilities: sys.abilities, casting, changed, cls, race, chosen };
+  return { level, scores, mods, prof, saves, skills, profs, speed, senses, resist, immune, vulnerable, weapons, onHits, areas, regen, reduce, size, sizes: sizes.filter((s) => s.when), disadvantages, hazards, resources, scales, granted, riders, features, hd, hpMax, hpAuto, ac, initiative: agile + bonusTo('initiative'), passive: 10 + (skills.find((s) => s.name === 'Perception')?.bonus ?? skills.find((s) => s.passive)?.bonus ?? 0), passives: skills.filter((s) => s.passive).map((s) => ({ name: s.name, value: 10 + s.bonus })), abilities: sys.abilities, casting, changed, cls, race, chosen };
 }
 
 // ---------------------------------------------------------------- class table (levels 1 to 20)
@@ -314,6 +344,11 @@ export function effectPoints(x: Effect): number {
     case 'weapon': return 1;
     case 'penalty': return -Math.abs(Number(x.amount) || 1) / 2;
     case 'hazard': return x.every === 'once' ? -0.5 : -2;
+    case 'onhit': return x.condition && x.damage ? 2 : 1.5;
+    case 'area': return 2;
+    case 'regen': return 3;
+    case 'reduce': return 2;
+    case 'size': return 0.5;
     case 'condition': return 1;
     case 'speed': return x.mode === 'fly' ? 3 : x.mode === 'walk' ? Number(x.n) / 10 : 1;
     case 'sense': return Number(x.n) >= 120 ? 1 : 0.5;

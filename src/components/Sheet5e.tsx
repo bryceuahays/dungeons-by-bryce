@@ -89,6 +89,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
         )}
         <div className="s5-stat">Armor class<b>{d.ac}</b></div>
         <div className="s5-stat">Initiative<b>{sgn(d.initiative)}</b></div>
+        <div className="s5-stat">Size<b>{d.size}</b><small>{d.sizes.map((s) => `${s.to} ${s.when}`).join(', ')}</small></div>
         <div className="s5-stat">Speed<b>{d.speed.walk} ft</b><small>{Object.entries(d.speed).filter(([k]) => k !== 'walk').map(([k, v]) => `${k} ${v}`).join(', ')}</small></div>
         {system?.rules.prof === 'none' ? null : <div className="s5-stat">Proficiency<b>+{d.prof}</b></div>}
         {(system ? d.passives : [{ name: 'Perception', value: d.passive }]).map((p) => <div key={p.name} className="s5-stat">Passive {p.name}<b>{p.value}</b></div>)}
@@ -108,10 +109,15 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
     let t = 0; for (let i = 0; i < Math.min(20, Number(m[1]) || 1); i++) t += 1 + Math.floor(Math.random() * Number(m[2]));
     return Math.max(0, t + (Number(m[3]) || 0));
   };
+  // damage reduction that always applies to this type (Thick Hide); one with a "when" is the player's call
+  const BPS = ['bludgeoning', 'piercing', 'slashing'];
+  const reducedBy = (type: string) => d.reduce.filter((r) => !r.when && (r.types === 'all' || (r.types === 'bps' ? BPS.includes(type) : r.types === type))).reduce((n, r) => n + r.amount, 0);
   const takeHazard = (h: (typeof d.hazards)[number]) => {
     const rolled = rollAmount(h.amount);
-    const n = d.immune.includes(h.type) ? 0 : d.vulnerable.includes(h.type) ? rolled * 2 : d.resist.includes(h.type) ? Math.floor(rolled / 2) : rolled;
-    const how = d.immune.includes(h.type) ? ' (immune)' : d.vulnerable.includes(h.type) ? ' (doubled: vulnerable)' : d.resist.includes(h.type) ? ' (halved: resistant)' : '';
+    const less = d.immune.includes(h.type) ? 0 : reducedBy(h.type);
+    const after = Math.max(0, rolled - less);
+    const n = d.immune.includes(h.type) ? 0 : d.vulnerable.includes(h.type) ? after * 2 : d.resist.includes(h.type) ? Math.floor(after / 2) : after;
+    const how = (less ? ` (${less} less: damage reduction)` : '') + (d.immune.includes(h.type) ? ' (immune)' : d.vulnerable.includes(h.type) ? ' (doubled: vulnerable)' : d.resist.includes(h.type) ? ' (halved: resistant)' : '');
     if (wounds) { if (n > 0) up({ wounds: Math.min(system!.health.wounds, woundsTaken + 1) } as any); setTook(n > 0 ? `Rolled ${rolled}${how}: one wound marked.` : `Rolled ${rolled}${how}: no wound.`); return; }
     const temp = Number(c.temp) || 0, fromTemp = Math.min(temp, n);
     up({ temp: temp - fromTemp, hp: Math.max(0, hp - (n - fromTemp)) });
@@ -131,12 +137,49 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
     </section>
   ) : null;
 
-  // natural weapons (a bite, claws): to hit and damage worked out by the rules engine
-  const attacks = d.weapons.length ? (
+  // natural weapons (a bite, claws): to hit and damage worked out by the rules engine; what a hit can also do,
+  // and areas it can fill (a breath weapon, a screech), with their save DCs worked out
+  const saveText = (x: { save: string; dc: number; condition: string; duration: string; damage: string; type: string; half?: boolean }) => {
+    const hurt = x.damage ? `${x.damage}${x.type ? ' ' + x.type : ''} damage` : '';
+    const what = [hurt, x.condition ? `the ${x.condition} condition${x.duration ? ' ' + x.duration : ''}` : ''].filter(Boolean).join(' and ');
+    if (!x.save) return what ? `it takes ${what}` : '';
+    return `DC ${x.dc} ${x.save} saving throw: on a failure, ${what || 'the effect'}${x.half && x.damage ? `; on a success, half the damage${x.condition ? ' and no condition' : ''}` : ''}`;
+  };
+  const SHAPE: Record<string, string> = { cone: 'cone', sphere: 'radius sphere', emanation: 'emanation', line: 'line', cube: 'cube' };
+  const attacks = d.weapons.length || d.onHits.length || d.areas.length ? (
     <section className="s5-block">
       <h3>Attacks</h3>
       {d.weapons.map((w, i) => (
         <p key={w.name + i} className="kv"><b>{w.name}</b> {sgn(w.toHit)} to hit, {w.damage || '?'}{w.type ? ' ' + w.type : ''}{w.range ? `, range ${w.range.normal}${w.range.long ? '/' + w.range.long : ''} ft` : w.reach > 5 ? `, reach ${w.reach} ft` : ''}{w.when ? <small> ({w.when})</small> : null} <small>· {w.from}</small></p>
+      ))}
+      {d.onHits.map((h, i) => (
+        <p key={'o' + i} className="kv"><b>On a hit{h.with ? ' with ' + h.with.replace(/^(with )/i, '') : ''}</b>{h.once ? ' (once per turn)' : ''}: {saveText(h)}{h.when ? <small> ({h.when})</small> : null} <small>· {h.from}</small></p>
+      ))}
+      {d.areas.map((a, i) => (
+        <p key={'a' + i} className="kv"><b>{a.name || 'Area'}</b> {a.size ? `${a.size}-foot ${SHAPE[a.shape] ?? a.shape}` : SHAPE[a.shape] ?? a.shape}: each creature in it, {saveText(a)}{a.when ? <small> ({a.when})</small> : null} <small>· {a.from}</small></p>
+      ))}
+    </section>
+  ) : null;
+
+  // healing each turn (Heal it rolls it and adds it, up to the maximum) and damage reduction
+  const [healed, setHealed] = useState('');
+  const heal = (r: (typeof d.regen)[number]) => {
+    const n = rollAmount(r.amount);
+    if (wounds) { setHealed(n > 0 && woundsTaken ? 'One wound healed.' : 'Nothing to heal.'); if (n > 0 && woundsTaken) up({ wounds: woundsTaken - 1 } as any); return; }
+    const to = Math.min(d.hpMax, hp + n);
+    up({ hp: to });
+    setHealed(`Regained ${to - hp} hit points${to === d.hpMax ? ' (at the maximum)' : ''}.`);
+  };
+  const TYPES: Record<string, string> = { all: 'all damage', bps: 'bludgeoning, piercing and slashing damage' };
+  const protection = d.regen.length || d.reduce.length ? (
+    <section className="s5-block">
+      <h3>Healing and protection</h3>
+      {d.regen.map((r, i) => (
+        <p key={'g' + i} className="kv"><b>Regains {r.amount} hit points</b> at the start of each of its turns{r.when ? ' ' + r.when : ''} <small>({r.from})</small> {readOnly ? null : <button type="button" className="act sm" onClick={() => heal(r)}>Heal it</button>}</p>
+      ))}
+      {healed ? <p className="who" role="status">{healed}</p> : null}
+      {d.reduce.map((r, i) => (
+        <p key={'r' + i} className="kv"><b>Damage taken is reduced by {r.amount}</b> ({TYPES[r.types] ?? r.types + ' damage'}){r.when ? ' ' + r.when : ''} <small>({r.from})</small></p>
       ))}
     </section>
   ) : null;
@@ -256,7 +299,7 @@ export function Sheet5e({ character, entities, readOnly = false, play = false, s
         <p key={ch.id} className="s5-changed" role="status"><b>{ch.name} was updated</b> (version {ch.version}){ch.note ? ': ' + ch.note : '.'} {readOnly ? null : <button type="button" className="act sm" onClick={() => up({ seen: { ...(c.seen ?? {}), [ch.id]: ch.version } })}>Got it</button>}</p>
       ))}
       <h2 className="s5-name">{c.name || 'Unnamed character'} <small>Level {d.level} {d.race?.name ?? c.race} {d.cls?.name ?? c.cls}</small></h2>
-      {play ? <>{vitals}{attacks}{drawbacks}{resources}{magic}{features}{abilities}</> : <>{identity}{vitals}{attacks}{drawbacks}{abilities}{defence}{resources}{magic}{features}{notes}</>}
+      {play ? <>{vitals}{attacks}{protection}{drawbacks}{resources}{magic}{features}{abilities}</> : <>{identity}{vitals}{attacks}{protection}{drawbacks}{abilities}{defence}{resources}{magic}{features}{notes}</>}
     </fieldset>
   );
 }
