@@ -1,0 +1,6 @@
+/* "Continue with Google" and the like, above the email form on Sign in and Create an account */
+.sign-in-with { display: grid; gap: .5rem; margin: 0 0 1rem; }
+.hub button.sign-in-with-btn { display: flex; align-items: center; justify-content: center; gap: .6rem; width: 100%; color: var(--h-text); background: var(--h-field); text-transform: none; letter-spacing: normal; }
+.sign-in-with-btn svg { flex: none; }
+.sign-in-with-or { display: flex; align-items: center; gap: .75rem; margin: .5rem 0 0; font-size: .9rem; }
+.sign-in-with-or::before, .sign-in-with-or::after { content: ""; flex: 1; border-top: 1px solid var(--h-line); }

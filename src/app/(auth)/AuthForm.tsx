@@ -2,8 +2,11 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { signIn, signUp, type AuthState } from './actions';
+import { ProviderButtons } from '@/features/sign-in-with/ProviderButtons';
+import type { Provider } from '@/features/sign-in-with/providers';
 
-export function AuthForm({ mode, next }: { mode: 'in' | 'up'; next?: string }) {
+// providers: the "Continue with Google" buttons switched on in Supabase; error: why signing in with one did not finish
+export function AuthForm({ mode, next, providers = [], error }: { mode: 'in' | 'up'; next?: string; providers?: Provider[]; error?: string }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(mode === 'in' ? signIn : signUp, null);
   const q = next ? '?next=' + encodeURIComponent(next) : '';
   const joining = !!next && next.startsWith('/join/');
@@ -12,6 +15,8 @@ export function AuthForm({ mode, next }: { mode: 'in' | 'up'; next?: string }) {
       <div className="box" style={{ textAlign: 'left', width: '100%', maxWidth: 400 }}>
         <p><Link className="hub-name" href="/">Dungeons by Bryce</Link></p>
         <h1 style={{ fontSize: '1.5rem' }}>{mode === 'in' ? 'Sign in' : 'Create an account'}</h1>
+        {error ? <p className="bad" role="alert">{error}</p> : null}
+        <ProviderButtons providers={providers} next={next} />
         <form action={action} className="panel">
           {next ? <input type="hidden" name="next" value={next} /> : null}
           {mode === 'up' ? <label>Your name<input name="display_name" autoComplete="name" required maxLength={60} /></label> : null}

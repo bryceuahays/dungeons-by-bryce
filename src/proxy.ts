@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const PUBLIC = new Set(['/', '/sign-in', '/sign-up', '/robots.txt', '/sitemap.xml', '/opengraph-image']);
+// /auth/callback: the way back from signing in with Google, Discord and the like (src/features/sign-in-with)
+const PUBLIC = new Set(['/', '/sign-in', '/sign-up', '/auth/callback', '/robots.txt', '/sitemap.xml', '/opengraph-image']);
 // Public sections of the site. /join sends a signed-out visitor to sign-up itself, keeping the code.
 // Connect your AI (src/features/connector): the connector and its discovery document are reached with
 // the AI app's own token, not a site cookie; the consent screen sends a signed-out DM to sign in itself.
