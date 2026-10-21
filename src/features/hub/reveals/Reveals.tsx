@@ -10,6 +10,7 @@ import { visDefaults } from '@/features/hub/settings/defaults';
 import { schedule, type BlockRow, type BrewRow, type EntryRow } from './schedule';
 import { SessionStep } from './SessionStep';
 import { BlockWhen, EntryWhen, PlotSecretForm, RevealNowButton } from './RevealsForms';
+import { Inbox, type InboxThread } from './Inbox';
 import '@/features/hub/ui/hidden.css';
 import './reveals.css';
 
@@ -18,7 +19,8 @@ import './reveals.css';
 // a player, and a DM previewing as one, get "not found". Everything here is read with the DM's
 // own login; nothing on it is ever sent to a player.
 //
-// The inbox of players' messages ("From your players") waits for player messages, a later item.
+// Beside it, "From your players": players' private messages to the DM (issue 120), for the owner and
+// co-DMs who may "Read player messages". Opening the page marks them seen.
 export async function Reveals({ slug }: { slug: string }) {
   const ctx = await getCampaign(slug);
   if (!ctx.realDm || ctx.asPlayer) notFound();
@@ -57,6 +59,25 @@ export async function Reveals({ slug }: { slug: string }) {
   const may = (type: string) => writable && (type === 'entry' ? perms.reveal : perms.edit);
   const total = groups.reduce((n, g) => n + g.items.length, 0);
 
+  // players' messages, grouped by player, newest first
+  const inboxOn = hasFeature(settings, 'reveals.inbox') && (ctx.isOwner || (ctx.coDm && perms.messages));
+  let threads: InboxThread[] = [], fresh = 0;
+  if (inboxOn) {
+    const [{ data: notes }, { data: party }] = await Promise.all([
+      supabase.from('player_notes').select('id, user_id, kind, body, created_at, read_at').eq('campaign_id', campaign.id).in('kind', ['to_dm', 'from_dm']).order('created_at', { ascending: false }).limit(200),
+      supabase.rpc('party_shared', { c: campaign.id }),
+    ]);
+    const nameOf = (u: string) => ((party ?? []) as any[]).find((p) => p.owner === u)?.name || members.find((m) => m.user_id === u)?.display_name || 'A player';
+    const by = new Map<string, InboxThread>();
+    for (const n of (notes ?? []) as any[]) {
+      if (!by.has(n.user_id)) by.set(n.user_id, { player: n.user_id, name: nameOf(n.user_id), items: [] });
+      by.get(n.user_id)!.items.push({ id: n.id, mine: n.kind === 'from_dm', body: n.body, at: n.created_at, fresh: n.kind === 'to_dm' && !n.read_at });
+    }
+    threads = [...by.values()].filter((t) => t.items.some((i) => !i.mine));
+    fresh = ((notes ?? []) as any[]).filter((n) => n.kind === 'to_dm' && !n.read_at).length;
+    if (fresh && writable) await supabase.rpc('mark_messages_read', { c: campaign.id });
+  }
+
   return (
     <div className="cs-guide">
       <div className="wrap rv">
@@ -68,11 +89,12 @@ export async function Reveals({ slug }: { slug: string }) {
           {hasFeature(settings, 'reveals.plot') && writable && perms.edit ? <PlotSecretForm slug={campaign.slug} /> : null}
         </header>
 
+        <div className={inboxOn ? 'rv-cols' : ''}>
+        <div className="rv-main">
         {!hasFeature(settings, 'reveals.schedule') ? <p className="rv-dim">The reveal schedule is switched off for this campaign (Campaign settings, Pages and features).</p>
           : !total ? <p className="rv-empty">Nothing is waiting to be revealed. Everything in this campaign is already out for the players it is meant for.</p> : (
             <p className="rv-dim">{total} {total === 1 ? 'thing is' : 'things are'} hidden. Sessions, chapters and story beats reveal them on their own; you can also reveal any of them now.</p>
           )}
-
         {groups.map((g) => {
           const s = g.session !== null ? (sessions ?? []).find((x: any) => Number(x.number) === g.session) : null;
           const waiting = { started: g.items.filter((i) => i.key.endsWith(':started')).length, played: g.items.filter((i) => i.key.endsWith(':played')).length };
@@ -106,6 +128,9 @@ export async function Reveals({ slug }: { slug: string }) {
             </section>
           );
         })}
+        </div>
+        {inboxOn ? <Inbox slug={campaign.slug} threads={threads} fresh={fresh} canSave={writable && perms.edit && hasFeature(settings, 'reveals.plot')} /> : null}
+        </div>
       </div>
     </div>
   );

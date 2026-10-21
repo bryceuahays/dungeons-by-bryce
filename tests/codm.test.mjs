@@ -51,7 +51,7 @@ test('nothing stored means everything; a shorter list means exactly that list', 
   assert.equal(presetOf({ ...PRESETS[1].perms, players: true }), 'custom');
   assert.deepEqual([PRESETS[1].perms.see_hidden, PRESETS[1].perms.combat, PRESETS[1].perms.private_rolls, PRESETS[1].perms.edit], [false, true, true, false]);
   for (const p of PRESETS.filter((x) => x.perms)) assert.deepEqual(cleanPerms(p.perms), p.perms, p.name + ' is a choice that can be stored as it is');
-  assert.deepEqual(NOT_YET, ['handouts', 'messages', 'recaps']);
+  assert.deepEqual(NOT_YET, ['handouts', 'recaps'], 'player messages are built (issue 120)');
 });
 
 // ------------------------------------------------------------------ real accounts

@@ -62,3 +62,22 @@
 .br-people input[type=checkbox]:checked::after{content:""; width:4px; height:9px; border:solid var(--void); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}
 .br-who input:disabled{opacity:.5; cursor:default}
 .br-who input:focus-visible,.br-people input:focus-visible{outline:2px solid var(--secret); outline-offset:2px}
+
+/* "From your players" beside the schedule (Secrets.png) */
+.campaign .rv-cols{display:grid; grid-template-columns:minmax(0, 1fr) minmax(260px, 340px); gap:18px; align-items:start}
+.campaign .rv-main{display:flex; flex-direction:column; gap:18px; min-width:0}
+.campaign .rv-inbox{background:var(--plate); border:1px solid var(--line); border-radius:14px; padding:16px 18px; display:flex; flex-direction:column; gap:12px; min-width:0}
+.campaign .rv-inbox .rv-head h2{font-size:1.3rem}
+.campaign .rv-new{font-size:12px; font-weight:700; padding:2px 10px; border-radius:999px; background:var(--gold); color:var(--on-gold)}
+.campaign .rv-msg{display:flex; flex-direction:column; gap:6px; padding:12px; border-radius:10px; background:var(--plate2); border:1px solid transparent}
+.campaign .rv-msg.fresh{background:var(--gold-tint); border-color:color-mix(in srgb, var(--gold) 45%, transparent)}
+.campaign .rv-msg-top{display:flex; justify-content:space-between; gap:8px; font-size:14px; color:var(--vellum)}
+.campaign .rv-msg-top small{color:var(--dim); font-size:12px}
+.campaign .rv-msg ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px}
+.campaign .rv-msg li{font-size:14px; color:var(--vellum-soft); white-space:pre-wrap; overflow-wrap:anywhere; display:flex; flex-direction:column}
+.campaign .rv-msg li.mine{padding-left:10px; border-left:2px solid var(--secret); color:var(--dim)}
+.campaign .rv-msg li small{font-size:11px; color:var(--dim)}
+.campaign .rv-msg-acts{display:flex; flex-wrap:wrap; gap:8px; margin:2px 0 0}
+.campaign .rv-msg textarea{box-sizing:border-box; width:100%; padding:8px 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px}
+.campaign .rv-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+@media (max-width:960px){.campaign .rv-cols{grid-template-columns:minmax(0, 1fr)}}
