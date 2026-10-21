@@ -13,7 +13,7 @@ export async function enabledProviders(): Promise<Provider[]> {
   try {
     const res = await fetch(process.env.NEXT_PUBLIC_SUPABASE_URL + '/auth/v1/settings', {
       headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-      next: { revalidate: 300 }, // a provider switched on shows within five minutes
+      next: { revalidate: 60 }, // a provider switched on shows within a minute
     });
     if (!res.ok) return [];
     const external = ((await res.json()) as { external?: Record<string, boolean> }).external ?? {};
