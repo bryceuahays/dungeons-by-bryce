@@ -282,6 +282,10 @@ A DM chooses which hub pages a campaign has, and which features each page has (M
 
 The owner can download everything in a campaign as one .zip (`src/features/campaign-export/`), and is offered it in a pop-up before deleting. The server (`exportCampaign`, owner only) gathers the campaign's data with the owner's own login, plus one-hour signed links to its pictures; the browser fetches those and builds the .zip with `fflate`, because a whole campaign's pictures are more than one Vercel response may carry. Deleting a campaign then removes all of its files (`removeCampaignFiles` in `src/lib/campaign-admin.ts`; the table tools' folders are `CAMPAIGN_FILE_DIRS`). Anything new a campaign keeps (a table, a storage folder) belongs in the download and in that cleanup: add it to `actions.ts`, `model.ts` and `CAMPAIGN_FILE_DIRS`.
 
+## Deleting an Account
+
+Anyone can delete their own account from the Account page (`src/features/account-delete/`), after a pop-up offering a download of everything they made (`exportAccount` in `src/features/campaign-export/actions.ts`: each of their campaigns as a campaign download, their characters, homebrew, game systems, worlds, their own notes and their pictures). `deleteMyAccount` refuses the Head DM's account and a store seller's while they have products, cancels an active Pro subscription at Stripe first (and refuses if it cannot), removes every file the account and its campaigns keep, then deletes the auth user; the database removes the rest. Anything new an account keeps belongs in both.
+
 ## Feature Flags
 
 Unfinished work is merged to `main` behind a flag, so it can go in small pieces without players seeing it.

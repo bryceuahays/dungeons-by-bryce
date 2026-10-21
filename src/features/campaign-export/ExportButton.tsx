@@ -1,12 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { strToU8, zip, type Zippable } from 'fflate';
-import { exportCampaign } from './actions';
+import { exportAccount, exportCampaign } from './actions';
 
 // "Download everything": asks the server for the campaign (owner only), fetches each picture from
 // its signed link, builds the .zip here in the browser, and saves it. `onDone` runs once it has
 // been saved.
-export function ExportButton({ slug, className = 'act', label = 'Download everything (.zip)', onDone }: { slug: string; className?: string; label?: string; onDone?: () => void }) {
+// `slug` downloads that campaign; without it, the signed-in account's own things.
+export function ExportButton({ slug, className = 'act', label = 'Download everything (.zip)', onDone }: { slug?: string; className?: string; label?: string; onDone?: () => void }) {
   const [busy, setBusy] = useState(false);
   const [say, setSay] = useState<{ ok?: string; err?: string; now?: string }>({});
 
@@ -14,7 +15,7 @@ export function ExportButton({ slug, className = 'act', label = 'Download everyt
     setBusy(true);
     setSay({ now: 'Gathering the campaign…' });
     try {
-      const b = await exportCampaign(slug);
+      const b = slug ? await exportCampaign(slug) : await exportAccount();
       if ('error' in b) { setSay({ err: b.error }); return; }
       const files: Zippable = {};
       for (const [path, body] of Object.entries(b.text)) files[path] = strToU8(body);
