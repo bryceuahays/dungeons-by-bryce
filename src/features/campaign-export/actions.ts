@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getCampaign } from '@/lib/campaign';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { CAMPAIGN_FILE_DIRS } from '@/lib/campaign-admin';
 import { exportFiles, type ExportBundle } from './model';
 
 // Everything in a campaign, for its owner to download before deleting it (or any time). The
@@ -42,7 +43,7 @@ export async function exportCampaign(slug: string): Promise<ExportBundle | { err
       if (!data || data.length < 1000) break;
     }
   };
-  await Promise.all([...['maps', 'maps-painted', 'npc', 'lore'].map((d) => list('campaign-files', `${c}/${d}`)), ...['t', 'v'].map((d) => list('campaign-media', `${c}/${d}`))]);
+  await Promise.all([...CAMPAIGN_FILE_DIRS.map((d) => list('campaign-files', `${c}/${d}`)), ...['t', 'v'].map((d) => list('campaign-media', `${c}/${d}`))]);
   for (const b of ['wide', 'tall']) stored.push({ bucket: 'backgrounds', path: `campaign/${c}/${b}` });
   const links: { zip: string; url: string }[] = [];
   for (const bucket of [...new Set(stored.map((s) => s.bucket))]) {
