@@ -42,4 +42,18 @@ export async function removeCampaignFiles(campaignId: string) {
     if (data?.length) await admin.storage.from('campaign-media').remove(data.map((o) => `${campaignId}/${dir}/${o.name}`));
   }
   await admin.storage.from('backgrounds').remove([`campaign/${campaignId}/wide`, `campaign/${campaignId}/tall`]);
+  // the table tools' pictures: maps, painted maps, NPC portraits and lore pictures (Bryce, 20 October
+  // 2026: the owner is offered a download of all of it first, src/features/campaign-export)
+  for (const dir of CAMPAIGN_FILE_DIRS) {
+    for (;;) {
+      const { data } = await admin.storage.from('campaign-files').list(`${campaignId}/${dir}`, { limit: 1000 });
+      const names = (data ?? []).filter((o) => o.id).map((o) => `${campaignId}/${dir}/${o.name}`);
+      if (!names.length) break;
+      const { error } = await admin.storage.from('campaign-files').remove(names);
+      if (error) break;
+    }
+  }
 }
+
+// Where a campaign's table-tool pictures are kept in the campaign-files bucket, under its id.
+export const CAMPAIGN_FILE_DIRS = ['maps', 'maps-painted', 'npc', 'lore'];

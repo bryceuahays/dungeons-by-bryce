@@ -278,6 +278,10 @@ A DM chooses which hub pages a campaign has, and which features each page has (M
 - **`startsOff` in the list** is only for new campaign setup (item 22). It never switches anything off in an existing campaign.
 - **Adding a feature to a page** means adding one line to that page's `features` in `src/config/hub-features.ts`. Never reuse or rename an id: campaigns have stored them.
 
+## Downloading a Campaign
+
+The owner can download everything in a campaign as one .zip (`src/features/campaign-export/`), and is offered it in a pop-up before deleting. The server (`exportCampaign`, owner only) gathers the campaign's data with the owner's own login, plus one-hour signed links to its pictures; the browser fetches those and builds the .zip with `fflate`, because a whole campaign's pictures are more than one Vercel response may carry. Deleting a campaign then removes all of its files (`removeCampaignFiles` in `src/lib/campaign-admin.ts`; the table tools' folders are `CAMPAIGN_FILE_DIRS`). Anything new a campaign keeps (a table, a storage folder) belongs in the download and in that cleanup: add it to `actions.ts`, `model.ts` and `CAMPAIGN_FILE_DIRS`.
+
 ## Feature Flags
 
 Unfinished work is merged to `main` behind a flag, so it can go in small pieces without players seeing it.

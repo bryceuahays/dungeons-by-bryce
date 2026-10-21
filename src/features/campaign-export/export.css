@@ -1,0 +1,12 @@
+/* The "Download everything first?" pop-up and the download button. Theme variables only. */
+dialog.ex-dialog{box-sizing:border-box; width:min(560px, calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; padding:22px 24px; border-radius:14px;
+  background:var(--plate); color:var(--vellum); border:1px solid var(--line-strong); font-family:var(--body); font-size:15px; line-height:1.55}
+dialog.ex-dialog::backdrop{background:rgba(0,0,0,.55)}
+dialog.ex-dialog h3{font-family:var(--display); font-weight:600; font-size:1.35rem; margin:0 0 10px; color:var(--vellum)}
+dialog.ex-dialog p{margin:0 0 10px}
+dialog.ex-dialog ul{margin:0 0 10px; padding-left:20px; color:var(--vellum-soft)}
+dialog.ex-dialog li{margin:2px 0}
+dialog.ex-dialog .ex-dim{color:var(--dim); font-size:14px}
+dialog.ex-dialog .ex-acts{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:12px}
+.ex-btn{display:inline-flex; flex-wrap:wrap; align-items:center; gap:8px 12px}
+.ex-btn .act,dialog.ex-dialog .act{min-height:44px}
