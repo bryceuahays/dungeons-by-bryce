@@ -25,10 +25,11 @@ const CHECKS: [RegExp, string[], string][] = [
   [/\bonce per (short|long) rest\b|\buntil you finish a (short|long) rest\b|\bnumber of times equal to\b|\btimes per (short|long) rest\b/i, ['uses'], 'a limited use (a resource the feature uses, or "limit")'],
 ];
 
-const TEXT_KEYS = ['text', 'description', 'desc'];
+export const TEXT_KEYS = ['text', 'description', 'desc'];
 
-// every feature, trait or benefit in an entry's data: anything with a name and words
-function partsOf(data: any): any[] {
+// every feature, trait or benefit in an entry's data: anything with a name and words (the objects themselves,
+// so a caller can change their words in place)
+export function partsOf(data: any): any[] {
   const out: any[] = [];
   const walk = (v: any, depth: number) => {
     if (!v || typeof v !== 'object' || depth > 6) return;
