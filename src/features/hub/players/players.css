@@ -1,0 +1,36 @@
+/* The Players page (PlayersPage.tsx), after Players.png. Theme variables only. */
+.campaign .pl{display:flex; flex-direction:column; gap:16px; padding-top:4px; padding-bottom:32px}
+.campaign .pl h1{font-family:var(--display); font-weight:600; font-size:2.2rem; line-height:1.15; color:var(--vellum); margin:0}
+.campaign .pl p{margin:0; max-width:none}
+.campaign .pl-lede{margin-top:6px !important; color:var(--vellum-soft)}
+.campaign .pl-dim{color:var(--dim); font-size:14px}
+.campaign .pl-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.campaign .pl-chips{display:flex; flex-wrap:wrap; gap:8px}
+.campaign .pl-chips button{min-height:44px; padding:0 16px; border-radius:999px; font:inherit; font-size:14px; cursor:pointer; background:var(--plate2); color:var(--vellum-soft); border:1px solid var(--line)}
+.campaign .pl-chips button[aria-pressed=true]{background:var(--vellum); color:var(--void); border-color:var(--vellum); font-weight:600}
+.campaign .pl-card{background:var(--plate); border:1px solid var(--line); border-radius:14px; padding:16px 18px; min-width:0; display:flex; flex-direction:column; gap:8px}
+.campaign[data-radius] .pl-card{border-radius:var(--radius)}
+.campaign .pl-head{flex-direction:row; flex-wrap:wrap; align-items:center; gap:14px 18px}
+.campaign .pl-face{flex:none; width:84px; height:84px; border-radius:50%; display:grid; place-items:center; background:var(--plate2); border:1px solid var(--line); font-family:var(--display); font-size:2rem; color:var(--dim)}
+.campaign .pl-who{flex:1 1 220px; min-width:0; display:flex; flex-direction:column; gap:2px}
+.campaign .pl-who h2{font-family:var(--display); font-weight:600; font-size:1.7rem; color:var(--vellum); margin:0; overflow-wrap:anywhere}
+.campaign .pl-head .act{min-height:44px; display:inline-flex; align-items:center}
+.campaign .pl-seen{flex-basis:100%}
+.campaign .pl-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap:16px}
+.campaign .pl-h{font-family:var(--display); font-weight:600; font-size:1.15rem; color:var(--vellum); margin:0}
+.campaign .pl-h2{font-family:var(--display); font-weight:600; font-size:1.25rem; color:var(--vellum); margin:0}
+.campaign .pl-text{font-size:15px; color:var(--vellum-soft); white-space:pre-wrap; overflow-wrap:anywhere}
+.campaign .pl-share .f{margin:0}
+.campaign .pl-pair{display:grid; grid-template-columns:repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap:16px; align-items:start}
+.campaign .pl textarea{box-sizing:border-box; width:100%; min-height:100px; padding:10px 12px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:15px; resize:vertical}
+.campaign .pl-dm.hid-box{padding:16px 18px; display:flex; flex-direction:column; gap:8px; border-radius:14px}
+.campaign .pl-dm > .hid-tag{display:none}
+.campaign .pl-secret{font-size:14px; color:var(--secret-text)}
+.campaign .pl-end{justify-content:flex-end; margin-top:8px !important}
+.campaign .pl-send{min-height:44px; padding:0 18px; border-radius:8px; border:1px solid var(--secret-line); background:var(--secret); color:var(--void); font:inherit; font-size:15px; font-weight:600; cursor:pointer}
+.campaign .pl-send:disabled{opacity:.55; cursor:default}
+.campaign .pl-thread{list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px}
+.campaign .pl-thread li{display:flex; flex-direction:column; gap:2px; padding:8px 12px; border-radius:10px; background:var(--plate2); font-size:14px; color:var(--vellum); white-space:pre-wrap; overflow-wrap:anywhere}
+.campaign .pl-thread li.dm{border-left:3px solid var(--secret)}
+.campaign .pl-thread small{font-size:12px; color:var(--dim)}
+.campaign .pl-chips button:focus-visible,.campaign .pl-send:focus-visible{outline:2px solid var(--gold); outline-offset:2px}

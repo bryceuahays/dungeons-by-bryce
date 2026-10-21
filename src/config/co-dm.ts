@@ -30,7 +30,7 @@ export const PERM_IDS = PERMS.map((p) => p.id) as Perm[];
 // in the database also let that DM read what they cover.)
 export const NEEDS_HIDDEN: Perm[] = ['edit', 'reveal', 'settings'];
 // Kept and shown, but the feature each governs is not built yet.
-export const NOT_YET: Perm[] = ['handouts', 'messages', 'recaps'];
+export const NOT_YET: Perm[] = ['handouts', 'recaps'];
 
 const set = (...on: Perm[]): PermSet => Object.fromEntries(PERM_IDS.map((id) => [id, on.includes(id)])) as PermSet;
 export const ALL_PERMS: PermSet = set(...PERM_IDS);
