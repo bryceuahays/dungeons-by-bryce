@@ -89,13 +89,12 @@ export async function Reveals({ slug }: { slug: string }) {
           {hasFeature(settings, 'reveals.plot') && writable && perms.edit ? <PlotSecretForm slug={campaign.slug} /> : null}
         </header>
 
+        <div className={inboxOn ? 'rv-cols' : ''}>
+        <div className="rv-main">
         {!hasFeature(settings, 'reveals.schedule') ? <p className="rv-dim">The reveal schedule is switched off for this campaign (Campaign settings, Pages and features).</p>
           : !total ? <p className="rv-empty">Nothing is waiting to be revealed. Everything in this campaign is already out for the players it is meant for.</p> : (
             <p className="rv-dim">{total} {total === 1 ? 'thing is' : 'things are'} hidden. Sessions, chapters and story beats reveal them on their own; you can also reveal any of them now.</p>
           )}
-
-        <div className={inboxOn ? 'rv-cols' : ''}>
-        <div className="rv-main">
         {groups.map((g) => {
           const s = g.session !== null ? (sessions ?? []).find((x: any) => Number(x.number) === g.session) : null;
           const waiting = { started: g.items.filter((i) => i.key.endsWith(':started')).length, played: g.items.filter((i) => i.key.endsWith(':played')).length };
