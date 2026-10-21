@@ -1,0 +1,104 @@
+/* The Combat page (CombatDM.tsx, CombatPlayer.tsx, BattleMap.tsx), after CombatDM.png and
+   CombatPlayer.png. Theme variables only. */
+.campaign .cb{display:flex; flex-direction:column; gap:16px; padding-top:4px; padding-bottom:32px}
+.campaign .cb h1{font-family:var(--display); font-weight:600; font-size:2.2rem; line-height:1.15; color:var(--vellum); margin:0}
+.campaign .cb h2{font-family:var(--display); font-weight:600; font-size:1.3rem; color:var(--vellum); margin:0}
+.campaign .cb .cb-h3{font-family:var(--body); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin:0 0 10px}
+.campaign .cb p{margin:0; max-width:none}
+.campaign .cb-top{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px 20px}
+.campaign .cb-sub{margin-top:6px !important; color:var(--vellum-soft); display:flex; align-items:center; flex-wrap:wrap}
+.campaign .cb-sub{flex-wrap:nowrap; gap:6px}
+.campaign .cb-sub > span{flex:none}
+.campaign .cb .cb-name{flex:0 1 240px; width:auto; min-width:0; min-height:36px; padding:0 8px; border-radius:6px; background:transparent; border:1px dashed var(--line); color:var(--vellum-soft); font:inherit; font-size:15px}
+.campaign .cb-acts{display:flex; flex-wrap:wrap; gap:8px}
+.campaign .cb-acts .act,.campaign .cb-acts button{min-height:44px}
+.campaign .cb-say{min-height:1.2em; font-size:13px}
+.campaign .cb-card{background:var(--plate); border:1px solid var(--line); border-radius:14px; padding:16px 18px; min-width:0; display:flex; flex-direction:column; gap:10px}
+.campaign[data-radius] .cb-card{border-radius:var(--radius)}
+.campaign .cb-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:4px 12px}
+.campaign .cb-init .cb-head h2{font-family:var(--body); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--dim)}
+.campaign .cb-head small{font-size:13px; color:var(--dim)}
+.campaign .cb-grid{display:grid; grid-template-columns:minmax(260px, 340px) minmax(0, 1fr); gap:16px; align-items:start}
+.campaign .cb-side{display:flex; flex-direction:column; gap:16px; min-width:0}
+.campaign .cb-row{display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px 10px}
+.campaign .cb-row .f{margin:0; flex:1 1 160px}
+.campaign .cb-row .f.cb-n{flex:0 1 110px}
+.campaign .cb-small{font-size:13px; align-items:center}
+.campaign .cb-add{gap:12px}
+
+/* the initiative list */
+.campaign .cb-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.campaign .cb-list li{display:flex; gap:10px; align-items:flex-start; padding:10px; border-radius:10px; background:var(--plate2); border:1px solid var(--line)}
+.campaign .cb-list li.now{border-color:var(--gold); background:var(--gold-tint)}
+.campaign .cb-list li.sel:not(.now){border-color:var(--line-strong)}
+.campaign .cb-list li.hid{border-style:dashed; border-color:var(--secret-line); background:var(--secret-bg)}
+.campaign .cb-i{flex:none; box-sizing:border-box; width:44px; min-height:44px; padding:0 4px; text-align:center; border-radius:8px; background:var(--field); border:1px solid var(--line-strong); color:var(--vellum); font:inherit; font-size:15px; font-weight:600}
+.campaign .cb-i.ro{display:grid; place-items:center}
+.campaign .cb-who{flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer}
+.campaign .cb-who.ro{cursor:default}
+.campaign .cb-nm{display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px}
+.campaign .cb-nm b{color:var(--vellum); font-size:15px; overflow-wrap:anywhere}
+.campaign .cb-nm span{font-size:13px; color:var(--dim)}
+.campaign .cb-nm em{margin-left:auto; font-style:normal; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; background:var(--gold); color:var(--on-gold)}
+.campaign .cb-bar{display:block; height:6px; border-radius:3px; background:var(--field); overflow:hidden}
+.campaign .cb-bar span{display:block; height:100%; border-radius:3px; background:var(--verd)}
+.campaign .cb-bar span.enemy{background:var(--ember)}
+.campaign .cb-bar span.ally{background:var(--star)}
+.campaign .cb-tags{display:flex; flex-wrap:wrap; gap:6px}
+.campaign .cb-tag{font-size:12px; padding:1px 8px; border-radius:6px; border:1px solid var(--line); color:var(--vellum-soft)}
+.campaign .cb-tag.party{color:var(--verd); border-color:color-mix(in srgb, var(--verd) 50%, transparent)}
+.campaign .cb-tag.enemy{color:var(--ember-text); border-color:color-mix(in srgb, var(--ember) 50%, transparent)}
+.campaign .cb-tag.ally{color:var(--star); border-color:color-mix(in srgb, var(--star) 50%, transparent)}
+.campaign .cb-tag.cond{background:var(--ember-tint); border-color:transparent; color:var(--ember-text)}
+.campaign .cb-tag.conc{background:color-mix(in srgb, var(--star) 14%, var(--plate)); border-color:transparent; color:var(--vellum)}
+.campaign .cb-st{font-size:13px; font-weight:600; color:var(--verd)}
+.campaign .cb-st.wounded{color:var(--gold)}
+.campaign .cb-st.bloodied,.campaign .cb-st.enemy{color:var(--ember-text)}
+.campaign .cb-st.down{color:var(--dim)}
+.campaign .cb-h.bloodied{color:var(--ember-text)} .campaign .cb-h.down{color:var(--dim)} .campaign .cb-h.wounded{color:var(--gold)} .campaign .cb-h.healthy{color:var(--verd)}
+.campaign .cb-next{width:100%; min-height:48px; border-radius:10px; border:1px solid var(--gold); background:var(--gold); color:var(--on-gold); font:inherit; font-size:16px; font-weight:600; cursor:pointer}
+.campaign .cb-next:disabled{opacity:.5; cursor:default}
+
+/* up now, the selected combatant */
+.campaign .cb-up{background:var(--gold-tint); border-color:var(--gold); gap:4px}
+.campaign .cb-up.mine{border-width:2px}
+.campaign .cb-eyebrow{font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--gold)}
+.campaign .cb-stat{background:var(--plate2); border-radius:10px; padding:10px 12px; max-height:360px; overflow:auto}
+.campaign .cb-dmg{min-height:44px; padding:0 16px; border-radius:8px; border:1px solid var(--ember); background:var(--ember); color:var(--void); font:inherit; font-weight:600; cursor:pointer}
+.campaign .cb-mappick{max-width:320px; margin:0}
+
+/* a player's turn */
+.campaign .cb-target{min-height:44px; padding:0 14px; border-radius:999px; background:var(--plate2); border:1px solid var(--line); color:var(--vellum-soft); font:inherit; font-size:14px; cursor:pointer}
+.campaign .cb-target[aria-pressed=true]{border-color:var(--ember); color:var(--vellum); background:var(--ember-tint); font-weight:600}
+.campaign .cb-attack{min-height:44px; padding:0 18px; border-radius:8px; border:1px solid var(--ember); background:var(--ember); color:var(--void); font:inherit; font-size:15px; font-weight:600; cursor:pointer}
+.campaign .cb-attack:disabled{opacity:.5; cursor:default}
+.campaign .cb-last{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 14px; border-radius:10px; background:var(--plate2)}
+.campaign .cb-last span{display:flex; flex-direction:column; font-size:14px; color:var(--vellum)}
+.campaign .cb-last small{font-size:12px; color:var(--dim)}
+.campaign .cb-last b{font-family:var(--display); font-size:1.8rem; color:var(--vellum)}
+.campaign .cb-log{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:14px; color:var(--vellum-soft)}
+.campaign .cb-log b{color:var(--vellum)}
+
+/* the battle map */
+.campaign .bm{display:flex; flex-direction:column; gap:6px}
+/* with a picture, the box is the picture's own shape (tokens are placed in percent of it, so they sit on the same spot on every screen); resizing changes its width and the height follows */
+.campaign .bm-map{position:relative; height:320px; min-height:160px; max-height:80vh; resize:vertical; overflow:hidden; border-radius:10px; border:1px solid var(--line); background:var(--field); touch-action:none}
+.campaign .bm-map.pic{height:auto; max-height:none; min-height:0; width:100%; min-width:200px; max-width:100%; resize:horizontal}
+.campaign .bm-map img{width:100%; height:auto; display:block; user-select:none; pointer-events:none}
+.campaign .bm-grid{position:absolute; inset:0; background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size:40px 40px}
+.campaign .bm-tok{position:absolute; transform:translate(-50%, -50%); width:40px; height:40px; border-radius:50%; display:grid; place-items:center; padding:0; font:inherit; font-size:12px; font-weight:700; cursor:grab;
+  background:var(--verd); color:var(--void); border:2px solid var(--plate); box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.campaign .bm-tok:disabled{cursor:default; opacity:1}
+.campaign .bm-tok.enemy{background:var(--ember)}
+.campaign .bm-tok.ally{background:var(--star)}
+.campaign .bm-tok.now{outline:3px solid var(--gold); outline-offset:2px}
+.campaign .bm-tok.hid{border-style:dashed; border-color:var(--secret); opacity:.75}
+.campaign .bm-note{font-size:13px; color:var(--dim); display:flex; flex-wrap:wrap; align-items:center; gap:6px}
+.campaign .bm-chip{min-height:32px; padding:0 10px; border-radius:999px; border:1px solid var(--line); background:var(--plate2); color:var(--vellum-soft); font:inherit; font-size:13px; cursor:pointer}
+.campaign .cb button:focus-visible,.campaign .cb input:focus-visible,.campaign .cb select:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+@media (max-width:860px){.campaign .cb-grid{grid-template-columns:minmax(0, 1fr)} .campaign .bm-map:not(.pic){height:260px}}
+/* tick boxes drawn from the theme, so an empty one is light on a light theme */
+.campaign .cb input[type=checkbox]{flex:none; width:18px; height:18px; margin:0; padding:0; cursor:pointer; appearance:none; -webkit-appearance:none; display:inline-grid; place-content:center; vertical-align:middle;
+  background:var(--field); border:1.5px solid var(--line-strong); border-radius:4px}
+.campaign .cb input[type=checkbox]:checked{background:var(--gold); border-color:var(--gold)}
+.campaign .cb input[type=checkbox]:checked::after{content:""; width:4px; height:9px; border:solid var(--on-gold); border-width:0 2px 2px 0; transform:translateY(-1px) rotate(45deg)}

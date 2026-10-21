@@ -9,6 +9,7 @@ import { Sheet5e } from '../Sheet5e';
 import { ConfirmButton } from '../ConfirmButton';
 import { useLive } from './kit';
 import type { SheetSystem } from '@/features/systems/model';
+import { publicView } from '@/features/hub/combat/model';
 
 type Combatant = { id: string; name: string; kind: 'pc' | 'npc' | 'monster'; init: number; dex: number; hp: number; hpMax: number; ac: number; conditions: string[]; conc: boolean; hidden: boolean; showHp: boolean; ref?: string };
 type State = { round: number; turn: string | null; list: Combatant[] };
@@ -16,18 +17,11 @@ const empty: State = { round: 1, turn: null, list: [] };
 const d20 = () => 1 + Math.floor(Math.random() * 20);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-// What the table is allowed to see of the DM's tracker: no hidden creatures, and no
-// enemy hit points unless the DM has shown them. This is the ONLY thing written to the
-// row players can read; the full state is stored where only the DM can read it.
-export function publicView(s: State) {
-  const order = [...s.list].sort((a, b) => b.init - a.init || b.dex - a.dex);
-  const active = order.find((c) => c.id === s.turn);
-  return {
-    round: s.round,
-    turn: active ? (active.hidden ? 'hidden' : active.id) : null,
-    order: order.filter((c) => !c.hidden).map((c) => ({ id: c.id, name: c.name, kind: c.kind, conditions: c.conditions, conc: c.conc, ...(c.kind === 'pc' || c.showHp ? { hp: c.hp, hpMax: c.hpMax } : {}) })),
-  };
-}
+// What the table is allowed to see of the DM's tracker is worked out by publicView(), shared with
+// the Combat page (src/features/hub/combat/model.ts): no hidden creatures, and no enemy hit points
+// unless the DM has shown them (enemies show as Healthy, Wounded, Bloodied or Down instead). This is
+// the ONLY thing written to the row players can read; the full state is stored where only the DM can read it.
+export { publicView };
 
 export function InitiativeTool(p: ToolProps & { initial: Entry | null; characters: { id: string; owner: string; data: any }[]; monsters: Entity[]; entities: Entity[]; names: Record<string, string>; system?: SheetSystem | null }) {
   return p.dm ? <DmTracker {...p} /> : <PlayerTracker {...p} />;
@@ -47,7 +41,7 @@ function PlayerTracker(p: ToolProps & { initial: Entry | null }) {
         {pub.order.map((c: any) => (
           <li key={c.id} className={pub.turn === c.id ? 'on' : ''} aria-current={pub.turn === c.id ? 'true' : undefined}>
             <b>{c.name}</b>
-            <span className="who">{c.hpMax ? `${c.hp} / ${c.hpMax} hit points` : c.kind === 'pc' ? '' : 'Hit points unknown'}{c.conc ? ' · concentrating' : ''}{(c.conditions ?? []).length ? ' · ' + c.conditions.join(', ') : ''}</span>
+            <span className="who">{c.hpMax ? `${c.hp} / ${c.hpMax} hit points` : c.health ? c.health : c.kind === 'pc' ? '' : 'Hit points unknown'}{c.conc ? ' · concentrating' : ''}{(c.conditions ?? []).length ? ' · ' + c.conditions.join(', ') : ''}</span>
             {pub.turn === c.id ? <span className="pillb pl">Their turn</span> : null}
           </li>
         ))}
