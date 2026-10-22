@@ -1,0 +1,34 @@
+/* The timeline strip (StripView.tsx), after Timeline.png. Theme variables only. */
+.campaign .tls{margin:24px 24px 16px; padding:18px 20px 14px; border-radius:14px; background:var(--plate); border:1px solid var(--line); display:flex; flex-direction:column; gap:12px; font-family:var(--body); min-width:0}
+.campaign[data-radius] .tls{border-radius:var(--radius)}
+.campaign .tls.full{margin:0}
+.campaign .tls h2{font-family:var(--display); font-weight:600; font-size:1.35rem; color:var(--vellum); margin:0}
+.campaign .tls-top{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:10px 18px}
+.campaign .tls-sub{margin:4px 0 0; font-size:14px; color:var(--dim)}
+.campaign .tls-key{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; font-size:13px; color:var(--dim)}
+.campaign .tls-k{display:inline-flex; align-items:center; gap:6px}
+.campaign .tls-k::before{content:''; width:12px; height:12px; border-radius:3px; border:1px solid var(--line-strong)}
+.campaign .tls-k.custom::before{border-color:var(--verd)}
+.campaign .tls-k.planned::before{border-style:dashed; border-color:var(--secret-line)}
+.campaign .tls-key .act{min-height:44px}
+.campaign .tls-open{color:var(--gold); font-size:14px}
+.campaign .tls-add{display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px 12px}
+.campaign .tls-add .f{margin:0; flex:1 1 220px}
+.campaign .tls-add .f.tls-n{flex:0 1 110px}
+.campaign .tls-add p{flex-basis:100%; margin:0}
+.campaign .tls-row{overflow-x:auto; padding-bottom:6px; scrollbar-width:thin}
+.campaign .tls-row:focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:8px}
+.campaign .tls-row > ol{list-style:none; margin:0; padding:0; display:flex; min-width:min-content}
+.campaign .tls-col{position:relative; flex:0 0 200px; padding:26px 16px 4px 0; display:flex; flex-direction:column; gap:2px}
+.campaign .tls-col b{font-size:15px; color:var(--vellum)}
+.campaign .tls-col small{font-size:13px; color:var(--dim); margin-bottom:6px}
+.campaign .tls-dot{position:absolute; left:0; top:2px; width:16px; height:16px; border-radius:50%; box-sizing:border-box; background:var(--gold); z-index:1}
+.campaign .tls-col.next .tls-dot{background:var(--plate); border:3px solid var(--gold)}
+.campaign .tls-col.planned .tls-dot{background:var(--plate); border:2px dashed var(--secret)}
+.campaign .tls-line{position:absolute; left:0; right:0; top:9px; border-top:2px solid var(--line-strong)}
+.campaign .tls-col.next .tls-line,.campaign .tls-col.planned .tls-line{border-top-style:dashed}
+.campaign .tls-col ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; align-items:flex-start; gap:6px}
+.campaign .tls-ev{font-size:12px; border-radius:6px; padding:3px 8px; color:var(--vellum); background:var(--plate2); border:1px solid transparent; overflow-wrap:anywhere; max-width:100%}
+.campaign .tls-ev.custom{background:transparent; border-color:var(--verd); color:var(--verd)}
+.campaign .tls-ev.planned{background:var(--secret-bg); border:1px dashed var(--secret-line); color:var(--secret-text)}
+@media (max-width:960px){.campaign .tls{margin:16px 0 12px} .campaign .tls-col{flex-basis:170px}}

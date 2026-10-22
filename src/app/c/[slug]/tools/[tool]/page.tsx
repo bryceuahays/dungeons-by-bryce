@@ -18,6 +18,7 @@ import { flag } from '@/lib/flags';
 import { VisMode } from '@/features/hub/visibility/VisMode';
 import { revealFacts } from '@/features/hub/reveals/server';
 import { visDefaults } from '@/features/hub/settings/defaults';
+import { TimelineStrip } from '@/features/hub/timeline/TimelineStrip';
 
 export async function generateMetadata({ params }: { params: Promise<{ tool: string }> }) {
   const { tool } = await params;
@@ -55,7 +56,9 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
     body = <InitiativeTool {...p} system={system} initial={rows[0] ?? null} characters={(chars.data ?? []) as any[]} monsters={monsters as any[]} entities={entities as any[]} names={names} />;
   } else if (tool === 'timeline') {
     const [rows, npcs] = await Promise.all([getEntries(ctx, ['beat', 'note']), dm ? getEntries(ctx, ['npc']) : []]);
-    body = <TimelineTool {...p} initial={rows} npcs={npcs.map((n) => ({ id: n.id, title: n.title }))} />;
+    // hub version 2: the timeline strip leads the page (in the new frame it is not at the foot here)
+    const strip = (await flag('hub_v2_shell')) && (await flag('hub_v2_timeline')) ? <div className="wrap"><TimelineStrip ctx={ctx} full /></div> : null;
+    body = <>{strip}<TimelineTool {...p} initial={rows} npcs={npcs.map((n) => ({ id: n.id, title: n.title }))} /></>;
   } else if (tool === 'maps') {
     const [rows, beats] = await Promise.all([getEntries(ctx, ['map', 'region', 'pin']), campaignCan(ctx.access, 'timeline') ? getEntries(ctx, ['beat']) : []]);
     // hidden regions are never part of what a player's page is given
