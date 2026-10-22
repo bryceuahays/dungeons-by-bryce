@@ -5,6 +5,7 @@ import { Starfield } from '@/components/Starfield';
 import { CampaignChrome } from '@/components/CampaignChrome';
 import Link from 'next/link';
 import { TimelineBanner } from '@/components/TimelineBanner';
+import { TimelineStrip } from '@/features/hub/timeline/TimelineStrip';
 import { campaignCan } from '@/lib/entitlements';
 import { hasTool } from '@/config/tools';
 import { flag } from '@/lib/flags';
@@ -26,10 +27,13 @@ export default async function CampaignLayout({ children, params }: { children: R
   const fonts = safeFontHref(campaign.theme?.fonts?.href);
   const bg = campaign.background?.wide && campaign.background?.tall ? `?v=${campaign.background.v ?? 1}` : null;
   // hub version 2: the new header, tabs, character sidebar and phone layout (src/features/hub/shell)
-  const [shell, dice, welcome, reveals, npcs, lore, combat, players] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice'), flag('hub_v2_welcome'), flag('hub_v2_reveals'), flag('hub_v2_npcs'), flag('hub_v2_lore'), flag('hub_v2_combat'), flag('hub_v2_players')]);
+  const [shell, dice, welcome, reveals, npcs, lore, combat, players, timeline] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice'), flag('hub_v2_welcome'), flag('hub_v2_reveals'), flag('hub_v2_npcs'), flag('hub_v2_lore'), flag('hub_v2_combat'), flag('hub_v2_players'), flag('hub_v2_timeline')]);
   const tabs = ctx.sections.map((s) => ({ slug: s.slug, title: s.title, kind: s.kind, dmOnly: s.audience === 'dm' }));
   const previewNote = ctx.asPlayer ? [ctx.viewAs.player ? 'one named player' : 'any player', ctx.viewAs.stage ? `at "${campaign.phases.find((p) => p.id === ctx.viewAs.stage)?.label ?? ctx.viewAs.stage}"` : ''].filter(Boolean).join(', ') : '';
-  const banner = campaignCan(ctx.access, 'timeline') && hasTool(ctx.campaign.settings, 'timeline') ? <TimelineBanner ctx={ctx} /> : null;
+  // the story so far: hub version 2's timeline strip at the foot of every page (in the new frame), or the old banner at the top
+  const usesTimeline = campaignCan(ctx.access, 'timeline') && hasTool(ctx.campaign.settings, 'timeline');
+  const strip = usesTimeline && shell && timeline ? <TimelineStrip ctx={ctx} /> : null;
+  const banner = usesTimeline && !strip ? <TimelineBanner ctx={ctx} /> : null;
   return (
     <div className={'campaign' + (bg ? ' has-bg' : '')} style={themeStyle(campaign.theme)} data-radius={campaign.theme?.layout?.radius ? '' : undefined} data-wrap={campaign.theme?.layout?.wrap ? '' : undefined}>
       {fonts ? <link rel="stylesheet" href={fonts} precedence="default" /> : null}
@@ -66,6 +70,7 @@ export default async function CampaignLayout({ children, params }: { children: R
           bar={barPages(campaign.settings, welcome ? ['', ...tabs.map((t) => t.slug)] : tabs.map((t) => t.slug))}
           sidebar={!ctx.headView}
           banner={banner}
+          foot={strip}
         >
           {children}
         </ShellFrame>

@@ -186,7 +186,8 @@ test('timeline: planned beats stay with the DM; players see what has happened, t
   assert.ok(p1Pg.text.includes('The mayor is unmasked') && p1Pg.text.includes('Session 3') && p1Pg.text.includes('A letter from home') && !p1Pg.text.includes('city falls'));
   assert.ok(!(await page(`/c/${C.slug}/tools/timeline`, p2.session)).text.includes('letter from home'), 'a personal beat reaches only its player');
   const banner = await page(`/c/${C.slug}/overview`, p2.session);
-  assert.ok(banner.text.includes('Story so far') && banner.text.includes('The mayor is unmasked') && !banner.text.includes('city falls') && !banner.text.includes('letter from home'), 'the banner is on every campaign page');
+  // the old banner, or (hub version 2, with its flags) the timeline strip at the foot of the page
+  assert.ok((banner.text.includes('Story so far') || banner.text.includes('id="tls-h"')) && banner.text.includes('The mayor is unmasked') && !banner.text.includes('city falls') && !banner.text.includes('letter from home'), 'the story so far is on every campaign page');
 
   // a beat tied to a stage happens when the stage is reached
   await dm.client.from('campaigns').update({ phase: 'act2' }).eq('id', C.id);

@@ -18,6 +18,7 @@ export function ShellFrame(p: {
   lead?: { href: string; title: string }[];   // hub version 2 pages (Welcome first), before the campaign's own tabs
   isDm: boolean; realDm: boolean; asPlayer: boolean; headView: string | null; readOnly: boolean; previewNote: string; bar: string[];
   sidebar: boolean; banner: ReactNode; children: ReactNode;
+  foot?: ReactNode;   // the timeline strip (hub version 2, item 15), below every page but the Timeline tool's, which leads with it
 }) {
   const path = usePathname();
   const base = '/c/' + p.slug;
@@ -123,6 +124,7 @@ export function ShellFrame(p: {
         ) : null}
         <div className="page">{p.children}</div>
       </div>
+      {p.foot && !path.endsWith('/tools/timeline') ? p.foot : null}
       {drawer || more ? <button type="button" className="hs-veil" aria-label="Close" onClick={() => { setDrawer(false); setMore(false); }} /> : null}
 
       {more ? (

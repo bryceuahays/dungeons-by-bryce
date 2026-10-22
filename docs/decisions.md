@@ -439,3 +439,10 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 338. **The inbox is on the Reveals page** ("From your players", Secrets.png), grouped by player with the newest first. Opening the page marks messages seen ("2 new" before that). "Save as secret" keeps a message as a DM-only plot secret, with the message as its detail.
 339. **"My notes" is one note per player per campaign, saved as they type,** and private to them (not even the DM), as players' own notes always were.
 340. **What the mockup shows that waits for other items:** personal quests (Quest log, item 17), bonds as lines on the Relationship web (item 19), and inventory links to Party loot (item 18). The Players page shows the sheet's backstory, inventory, spells and features, and personality.
+
+## Hub version 2, item 15: the timeline (21 October 2026)
+
+341. **The timeline is a strip at the foot of every hub page,** as the mockups draw it, and leads the Timeline tool's page; planning beats stays in the tool. While it is on, it replaces the old "Story so far" banner at the top. No database change.
+342. **Sessions come from what is already kept:** "the session you are on" (set in the Timeline tool) and every one before it are played, the next one is up next, and a beat sits in the session it was marked hit in. A beat hit before sessions were counted goes under "Earlier".
+343. **Planned is the DM's only:** later sessions on the Sessions page (with their titles), key beats aimed at a session, and reveals waiting for a session to start or be played. Players' strips have played sessions and the next one, with only the beats they may see (row-level security), as before.
+344. **A custom event is a beat that has happened, marked custom,** added from the strip for a session, for everyone (it can be hidden in the Timeline tool). It needs the timeline, as beats always have. Quests starting (item 17) and in-world dates from the calendar (the switch is kept) come later.
