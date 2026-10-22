@@ -18,7 +18,7 @@ export type Item = { ref: Ref; type: string; title: string; note: string; when: 
 export type Group = { key: string; title: string; sub: string; session: number | null; items: Item[] };
 
 type Vis = { vis: string; vis_players?: string[] | null; vis_stage?: string | null; vis_entry?: string | null };
-export type EntryRow = Vis & { id: string; kind: string; title: string; live: boolean; data?: Record<string, unknown> | null };
+export type EntryRow = Vis & { id: string; kind: string; title: string; live: boolean; parent?: string | null; data?: Record<string, unknown> | null };
 export type BrewRow = Vis & { entity_id: string; name: string; type: string };
 export type BlockRow = { id: string; section: string; kind: string; title: string; visibility: string; hidden: boolean; phase: string | null; from_stage?: string | null; reveal_when?: string | null; only_players?: string[] | null };
 export type World = {
@@ -30,7 +30,7 @@ export type World = {
 // (a planned beat is the timeline's business, and shown there).
 const SKIP = new Set(['log', 'encounter', 'note', 'zero', 'beat']);
 
-export const TYPE_NAMES: Record<string, string> = { npc: 'NPC', map: 'Map', region: 'Map area', pin: 'Map pin', clock: 'Faction clock', consequence: 'Consequence', clue: 'Clue', secret: 'Plot secret' };
+export const TYPE_NAMES: Record<string, string> = { npc: 'NPC', map: 'Map', region: 'Map area', pin: 'Map pin', clock: 'Faction clock', consequence: 'Consequence', clue: 'Clue', secret: 'Plot secret', quest: 'Quest', objective: 'Quest objective' };
 const BREW_NAMES: Record<string, string> = { race: 'Race', class: 'Class', subclass: 'Subclass', background: 'Background', feat: 'Feat', spell: 'Spell', item: 'Magic item', monster: 'Monster', resource: 'Resource' };
 const STATUS: Record<string, string> = { unplanned: 'Not planned yet', planned: 'Planned', ready: 'Ready to run', running: 'Under way', played: 'Played' };
 const list = (names: string[]) => (names.length <= 1 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names.at(-1));
@@ -82,7 +82,8 @@ export function schedule(a: { entries: EntryRow[]; brew: BrewRow[]; blocks: Bloc
     if (!at) continue;
     const reveal = e.kind === 'npc' ? String(e.data?.reveal ?? '') : '';
     const sees = reveal === 'name' ? 'Players will see: name only' : reveal === 'portrait' ? 'Players will see: name and portrait' : e.kind === 'npc' ? 'Players will see: everything' : '';
-    items.push({ ref: { type: 'entry', id: e.id }, type: (named(e) ? 'Per-player · ' : '') + (e.kind === 'lore' ? 'Lore · ' + (LORE_CATEGORIES.find((c) => c.id === e.data?.cat)?.short ?? 'Your own') : TYPE_NAMES[e.kind] ?? e.kind), title: e.title || 'Untitled', note: [whoNote(e, w), sees, !e.live ? 'Kept out of the feed' : ''].filter(Boolean).join(' · '), when: timing(at.key), key: at.key, group: at.group });
+    const quest = e.kind === 'objective' ? a.entries.find((q) => q.id === e.parent)?.title : '';
+    items.push({ ref: { type: 'entry', id: e.id }, type: (named(e) ? 'Per-player · ' : '') + (e.kind === 'lore' ? 'Lore · ' + (LORE_CATEGORIES.find((c) => c.id === e.data?.cat)?.short ?? 'Your own') : TYPE_NAMES[e.kind] ?? e.kind), title: e.title || 'Untitled', note: [quest ? 'On quest: ' + quest : '', whoNote(e, w), sees, !e.live ? 'Kept out of the feed' : ''].filter(Boolean).join(' · '), when: timing(at.key), key: at.key, group: at.group });
   }
   for (const b of a.brew) {
     const at = whenOf(b, true, w);

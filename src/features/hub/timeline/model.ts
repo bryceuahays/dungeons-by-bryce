@@ -5,17 +5,18 @@
 // are played; the one after it is up next; later sessions the DM has planned follow, for the DM only.
 // Each session shows what happened in it (story beats, by the session they were marked hit in),
 // custom events the DM added to it, and, for the DM only, what is planned for it (key beats aimed at
-// it, reveals waiting for it).
+// it, reveals waiting for it). Quests the reader may see are on it too, in the session they started.
 
 export type Beat = { id: string; title: string; status: string; vis: string; data: Record<string, unknown> };
 export type PlannedSession = { number: number; title: string; status: string };
 export type Reveal = { title: string; session: number };
+export type QuestStart = { id: string; title: string; since: number };
 export type Event = { id: string; label: string; kind: 'story' | 'custom' | 'planned' };
 export type Column = { n: number; label: string; sub: string; state: 'done' | 'next' | 'planned'; events: Event[] };
 
 const n = (v: unknown) => { const x = Math.trunc(Number(v)); return Number.isFinite(x) && x > 0 ? Math.min(x, 999) : 0; };
 
-export function buildTimeline(a: { session: number; beats: Beat[]; dm: boolean; planned?: PlannedSession[]; reveals?: Reveal[]; custom?: boolean; showPlanned?: boolean }): Column[] {
+export function buildTimeline(a: { session: number; beats: Beat[]; dm: boolean; planned?: PlannedSession[]; reveals?: Reveal[]; quests?: QuestStart[]; custom?: boolean; showPlanned?: boolean }): Column[] {
   const now = n(a.session);
   const custom = a.custom !== false;
   const cols = new Map<number, Column>();
@@ -39,6 +40,10 @@ export function buildTimeline(a: { session: number; beats: Beat[]; dm: boolean; 
       const at = n(b.data.target);
       if (at > now) col(at).events.push({ id: b.id, label: b.title, kind: 'planned' });
     }
+  }
+  for (const q of a.quests ?? []) {
+    const at = n(q.since);
+    if (at && at <= now + 1) col(at).events.push({ id: 'q' + q.id, label: 'Quest started: ' + q.title, kind: 'story' });
   }
   if (a.dm && a.showPlanned !== false) {
     // the DM's planned sessions get their place, with their title

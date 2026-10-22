@@ -43,5 +43,6 @@ export const REVEAL_LINKS: Record<string, { label: string; page: string; where: 
   map: { label: 'New map', page: 'tools/maps', where: 'Maps' }, region: { label: 'New place', page: 'tools/maps', where: 'Maps' }, pin: { label: 'New place', page: 'tools/maps', where: 'Maps' },
   clock: { label: 'Faction news', page: 'tools/world', where: 'World state' }, consequence: { label: 'Consequence', page: 'tools/world', where: 'World state' },
   lore: { label: 'Lore', page: 'hub/lore', where: 'Lore' },
+  quest: { label: 'New quest', page: 'hub/quests', where: 'Quest log' },
 };
-export const KIND_NAMES: Record<string, string> = { npc: 'NPC', beat: 'Story beat', map: 'Map', region: 'Map area', pin: 'Map pin', clock: 'Faction clock', consequence: 'Consequence', clue: 'Clue', secret: 'Secret', note: 'Note', encounter: 'Encounter', lore: 'Lore' };
+export const KIND_NAMES: Record<string, string> = { npc: 'NPC', beat: 'Story beat', map: 'Map', region: 'Map area', pin: 'Map pin', clock: 'Faction clock', consequence: 'Consequence', clue: 'Clue', secret: 'Secret', note: 'Note', encounter: 'Encounter', lore: 'Lore', quest: 'Quest', objective: 'Quest objective' };

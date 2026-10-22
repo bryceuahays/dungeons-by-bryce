@@ -33,7 +33,7 @@ export async function stepSession(slug: string, sessionId: string, to: 'running'
 // for page blocks and attached homebrew.
 
 // How the reveal log words a line, by kind (the same words as the database's entries_log()).
-const LINE: Record<string, string> = { region: 'A new part of a map is open', map: 'A new map: ', pin: 'A new pin on a map: ', npc: 'Someone new to know: ', clock: 'A faction\'s progress is now known: ' };
+const LINE: Record<string, string> = { region: 'A new part of a map is open', map: 'A new map: ', pin: 'A new pin on a map: ', npc: 'Someone new to know: ', clock: 'A faction\'s progress is now known: ', quest: 'A new quest: ' };
 const lineFor = (kind: string, title: string) => (kind === 'region' ? LINE.region : (LINE[kind] ?? 'Newly revealed: ') + title).slice(0, 200);
 
 // The page's flag, the campaign's switch for this part of it, and a DM of it who is not previewing.
@@ -64,7 +64,8 @@ export async function revealNow(slug: string, ref: Ref): Promise<Result> {
     if (error) return fail(error.message);
     // the database writes the line when something stops being DM only or joins the feed; here
     // it was waiting for something else, so the line is written here
-    if (e.vis !== 'dm' && e.live) {
+    // (an objective gets no line: people who cannot see its quest yet would read it)
+    if (e.vis !== 'dm' && e.live && e.kind !== 'objective') {
       await supabase.from('entries').insert({ campaign_id: campaign.id, kind: 'log', owner: null, title: lineFor(e.kind, e.title), live: feed, vis: next.vis, vis_players: next.vis_players, data: { entry: e.id, kind: e.kind } });
     }
   } else if (ref.type === 'brew') {
