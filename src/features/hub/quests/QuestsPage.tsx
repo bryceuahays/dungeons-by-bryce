@@ -71,7 +71,7 @@ export function QuestsPage(p: ToolProps & { initial: Entry[]; hidden: Record<str
             {f.track && p.canTrack && status === 'active' ? (
               <button type="button" className={'qs-track' + (tracked.has(q.id) ? ' on' : '')} aria-pressed={tracked.has(q.id)} onClick={() => void track(q.id)}>{tracked.has(q.id) ? 'Tracking' : 'Track'}</button>
             ) : null}
-            {edit ? <button type="button" className="act sm" onClick={() => setOpen(q.id)}>Edit<span className="qs-sr"> {q.title}</span></button> : null}
+            {edit ? <button type="button" className="qs-editbtn" onClick={() => setOpen(q.id)}>Edit<span className="qs-sr"> {q.title}</span></button> : null}
           </div>
         </div>
         {typeof q.data.summary === 'string' && q.data.summary ? <p className="qs-sum">{q.data.summary}</p> : null}

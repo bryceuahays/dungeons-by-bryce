@@ -25,6 +25,7 @@
 .campaign .qs-given{margin:0; font-size:14px; color:var(--dim)}
 .campaign .qs-acts{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
 .campaign .qs-track{min-height:44px; padding:0 14px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; background:var(--plate2); color:var(--vellum); border:1px solid var(--line-strong)}
+.campaign .qs-editbtn{min-height:44px; padding:0 14px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; background:transparent; color:var(--vellum); border:1px solid var(--line-strong)}
 .campaign .qs-track.on{background:var(--gold); color:var(--on-gold); border-color:var(--gold); font-weight:600}
 .campaign .qs-sum{margin:0; color:var(--vellum-soft); white-space:pre-wrap; overflow-wrap:anywhere}
 
@@ -39,7 +40,7 @@
 .campaign .qs-list li.unknown .qs-box{border-style:dashed; border-color:var(--dim)}
 .campaign .qs-list li.unknown .qs-text{color:var(--dim); font-style:italic}
 .campaign .qs-text{flex:1 1 160px; min-width:0; overflow-wrap:anywhere}
-.campaign input.qs-box:focus-visible,.campaign .qs-track:focus-visible,.campaign .qs-add:focus-visible,.campaign .qs-tabs button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+.campaign .qs-editbtn:focus-visible,.campaign input.qs-box:focus-visible,.campaign .qs-track:focus-visible,.campaign .qs-add:focus-visible,.campaign .qs-tabs button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 
 /* reward and what is still to come */
 .campaign .qs-foot{display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 16px; padding-top:10px; border-top:1px solid var(--line); font-size:14px}
@@ -55,7 +56,7 @@
 .campaign fieldset.qs-objs{border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:0; display:flex; flex-direction:column; gap:8px}
 .campaign .qs-objs legend{font-size:13px; color:var(--dim)}
 .campaign .qs-objs > p{margin:0}
-.campaign .qs-obj{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+.campaign .qs-obj{display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding-bottom:10px; border-bottom:1px solid var(--line)}
 .campaign .qs-obj > input{flex:1 1 220px; box-sizing:border-box; min-height:44px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px; min-width:0}
 .campaign .qs-obj > .ck{min-height:44px; display:inline-flex; align-items:center}
 .campaign .qs-obj .vis2{display:inline-flex; flex-wrap:wrap; align-items:center; gap:8px}
