@@ -1,0 +1,65 @@
+/* The Quest log (QuestsPage.tsx), after Quests.png. Theme variables only. */
+.campaign .qs{display:flex; flex-direction:column; gap:16px; padding-top:4px; padding-bottom:32px; font-family:var(--body)}
+.campaign .qs h1{font-family:var(--display); font-weight:600; font-size:2.2rem; line-height:1.15; color:var(--vellum); margin:0}
+.campaign .qs-top{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:12px 20px}
+.campaign .qs-lede{margin:6px 0 0; color:var(--vellum-soft)}
+.campaign .qs-add{min-height:44px; padding:0 18px; border-radius:8px; border:1px solid var(--gold); background:var(--gold); color:var(--on-gold); font:inherit; font-size:15px; font-weight:600; cursor:pointer}
+.campaign .qs-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* Active · Completed · Failed */
+.campaign .qs-tabs{display:flex; flex-wrap:wrap; gap:8px}
+.campaign .qs-tabs button{min-height:44px; padding:0 16px; border-radius:999px; font:inherit; font-size:14px; cursor:pointer; background:var(--plate2); color:var(--vellum-soft); border:1px solid var(--line)}
+.campaign .qs-tabs button[aria-pressed=true]{background:var(--vellum); color:var(--void); border-color:var(--vellum); font-weight:600}
+
+/* the groups and cards */
+.campaign .qs-group{display:flex; flex-direction:column; gap:10px}
+.campaign .qs-group h2{font-family:var(--display); font-weight:600; font-size:1.25rem; color:var(--vellum); margin:4px 0 0}
+.campaign .qs-cards{display:flex; flex-direction:column; gap:14px}
+.campaign .qs-card{display:flex; flex-direction:column; gap:10px; padding:18px; min-width:0; border-radius:14px; background:var(--plate); border:1px solid var(--line)}
+.campaign[data-radius] .qs-card{border-radius:var(--radius)}
+.campaign .qs-card.main{border-color:color-mix(in srgb, var(--gold) 45%, var(--line))}
+.campaign .qs-card.hid{background:var(--secret-bg); border:1px dashed var(--secret-line)}
+.campaign .qs-head{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:10px 16px}
+.campaign .qs-name{display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0; flex:1 1 240px}
+.campaign .qs-name h3{font-family:var(--display); font-weight:600; font-size:1.2rem; line-height:1.2; color:var(--vellum); margin:0; overflow-wrap:anywhere}
+.campaign .qs-given{margin:0; font-size:14px; color:var(--dim)}
+.campaign .qs-acts{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.campaign .qs-track{min-height:44px; padding:0 14px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; background:var(--plate2); color:var(--vellum); border:1px solid var(--line-strong)}
+.campaign .qs-editbtn{min-height:44px; padding:0 14px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; background:transparent; color:var(--vellum); border:1px solid var(--line-strong)}
+.campaign .qs-track.on{background:var(--gold); color:var(--on-gold); border-color:var(--gold); font-weight:600}
+.campaign .qs-sum{margin:0; color:var(--vellum-soft); white-space:pre-wrap; overflow-wrap:anywhere}
+
+/* objectives */
+.campaign .qs-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.campaign .qs-list li{display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:15px; color:var(--vellum)}
+.campaign .qs-box{width:20px; height:20px; flex:none; box-sizing:border-box; border-radius:5px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; border:1.5px solid var(--line-strong); margin:0}
+.campaign input.qs-box{appearance:none; -webkit-appearance:none; background:transparent; cursor:pointer; width:24px; height:24px}
+.campaign input.qs-box:checked::after{content:'✓'; color:var(--void)}
+.campaign .qs-list li.done .qs-box{background:var(--verd); border-color:var(--verd); color:var(--void)}
+.campaign .qs-list li.done .qs-text{color:var(--dim); text-decoration:line-through}
+.campaign .qs-list li.unknown .qs-box{border-style:dashed; border-color:var(--dim)}
+.campaign .qs-list li.unknown .qs-text{color:var(--dim); font-style:italic}
+.campaign .qs-text{flex:1 1 160px; min-width:0; overflow-wrap:anywhere}
+.campaign .qs-editbtn:focus-visible,.campaign input.qs-box:focus-visible,.campaign .qs-track:focus-visible,.campaign .qs-add:focus-visible,.campaign .qs-tabs button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+
+/* reward and what is still to come */
+.campaign .qs-foot{display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 16px; padding-top:10px; border-top:1px solid var(--line); font-size:14px}
+.campaign .qs-reward{color:var(--vellum-soft)}
+.campaign .qs-reward b{color:var(--gold); font-weight:600}
+.campaign .qs-note{color:var(--dim); font-style:italic}
+.campaign .qs-dm{margin:0; font-size:13px; color:var(--secret-text); display:flex; flex-wrap:wrap; gap:6px; align-items:center}
+.campaign .qs-empty{margin:0; color:var(--dim)}
+
+/* the editor */
+.campaign .qs-form{display:flex; flex-direction:column; gap:12px}
+.campaign .qs-ck{align-self:end}
+.campaign fieldset.qs-objs{border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:0; display:flex; flex-direction:column; gap:8px}
+.campaign .qs-objs legend{font-size:13px; color:var(--dim)}
+.campaign .qs-objs > p{margin:0}
+.campaign .qs-obj{display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding-bottom:10px; border-bottom:1px solid var(--line)}
+.campaign .qs-obj > input{flex:1 1 220px; box-sizing:border-box; min-height:44px; padding:0 10px; border-radius:8px; background:var(--field); color:var(--vellum); border:1px solid var(--line-strong); font:inherit; font-size:14px; min-width:0}
+.campaign .qs-obj > .ck{min-height:44px; display:inline-flex; align-items:center}
+.campaign .qs-obj .vis2{display:inline-flex; flex-wrap:wrap; align-items:center; gap:8px}
+.campaign .qs-vis .vis2{display:inline-flex; flex-wrap:wrap; align-items:center; gap:8px}
+.campaign .qs-notes textarea{background:var(--secret-bg); border:1px dashed var(--secret-line)}
+@media (max-width:600px){.campaign .qs h1{font-size:1.8rem} .campaign .qs-card{padding:14px}}

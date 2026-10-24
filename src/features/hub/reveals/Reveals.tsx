@@ -29,7 +29,7 @@ export async function Reveals({ slug }: { slug: string }) {
   const writable = ctx.access.writable;
 
   const [{ data: entries }, { data: brew }, { data: blocks }, { data: sessions }, { data: beats }, members, facts] = await Promise.all([
-    supabase.from('entries').select('id, kind, title, live, vis, vis_players, vis_stage, vis_entry, data').eq('campaign_id', campaign.id).not('kind', 'in', '(log,encounter,note,zero,beat)').order('kind').order('title'),
+    supabase.from('entries').select('id, kind, title, live, parent, vis, vis_players, vis_stage, vis_entry, data').eq('campaign_id', campaign.id).not('kind', 'in', '(log,encounter,note,zero,beat)').order('kind').order('title'),
     supabase.from('campaign_entities').select('entity_id, vis, vis_players, vis_stage, vis_entry, entities(name, type)').eq('campaign_id', campaign.id),
     supabase.from('content').select('id, section, kind, title, visibility, hidden, phase, from_stage, reveal_when, only_players, sort').eq('campaign_id', campaign.id).eq('visibility', 'player').order('section').order('sort'),
     supabase.from('sessions').select('id, number, status, title').eq('campaign_id', campaign.id).order('number'),

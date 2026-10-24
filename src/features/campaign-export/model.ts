@@ -46,7 +46,7 @@ export function exportFiles(x: ExportInput): ExportBundle {
     'campaign.json   the campaign itself: title, tagline, chapters, settings and theme',
     'pages.json      the tabs and every block on them',
     'characters/  one file per character',
-    'entries/     NPCs, lore, maps, regions, pins, the timeline, world state and the reveal log, by kind,',
+    'entries/     NPCs, lore, quests, maps, regions, pins, the timeline, world state and the reveal log, by kind,',
     '             each with the DM-only notes kept for it (under "secret")',
     'sessions.json   sessions and their planning notes',
     'homebrew.json   the homebrew attached to this campaign, and who could see it',

@@ -5,6 +5,8 @@ import { getEntries } from '@/lib/entries';
 import { flag } from '@/lib/flags';
 import { hasFeature } from '@/config/hub-features';
 import { HiddenBox, HiddenTag } from '@/features/hub/ui/Hidden';
+import { readQuests } from '@/features/hub/quests/server';
+import { byOrder, progress, welcomeQuests } from '@/features/hub/quests/model';
 import { KIND_NAMES, REVEAL_LINKS, welcomeOf } from './model';
 import { NextForm, RecapForm, RevealNowButton } from './WelcomeForms';
 import './welcome.css';
@@ -29,6 +31,10 @@ export async function Welcome({ slug }: { slug: string }) {
 
   // newly revealed: the latest lines of the reveal log that this viewer may read and that the
   // campaign shows players (the log's "newly revealed" feed)
+  // active quests (item 17): the ones this person tracks, or the main quest first
+  const quests = hasFeature(settings, 'welcome.quests') && (await flag('hub_v2_quests')) ? await readQuests(ctx) : null;
+  const tracks = quests ? welcomeQuests(quests.quests, new Set(quests.tracked), hasFeature(settings, 'quests.track')) : [];
+
   const revealed = on('revealed') ? (await getEntries(ctx, ['log'])).filter((r) => r.live).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5) : [];
 
   // the DM's side: the recap draft, and what waits for the next stage
@@ -123,6 +129,25 @@ export async function Welcome({ slug }: { slug: string }) {
                   })}
                 </ul>
               ) : <p className="wl-dim">{dm && !settings?.feed ? <>Nothing yet. Players only see this once the &quot;newly revealed&quot; feed is on, in the <Link href={`${base}/tools/log`}>Reveal log</Link>. <HiddenTag>Only you see this note</HiddenTag></> : 'Nothing new yet.'}</p>}
+            </section>
+          ) : null}
+          {quests ? (
+            <section className="wl-card" aria-labelledby="wl-quests">
+              <div className="wl-head"><h2 id="wl-quests">Active quests</h2><Link href={`${base}/hub/quests`}>Quest log →</Link></div>
+              {tracks.length ? (
+                <ul className="wl-quests">
+                  {tracks.map((q) => {
+                    const n = progress(quests.objectives.filter((o) => o.parent === q.id).sort(byOrder), quests.hidden[q.id] ?? 0);
+                    return (
+                      <li key={q.id} className={q.data.main ? 'main' : ''}>
+                        <span className="wl-qname">{q.title}</span>
+                        <small>{n.line}</small>
+                        <span className="wl-bar" role="img" aria-label={n.line}><span style={{ width: (n.total ? Math.round((n.done / n.total) * 100) : 0) + '%' }} /></span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : <p className="wl-dim">{dm ? 'No active quests yet. Add them on the Quest log.' : 'No quests yet.'}</p>}
             </section>
           ) : null}
         </div>

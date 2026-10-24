@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { TimelineBanner } from '@/components/TimelineBanner';
 import { TimelineStrip } from '@/features/hub/timeline/TimelineStrip';
 import { campaignCan } from '@/lib/entitlements';
-import { hasTool } from '@/config/tools';
+import { hasPage, hasTool } from '@/config/tools';
 import { flag } from '@/lib/flags';
 import { ShellFrame } from '@/features/hub/shell/ShellFrame';
 import { barPages } from '@/features/hub/shell/model';
@@ -27,7 +27,7 @@ export default async function CampaignLayout({ children, params }: { children: R
   const fonts = safeFontHref(campaign.theme?.fonts?.href);
   const bg = campaign.background?.wide && campaign.background?.tall ? `?v=${campaign.background.v ?? 1}` : null;
   // hub version 2: the new header, tabs, character sidebar and phone layout (src/features/hub/shell)
-  const [shell, dice, welcome, reveals, npcs, lore, combat, players, timeline] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice'), flag('hub_v2_welcome'), flag('hub_v2_reveals'), flag('hub_v2_npcs'), flag('hub_v2_lore'), flag('hub_v2_combat'), flag('hub_v2_players'), flag('hub_v2_timeline')]);
+  const [shell, dice, welcome, reveals, npcs, lore, combat, players, timeline, quests] = await Promise.all([flag('hub_v2_shell'), flag('hub_v2_dice'), flag('hub_v2_welcome'), flag('hub_v2_reveals'), flag('hub_v2_npcs'), flag('hub_v2_lore'), flag('hub_v2_combat'), flag('hub_v2_players'), flag('hub_v2_timeline'), flag('hub_v2_quests')]);
   const tabs = ctx.sections.map((s) => ({ slug: s.slug, title: s.title, kind: s.kind, dmOnly: s.audience === 'dm' }));
   const previewNote = ctx.asPlayer ? [ctx.viewAs.player ? 'one named player' : 'any player', ctx.viewAs.stage ? `at "${campaign.phases.find((p) => p.id === ctx.viewAs.stage)?.label ?? ctx.viewAs.stage}"` : ''].filter(Boolean).join(', ') : '';
   // the story so far: hub version 2's timeline strip at the foot of every page (in the new frame), or the old banner at the top
@@ -56,7 +56,7 @@ export default async function CampaignLayout({ children, params }: { children: R
           session={Number(campaign.settings?.session) || 0}
           tabs={tabs}
           // the hub's own pages, in the mockup's order, before the campaign's tabs
-          lead={[...(welcome ? [{ href: `/c/${campaign.slug}/hub/welcome`, title: 'Welcome' }] : []), ...(npcs ? [{ href: `/c/${campaign.slug}/hub/npcs`, title: 'NPCs' }] : []), ...(lore ? [{ href: `/c/${campaign.slug}/hub/lore`, title: 'Lore' }] : []), ...(combat ? [{ href: `/c/${campaign.slug}/hub/combat`, title: 'Combat' }] : []), ...(players ? [{ href: `/c/${campaign.slug}/hub/players`, title: 'Players' }] : [])]}
+          lead={[...(welcome ? [{ href: `/c/${campaign.slug}/hub/welcome`, title: 'Welcome' }] : []), ...(npcs ? [{ href: `/c/${campaign.slug}/hub/npcs`, title: 'NPCs' }] : []), ...(lore ? [{ href: `/c/${campaign.slug}/hub/lore`, title: 'Lore' }] : []), ...(combat ? [{ href: `/c/${campaign.slug}/hub/combat`, title: 'Combat' }] : []), ...(players ? [{ href: `/c/${campaign.slug}/hub/players`, title: 'Players' }] : []), ...(quests && hasPage(campaign.settings, 'quests') ? [{ href: `/c/${campaign.slug}/hub/quests`, title: 'Quest log' }] : [])]}
           extras={[{ href: `/c/${campaign.slug}/tools`, title: 'Table tools' }, ...(dice ? [{ href: `/c/${campaign.slug}/tools/dice`, title: 'Dice' }] : []),
             // the Reveals page (item 14): the DM's own, so a player and a DM previewing as one get no link
             ...(reveals && ctx.realDm && !ctx.asPlayer ? [{ href: `/c/${campaign.slug}/hub/reveals`, title: 'Reveals' }] : [])]}
