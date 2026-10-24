@@ -454,3 +454,7 @@ Choices made without asking, in the order they came up. The earlier log is `DECI
 347. **A reward is shown right away, or kept back until the quest is completed.** A kept-back reward waits with the DM's notes (entry_secrets) and players see "???" and "Reward revealed on completion"; marking the quest completed puts it on the quest.
 348. **Tracking is each person's own** (a small `quest_tracks` table nobody else reads, not even the DM), and only for quests they can see. Their Welcome page's "Active quests" shows the ones they track, or, if none or tracking is switched off, the main quest first and then side quests (three at most), each with how many objectives are done.
 349. **A giver and a place are an NPC and a lore place, or a name typed in.** One the reader cannot see is left out of "Given by", never named. Quests the reader may see are on the timeline strip as "Quest started" in the session they started; quests and objectives waiting to be revealed are on the Reveals page ("On quest: …").
+
+## A roll the log cannot read (23 October 2026)
+
+350. **A saved roll whose dice are not in the shape the roller writes is shown without its dice, never as a crash.** Rolls are read back from the database on every hub page (the sidebar's roll log, its last roll, the Dice panel), so one bad row used to stop every page of a campaign from loading. `formatResult()` now leaves out what it cannot read, and `resultNote()` gives " (15 + 2)" or nothing.
