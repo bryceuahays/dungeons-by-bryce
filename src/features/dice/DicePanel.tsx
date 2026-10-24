@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { HiddenTag } from '@/features/hub/ui/Hidden';
-import { formatResult } from './notation';
+import { resultNote } from './notation';
 import { PRIVACY_LABEL, seenBy, type DiceRules, type Privacy } from './model';
 import { saveDiceRules } from './actions';
 import './dice.css';
@@ -88,7 +88,7 @@ export function DicePanel(p: {
   const checks = p.characters.find((c) => c.id === char)?.checks ?? [];
   const answer = (q: Request) => roll({ request: q.id, check: q.what.check ? checks.find((c) => c.label.toLowerCase() === q.what.check!.toLowerCase())?.token : undefined });
   const mine = requests.filter((q) => q.to_user === p.me);
-  const line = (r: Roll) => r.label + (r.dice ? ` (${formatResult({ dice: r.dice, modifier: r.modifier ?? 0 })})` : '');
+  const line = (r: Roll) => r.label + resultNote(r);
 
   return (
     <div className="dice">

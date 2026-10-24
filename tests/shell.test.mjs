@@ -3,7 +3,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { barPages, cleanShell, shellOf } from '../src/features/hub/shell/model.ts';
 import { blankV2 } from '../src/lib/rules/engine.ts';
-import { SITE, admin, cleanup, cookieFor, makeUser, page } from './helpers.mjs';
+import { SITE, admin, cleanup, cookieFor, makeUser, onForEveryone, page } from './helpers.mjs';
 
 test('the phone bar: two pages the DM picks, filled up from the next tabs', () => {
   const tabs = ['overview', 'lore', 'npcs', 'secrets', 'sheet'];
@@ -59,6 +59,7 @@ test('with the flag, every campaign page wears the new frame; without it, the ol
   assert.ok(theirs.text.includes('class="hs-top"') && theirs.text.includes('id="hs-side"'));
   for (const words of ['Vault', 'View as player', 'Edit this page', 'aria-label="Manage"', 'Hide DM secrets']) assert.ok(!theirs.text.includes(words), 'not for a player: ' + words);
   // without the flag
+  if (await onForEveryone('hub_v2_shell')) return;
   const old = await page(`/c/${P.slug}/overview`, plain.session);
   assert.ok(old.text.includes('class="strip"') && old.text.includes('Hide DM secrets'));
   for (const part of ['hs-top', 'hs-side', 'hs-bar', '/sidebar']) assert.ok(!old.text.includes(part), 'nothing new: ' + part);
@@ -146,5 +147,5 @@ test('the Character sidebar\'s switches leave out what is switched off, and the 
   assert.ok(tried.error || (tried.data ?? []).length === 0);
   // the choice is on Manage
   assert.ok((await page(`/c/${C.slug}/manage`, dm.session)).text.includes('Save the phone bar'));
-  assert.ok(!(await page(`/c/${P.slug}/manage`, plain.session)).text.includes('Save the phone bar'));
+  if (!(await onForEveryone('hub_v2_shell'))) assert.ok(!(await page(`/c/${P.slug}/manage`, plain.session)).text.includes('Save the phone bar'));
 });

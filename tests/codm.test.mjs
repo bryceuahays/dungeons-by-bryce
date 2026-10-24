@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { createClient } from '@supabase/supabase-js';
 import { ALL_PERMS, NEEDS_HIDDEN, NOT_YET, NO_PERMS, PERMS, PERM_IDS, PRESETS, cleanPerms, coDmCan, permSet, presetOf } from '../src/config/co-dm.ts';
-import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, page, wait } from './helpers.mjs';
+import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, onForEveryone, page, wait } from './helpers.mjs';
 
 // ------------------------------------------------------------------ the list
 
@@ -300,9 +300,11 @@ test('the People screen is the owner\'s, behind its flag', async () => {
   assert.equal(theirs.status, 200);
   assert.ok(theirs.text.includes('You are a co-DM of this campaign') && theirs.text.includes('The owner has given you every permission') && !theirs.text.includes('id="people"') && !theirs.text.includes('Make co-DM'));
   // an owner without the flag: Manage as it was, and none of the screen's words
-  const plain = await page(`/c/${P.slug}/manage`, plainOwner.session);
-  assert.equal(plain.status, 200);
-  assert.ok(plain.text.includes('Only you see this page') && !plain.text.includes('People and permissions') && !plain.text.includes('Make co-DM') && !plain.text.includes('ppl-row'));
+  if (!(await onForEveryone('hub_v2_people'))) {
+    const plain = await page(`/c/${P.slug}/manage`, plainOwner.session);
+    assert.equal(plain.status, 200);
+    assert.ok(plain.text.includes('Only you see this page') && !plain.text.includes('People and permissions') && !plain.text.includes('Make co-DM') && !plain.text.includes('ppl-row'));
+  }
   // players never reach it, and the owner previewing as a player gets a player's page
   assert.ok((await page(`/c/${C.slug}/manage`, a.session)).status >= 300);
   assert.deepEqual(leaks((await page(`/c/${C.slug}/overview`, owner.session, viewAs({ p: a.id }))).text), []);

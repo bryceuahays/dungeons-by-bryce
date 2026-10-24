@@ -91,15 +91,22 @@ export function rollTerms(terms: Term[], die: (sides: number) => number): Result
   return { dice, modifier, total: total + modifier };
 }
 
-// "15 + 2", "4, 6 (dropped 1) + 3": how a result is written out next to its total.
-export function formatResult(r: { dice: Rolled[]; modifier: number }): string {
-  const groups = r.dice.map((g, i) => {
+// "15 + 2", "4, 6 (dropped 1) + 3": how a result is written out next to its total. Saved rolls
+// are read back from the database, so anything not in the shape rollTerms() gives is left out
+// (an empty string if nothing is readable) rather than breaking the page that shows it.
+const isRolled = (g: unknown): g is Rolled => !!g && typeof g === 'object' && Array.isArray((g as Rolled).rolls) && Array.isArray((g as Rolled).kept);
+export function formatResult(r: { dice: unknown; modifier: unknown }): string {
+  const groups = (Array.isArray(r.dice) ? r.dice : []).filter(isRolled).map((g, i) => {
     const kept = g.rolls.filter((_, k) => g.kept[k]), dropped = g.rolls.filter((_, k) => !g.kept[k]);
     const text = kept.join(', ') + (dropped.length ? ` (dropped ${dropped.join(', ')})` : '');
     return (i === 0 ? (g.sign < 0 ? '- ' : '') : g.sign < 0 ? ' - ' : ' + ') + text;
   }).join('');
-  return groups + (r.modifier ? (r.modifier < 0 ? ' - ' : ' + ') + Math.abs(r.modifier) : '');
+  const mod = Number(r.modifier) || 0;
+  if (!groups) return '';
+  return groups + (mod ? (mod < 0 ? ' - ' : ' + ') + Math.abs(mod) : '');
 }
+// " (15 + 2)" after a roll's label, or nothing if its dice cannot be read.
+export const resultNote = (r: { dice?: unknown; modifier?: unknown }) => { const t = r.dice ? formatResult({ dice: r.dice, modifier: r.modifier }) : ''; return t ? ` (${t})` : ''; };
 
 // The notation for a d20 check with a modifier: "1d20+5", or with advantage or disadvantage.
 export function checkNotation(bonus: number, mode: 'normal' | 'adv' | 'dis' = 'normal'): string {

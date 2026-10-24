@@ -7,7 +7,7 @@ import path from 'node:path';
 import { HUB_PAGES, HUB_SWITCHES, cleanFeatures, hasFeature, hasPage, hubPage, switchedOff } from '../src/config/hub-features.ts';
 import * as tools from '../src/config/tools.ts';
 import { FLAGS } from '../src/config/flags.ts';
-import { ROOT, admin, cleanup, makeUser, page } from './helpers.mjs';
+import { ROOT, admin, cleanup, makeUser, onForEveryone, page } from './helpers.mjs';
 
 const off = (...ids) => ({ features: { off: ids } });
 const everyFeature = HUB_PAGES.flatMap((p) => p.features.map((f) => p.id + '.' + f.id));
@@ -160,6 +160,7 @@ test('Manage shows "Pages and features" behind its flag: every page, default pag
 });
 
 test('for a DM without the flag there is no such section, and none of its words are sent', async () => {
+  if (await onForEveryone('hub_v2_switches')) return;
   const pg = await page(`/c/${plains.slug}/manage`, plainDm.session);
   assert.equal(pg.status, 200);
   assert.ok(pg.text.includes('Table tools'), 'the Manage page itself is as before');

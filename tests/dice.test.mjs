@@ -7,10 +7,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { MAX_DICE, MAX_SIDES, checkNotation, formatResult, formatTerms, parseNotation, rollTerms } from '../src/features/dice/notation.ts';
+import { MAX_DICE, MAX_SIDES, checkNotation, formatResult, formatTerms, parseNotation, resultNote, rollTerms } from '../src/features/dice/notation.ts';
 import { DICE_DEFAULTS, cleanDiceRules, decidePrivacy, diceRules, playerChoices, rollOpen, seenBy } from '../src/features/dice/model.ts';
 import { blankV2 } from '../src/lib/rules/engine.ts';
-import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, page, wait } from './helpers.mjs';
+import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, onForEveryone, page, wait } from './helpers.mjs';
 
 // ------------------------------------------------------------------ the notation
 
@@ -62,6 +62,13 @@ test('rolling: totals, modifiers, several parts, and keeping the highest or lowe
   assert.equal(formatResult(rollTerms(terms('1d20+2'), loaded(15))), '15 + 2');
   assert.equal(formatResult(rollTerms(terms('2d20kh1+5'), loaded(7, 15))), '15 (dropped 7) + 5');
   assert.equal(formatResult(rollTerms(terms('1d8+1d6-1'), loaded(3, 4))), '3 + 4 - 1');
+  // a saved roll read back in a shape it was never written in is left out, never a crash (it took down every page once)
+  for (const junk of [[15], null, 'x', {}, [{ rolls: 'no' }], [null, { sides: 20, sign: 1, rolls: [12], kept: [true] }]]) assert.doesNotThrow(() => formatResult({ dice: junk, modifier: 3 }));
+  assert.equal(formatResult({ dice: [15], modifier: 7 }), '');
+  assert.equal(formatResult({ dice: [null, { sides: 20, sign: 1, rolls: [12], kept: [true] }], modifier: 'x' }), '12', 'the readable part, and no modifier that is not a number');
+  assert.equal(resultNote({ dice: [15], modifier: 7 }), '');
+  assert.equal(resultNote({ dice: [{ sides: 20, sign: 1, rolls: [15], kept: [true] }], modifier: 2 }), ' (15 + 2)');
+  assert.equal(resultNote({}), '');
   assert.equal(checkNotation(5), '1d20+5');
   assert.equal(checkNotation(-1, 'adv'), '2d20kh1-1');
   assert.equal(checkNotation(0, 'dis'), '2d20kl1');
@@ -419,10 +426,12 @@ test('tap to roll: the modifier comes from the rules engine on the server, seale
 });
 
 test('dice are behind their flag: without it there is no page, no link and no rolling', async () => {
-  assert.equal((await page(`/c/${C.slug}/tools/dice`, plain.session)).status, 404);
-  assert.equal((await roll(plain, { notation: '1d20' })).status, 404);
-  assert.equal((await post(plain, 'ask', { to: [a.id], notation: '1d20' })).status, 404);
-  assert.ok(!(await page(`/c/${C.slug}/tools`, plain.session)).text.includes('/tools/dice'), 'no link on Table tools');
+  if (!(await onForEveryone('hub_v2_dice'))) {
+    assert.equal((await page(`/c/${C.slug}/tools/dice`, plain.session)).status, 404);
+    assert.equal((await roll(plain, { notation: '1d20' })).status, 404);
+    assert.equal((await post(plain, 'ask', { to: [a.id], notation: '1d20' })).status, 404);
+    assert.ok(!(await page(`/c/${C.slug}/tools`, plain.session)).text.includes('/tools/dice'), 'no link on Table tools');
+  }
   assert.ok((await page(`/c/${C.slug}/tools`, a.session)).text.includes(`/c/${C.slug}/tools/dice`), 'the link is there with the flag');
   // the read rules do not depend on the flag: an ordinary member still cannot read a private roll
   const hidden = (await roll(dm, { notation: '1d20', label: 'Flagless', privacy: 'dm' })).json.roll;

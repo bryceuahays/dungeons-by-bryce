@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { VIS_DEFAULTS, cleanVisDefaults, visDefaults } from '../src/features/hub/settings/defaults.ts';
-import { admin, cleanup, makeUser, page } from './helpers.mjs';
+import { admin, cleanup, makeUser, onForEveryone, page } from './helpers.mjs';
 
 test('visibility defaults: a campaign with none behaves as campaigns always have', () => {
   assert.deepEqual(VIS_DEFAULTS, { newVis: 'dm', npcReveal: 'all', named: true, discord: false });
@@ -57,6 +57,7 @@ test('with the flag, Manage is Campaign settings: the seven sections, and every 
 });
 
 test('without the flag, Manage is laid out exactly as it was', async () => {
+  if (await onForEveryone('hub_v2_settings')) return;
   const pg = await page(`/c/${P.slug}/manage`, plain.session);
   assert.equal(pg.status, 200);
   assert.ok(pg.text.includes('Manage Plain Settings</h2>'));

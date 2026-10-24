@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { HiddenTag } from '@/features/hub/ui/Hidden';
-import { formatResult } from '@/features/dice/notation';
+import { resultNote } from '@/features/dice/notation';
 import { PRIVACY_LABEL, seenBy, type Privacy } from '@/features/dice/model';
 import { signed } from './model';
 
@@ -74,7 +74,7 @@ export function Sidebar({ slug, campaignId }: { slug: string; campaignId: string
       else if (out.blind) setLast({ text: `Rolled: ${out.label}. Your DM has the result.` });
       else {
         const r = out.roll as Roll;
-        setLast({ text: r.label + (r.dice ? ` (${formatResult({ dice: r.dice, modifier: r.modifier ?? 0 })})` : ''), total: r.total, priv: r.privacy !== 'all' });
+        setLast({ text: r.label + resultNote(r), total: r.total, priv: r.privacy !== 'all' });
         if (logOn) setLog((prev) => [r, ...prev.filter((x) => x.id !== r.id)].slice(0, 8));
       }
     } catch { setLast({ error: 'That did not work. Try again.' }); }
@@ -133,7 +133,7 @@ export function Sidebar({ slug, campaignId }: { slug: string; campaignId: string
                 const seen = seenBy(r, data.me, data.dm, {});
                 return (
                   <li key={r.id} className={r.privacy === 'all' ? '' : 'priv'}>
-                    <span><small>{r.user_id === data.me ? 'You' : r.who || 'Someone'}{seen ? <> · <HiddenTag>{seen}</HiddenTag></> : null}</small>{r.label}{r.dice ? ` (${formatResult({ dice: r.dice, modifier: r.modifier ?? 0 })})` : ''}</span>
+                    <span><small>{r.user_id === data.me ? 'You' : r.who || 'Someone'}{seen ? <> · <HiddenTag>{seen}</HiddenTag></> : null}</small>{r.label}{resultNote(r)}</span>
                     <b>{r.total}</b>
                   </li>
                 );
