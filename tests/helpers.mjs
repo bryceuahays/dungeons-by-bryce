@@ -22,6 +22,10 @@ export const DOMAIN = '@test.dungeons.invalid';
 export const admin = createClient(URL_, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
 export const anonClient = () => createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
 
+// Has the Head DM turned any of these flags on for everyone (Admin > Flags)? Then nobody is
+// without them, and a check of what someone without the flag gets has nobody to look at.
+export const onForEveryone = async (...names) => ((await admin.from('feature_flags').select('name').in('name', names).eq('is_on', true)).data ?? []).length > 0;
+
 // A throwaway account, signed in with its own token (so RLS applies to it).
 //   makeUser('player')                      an ordinary account
 //   makeUser('dm', { dmOf: campaignId })    also a co-DM of that campaign (the real owner is never touched)

@@ -10,7 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { MAX_DICE, MAX_SIDES, checkNotation, formatResult, formatTerms, parseNotation, resultNote, rollTerms } from '../src/features/dice/notation.ts';
 import { DICE_DEFAULTS, cleanDiceRules, decidePrivacy, diceRules, playerChoices, rollOpen, seenBy } from '../src/features/dice/model.ts';
 import { blankV2 } from '../src/lib/rules/engine.ts';
-import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, page, wait } from './helpers.mjs';
+import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, onForEveryone, page, wait } from './helpers.mjs';
 
 // ------------------------------------------------------------------ the notation
 
@@ -426,10 +426,12 @@ test('tap to roll: the modifier comes from the rules engine on the server, seale
 });
 
 test('dice are behind their flag: without it there is no page, no link and no rolling', async () => {
-  assert.equal((await page(`/c/${C.slug}/tools/dice`, plain.session)).status, 404);
-  assert.equal((await roll(plain, { notation: '1d20' })).status, 404);
-  assert.equal((await post(plain, 'ask', { to: [a.id], notation: '1d20' })).status, 404);
-  assert.ok(!(await page(`/c/${C.slug}/tools`, plain.session)).text.includes('/tools/dice'), 'no link on Table tools');
+  if (!(await onForEveryone('hub_v2_dice'))) {
+    assert.equal((await page(`/c/${C.slug}/tools/dice`, plain.session)).status, 404);
+    assert.equal((await roll(plain, { notation: '1d20' })).status, 404);
+    assert.equal((await post(plain, 'ask', { to: [a.id], notation: '1d20' })).status, 404);
+    assert.ok(!(await page(`/c/${C.slug}/tools`, plain.session)).text.includes('/tools/dice'), 'no link on Table tools');
+  }
   assert.ok((await page(`/c/${C.slug}/tools`, a.session)).text.includes(`/c/${C.slug}/tools/dice`), 'the link is there with the flag');
   // the read rules do not depend on the flag: an ordinary member still cannot read a private roll
   const hidden = (await roll(dm, { notation: '1d20', label: 'Flagless', privacy: 'dm' })).json.roll;

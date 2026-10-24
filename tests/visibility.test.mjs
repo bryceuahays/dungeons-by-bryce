@@ -11,7 +11,7 @@ import sharp from 'sharp';
 import { createClient } from '@supabase/supabase-js';
 import { entryOpen } from '../src/lib/entry-types.ts';
 import { WHEN, WHO, describe, fromChoice, namesPlayers, npcFull, npcSplit, problem, revealOf, shortLabel, toChoice, waitsForBeat, waitsForStage } from '../src/features/hub/visibility/model.ts';
-import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, page, wait } from './helpers.mjs';
+import { ANON, ROOT, SITE, URL_, admin, cleanup, cookieFor, makeUser, onForEveryone, page, wait } from './helpers.mjs';
 
 const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', BEAT = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 // 'when' and 'players_when' (a trigger: a session, a beat or a chapter) came with issue 117
@@ -385,18 +385,21 @@ test('attached homebrew has the same choices, and "view as player" shows exactly
 test('the new picker is behind its flag: a DM with it gets "Who sees this?", a DM without it gets the control as it was', async () => {
   const png = await sharp({ create: { width: 20, height: 20, channels: 3, background: '#ffffff' } }).png().toBuffer();
   const pages = {};
-  for (const [who, camp] of [[dm, C], [plainDm, P]]) {
+  const everyone = await onForEveryone('hub_v2_visibility');
+  for (const [who, camp] of [[dm, C], ...(everyone ? [] : [[plainDm, P]])]) {
     const file = `${camp.id}/maps/${crypto.randomUUID()}.png`;
     assert.equal((await who.client.storage.from('campaign-files').upload(file, png, { contentType: 'image/png' })).error, null);
     assert.equal((await entry(who, { campaign_id: camp.id, kind: 'map', title: 'Flag map', live: true, vis: 'all', sort: 999, data: { file, w: 20, h: 20 } })).error, null);
     pages[who.id] = await page(`/c/${camp.slug}/tools/maps`, who.session);
     assert.equal(pages[who.id].status, 200);
   }
-  const on = pages[dm.id].text, off = pages[plainDm.id].text;
+  const on = pages[dm.id].text, off = pages[plainDm.id]?.text;
   assert.ok(on.includes('class="vis2"') && on.includes('who sees it</span>'), 'the new control, with its Change button');
   assert.ok(!on.includes('class="vis"'), 'and not the old one');
-  assert.ok(off.includes('class="vis"') && off.includes('Everyone at the table'), 'the old control, as it was');
-  assert.ok(!off.includes('vis2') && !off.includes('Who sees this?'), 'and nothing of the new one');
+  if (!everyone) {
+    assert.ok(off.includes('class="vis"') && off.includes('Everyone at the table'), 'the old control, as it was');
+    assert.ok(!off.includes('vis2') && !off.includes('Who sees this?'), 'and nothing of the new one');
+  }
   // a player gets neither
   const player = (await page(`/c/${C.slug}/tools/maps`, a.session)).text;
   assert.ok(!player.includes('vis2') && !player.includes('class="vis"'));

@@ -2,7 +2,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_RECAPS, cleanNext, welcomeOf, withRecap } from '../src/features/hub/welcome/model.ts';
-import { admin, cleanup, makeUser, page } from './helpers.mjs';
+import { admin, cleanup, makeUser, onForEveryone, page } from './helpers.mjs';
 
 test('the welcome settings: published recaps and the next session, cleaned', () => {
   assert.deepEqual(welcomeOf(null), { next: { when: '', where: '' }, recaps: [] });
@@ -42,8 +42,10 @@ before(async () => {
 after(cleanup);
 
 test('Welcome is behind its flag, and is the first tab in the new frame', async () => {
-  assert.equal((await page(`/c/${P.slug}/hub/welcome`, plain.session)).status, 404);
-  assert.ok(!(await page(`/c/${P.slug}/overview`, plain.session)).text.includes('/hub/welcome'));
+  if (!(await onForEveryone('hub_v2_welcome'))) {
+    assert.equal((await page(`/c/${P.slug}/hub/welcome`, plain.session)).status, 404);
+    assert.ok(!(await page(`/c/${P.slug}/overview`, plain.session)).text.includes('/hub/welcome'));
+  }
   const pg = await page(`/c/${C.slug}/overview`, a.session);
   const tabs = (pg.text.match(/<nav class="hs-tabs"[\s\S]*?<\/nav>/) ?? [''])[0];
   assert.ok(tabs.indexOf('/hub/welcome') > 0 && tabs.indexOf('/hub/welcome') < tabs.indexOf(`/c/${C.slug}/overview`), 'Welcome comes before the campaign\'s own tabs');
